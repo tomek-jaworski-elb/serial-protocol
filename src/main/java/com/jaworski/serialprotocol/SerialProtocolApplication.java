@@ -10,9 +10,10 @@ public class SerialProtocolApplication {
     public static void main(String[] args) {
         ConfigurableApplicationContext context = SpringApplication.run(SerialProtocolApplication.class, args);
         SerialController serialController = context.getBean(SerialController.class);
-        serialController.run();
-        serialController.listener();
-        serialController.list();
+//        serialController.run();
+//        serialController.listener();
+//        serialController.list();
+        serialController.openAllPorts();
 
     }
 

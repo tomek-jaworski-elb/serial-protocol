@@ -7,14 +7,17 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
+
 @Component
 public class SerialController {
     private static final Logger LOG = LogManager.getLogger(SerialController.class);
-    private final SerialPortDataListener serialPortDataListener;
+    private final SerialPortListenerImpl serialPortDataListener;
 
-    public SerialController(SerialPortDataListener serialPortDataListener) {
+    public SerialController(SerialPortListenerImpl serialPortDataListener) {
         this.serialPortDataListener = serialPortDataListener;
     }
+
 
     public void run() {
         SerialPort[] commPorts = SerialPort.getCommPorts();
@@ -47,5 +50,19 @@ public class SerialController {
                 LOG.info("Read {} bytes.", numRead);
             }
         });
+    }
+
+    public void openAllPorts() {
+        SerialPort[] commPorts = SerialPort.getCommPorts();
+        Arrays.stream(commPorts)
+                .map(SerialPort::getPortDescription)
+                .reduce((serialPort, serialPort2) -> serialPort + "," + serialPort2)
+                .ifPresent(message -> LOG.info("Found {} ports: ({})", commPorts.length, message));
+        for (SerialPort port : commPorts) {
+            port.setBaudRate(9600);
+            port.openPort(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, 0, 0);
+            boolean added = port.addDataListener(serialPortDataListener);
+            LOG.info("On port {} added listener: {}", port.getPortDescription(), added);
+        }
     }
 }

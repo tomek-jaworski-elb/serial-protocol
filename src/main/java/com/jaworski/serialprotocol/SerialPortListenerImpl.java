@@ -29,7 +29,8 @@ public class SerialPortListenerImpl implements SerialPortMessageListener {
 
     @Override
     public void serialEvent(SerialPortEvent event) {
+        SerialPort serialPort = event.getSerialPort();
         byte[] delimitedMessage = event.getReceivedData();
-        LOG.info("Received the following delimited message: {}", delimitedMessage);
+        LOG.info("On port {}: Received the following delimited message: {}", serialPort.getPortDescription() , delimitedMessage);
     }
 }
