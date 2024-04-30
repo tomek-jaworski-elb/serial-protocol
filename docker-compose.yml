@@ -1,0 +1,12 @@
+version: "3.7"
+services:
+    server:
+        build: .
+        environment:
+            - PORT=8080
+            - COM_PORT=/dev/ttyACM0
+            - BAUD_RATE=9600
+        ports:
+            - "8080:8080"
+#        volumes:
+#            - .:/app
