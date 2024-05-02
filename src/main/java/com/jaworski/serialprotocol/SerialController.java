@@ -3,6 +3,7 @@ package com.jaworski.serialprotocol;
 import com.fazecast.jSerialComm.SerialPort;
 import com.fazecast.jSerialComm.SerialPortDataListener;
 import com.fazecast.jSerialComm.SerialPortEvent;
+import com.jaworski.serialprotocol.resources.Resources;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Component;
@@ -13,9 +14,11 @@ import java.util.Arrays;
 public class SerialController {
     private static final Logger LOG = LogManager.getLogger(SerialController.class);
     private final SerialPortListenerImpl serialPortDataListener;
+    private final Resources resources;
 
-    public SerialController(SerialPortListenerImpl serialPortDataListener) {
+    public SerialController(SerialPortListenerImpl serialPortDataListener, Resources resources) {
         this.serialPortDataListener = serialPortDataListener;
+        this.resources = resources;
     }
 
 
@@ -23,7 +26,7 @@ public class SerialController {
         SerialPort[] commPorts = SerialPort.getCommPorts();
         LOG.info("Ports count: {}",commPorts.length);
         SerialPort port = SerialPort.getCommPorts()[0];
-        port.setBaudRate(9600);
+        port.setBaudRate(resources.getBaudRate());
         port.openPort(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, 0, 0);
     }
 
@@ -59,7 +62,7 @@ public class SerialController {
                 .reduce((serialPort, serialPort2) -> serialPort + "," + serialPort2)
                 .ifPresent(message -> LOG.info("Found {} ports: ({})", commPorts.length, message));
         for (SerialPort port : commPorts) {
-            port.setBaudRate(9600);
+            port.setBaudRate(resources.getBaudRate());
             port.openPort(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, 0, 0);
             boolean added = port.addDataListener(serialPortDataListener);
             LOG.info("On port {} added listener: {}", port.getPortDescription(), added);
