@@ -1,9 +1,10 @@
-package com.jaworski.serialprotocol;
+package com.jaworski.serialprotocol.serial.controller;
 
 import com.fazecast.jSerialComm.SerialPort;
 import com.fazecast.jSerialComm.SerialPortDataListener;
 import com.fazecast.jSerialComm.SerialPortEvent;
 import com.jaworski.serialprotocol.resources.Resources;
+import com.jaworski.serialprotocol.serial.listener.SerialPortListenerImpl;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Component;
@@ -65,7 +66,7 @@ public class SerialController {
             port.setBaudRate(resources.getBaudRate());
             port.openPort(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, 0, 0);
             boolean added = port.addDataListener(serialPortDataListener);
-            LOG.info("On port {} added listener: {}", port.getPortDescription(), added);
+            LOG.info("On port {} with baud rate {} added listener: {}", port.getPortDescription(), port.getBaudRate(), added);
         }
     }
 }

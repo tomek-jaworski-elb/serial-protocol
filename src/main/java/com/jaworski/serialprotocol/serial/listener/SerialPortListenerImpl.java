@@ -1,8 +1,9 @@
-package com.jaworski.serialprotocol;
+package com.jaworski.serialprotocol.serial.listener;
 
 import com.fazecast.jSerialComm.SerialPort;
 import com.fazecast.jSerialComm.SerialPortEvent;
 import com.fazecast.jSerialComm.SerialPortMessageListener;
+import com.jaworski.serialprotocol.resources.Resources;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Component;
@@ -11,10 +12,16 @@ import org.springframework.stereotype.Component;
 public class SerialPortListenerImpl implements SerialPortMessageListener {
 
     private static final Logger LOG = LogManager.getLogger(SerialPortListenerImpl.class);
+    private final Resources resources;
+
+    public SerialPortListenerImpl(Resources resources) {
+        this.resources = resources;
+    }
 
     @Override
     public byte[] getMessageDelimiter() {
-        return new byte[] { (byte)0x0B, (byte)0x65 };
+        return resources.getMessageDelimiter();
+//        return new byte[]{(byte) 0x0B, (byte) 0x65};
     }
 
     @Override
@@ -31,6 +38,6 @@ public class SerialPortListenerImpl implements SerialPortMessageListener {
     public void serialEvent(SerialPortEvent event) {
         SerialPort serialPort = event.getSerialPort();
         byte[] delimitedMessage = event.getReceivedData();
-        LOG.info("On port {}: Received the following delimited message: {}", serialPort.getPortDescription() , delimitedMessage);
+        LOG.info("On port {}: Received the following delimited message: {}", serialPort.getPortDescription(), delimitedMessage);
     }
 }

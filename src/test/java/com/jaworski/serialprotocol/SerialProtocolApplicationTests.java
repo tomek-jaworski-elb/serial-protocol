@@ -1,5 +1,7 @@
 package com.jaworski.serialprotocol;
 
+import com.jaworski.serialprotocol.serial.controller.SerialController;
+import com.jaworski.serialprotocol.serial.listener.SerialPortListenerImpl;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
