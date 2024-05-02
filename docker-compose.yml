@@ -2,6 +2,8 @@ version: "3.7"
 services:
     server:
         build: .
+        restart: unless-stopped
+        container_name: serial-ports-server
         environment:
 #            - rs.comport=/dev/ttyACM0
             - rs.baud_rate=4800
