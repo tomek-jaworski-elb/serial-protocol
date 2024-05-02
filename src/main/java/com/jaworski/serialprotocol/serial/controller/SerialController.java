@@ -58,15 +58,19 @@ public class SerialController {
 
     public void openAllPorts() {
         SerialPort[] commPorts = SerialPort.getCommPorts();
-        Arrays.stream(commPorts)
-                .map(SerialPort::getPortDescription)
-                .reduce((serialPort, serialPort2) -> serialPort + "," + serialPort2)
-                .ifPresent(message -> LOG.info("Found {} ports: ({})", commPorts.length, message));
-        for (SerialPort port : commPorts) {
-            port.setBaudRate(resources.getBaudRate());
-            port.openPort(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, 0, 0);
-            boolean added = port.addDataListener(serialPortDataListener);
-            LOG.info("On port {} with baud rate {} added listener: {}", port.getPortDescription(), port.getBaudRate(), added);
+        if (commPorts.length == 0) {
+            LOG.info("No ports found.");
+        } else {
+            Arrays.stream(commPorts)
+                    .map(SerialPort::getPortDescription)
+                    .reduce((serialPort, serialPort2) -> serialPort + "," + serialPort2)
+                    .ifPresent(message -> LOG.info("Found {} ports: ({})", commPorts.length, message));
+            for (SerialPort port : commPorts) {
+                port.setBaudRate(resources.getBaudRate());
+                port.openPort(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, 0, 0);
+                boolean added = port.addDataListener(serialPortDataListener);
+                LOG.info("On port {} set baud rate {} added listener: {}", port.getPortDescription(), port.getBaudRate(), added);
+            }
         }
     }
 }
