@@ -57,6 +57,7 @@ public class SerialController {
     }
 
     public void openAllPorts() {
+        LOG.debug("SerialPort version: {}", SerialPort.getVersion());
         SerialPort[] commPorts = SerialPort.getCommPorts();
         if (commPorts.length == 0) {
             LOG.info("No ports found.");
