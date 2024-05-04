@@ -13,7 +13,7 @@ services:
 #            - rs.flow_control=none
 #            - rs.timeout=1
             - rs.message_delimiter=11,101
-#        ports:
-#            - "8080:8080"
+        ports:
+            - "8080:8080"
 #        volumes:
 #            - .:/app
