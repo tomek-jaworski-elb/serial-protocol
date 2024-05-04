@@ -10,6 +10,7 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
+import java.util.List;
 
 @Component
 public class SerialController {
@@ -73,5 +74,11 @@ public class SerialController {
                 LOG.info("On port {} set baud rate {} added listener: {}", port.getPortDescription(), port.getBaudRate(), added);
             }
         }
+    }
+
+    public List<String> getAllPorts() {
+        return Arrays.stream(SerialPort.getCommPorts())
+                .map(SerialPort::getPortDescription)
+                .toList();
     }
 }
