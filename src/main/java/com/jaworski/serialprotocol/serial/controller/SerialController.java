@@ -5,6 +5,7 @@ import com.fazecast.jSerialComm.SerialPortDataListener;
 import com.fazecast.jSerialComm.SerialPortEvent;
 import com.jaworski.serialprotocol.resources.Resources;
 import com.jaworski.serialprotocol.serial.listener.SerialPortListenerImpl;
+import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Component;
@@ -12,17 +13,12 @@ import org.springframework.stereotype.Component;
 import java.util.Arrays;
 import java.util.List;
 
+@RequiredArgsConstructor
 @Component
 public class SerialController {
     private static final Logger LOG = LogManager.getLogger(SerialController.class);
     private final SerialPortListenerImpl serialPortDataListener;
     private final Resources resources;
-
-    public SerialController(SerialPortListenerImpl serialPortDataListener, Resources resources) {
-        this.serialPortDataListener = serialPortDataListener;
-        this.resources = resources;
-    }
-
 
     public void run() {
         SerialPort[] commPorts = SerialPort.getCommPorts();
@@ -68,7 +64,7 @@ public class SerialController {
                     .reduce((serialPort, serialPort2) -> serialPort + "," + serialPort2)
                     .ifPresent(message -> LOG.info("Found {} ports: ({})", commPorts.length, message));
             for (SerialPort port : commPorts) {
-                port.setBaudRate(resources.getBaudRate());
+//                port.setBaudRate(resources.getBaudRate());
                 port.openPort(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, 0, 0);
                 boolean added = port.addDataListener(serialPortDataListener);
                 LOG.info("On port {} set baud rate {} added listener: {}", port.getPortDescription(), port.getBaudRate(), added);
@@ -76,9 +72,8 @@ public class SerialController {
         }
     }
 
-    public List<String> getAllPorts() {
+    public List<SerialPort> getAllPorts() {
         return Arrays.stream(SerialPort.getCommPorts())
-                .map(SerialPort::getPortDescription)
                 .toList();
     }
 }

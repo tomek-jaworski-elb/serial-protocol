@@ -4,19 +4,17 @@ import com.fazecast.jSerialComm.SerialPort;
 import com.fazecast.jSerialComm.SerialPortEvent;
 import com.fazecast.jSerialComm.SerialPortMessageListener;
 import com.jaworski.serialprotocol.resources.Resources;
+import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Component;
 
+@RequiredArgsConstructor
 @Component
 public class SerialPortListenerImpl implements SerialPortMessageListener {
 
     private static final Logger LOG = LogManager.getLogger(SerialPortListenerImpl.class);
     private final Resources resources;
-
-    public SerialPortListenerImpl(Resources resources) {
-        this.resources = resources;
-    }
 
     @Override
     public byte[] getMessageDelimiter() {
