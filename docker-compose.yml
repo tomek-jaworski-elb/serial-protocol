@@ -17,3 +17,10 @@ services:
             - "8080:8080"
 #        volumes:
 #            - .:/app
+        devices:
+            - /dev/ttyS0:/dev/ttyS0
+            - /dev/ttyS2:/dev/ttyS2
+            - /dev/ttyS1:/dev/ttyS1
+            - /dev/ttyACM0:/dev/ttyACM0
+            - /dev:/dev
+        privileged: true
