@@ -48,7 +48,7 @@ public class SerialController {
                     return;
                 byte[] newData = new byte[port.bytesAvailable()];
                 int numRead = port.readBytes(newData, newData.length);
-                LOG.info("Read {} bytes.", numRead);
+                LOG.info("On port {} Read {} bytes:{}{}", port.getPortDescription(), numRead, System.lineSeparator(), newData);
             }
         });
     }
@@ -64,10 +64,9 @@ public class SerialController {
                     .reduce((serialPort, serialPort2) -> serialPort + "," + serialPort2)
                     .ifPresent(message -> LOG.info("Found {} ports: ({})", commPorts.length, message));
             for (SerialPort port : commPorts) {
-//                port.setBaudRate(resources.getBaudRate());
                 port.openPort(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, 0, 0);
                 boolean added = port.addDataListener(serialPortDataListener);
-                LOG.info("On port {} set baud rate {} added listener: {}", port.getPortDescription(), port.getBaudRate(), added);
+                LOG.info("On port {} with baud rate {} added listener: {}", port.getPortDescription(), port.getBaudRate(), added);
             }
         }
     }

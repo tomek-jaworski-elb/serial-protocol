@@ -18,6 +18,7 @@ public class SerialPortListenerImpl implements SerialPortMessageListener {
 
     @Override
     public byte[] getMessageDelimiter() {
+        LOG.info("Set message delimiter: {}", resources.getMessageDelimiter());
         return resources.getMessageDelimiter();
 //        return new byte[]{(byte) 0x0B, (byte) 0x65};
     }

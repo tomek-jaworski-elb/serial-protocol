@@ -6,7 +6,7 @@ services:
         container_name: serial-ports-server
         environment:
 #            - rs.comport=/dev/ttyACM0
-            - rs.baud_rate=4800
+            - rs.baud_rate=9600
 #            - rs.data_bits=8
 #            - rs.stop_bits=1
 #            - rs.parity=none
