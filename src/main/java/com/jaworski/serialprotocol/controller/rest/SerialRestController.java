@@ -1,4 +1,4 @@
-package com.jaworski.serialprotocol.rest;
+package com.jaworski.serialprotocol.controller.rest;
 
 import com.fazecast.jSerialComm.SerialPort;
 import com.jaworski.serialprotocol.dto.SerialPortDTO;
@@ -20,7 +20,7 @@ public class SerialRestController {
         return new SerialPortDTO(serialPort.getDescriptivePortName(), serialPort.getBaudRate(), serialPort.getParity());
     }
 
-    @GetMapping("/")
+    @GetMapping("/api")
     public ResponseEntity<List<SerialPortDTO>> getPortList() {
         var allPorts = serialController.getAllPorts();
         List<SerialPortDTO> list = allPorts.stream()
