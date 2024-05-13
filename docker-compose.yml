@@ -5,18 +5,13 @@ services:
         restart: unless-stopped
         container_name: serial-ports-server
         environment:
-#            - rs.comport=/dev/ttyACM0
             - rs.baud_rate=9600
-#            - rs.data_bits=8
-#            - rs.stop_bits=1
-#            - rs.parity=none
-#            - rs.flow_control=none
-#            - rs.timeout=1
             - rs.message_delimiter=11,101
+#            - ws.endpoint=/echo
         ports:
             - "8080:8080"
-#        volumes:
-#            - .:/app
+        volumes:
+            - .:/app/logs
         devices:
             - /dev/ttyS0:/dev/ttyS0
             - /dev/ttyS2:/dev/ttyS2
