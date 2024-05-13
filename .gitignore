@@ -34,3 +34,4 @@ build/
 /.mvn/
 /sps.tgz
 /*.tgz
+/logs/
