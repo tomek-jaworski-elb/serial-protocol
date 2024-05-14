@@ -30,4 +30,8 @@ public class WebSocketPublisher {
             }
         });
     }
+
+    public int sessionsCount() {
+        return wsSessionManager.getWebSocketSessions().size();
+    }
 }

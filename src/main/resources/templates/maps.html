@@ -64,12 +64,17 @@
         }
 
     </script>
+    <link th:href = "@{/bootstrap-5-3-3/css/bootstrap.min.css}" rel="stylesheet">
 </head>
 
 <body>
-<h1>WebSocket Client Example</h1>
-<div id="messages"></div>
+<div class="container align-content-center">
+<h1 class="h1 align-content-center text-center"> WebSocket Client Example</h1>
+<div  class="container align-content-center text-center">
+    <p id="messages" class="align-content-center text-center">0</p>
+</div>
 
-<div id="map_div" style="width: 800px; height: 700px"></div>
+<div id="map_div" style="width: 800px; height: 700px" class="container"></div>
+</div>
 </body>
 </html>

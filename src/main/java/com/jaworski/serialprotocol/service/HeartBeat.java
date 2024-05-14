@@ -15,7 +15,9 @@ public class HeartBeat {
 
     @Scheduled(fixedDelay = 1000) // 1000 milliseconds = 1 second
     public void beat() {
-        LOG.info("Heartbeat {}", System.currentTimeMillis());
-        webSocketPublisher.publish(System.currentTimeMillis() + "");
+        if (webSocketPublisher.sessionsCount() > 0) {
+            LOG.info("Heartbeat {}", System.currentTimeMillis());
+            webSocketPublisher.publish(System.currentTimeMillis() + "");
+        }
     }
 }
