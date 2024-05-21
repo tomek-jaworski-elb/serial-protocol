@@ -2,7 +2,7 @@ FROM eclipse-temurin:17-jre-alpine
 LABEL authors="tomaszja"
 
 WORKDIR /app
-COPY target/serial-protocol-0.0.1-SNAPSHOT.jar .
+COPY target/serial-protocol-1.0.jar app.jar
 EXPOSE 8080
 
-CMD ["java", "-jar", "serial-protocol-0.0.1-SNAPSHOT.jar"]
+CMD ["java", "-jar", "app.jar"]
