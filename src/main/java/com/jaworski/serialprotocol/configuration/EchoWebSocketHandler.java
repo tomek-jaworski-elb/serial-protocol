@@ -16,16 +16,12 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 public class EchoWebSocketHandler extends TextWebSocketHandler {
 
     private final WSSessionManager wsSessionManager;
-    private final WebSocketPublisher webSocketPublisher;
 
     private static final Logger LOG = LogManager.getLogger(EchoWebSocketHandler.class);
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-        String payload = message.getPayload();
         LOG.info("Connection {} read {} bytes", session.getId(), message.getPayloadLength());
-        session.sendMessage(new TextMessage(payload.toUpperCase()));
-        webSocketPublisher.publish(payload);
     }
 
     @Override

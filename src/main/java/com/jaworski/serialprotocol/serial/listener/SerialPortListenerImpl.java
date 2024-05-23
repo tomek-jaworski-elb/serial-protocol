@@ -4,6 +4,7 @@ import com.fazecast.jSerialComm.SerialPort;
 import com.fazecast.jSerialComm.SerialPortEvent;
 import com.fazecast.jSerialComm.SerialPortMessageListener;
 import com.jaworski.serialprotocol.resources.Resources;
+import com.jaworski.serialprotocol.service.utils.MessageTranslator;
 import com.jaworski.serialprotocol.service.WebSocketPublisher;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
@@ -40,6 +41,7 @@ public class SerialPortListenerImpl implements SerialPortMessageListener {
     public void serialEvent(SerialPortEvent event) {
         SerialPort serialPort = event.getSerialPort();
         byte[] delimitedMessage = event.getReceivedData();
+        String jsonMessage = MessageTranslator.fromBinary(delimitedMessage);
         LOG.info("On port {}: Received the following delimited message: {}", serialPort.getPortDescription(), delimitedMessage);
         webSocketPublisher.publish(Arrays.toString(delimitedMessage));
     }

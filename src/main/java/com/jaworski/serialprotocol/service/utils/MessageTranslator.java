@@ -6,50 +6,65 @@ import com.jaworski.serialprotocol.dto.ModelTrackDTO;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MessageTranslator {
-    private static final Logger LOG = LogManager.getLogger(MessageTranslator.class);
+  private static final Logger LOG = LogManager.getLogger(MessageTranslator.class);
 
-    private MessageTranslator() {}
+  private MessageTranslator() {
+  }
 
-    public static String fromBinary(char[] bytes) {
-        String message = new String(Arrays.copyOfRange(bytes, 0, 2));
-        int modelId = getModelId(message);
-        int i = bytes[20];
-        int j = bytes[21];
-        return String.valueOf(i + j * 256);
+  private static ModelTrackDTO toDTO(String message) {
+    return new ModelTrackDTO(message, 12.21f, 123.123f);
+  }
+
+  private static int getModelId(byte[] delimitedMessage) {
+    Map<String, Integer> modelMap = new HashMap<>();
+    modelMap.put("w1", 1);
+    modelMap.put("b2", 2);
+    modelMap.put("d3", 3);
+    modelMap.put("c4", 4);
+    modelMap.put("l6", 6);
+    modelMap.put("k5", 5);
+    String modelId = new String(delimitedMessage, 0, 2);
+    String modelIdLowerCase = modelId.toLowerCase();
+    return modelMap.getOrDefault(modelIdLowerCase, 0);
+  }
+
+  public static String fromBinary(byte[] delimitedMessage) {
+    ModelTrackDTO dto = null;
+    try {
+      byte[] bytesX = Arrays.copyOfRange(delimitedMessage, 13, 16);
+      byte[] bytesY = Arrays.copyOfRange(delimitedMessage, 17, 20);
+      float x = bytesToFloat(bytesX);
+      float y = bytesToFloat(bytesY);
+      int modelId = getModelId(delimitedMessage);
+      dto = new ModelTrackDTO(Integer.toString(modelId), x, y);
+      LOG.info("Received {}, {}, {}", dto.getModelName(), dto.getPositionX(), dto.getPositionY());
+      ObjectMapper objectMapper = new ObjectMapper();
+      objectMapper.writeValueAsString(dto);
+      return objectMapper.writeValueAsString(dto);
+    } catch (JsonProcessingException | IllegalArgumentException | NullPointerException |
+             ArrayIndexOutOfBoundsException e) {
+      LOG.error("Error while serializing dto {}", dto, e);
+      return "";
+    }
+  }
+
+  private static float bytesToFloat(byte[] bytes) {
+    if (bytes.length != 4) {
+      throw new IllegalArgumentException("Byte array must be exactly 4 bytes long for a float.");
     }
 
-    private static ModelTrackDTO toDTO(String message) {
-        return new ModelTrackDTO(message, 12.21, 123.123);
-    }
+    // Use ByteBuffer to wrap the byte array
+    ByteBuffer buffer = ByteBuffer.wrap(bytes);
 
-    private static int getModelId(String modelString) {
-        if (modelString.equalsIgnoreCase("01")) {
-            return 1;
-        } else if (modelString.equalsIgnoreCase("02")) {
-            return 2;
-        } else if (modelString.equalsIgnoreCase("03")) {
-            return 3;
-        } else {
-            return 0;
-        }
-
-    }
-
-    public static String fromBinary(byte[] delimitedMessage) {
-        int x = delimitedMessage[10] + delimitedMessage[11];
-        int y = delimitedMessage[13] + delimitedMessage[14];
-        ModelTrackDTO dto = new ModelTrackDTO("w1", x, y);
-        LOG.info("Received {}, {}, {}", dto.getModelName(), dto.getPositionX(), dto.getPositionY());
-        ObjectMapper objectMapper = new ObjectMapper();
-        try {
-            objectMapper.writeValueAsString(dto);
-            return objectMapper.writeValueAsString(dto);
-        } catch (JsonProcessingException e) {
-            LOG.error("Error while serializing dto {}", dto, e);
-            return "";
-        }
-    }
+    float v = Float.intBitsToFloat(buffer.getInt());
+    LOG.info("Bytes {} to float: {}", bytes, v);
+    // Convert bytes to float
+    return buffer.getFloat();
+  }
 }

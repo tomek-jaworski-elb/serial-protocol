@@ -9,6 +9,6 @@ import lombok.Getter;
 @AllArgsConstructor
 public class ModelTrackDTO {
     private String modelName;
-    private double positionX;
-    private double positionY;
+    private float positionX;
+    private float positionY;
 }
