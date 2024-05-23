@@ -7,7 +7,7 @@ services:
         environment:
             - rs.baud_rate=9600
             - rs.message_delimiter=13,10  # 10 = \n, 13 = \r
-            - ws.heartbeat.interval=2000
+            - ws.heartbeat.interval=2000  # value in ms > 1
 #            - ws.endpoint=/echo
         ports:
             - "8080:8080"

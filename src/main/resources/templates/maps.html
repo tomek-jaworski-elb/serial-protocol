@@ -37,8 +37,11 @@
 <!--</div>-->
 <footer th:replace="~{fragment::footer}"></footer>
 <script>
+    const hostname = window.location.hostname; // Gets the hostname of the current page
+    const port = 8080;
+    const path = '/echo';
     // Create a WebSocket instance
-    const socket = new WebSocket('ws://localhost:8080/echo');
+    const socket = new WebSocket(`ws://${hostname}:${port}${path}`);
 
     // Define event listeners for WebSocket
     socket.addEventListener('open', () => {
