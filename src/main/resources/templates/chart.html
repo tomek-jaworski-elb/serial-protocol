@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head th:insert="~{fragment::head}">
+    <style>
+        #trackContainer {
+            width: 400px;
+            height: 400px;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+<header th:replace="~{fragment::header}"></header>
+<div class="container">
+<div class="d-flex justify-content-center align-items-center border border-white border-3 rounded-3" style="background: rgb(227,231,255);
+background: linear-gradient(0deg, rgba(227,231,255,1) 0%, rgba(137,151,255,1) 50%, rgba(227,231,255,1) 100%);">
+    <div id="trackContainer" class="border m-3 p-3 bg-white">
+    <canvas id="trackCanvas" width="600" height="600"></canvas>
+    </div>
+</div>
+</div>
+<footer th:replace="~{fragment::footer}"></footer>
+<script>
+    // Sample points
+    const points = [
+        {x: 0, y: 0},
+        {x: 200, y: 0},
+        {x: 200, y: 200},
+        {x: -200, y: 200},
+        {x: -36.5, y: 2.870},
+        {x: -136.5, y: -122.870},
+        {x: -0, y: -0}
+    ];
+
+    // Get canvas and context
+    const canvas = document.getElementById('trackCanvas');
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    const sizeX = width;
+    const sizeY = height;
+    let points2 = [];
+    // Function to transform and scale points
+    function transformPoint(point) {
+        const scaleX = sizeX / sizeX; // (maxX - minX)
+        const scaleY = sizeY / sizeY; // (maxY - minY)
+        return {
+            x: (point.x + sizeX/2) * scaleX,
+            y: (sizeY/2 - point.y) * scaleY // Inverting y-axis
+        };
+    }
+
+    // Draw the points
+    function drawTrack(points) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
+
+        ctx.beginPath();
+        points.forEach((point, index) => {
+            const transformedPoint = transformPoint(point);
+            if (index === 0) {
+                ctx.moveTo(transformedPoint.x, transformedPoint.y);
+            } else {
+                ctx.lineTo(transformedPoint.x, transformedPoint.y);
+            }
+        });
+        ctx.strokeStyle = 'blue';
+        ctx.stroke();
+    }
+    function getRandomPoint() {
+        const x = Math.floor(Math.random() * width);
+        const y = Math.floor(Math.random() * height);
+        return { x, y };
+    }
+
+    function updatePoint() {
+        const point = getRandomPoint();
+        drawPoint(point);
+    }
+
+    // Draw a line between the last two points
+    function drawLine(p1, p2) {
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.stroke();
+    }
+    function update() {
+        const newPoint = getRandomPoint();
+        points2.push(newPoint);
+
+        // If there are at least 2 points, draw a line
+        if (points2.length > 1) {
+            drawLine(points2[points2.length - 2], points2[points2.length - 1]);
+        }
+    }
+
+    // Set interval to update every second
+    setInterval(update, 1000);
+
+    // Clear canvas and reset points
+    function resetCanvas() {
+        ctx.clearRect(0, 0, width, height);
+        points2 = [];
+    }
+
+    // Optional: Reset the canvas every 10 seconds
+    setInterval(resetCanvas, 60000);
+
+    // setInterval(updatePoint, 1000);
+    // Draw initial track
+    // drawTrack(points);
+</script>
+
+</body>
+</html>

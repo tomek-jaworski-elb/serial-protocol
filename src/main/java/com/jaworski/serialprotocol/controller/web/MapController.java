@@ -18,6 +18,11 @@ public class MapController {
         model.addAttribute("name", name);
         return "greetings";
     }
+
+    @GetMapping("/chart")
+    public String greeting() {
+        return "chart";
+    }
 }
 
 
