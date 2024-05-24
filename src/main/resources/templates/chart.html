@@ -98,7 +98,7 @@ background: linear-gradient(0deg, rgba(227,231,255,1) 0%, rgba(137,151,255,1) 50
     }
 
     // Set interval to update every second
-    setInterval(update, 1000);
+    setInterval(update, 1000/2);
 
     // Clear canvas and reset points
     function resetCanvas() {
@@ -112,6 +112,22 @@ background: linear-gradient(0deg, rgba(227,231,255,1) 0%, rgba(137,151,255,1) 50
     // setInterval(updatePoint, 1000);
     // Draw initial track
     // drawTrack(points);
+
+    const jsonString = '{"name": "John", "age": 30, "city": "New York"}';
+
+    function parseWSJson() {
+        try {
+            const parsedObject = JSON.parse(jsonString);
+            console.log(parsedObject);
+            const name = parsedObject.name;
+            const age = parsedObject.age;
+            const city = parsedObject.city;
+            console.log("Name: " + name + ", Age: " + age + ", City: " + city + ", Timestamp: " + Math.floor(Date.now() / 1000));
+        } catch (error) {
+            console.error("Failed to parse JSON:", error);
+        }
+    }
+    setInterval(parseWSJson, 1000);
 </script>
 
 </body>
