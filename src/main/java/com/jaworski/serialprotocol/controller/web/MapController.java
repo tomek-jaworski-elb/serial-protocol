@@ -21,7 +21,7 @@ public class MapController {
 
     @GetMapping("/chart")
     public String greeting() {
-        return "chart";
+        return "chart2";
     }
 }
 
