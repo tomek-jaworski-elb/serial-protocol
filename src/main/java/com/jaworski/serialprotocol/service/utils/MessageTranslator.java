@@ -128,4 +128,9 @@ public class MessageTranslator {
     byte b = message[11];
     return b / 10d;
   }
+
+  public static ModelTrackDTO getDTO(byte[] message) {
+    return new ModelTrackDTO(getModelId(message),1.1f,-1.1f,
+            getSpeed(message),getHeading(message), getRudder(message));
+  }
 }
