@@ -2,13 +2,17 @@ package com.jaworski.serialprotocol.service.utils;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class MessageTranslatorTest {
 
   @Test
   void testGetModelIdWithValidId() {
-    byte[] delimitedMessage = "w1".getBytes();
+    byte[] delimitedMessage = new byte[27];
+    delimitedMessage[0] = 'w';
+    delimitedMessage[1] = '1';
     int expected = 1;
     int actual = MessageTranslator.getModelId(delimitedMessage);
     assertEquals(expected, actual);
@@ -16,8 +20,10 @@ class MessageTranslatorTest {
 
   @Test
   void testGetModelIdWithInvalidId() {
-    byte[] delimitedMessage = "x1".getBytes();
-    int expected = 0;
+    byte[] delimitedMessage = new byte[27];
+    delimitedMessage[0] = 'x';
+    delimitedMessage[1] = '1';
+    int expected = -1;
     int actual = MessageTranslator.getModelId(delimitedMessage);
     assertEquals(expected, actual);
   }
@@ -50,7 +56,7 @@ class MessageTranslatorTest {
 
   @Test
   void testGetSpeedValidMessage() {
-    byte[] message = new byte[13];
+    byte[] message = new byte[27];
     message[12] = 50;
     assertEquals(5.0, MessageTranslator.getSpeed(message));
   }
@@ -76,7 +82,9 @@ class MessageTranslatorTest {
     byte[] bytes = new byte[2];
     bytes[0] = (byte) ((value >> 8) & 0xFF); // Most significant byte
     bytes[1] = (byte) (value & 0xFF);        // Least significant byte
-    byte[] message = new byte[]{0, 0, bytes[0], bytes[1]};
+    byte[] message = new byte[27];
+    message[2] = bytes[0];
+    message[3] = bytes[1];
     Double result = MessageTranslator.getHeading(message);
     assertEquals(expected, result);
   }
@@ -88,7 +96,9 @@ class MessageTranslatorTest {
     byte[] bytes = new byte[2];
     bytes[0] = (byte) ((value >> 8) & 0xFF); // Most significant byte
     bytes[1] = (byte) (value & 0xFF);        // Least significant byte
-    byte[] message = new byte[]{0, 0, bytes[0], bytes[1]};
+    byte[] message = new byte[27];
+    message[2] = bytes[0];
+    message[3] = bytes[1];
     Double result = MessageTranslator.getHeading(message);
     assertEquals(expected, result);
   }
@@ -97,14 +107,14 @@ class MessageTranslatorTest {
   void testGetRudder_validByte() {
     byte[] message = new byte[27];
     message[11] = 127;
-    assertEquals(12.7d, MessageTranslator.getRudder(message), 0.000001);
+    assertEquals(12.7d, MessageTranslator.getRudder(message));
   }
 
   @Test
   void testGetRudder_negativeByte() {
     byte[] message = new byte[27];
     message[11] = -128;
-    assertEquals(-12.8d, MessageTranslator.getRudder(message), 0.000001);
+    assertEquals(-12.8d, MessageTranslator.getRudder(message));
   }
 
   @Test
@@ -119,7 +129,7 @@ class MessageTranslatorTest {
 
   @Test
   void testGetRudder_messageTooShort() {
-    byte[] message = new byte[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    byte[] message = new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     assertNull(MessageTranslator.getRudder(message));
   }
 

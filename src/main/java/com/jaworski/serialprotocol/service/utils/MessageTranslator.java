@@ -14,12 +14,13 @@ import java.util.Map;
 
 public class MessageTranslator {
   private static final Logger LOG = LogManager.getLogger(MessageTranslator.class);
+  private static final int MESSAGE_LENGTH = 27;
 
   private MessageTranslator() {
   }
 
   public static int getModelId(byte[] delimitedMessage) {
-    if (delimitedMessage == null || delimitedMessage.length == 0) {
+    if (delimitedMessage == null || delimitedMessage.length != MESSAGE_LENGTH) {
       return -1;
     }
     Map<String, Integer> modelMap = new HashMap<>();
@@ -32,7 +33,7 @@ public class MessageTranslator {
     try {
       String modelId = new String(delimitedMessage, 0, 2);
       String modelIdLowerCase = modelId.toLowerCase();
-      return modelMap.getOrDefault(modelIdLowerCase, 0);
+      return modelMap.getOrDefault(modelIdLowerCase, -1);
     } catch (IndexOutOfBoundsException e) {
       LOG.error("Model name parsing error ", e);
       return -1;
@@ -73,7 +74,7 @@ public class MessageTranslator {
   }
 
   public static Double getSpeed(byte[] message) {
-    if (message == null || message.length == 0) {
+    if (message == null || message.length != MESSAGE_LENGTH) {
       return null;
     } else {
       byte speed = message[12];
@@ -82,7 +83,7 @@ public class MessageTranslator {
   }
 
   public static Double getHeading(byte[] message) {
-    if (message == null || message.length == 0) {
+    if (message == null || message.length != MESSAGE_LENGTH) {
       return null;
     } else {
       int headingValue = (message[2] & 0xFF) << 8 | (message[3] & 0xFF);
@@ -122,7 +123,7 @@ public class MessageTranslator {
   }
 
   public static Double getRudder(byte[] message) {
-    if (message == null || message.length !=27) {
+    if (message == null || message.length != MESSAGE_LENGTH) {
       return null;
     }
     byte b = message[11];
