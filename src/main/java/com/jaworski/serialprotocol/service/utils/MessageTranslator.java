@@ -45,7 +45,8 @@ public class MessageTranslator {
       int modelId = getModelId(delimitedMessage);
       Double speed = getSpeed(delimitedMessage);
       Double heading = getHeading(delimitedMessage);
-      dto = new ModelTrackDTO(modelId, 0, 0, speed, heading);
+      Double rudder = getRudder(delimitedMessage);
+      dto = new ModelTrackDTO(modelId, 0.0f, 0.0f, speed, heading, rudder);
       LOG.info("Received data {}", dto);
       ObjectMapper objectMapper = new ObjectMapper();
       objectMapper.writeValueAsString(dto);
@@ -118,5 +119,13 @@ public class MessageTranslator {
 
     // Convert Byte array to List
     return byteList;
+  }
+
+  public static Double getRudder(byte[] message) {
+    if (message == null || message.length !=27) {
+      return null;
+    }
+    byte b = message[11];
+    return b / 10d;
   }
 }

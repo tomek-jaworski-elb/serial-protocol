@@ -92,4 +92,41 @@ class MessageTranslatorTest {
     Double result = MessageTranslator.getHeading(message);
     assertEquals(expected, result);
   }
+
+  @Test
+  void testGetRudder_validByte() {
+    byte[] message = new byte[27];
+    message[11] = 127;
+    assertEquals(12.7d, MessageTranslator.getRudder(message), 0.000001);
+  }
+
+  @Test
+  void testGetRudder_negativeByte() {
+    byte[] message = new byte[27];
+    message[11] = -128;
+    assertEquals(-12.8d, MessageTranslator.getRudder(message), 0.000001);
+  }
+
+  @Test
+  void testGetRudder_nullMessage() {
+    assertNull(MessageTranslator.getRudder(null));
+  }
+
+  @Test
+  void testGetRudder_emptyMessage() {
+    assertNull(MessageTranslator.getRudder(new byte[0]));
+  }
+
+  @Test
+  void testGetRudder_messageTooShort() {
+    byte[] message = new byte[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    assertNull(MessageTranslator.getRudder(message));
+  }
+
+  @Test
+  void rudderTest_On_RealData() {
+    byte[] bytes = new byte[]{119, 49, 12, 100, 12, 100, 5, 5, 5, 12, 100, 27, 12, 110, 18, 28, -61, -14, 126, 47, 67, 111, 0, 2, -32, 13, 10};
+    Double rudder = MessageTranslator.getRudder(bytes);
+    assertNotNull(rudder);
+  }
 }

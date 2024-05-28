@@ -16,4 +16,5 @@ public class ModelTrackDTO {
     private float positionY;
     private double speed;
     private double heading;
+    private double rudder;
 }
