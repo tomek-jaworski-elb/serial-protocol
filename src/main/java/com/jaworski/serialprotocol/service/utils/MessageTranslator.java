@@ -8,7 +8,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -19,21 +18,21 @@ public class MessageTranslator {
   private MessageTranslator() {
   }
 
+  private static final Map<String, Integer> MODEL_MAP = Map.of("w1", 1,
+          "b2", 2,
+          "d3", 3,
+          "c4", 4,
+          "l6", 6,
+          "k5", 5);
+
   public static int getModelId(byte[] delimitedMessage) {
     if (delimitedMessage == null || delimitedMessage.length != MESSAGE_LENGTH) {
       return -1;
     }
-    Map<String, Integer> modelMap = new HashMap<>();
-    modelMap.put("w1", 1);
-    modelMap.put("b2", 2);
-    modelMap.put("d3", 3);
-    modelMap.put("c4", 4);
-    modelMap.put("l6", 6);
-    modelMap.put("k5", 5);
     try {
       String modelId = new String(delimitedMessage, 0, 2);
       String modelIdLowerCase = modelId.toLowerCase();
-      return modelMap.getOrDefault(modelIdLowerCase, -1);
+      return MODEL_MAP.getOrDefault(modelIdLowerCase, -1);
     } catch (IndexOutOfBoundsException e) {
       LOG.error("Model name parsing error ", e);
       return -1;
