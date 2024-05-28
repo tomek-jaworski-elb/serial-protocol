@@ -170,4 +170,129 @@ class BinaryTransmissionTest {
     Assertions.assertNotNull(aFloat);
 
   }
+
+  @Test
+  void realDataTest() {
+  byte[] bytes =new byte[]{119, 49, 12, 100, 12, 100, 5, 5, 5, 12, 100, 27, 12, 110, 18, 28, -61, -14, 126, 47, 67, 111, 0, 2, -32, 13, 10};
+    String s = new String(bytes);
+    Assertions.assertNotNull(s);
+    byte[] wx = new byte[]{bytes[13], bytes[14], bytes[15], bytes[16]};
+    byte[] wy = new byte[]{bytes[17], bytes[18],bytes[19], bytes[20]};
+    float x = bytesToFloat(wx);
+    float y = bytesToFloat(wy);
+    Assertions.assertNotNull(x);
+    Assertions.assertNotNull(y);
+    Decimal32 decimal32x = Decimal32.parseBytes(wx);
+    Decimal32 decimal32y = Decimal32.parseBytes(wy);
+    double v1 = decimal32x.doubleValue();
+
+    List<Byte> list = byteArrayToList(wx);
+    List<Byte> negateList = list.stream()
+            .map(aByte -> byteToBinaryString(aByte))
+            .map(s1 -> negateBinaryString(s1))
+            .map(s1 -> binaryStringToByte(s1))
+            .toList();
+    byte[] negateBytes = listToByteArray(negateList);
+
+    String s1 = byteToBinaryString(bytes[13]);
+    String s2 = negateBinaryString(s1);
+    byte negateByte = binaryStringToByte(s2);
+    s1.length();
+  }
+
+  public static String byteToBinaryString(byte b) {
+    // Mask the byte to only get the last 8 bits and convert to a binary string
+    String binaryString = Integer.toBinaryString(b & 0xFF);
+    // Format the string to ensure it is 8 bits long
+    while (binaryString.length() < 8) {
+      binaryString = "0" + binaryString;
+    }
+    return binaryString;
+  }
+
+  public static String negateBinaryString(String binaryString) {
+    StringBuilder negatedBinaryString = new StringBuilder();
+
+    for (int i = 0; i < binaryString.length(); i++) {
+      char bit = binaryString.charAt(i);
+      if (bit == '0') {
+        negatedBinaryString.append('1');
+      } else if (bit == '1') {
+        negatedBinaryString.append('0');
+      } else {
+        throw new IllegalArgumentException("Invalid binary string");
+      }
+    }
+    return negatedBinaryString.toString();
+  }
+
+  public static byte binaryStringToByte(String binaryString) {
+    if (binaryString == null || binaryString.length() == 0 || binaryString.length() > 8) {
+      throw new IllegalArgumentException("Binary string must be 1 to 8 characters long");
+    }
+
+    // Validate the binary string to ensure it only contains '0' and '1'
+    for (char c : binaryString.toCharArray()) {
+      if (c != '0' && c != '1') {
+        throw new IllegalArgumentException("Binary string contains invalid characters");
+      }
+    }
+
+    // Parse the binary string as an integer
+    int intValue = Integer.parseInt(binaryString, 2);
+
+    // Cast the integer to a byte
+    return (byte) intValue;
+  }
+
+  public static List<Byte> byteArrayToList(byte[] byteArray) {
+    // Convert byte array to Byte array
+    Byte[] byteObjects = new Byte[byteArray.length];
+    for (int i = 0; i < byteArray.length; i++) {
+      byteObjects[i] = byteArray[i];
+    }
+
+    // Convert Byte array to List
+    return new ArrayList<>(Arrays.asList(byteObjects));
+  }
+
+  public static byte[] listToByteArray(List<Byte> byteList) {
+    byte[] byteArray = new byte[byteList.size()];
+    for (int i = 0; i < byteList.size(); i++) {
+      byteArray[i] = byteList.get(i);
+    }
+    return byteArray;
+  }
+
+  @Test
+  void kursTest() {
+    byte[] bytes =new byte[]{119, 49, 12, 100, 12, 100, 5, 5, 5, 12, 100, 27, 12, 110, 18, 28, -61, -14, 126, 47, 67, 111, 0, 2, -32, 13, 10};
+    byte[] kurs = new byte[]{bytes[2], bytes[3]};
+    List<Byte> bytes1 = byteArrayToList(kurs);
+    String s1 = bytes1.stream().map(BinaryTransmissionTest::byteToBinaryString)
+            .reduce((s, s2) -> s + s2)
+            .orElse("");
+    long l = binaryStringToLong(s1);
+    double v = l / 10d;
+
+    System.out.println(v);
+  }
+
+  public static long binaryStringToLong(String binaryString) {
+    // Validate the binary string
+    if (binaryString == null || binaryString.isEmpty()) {
+      throw new NumberFormatException("Binary string is null or empty");
+    }
+
+    // Parse the binary string as a long integer
+    return Long.parseLong(binaryString, 2);
+  }
+
+  @Test
+  void speedTest() {
+    byte[] bytes =new byte[]{119, 49, 12, 100, 12, 100, 5, 5, 5, 12, 100, 27, 12, 110, 18, 28, -61, -14, 126, 47, 67, 111, 0, 2, -32, 13, 10};
+    byte speed = bytes[12];
+    double v = speed / 10d;
+    System.out.println(v);
+  }
 }
