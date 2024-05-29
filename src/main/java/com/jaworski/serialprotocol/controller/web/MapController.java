@@ -13,6 +13,11 @@ public class MapController {
         return "maps";
     }
 
+    @GetMapping("/terminal")
+    public String terminal() {
+        return "terminal";
+    }
+
     @GetMapping("/greeting")
     public String greeting(@RequestParam(name="name", required=false, defaultValue="World") String name, Model model) {
         model.addAttribute("name", name);
