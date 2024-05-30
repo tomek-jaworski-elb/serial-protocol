@@ -4,7 +4,9 @@
 <head>
     <style>
         .form-control {
-          font-size: 12px
+          font-family:"Courier New", Times, Monospace;
+          font-size: 12px;
+          text-align:left;
         }
     </style>
     <title th:text="${@environment.getProperty('spring.application.name')} + ' : Terminal'">Serial port server</title>
@@ -15,23 +17,19 @@
     <div class="row">
         <div class="col">
             <div class="p-3 border bg-light">
-                <textarea class="form-control" id="exampleFormControlTextarea1" rows="43">
-                    Sample left text
+                <label for="rawData">Sample left text</label>
+                <textarea disabled class="form-control" id="rawData" rows="43" style="text-align: left;">
                 </textarea>
             </div>
         </div>
         <div class="col">
             <div class="p-3 border bg-light">
-                <textarea class="form-control" id="exampleFormControlTextarea1"
-                          rows="30">
-                    Sample right text
-                </textarea>
+                <label for="parseData">Sample right text</label>
+                <textarea disabled class="form-control" id="parseData" rows="43" style="text-align: left;">
+            </textarea>
             </div>
         </div>
     </div>
-</div>
-
-<footer th:replace="~{fragment::footer}"></footer>
-
+    <footer th:replace="~{fragment::footer}"></footer>
 </body>
 </html>

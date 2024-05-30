@@ -17,6 +17,10 @@ public class MapController {
     public String terminal() {
         return "terminal";
     }
+    @GetMapping("/about")
+    public String about() {
+        return "about";
+    }
 
     @GetMapping("/greeting")
     public String greeting(@RequestParam(name="name", required=false, defaultValue="World") String name, Model model) {
