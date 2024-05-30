@@ -15,10 +15,13 @@ public class WebSocketConfiguration implements WebSocketConfigurer {
 
     private final EchoWebSocketHandler echoWebSocketHandler;
     private final Resources resources;
+    private final RSWebsocketHandler rsWebsocketHandler;
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(echoWebSocketHandler, resources.getWsEndpoint())
+                .setAllowedOrigins("*");
+        registry.addHandler(rsWebsocketHandler,"/rs")
                 .setAllowedOrigins("*");
     }
 

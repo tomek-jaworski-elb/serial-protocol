@@ -31,5 +31,41 @@
         </div>
     </div>
     <footer th:replace="~{fragment::footer}"></footer>
+</div>
+<script>
+    const hostname = window.location.hostname; // Gets the hostname of the current page
+    const port = 8080;
+    const path = '/rs';
+    // Create a WebSocket instance
+    const socket = new WebSocket(`ws://${hostname}:${port}${path}`);
+
+    socket.onmessage = function (event) {
+        console.log("WebSocket message received: ", event.data);
+        const textArea = document.getElementById('rawData');
+
+<!--        const message = document.createElement('div');-->
+        const textContent = event.data;
+<!--        messagesContainer.innerHTML = event.data;-->
+        const val = textArea.value.trim();
+        if (val === "") {
+        textArea.value = textContent;
+        } else {
+        textArea.value += "\n" + textContent;
+        }
+
+    };
+
+    socket.onerror = function (error) {
+        console.error("WebSocket error: ", error);
+    };
+
+    socket.onopen = function (event) {
+        console.log("WebSocket connection opened.");
+    };
+
+    socket.onclose = function (event) {
+        console.log("WebSocket connection closed.");
+    };
+</script>
 </body>
 </html>

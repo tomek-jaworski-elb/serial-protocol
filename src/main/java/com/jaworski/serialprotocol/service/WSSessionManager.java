@@ -16,13 +16,18 @@ public class WSSessionManager {
 
 
     private final List<WebSocketSession> webSocketSessions = new ArrayList<>();
+    private int sessionType;
 
-
-    public void addSession(WebSocketSession session) {
+    public void addSession(WebSocketSession session, int sessionType) {
         webSocketSessions.add(session);
+        this.sessionType = sessionType;
     }
 
     public void removeSession(WebSocketSession session) {
         webSocketSessions.removeIf(wsSession -> wsSession.equals(session));
+    }
+
+    public int getSessionType() {
+        return sessionType;
     }
 }

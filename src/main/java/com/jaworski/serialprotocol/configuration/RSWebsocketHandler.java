@@ -1,7 +1,6 @@
 package com.jaworski.serialprotocol.configuration;
 
 import com.jaworski.serialprotocol.service.WSSessionManager;
-import com.jaworski.serialprotocol.service.WebSocketPublisher;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -11,13 +10,12 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
-@Component
 @RequiredArgsConstructor
-public class EchoWebSocketHandler extends TextWebSocketHandler {
+@Component
+public class RSWebsocketHandler extends TextWebSocketHandler {
 
+    private static final Logger LOG = LogManager.getLogger(RSWebsocketHandler.class);
     private final WSSessionManager wsSessionManager;
-
-    private static final Logger LOG = LogManager.getLogger(EchoWebSocketHandler.class);
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
@@ -34,7 +32,7 @@ public class EchoWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         LOG.info("Connection established: {}", session.getId());
-        wsSessionManager.addSession(session, 1);
+        wsSessionManager.addSession(session, 2);
         super.afterConnectionEstablished(session);
     }
 }
