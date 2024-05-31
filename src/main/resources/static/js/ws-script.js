@@ -1,6 +1,6 @@
 const hostname = window.location.hostname; // Gets the hostname of the current page
 const port = 8080;
-const path = '/echo';
+const path = '/heartbeat';
 // Create a WebSocket instance
 const socket = new WebSocket(`ws://${hostname}:${port}${path}`);
 
