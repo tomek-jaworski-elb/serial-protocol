@@ -38,8 +38,8 @@ public class HeartBeatWebSocketRawPublisher implements WebSocketPublisher {
     }
 
     @Override
-    public int sessionsCount() {
-        return (int) wsSessionManager.getWebSocketSessions().stream()
+    public long sessionsCount() {
+        return wsSessionManager.getWebSocketSessions().stream()
                 .filter(Objects::nonNull)
                 .filter(WebSocketSession::isOpen)
                 .filter(webSocketSession -> webSocketSession.getUri() != null)
