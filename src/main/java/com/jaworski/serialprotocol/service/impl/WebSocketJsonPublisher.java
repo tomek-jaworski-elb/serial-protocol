@@ -25,6 +25,7 @@ public class WebSocketJsonPublisher implements WebSocketPublisher {
         wsSessionManager.getWebSocketSessions().stream()
                 .filter(Objects::nonNull)
                 .filter(WebSocketSession::isOpen)
+                .filter(webSocketSession -> webSocketSession.getUri() != null)
                 .filter(webSocketSession -> webSocketSession.getUri().toString().contains(SessionType.RS.getName()))
                 .forEach(session -> {
                     try {
@@ -41,6 +42,7 @@ public class WebSocketJsonPublisher implements WebSocketPublisher {
         return (int) wsSessionManager.getWebSocketSessions().stream()
                 .filter(Objects::nonNull)
                 .filter(WebSocketSession::isOpen)
+                .filter(webSocketSession -> webSocketSession.getUri() != null)
                 .filter(webSocketSession -> webSocketSession.getUri().toString().contains(SessionType.RS.getName()))
                 .count();
     }
