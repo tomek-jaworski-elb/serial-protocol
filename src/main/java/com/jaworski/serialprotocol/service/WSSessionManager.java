@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Component
@@ -15,7 +16,7 @@ import java.util.List;
 public class WSSessionManager {
 
 
-    private final List<WebSocketSession> webSocketSessions = new ArrayList<>();
+    private final List<WebSocketSession> webSocketSessions = Collections.synchronizedList(new ArrayList<>());
 
     public void addSession(WebSocketSession session) {
         webSocketSessions.add(session);

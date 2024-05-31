@@ -13,14 +13,14 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 public class WebSocketConfiguration implements WebSocketConfigurer {
 
 
-    private final EchoWebSocketHandler echoWebSocketHandler;
+    private final JsonWebSocketHandler jsonWebSocketHandler;
     private final Resources resources;
     private final RSWebsocketHandler rsWebsocketHandler;
     private final HeartBeatWebSocketHandler heartBeatWebSocketHandler;
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(echoWebSocketHandler, "/json")
+        registry.addHandler(jsonWebSocketHandler, "/json")
                 .setAllowedOrigins("*");
         registry.addHandler(rsWebsocketHandler,"/rs")
                 .setAllowedOrigins("*");

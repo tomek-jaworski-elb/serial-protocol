@@ -32,6 +32,7 @@ public class RSWebsocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         LOG.info("Connection established: {}", session.getId());
+        session.sendMessage(new TextMessage("Connected RAW"));
         wsSessionManager.addSession(session);
         super.afterConnectionEstablished(session);
     }
