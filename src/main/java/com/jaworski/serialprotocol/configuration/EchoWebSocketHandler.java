@@ -1,7 +1,6 @@
 package com.jaworski.serialprotocol.configuration;
 
 import com.jaworski.serialprotocol.service.WSSessionManager;
-import com.jaworski.serialprotocol.service.WebSocketPublisher;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -34,7 +33,7 @@ public class EchoWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         LOG.info("Connection established: {}", session.getId());
-        wsSessionManager.addSession(session, 1);
+        wsSessionManager.addSession(session);
         super.afterConnectionEstablished(session);
     }
 }

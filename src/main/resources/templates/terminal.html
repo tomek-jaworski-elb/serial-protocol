@@ -33,39 +33,58 @@
     <footer th:replace="~{fragment::footer}"></footer>
 </div>
 <script>
+    window.onload = function() {
+    connectWebSocket('/rs', 'rsMessages');
+        connectWebSocket('/echo', 'testMessages');
+
+    }
+
+    function connectWebSocket(endpoint, messageAreaId) {
     const hostname = window.location.hostname; // Gets the hostname of the current page
     const port = 8080;
-    const path = '/rs';
-    // Create a WebSocket instance
-    const socket = new WebSocket(`ws://${hostname}:${port}${path}`);
+        const ws = new WebSocket(`ws://${hostname}:${port}${endpoint}`);
 
-    socket.onmessage = function (event) {
-        console.log("WebSocket message received: ", event.data);
-        const textArea = document.getElementById('rawData');
+        ws.onopen = function(event) {
+            console.log(`Connected to ${endpoint}`);
+<!--            appendMessage(messageAreaId, `Connected to ${endpoint}`);-->
+        };
 
-<!--        const message = document.createElement('div');-->
-        const textContent = event.data;
-<!--        messagesContainer.innerHTML = event.data;-->
-        const val = textArea.value.trim();
-        if (val === "") {
-        textArea.value = textContent;
+        ws.onmessage = function(event) {
+            console.log(`Message from ${endpoint}: `, event.data);
+                    const textArea = document.getElementById("rawData");
+                    const textContent = event.data;
+                    console.log("Endpoint: " + endpoint)
+
+        if (endpoint == "/rs") {
+        console.log("Yes RS")
+        appendMessage("parseData", textContent);
         } else {
-        textArea.value += "\n" + textContent;
+        console.log("Yes ECHO")
+        appendMessage("rawData", textContent);
         }
 
-    };
+        };
 
-    socket.onerror = function (error) {
-        console.error("WebSocket error: ", error);
-    };
+        ws.onclose = function(event) {
+            console.log(`Disconnected from ${endpoint}`);
+<!--            appendMessage(messageAreaId, `Disconnected from ${endpoint}`);-->
+        };
 
-    socket.onopen = function (event) {
-        console.log("WebSocket connection opened.");
-    };
+        ws.onerror = function(event) {
+            console.error(`Error in ${endpoint}: `, event);
+<!--            appendMessage(messageAreaId, `Error: ${event}`);-->
+        };
+    }
 
-    socket.onclose = function (event) {
-        console.log("WebSocket connection closed.");
-    };
+    function appendMessage(areaId, message) {
+        const textMessage = document.getElementById(areaId);
+                        const val = textMessage.value.trim();
+        if (val === "") {
+        textMessage.value = message;
+        } else {
+        textMessage.value += "\n" + message;
+        }
+    }
 </script>
 </body>
 </html>

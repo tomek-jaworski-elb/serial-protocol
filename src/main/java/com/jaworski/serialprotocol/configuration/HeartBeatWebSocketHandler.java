@@ -10,11 +10,10 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
-@RequiredArgsConstructor
 @Component
-public class RSWebsocketHandler extends TextWebSocketHandler {
-
-    private static final Logger LOG = LogManager.getLogger(RSWebsocketHandler.class);
+@RequiredArgsConstructor
+public class HeartBeatWebSocketHandler extends TextWebSocketHandler {
+    private static final Logger LOG = LogManager.getLogger(HeartBeatWebSocketHandler.class);
     private final WSSessionManager wsSessionManager;
 
     @Override
