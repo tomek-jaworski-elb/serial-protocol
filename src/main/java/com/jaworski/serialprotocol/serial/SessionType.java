@@ -5,7 +5,7 @@ import lombok.Getter;
 @Getter
 public enum SessionType {
     RS("/rs"),
-    JSON("/echo"),
+    JSON("/json"),
     HEARTBEAT("/heartbeat"),
     OTHER("/");
 

@@ -33,10 +33,11 @@
     <footer th:replace="~{fragment::footer}"></footer>
 </div>
 <script>
+    const rs = "/rs";
+    const json = "/json";
     window.onload = function() {
-    connectWebSocket('/rs', 'rsMessages');
-        connectWebSocket('/echo', 'testMessages');
-
+    connectWebSocket(rs, 'rsMessages');
+        connectWebSocket(json, 'testMessages');
     }
 
     function connectWebSocket(endpoint, messageAreaId) {
@@ -55,11 +56,11 @@
                     const textContent = event.data;
                     console.log("Endpoint: " + endpoint)
 
-        if (endpoint == "/rs") {
+        if (endpoint == rs) {
         console.log("Yes RS")
         appendMessage("parseData", textContent);
         } else {
-        console.log("Yes ECHO")
+        console.log("Yes JSON")
         appendMessage("rawData", textContent);
         }
 

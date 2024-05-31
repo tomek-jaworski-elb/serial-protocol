@@ -20,7 +20,7 @@ public class WebSocketConfiguration implements WebSocketConfigurer {
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(echoWebSocketHandler, resources.getWsEndpoint())
+        registry.addHandler(echoWebSocketHandler, "/json")
                 .setAllowedOrigins("*");
         registry.addHandler(rsWebsocketHandler,"/rs")
                 .setAllowedOrigins("*");
