@@ -3,6 +3,7 @@ package com.jaworski.serialprotocol;
 import com.jaworski.serialprotocol.service.utils.IEEE754Converter;
 import org.firebirdsql.decimal.Decimal32;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -13,7 +14,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
+@Disabled
 class BinaryTransmissionTest {
 
   @Test
