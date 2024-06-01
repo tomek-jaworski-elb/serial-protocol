@@ -6,8 +6,11 @@ import com.jaworski.serialprotocol.dto.ModelTrackDTO;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.math.BigDecimal;
+import java.math.MathContext;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -46,7 +49,8 @@ public class MessageTranslator {
             Double speed = getSpeed(delimitedMessage);
             Double heading = getHeading(delimitedMessage);
             Double rudder = getRudder(delimitedMessage);
-            dto = new ModelTrackDTO(modelId, 0.0f, 0.0f, speed, heading, rudder);
+            Double gpsQuality = getGPSQuality(delimitedMessage);
+            dto = new ModelTrackDTO(modelId, 0.0f, 0.0f, speed, heading, rudder, gpsQuality);
             LOG.info("Received data {}", dto);
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValueAsString(dto);
@@ -66,10 +70,7 @@ public class MessageTranslator {
         // Use ByteBuffer to wrap the byte array
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
 
-        float v = Float.intBitsToFloat(buffer.getInt());
-        LOG.info("Bytes {} to float: {}", bytes, v);
-        // Convert bytes to float
-        return buffer.getFloat();
+        return Float.intBitsToFloat(buffer.getInt());
     }
 
     public static Double getSpeed(byte[] message) {
@@ -78,6 +79,15 @@ public class MessageTranslator {
         } else {
             byte speed = message[12];
             return speed / 10d;
+        }
+    }
+
+    public static Double getGPSQuality(byte[] message) {
+        if (message == null || message.length != MESSAGE_LENGTH) {
+            return null;
+        } else {
+            int headingValue = (message[22] & 0xFF) << 8 | (message[23] & 0xFF);
+            return headingValue / 100d;
         }
     }
 
@@ -131,14 +141,69 @@ public class MessageTranslator {
 
     public static ModelTrackDTO getDTO(byte[] message) {
         return new ModelTrackDTO(getModelId(message), getPositionX(message), getPositionY(message),
-                getSpeed(message), getHeading(message), getRudder(message));
+                getSpeed(message), getHeading(message), getRudder(message), getGPSQuality(message));
     }
 
-    private static Float getPositionX(byte[] message) {
-        return 0f;
+    private static String getBinaryStringFromByte(byte b) {
+        String binaryString = Integer.toBinaryString(b & 0xFF);
+        return String.format("%8s", binaryString).replace(' ', '0');
+    }
+
+    private static byte getNegateByte(byte b) {
+        return (byte) -b;
+    }
+    private static Float getPX(byte[] message) {
+        byte b = message[12];
+
+        byte negatedB1 = (byte) -b;
+        byte negatedB2 = (byte) (~b + 1);
+        byte negatedB3 = (byte) ((b ^ -1) + 1);
+        byte[] negateMessage = new byte[4];
+        negateMessage[0] = (byte) -message[13];
+        negateMessage[1] = (byte) -message[14];
+        negateMessage[2] = (byte) -message[15];
+        negateMessage[3] = (byte) -message[16];
+        String binaryMessage = getBinaryStringFromByte(message[13]) + getBinaryStringFromByte(message[14]) +
+                getBinaryStringFromByte(message[15]) + getBinaryStringFromByte(message[16]);
+        String binaryMessageNegate = getBinaryStringFromByte(negateMessage[0]) + getBinaryStringFromByte(negateMessage[1]) +
+                getBinaryStringFromByte(negateMessage[2]) + getBinaryStringFromByte(negateMessage[3]);
+//        binaryMessageNegate = binaryMessage;
+        LOG.info("X: {}", binaryMessageNegate);
+        String znak = binaryMessageNegate.substring(0,1);
+        String mantysa = binaryMessageNegate.substring(1, 9);
+        int i = Integer.parseInt(mantysa, 2);
+        String cecha = binaryMessageNegate.substring(9, binaryMessageNegate.length());
+        int x = Integer.parseInt(cecha, 2);
+        String valueOf = String.valueOf(x);
+        valueOf = "0." + valueOf;
+        float aFloat = Float.parseFloat(valueOf);
+
+        BigDecimal pow = BigDecimal.valueOf(2).pow(i - 127, MathContext.DECIMAL32);
+        BigDecimal result = BigDecimal.valueOf(aFloat).multiply(pow);
+        return result.floatValue();
     }
 
     private static Float getPositionY(byte[] message) {
-        return 0f;
+        byte[] bytes = Arrays.copyOfRange(message, 16, 20);
+        return getFloatFromBytes(bytes);
+    }
+
+    private static Float getPositionX(byte[] message) {
+        byte[] bytes = Arrays.copyOfRange(message, 13, 17);
+        return getFloatFromBytes(bytes);
+    }
+
+    private static float getFloatFromBytes(byte[] bytes) {
+        String binaryMessageNegate = getBinaryStringFromByte(bytes[0]) + getBinaryStringFromByte(bytes[1]) +
+                getBinaryStringFromByte(bytes[2]) + getBinaryStringFromByte(bytes[3]);
+        String mantysa = binaryMessageNegate.substring(1, 9);
+        String cecha = binaryMessageNegate.substring(9, binaryMessageNegate.length());
+        BigDecimal pow = BigDecimal.valueOf(2).pow(Integer.parseInt(mantysa, 2) - 127, MathContext.DECIMAL32);
+        int x = Integer.parseInt(cecha, 2);
+        String valueOf = String.valueOf(x);
+        valueOf = "0." + valueOf;
+        float aFloat = Float.parseFloat(valueOf);
+        BigDecimal result = BigDecimal.valueOf(aFloat).multiply(pow);
+        return result.floatValue();
     }
 }

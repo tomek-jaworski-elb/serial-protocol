@@ -17,4 +17,5 @@ public class ModelTrackDTO {
     private double speed;
     private double heading;
     private double rudder;
+    private double gpsQuality;
 }
