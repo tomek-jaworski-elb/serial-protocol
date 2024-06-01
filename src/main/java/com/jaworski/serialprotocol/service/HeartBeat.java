@@ -1,5 +1,6 @@
 package com.jaworski.serialprotocol.service;
 
+import com.jaworski.serialprotocol.service.impl.HeartBeatWebSocketRawPublisher;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -14,13 +15,13 @@ import java.time.format.DateTimeFormatter;
 public class HeartBeat {
 
     private static final Logger LOG = LogManager.getLogger(HeartBeat.class);
-    private final WebSocketPublisher webSocketPublisher;
+    private final HeartBeatWebSocketRawPublisher heartBeatWebSocketRawPublisher;
 
     @Scheduled(fixedDelayString = "${ws.heartbeat.interval}") // 1000 milliseconds = 1 second
     public void beat() {
-        if (webSocketPublisher.sessionsCount() > 0) {
+        if (heartBeatWebSocketRawPublisher.sessionsCount() > 0) {
             LOG.info("Heartbeat {}", System.currentTimeMillis());
-            webSocketPublisher.publish(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+            heartBeatWebSocketRawPublisher.publishForAllClients(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
         }
     }
 }
