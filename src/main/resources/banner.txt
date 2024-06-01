@@ -4,4 +4,5 @@
  _|    _|        _|                _|            _|    _|                _|  _|        _|    _|    _|  _|    _|        _|    _|
  _|    _|  _|_|_|                _|_|_|_|  _|_|_|    _|_|_|_|      _|_|_|    _|_|_|_|  _|    _|      _|      _|_|_|_|  _|    _|
 
+Application version v${application.version}
 Powered by Spring Boot ${spring-boot.version}
