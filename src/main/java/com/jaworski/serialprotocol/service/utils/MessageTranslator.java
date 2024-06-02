@@ -1,15 +1,13 @@
 package com.jaworski.serialprotocol.service.utils;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jaworski.serialprotocol.dto.ModelTrackDTO;
+import com.jaworski.serialprotocol.dto.TugDTO;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
-import java.util.Arrays;
 import java.util.Map;
 
 public class MessageTranslator {
@@ -100,6 +98,7 @@ public class MessageTranslator {
             return direction / 100d;
         }
     }
+
     public static Double getTugSternDirection(byte[] message) {
         if (message == null || message.length != MESSAGE_LENGTH) {
             return null;
@@ -117,6 +116,14 @@ public class MessageTranslator {
         return b / 10d;
     }
 
+    public static Double getBowThruster(byte[] message) {
+        if (message == null || message.length != MESSAGE_LENGTH) {
+            return null;
+        }
+        byte b = message[21];
+        return (double) b;
+    }
+
     public static ModelTrackDTO getDTO(byte[] message) {
         return ModelTrackDTO.builder()
                 .modelName(getModelId(message))
@@ -127,10 +134,9 @@ public class MessageTranslator {
                 .rudder(getRudder(message))
                 .gpsQuality(getGPSQuality(message))
                 .engine(getEngine(message))
-                .tugBowForce(getTugBowForce(message))
-                .tugBowDirection(getTugBowDirection(message))
-                .tugSternForce(getTugSternForce(message))
-                .tugSternDirection(getTugSternDirection(message))
+                .bowTug(TugDTO.builder().tugDirection(getTugBowDirection(message)).tugForce(getTugBowForce(message)).build())
+                .sternTug(TugDTO.builder().tugDirection(getTugSternDirection(message)).tugForce(getTugSternForce(message)).build())
+                .bowThruster(getBowThruster(message))
                 .build();
     }
 
@@ -142,6 +148,7 @@ public class MessageTranslator {
     private static byte getNegateByte(byte b) {
         return (byte) -b;
     }
+
     private static Float getPX(byte[] message) {
         byte b = message[12];
 
@@ -159,7 +166,7 @@ public class MessageTranslator {
                 getBinaryStringFromByte(negateMessage[2]) + getBinaryStringFromByte(negateMessage[3]);
 //        binaryMessageNegate = binaryMessage;
         LOG.info("X: {}", binaryMessageNegate);
-        String znak = binaryMessageNegate.substring(0,1);
+        String znak = binaryMessageNegate.substring(0, 1);
         String mantysa = binaryMessageNegate.substring(1, 9);
         int i = Integer.parseInt(mantysa, 2);
         String cecha = binaryMessageNegate.substring(9, binaryMessageNegate.length());
@@ -174,13 +181,46 @@ public class MessageTranslator {
     }
 
     private static Float getPositionY(byte[] message) {
-        byte[] bytes = Arrays.copyOfRange(message, 16, 20);
-        return getFloatFromBytes(bytes);
+//        byte[] bytes = Arrays.copyOfRange(message, 16, 20);
+        byte[] bytes = new byte[4];
+        bytes[0] = message[17];
+        bytes[1] = message[18];
+        bytes[2] = message[19];
+        bytes[3] = message[20];
+//        return getFloatFromBytes(bytes);
+        return extracted(bytes);
     }
 
     private static Float getPositionX(byte[] message) {
-        byte[] bytes = Arrays.copyOfRange(message, 13, 17);
-        return getFloatFromBytes(bytes);
+        byte[] bytes = new byte[4];
+        bytes[0] = message[13];
+        bytes[1] = message[14];
+        bytes[2] = message[15];
+        bytes[3] = message[16];
+        return extracted(bytes);
+//        System.out.println(result);
+//        return getFloatFromBytes(bytes);
+    }
+
+    private static float extracted(byte[] bytes) {
+        //        String binaryMessageNegate = getBinaryStringFromByte(bytes[0]) + getBinaryStringFromByte(bytes[1]) +
+//                getBinaryStringFromByte(bytes[2]) + getBinaryStringFromByte(bytes[3]);
+//        System.out.println(binaryMessageNegate);
+        // Pick bit from index 0 (which is the MSB of byteArray[0])
+        int bit0 = (bytes[0] >> 7) & 1;
+        // Pick bits from index 1 to index 8 (7 bits from byteArray[0] and 1 bit from byteArray[1])
+        int bits1to8 = ((bytes[0] & 0x7F) << 1) | ((bytes[1] >> 7) & 1);
+        // Pick bits from index 9 to the last one (7 bits from byteArray[1], and all bits from byteArray[2] and byteArray[3])
+        int bitsFrom9to31 = ((bytes[1] & 0x7F) << 16) | ((bytes[2] & 0xFF) << 8) | (bytes[3] & 0xFF);
+        // Print the extracted bits in binary form for verification
+//        System.out.println("Bit at index 0: " + Integer.toBinaryString(bit0));
+//        System.out.println("Bits from index 1 to 8: " + Integer.toBinaryString(bits1to8));
+//        System.out.println("Bits from index 9 to last one: " + Integer.toBinaryString(bitsFrom9to31));
+        BigDecimal cecha = BigDecimal.valueOf(2).pow(bits1to8 - 127, MathContext.DECIMAL32);
+        BigDecimal mantysa = BigDecimal.valueOf(Float.parseFloat("0." + bitsFrom9to31));
+        BigDecimal sign = BigDecimal.valueOf(-1).pow(bit0);
+        BigDecimal result = mantysa.multiply(cecha).multiply(sign).setScale(2, RoundingMode.HALF_DOWN);
+        return result.floatValue();
     }
 
     private static float getFloatFromBytes(byte[] bytes) {
@@ -191,9 +231,9 @@ public class MessageTranslator {
         String binaryMessageNegate = getBinaryStringFromByte(bytes[0]) + getBinaryStringFromByte(bytes[1]) +
                 getBinaryStringFromByte(bytes[2]) + getBinaryStringFromByte(bytes[3]);
         binaryMessageNegate = new StringBuilder(binaryMessageNegate).reverse().toString();
-        BigDecimal znak = BigDecimal.valueOf(-1).pow(Integer.parseInt(binaryMessageNegate.substring(0,1)));
+        BigDecimal znak = BigDecimal.valueOf(-1).pow(Integer.parseInt(binaryMessageNegate.substring(0, 1)));
         String mantysa = binaryMessageNegate.substring(23, 31);
-        String cecha = binaryMessageNegate.substring(0,23);
+        String cecha = binaryMessageNegate.substring(0, 23);
         BigDecimal pow = BigDecimal.valueOf(2).pow(Integer.parseInt(mantysa, 2) - 127, MathContext.DECIMAL32);
         int cechaInt = Integer.parseInt(cecha, 2);
         String valueOf = String.valueOf(cechaInt);

@@ -17,8 +17,7 @@ public class ModelTrackDTO {
     private double rudder;
     private double gpsQuality;
     private double engine;
-    private double tugBowForce;
-    private double tugBowDirection;
-    private double tugSternForce;
-    private double tugSternDirection;
+    private double bowThruster;
+    private TugDTO bowTug;
+    private TugDTO sternTug;
 }
