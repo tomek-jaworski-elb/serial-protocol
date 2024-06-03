@@ -126,6 +126,10 @@ public class MessageTranslator {
     }
 
     public static ModelTrackDTO getDTO(byte[] message) {
+        if (message == null || message.length != MESSAGE_LENGTH) {
+            LOG.error("Invalid message");
+            return null;
+        }
         return ModelTrackDTO.builder()
                 .modelName(getModelId(message))
                 .positionX(getPositionX(message))
