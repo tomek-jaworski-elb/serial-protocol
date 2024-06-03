@@ -5,6 +5,8 @@ import com.jaworski.serialprotocol.dto.TugDTO;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Map;
@@ -124,6 +126,10 @@ public class MessageTranslator {
     }
 
     public static ModelTrackDTO getDTO(byte[] message) {
+        if (message == null || message.length != MESSAGE_LENGTH) {
+            LOG.error("Invalid message");
+            return null;
+        }
         return ModelTrackDTO.builder()
                 .modelName(getModelId(message))
                 .positionX(getPositionX(message))
@@ -140,20 +146,12 @@ public class MessageTranslator {
     }
 
     private static Float getPositionY(byte[] message) {
-        byte[] bytes = new byte[4];
-        bytes[0] = message[17];
-        bytes[1] = message[18];
-        bytes[2] = message[19];
-        bytes[3] = message[20];
-        return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getFloat();
+        float aFloat = ByteBuffer.wrap(message, 17, 4).order(ByteOrder.LITTLE_ENDIAN).getFloat();
+        return BigDecimal.valueOf(aFloat).setScale(2, RoundingMode.HALF_UP).floatValue();
     }
 
     private static Float getPositionX(byte[] message) {
-        byte[] bytes = new byte[4];
-        bytes[0] = message[13];
-        bytes[1] = message[14];
-        bytes[2] = message[15];
-        bytes[3] = message[16];
-        return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getFloat();
+        float aFloat = ByteBuffer.wrap(message, 13, 4).order(ByteOrder.LITTLE_ENDIAN).getFloat();
+        return BigDecimal.valueOf(aFloat).setScale(2, RoundingMode.HALF_UP).floatValue();
     }
 }

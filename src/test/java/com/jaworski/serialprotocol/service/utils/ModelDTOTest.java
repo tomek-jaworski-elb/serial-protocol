@@ -2,14 +2,14 @@ package com.jaworski.serialprotocol.service.utils;
 
 import com.jaworski.serialprotocol.dto.ModelTrackDTO;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 class ModelDTOTest {
 
@@ -42,5 +42,25 @@ class ModelDTOTest {
     System.out.println(dto);
     assertNotNull(dto);
     assertEquals(expected, dto.getModelName());
+  }
+
+  @Test
+  void messageToShortTest() {
+    byte[] bytes = {100, 51, 5, 1, 3, 4, 97, 101, 97, 3, -4, 105, 1, -6, -52, -10, 65, 15, 51, -96, 0, 9, -34, 13, 10};
+    ModelTrackDTO dto = MessageTranslator.getDTO(bytes);
+    assertNull(dto);
+  }
+
+  @Test
+  void messageToLongTest() {
+    byte[] bytes = {100, 51, 5, 1, 3, 4, 97, 101, 97, 3, -4, 105, 1, -6, -52, -10, 65, 15, 51, -96, 0, 9, -34, 13, 10, 10};
+    ModelTrackDTO dto = MessageTranslator.getDTO(bytes);
+    assertNull(dto);
+  }
+
+  @Test
+  void messageNullTest() {
+    ModelTrackDTO dto = MessageTranslator.getDTO(null);
+    assertNull(dto);
   }
 }
