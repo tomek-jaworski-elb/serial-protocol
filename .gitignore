@@ -35,3 +35,4 @@ build/
 /sps.tgz
 /*.tgz
 /logs/
+/logs /
