@@ -130,7 +130,7 @@ public class MessageTranslator {
             LOG.error("Invalid message");
             return null;
         }
-        return ModelTrackDTO.builder()
+        ModelTrackDTO modelTrackDTO = ModelTrackDTO.builder()
                 .modelName(getModelId(message))
                 .positionX(getPositionX(message))
                 .positionY(getPositionY(message))
@@ -143,6 +143,8 @@ public class MessageTranslator {
                 .sternTug(TugDTO.builder().tugDirection(getTugSternDirection(message)).tugForce(getTugSternForce(message)).build())
                 .bowThruster(getBowThruster(message))
                 .build();
+        LOG.info("Translated message: {}", modelTrackDTO);
+        return modelTrackDTO;
     }
 
     private static Float getPositionY(byte[] message) {
