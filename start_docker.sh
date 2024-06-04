@@ -9,6 +9,13 @@ then
     exit 1
 fi
 
+docker compose down
+
+if [ $? -ne 0 ]; then
+    echo "Docker compose down failed."
+    exit 1
+fi
+
 # Run docker compose build
 echo "Building Docker images..."
 docker compose build
