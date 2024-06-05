@@ -22,7 +22,7 @@ public class WebSocketPublisherImpl implements WebSocketPublisher {
 
     @Override
     public void publishForAllClients(String message) {
-        wsSessionManager.getWebSocketSessions().stream()
+        wsSessionManager.getWebSocketSessions().values().stream()
                 .filter(Objects::nonNull)
                 .filter(WebSocketSession::isOpen)
                 .forEach(session -> {
@@ -37,7 +37,7 @@ public class WebSocketPublisherImpl implements WebSocketPublisher {
 
     @Override
     public void publishForAllClients(String message, SessionType sessionType) {
-      wsSessionManager.getWebSocketSessions().stream()
+      wsSessionManager.getWebSocketSessions().values().stream()
               .filter(Objects::nonNull)
               .filter(WebSocketSession::isOpen)
               .filter(webSocketSession -> webSocketSession.getUri() != null)
@@ -54,7 +54,7 @@ public class WebSocketPublisherImpl implements WebSocketPublisher {
 
     @Override
     public long sessionsCount() {
-        return wsSessionManager.getWebSocketSessions().stream()
+        return wsSessionManager.getWebSocketSessions().values().stream()
                 .filter(Objects::nonNull)
                 .filter(WebSocketSession::isOpen)
                 .count();
@@ -62,7 +62,7 @@ public class WebSocketPublisherImpl implements WebSocketPublisher {
 
   @Override
   public long sessionsCount(SessionType sessionType) {
-    return wsSessionManager.getWebSocketSessions().stream()
+    return wsSessionManager.getWebSocketSessions().values().stream()
             .filter(Objects::nonNull)
             .filter(WebSocketSession::isOpen)
             .filter(webSocketSession -> webSocketSession.getUri() != null)
