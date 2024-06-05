@@ -1,7 +1,10 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragment::head}"></head>
+<head th:insert="~{fragment::head}"></head>
+<head>
+    <title th:text="${@environment.getProperty('spring.application.name')} + ' : Error'">Serial port server</title>
+</head>
 <body>
 <header th:replace="~{fragment::header}"></header>
 <div class="container">

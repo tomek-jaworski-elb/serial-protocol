@@ -1,7 +1,6 @@
 package com.jaworski.serialprotocol.configuration;
 
 import com.jaworski.serialprotocol.service.WSSessionManager;
-import com.jaworski.serialprotocol.service.WebSocketPublisher;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -13,11 +12,9 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 @Component
 @RequiredArgsConstructor
-public class EchoWebSocketHandler extends TextWebSocketHandler {
-
+public class HeartBeatWebSocketHandler extends TextWebSocketHandler {
+    private static final Logger LOG = LogManager.getLogger(HeartBeatWebSocketHandler.class);
     private final WSSessionManager wsSessionManager;
-
-    private static final Logger LOG = LogManager.getLogger(EchoWebSocketHandler.class);
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {

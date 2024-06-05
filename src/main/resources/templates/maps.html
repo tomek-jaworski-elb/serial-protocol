@@ -1,21 +1,29 @@
-<html>
-<head th:replace="~{fragment::head}"></head>
+<!DOCTYPE html>
+<html lang="en">
+<head th:insert="~{fragment::head}"></head>
+<head>
+    <title th:text="${@environment.getProperty('spring.application.name')} + ' : Home'">Serial port server</title>
+</head>
 <body>
 <header th:replace="~{fragment::header}"></header>
-<div class="container-fluid text-center">
+<div class="container">
     <div class="row content">
         <div class="col-sm-2 sidenav">
-
         </div>
         <div class="col-sm-8 text-left">
             <h1>Welcome</h1>
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
+                dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+                ex ea commodo consequat. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia
+                deserunt mollit anim id est laborum consectetur adipiscing elit, sed do eiusmod tempor incididunt ut
+                labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi
+                ut aliquip ex ea commodo consequat.</p>
             <hr>
             <h3>Test</h3>
             <p>Lorem ipsum...</p>
             <div class="container align-content-center">
                 <h1 class="h1 align-content-center text-center"> WebSocket Client Example</h1>
-                <div  class="container align-content-center text-center">
+                <div class="container align-content-center text-center">
                     <p id="messages" class="align-content-center text-center">0</p>
                 </div>
 
@@ -26,81 +34,9 @@
         </div>
     </div>
 </div>
-
-<!--<div class="container align-content-center">-->
-<!--<h1 class="h1 align-content-center text-center"> WebSocket Client Example</h1>-->
-<!--<div  class="container align-content-center text-center">-->
-<!--    <p id="messages" class="align-content-center text-center">0</p>-->
-<!--</div>-->
-
-<!--<div id="map_div" style="width: 800px; height: 700px" class="container"></div>-->
-<!--</div>-->
 <footer th:replace="~{fragment::footer}"></footer>
-<script>
-    const hostname = window.location.hostname; // Gets the hostname of the current page
-    const port = 8080;
-    const path = '/echo';
-    // Create a WebSocket instance
-    const socket = new WebSocket(`ws://${hostname}:${port}${path}`);
-
-    // Define event listeners for WebSocket
-    socket.addEventListener('open', () => {
-        console.log('Connected to WebSocket server');
-    });
-
-    socket.addEventListener('message', (event) => {
-        const messagesContainer = document.getElementById('messages');
-        const message = document.createElement('div');
-        message.textContent = event.data;
-        messagesContainer.innerHTML = event.data;
-    });
-
-    socket.addEventListener('close', () => {
-        console.log('WebSocket connection closed');
-    });
-
-    socket.onerror = function(error) {
-        console.error("WebSocket error: ", error);
-    };
-
-    // Function to handle WebSocket connection opened
-    socket.onopen = function(event) {
-        console.log("WebSocket connection opened.");
-    };
-
-    // Handle form submission
-    document.getElementById('message-form').addEventListener('submit', (event) => {
-        event.preventDefault();
-        const input = document.getElementById('message-input');
-        const message = input.value;
-        socket.send(message);
-        input.value = '';
-    });
-</script>
+<script type="text/javascript"  th:src="@{/js/ws-script.js}"></script>
 <script type="text/javascript"  th:src="@{/js/http_www.gstatic.com_charts_loader.js}"></script>
-<script type="text/javascript">
-    google.charts.load("current", {
-        "packages":["map"],
-        // Note: you will need to get a mapsApiKey for your project.
-        // See: https://developers.google.com/chart/interactive/docs/basic_load_libs#load-settings
-        "mapsApiKey": "AIzaSyCzkFg2FnGR4Rv5ye_U0pstjyzRY5bEFXA"
-    });
-    google.charts.setOnLoadCallback(drawChart);
-    function drawChart() {
-        var data = google.visualization.arrayToDataTable([
-            ['Lat', 'Long', 'Name'],
-            [19.0760,  72.8777, 'Mumbai'],
-            [18.5204, 73.8567, 'Pune'],
-            [19.1176, 72.9060, 'Powai'],
-        ]);
-
-        var map = new google.visualization.Map(document.getElementById('map_div'));
-        map.draw(data, {
-            showTooltip: true,
-            showInfoWindow: true
-        });
-    }
-
-</script>
+<script type="text/javascript"  th:src="@{/js/google-chart-script.js}"></script>
 </body>
 </html>

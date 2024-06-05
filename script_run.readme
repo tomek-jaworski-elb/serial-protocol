@@ -1,0 +1,5 @@
+Nadanie uprawnień:
+chmod +x start_docker.sh
+
+Uruchomienie skrypt:
+./start_docker.sh

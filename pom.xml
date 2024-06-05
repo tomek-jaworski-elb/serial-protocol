@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.jaworski</groupId>
     <artifactId>serial-protocol</artifactId>
-    <version>1.0</version>
+    <version>1.1</version>
     <name>serial-protocol</name>
     <description>serial-protocol</description>
     <properties>
@@ -43,11 +43,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-websocket</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.firebirdsql</groupId>
-            <artifactId>decimal-java</artifactId>
-            <version>2.0.0</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
