@@ -5,7 +5,8 @@ window.onload = function () {
 
     const overlayCanvas = document.getElementById('overlayCanvas');
     const overlayCtx = overlayCanvas.getContext('2d');
-
+    const overlayCanvas2 = document.getElementById('overlayCanvas2');
+    const overlayCtx2 = overlayCanvas.getContext('2d');
     // Set canvas dimensions to match the container
     const container = document.querySelector('.canvas-container');
     backgroundCanvas.width = container.clientWidth;
@@ -68,11 +69,21 @@ window.onload = function () {
         const y = Math.random() * canvas.height;
         return {x, y};
     }
+        // Function to clear the first canvas
+        function clearCanvas() {
+            overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+        }
+
+                // Function to clear the first canvas
+                function clearCanvas2() {
+                    overlayCtx2.clearRect(0, 0, overlayCanvas2.width, overlayCanvas2.height);
+                }
 
     // Draw a new ship at a random position every 1 second
     setInterval(() => {
-        const point = getRandomPoint(overlayCanvas);
-        drawShip(overlayCtx, point.x, point.y);
+        const point = getRandomPoint(overlayCanvas2);
+        clearCanvas2();
+        drawShip(overlayCtx2, point.x, point.y);
     }, 1000);
 
 
