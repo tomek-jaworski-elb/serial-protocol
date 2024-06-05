@@ -47,20 +47,17 @@ class ModelDTOTest {
   @Test
   void messageToShortTest() {
     byte[] bytes = {100, 51, 5, 1, 3, 4, 97, 101, 97, 3, -4, 105, 1, -6, -52, -10, 65, 15, 51, -96, 0, 9, -34, 13, 10};
-    ModelTrackDTO dto = MessageTranslator.getDTO(bytes);
-    assertNull(dto);
+    assertThrows(IllegalArgumentException.class, () -> MessageTranslator.getDTO(bytes));
   }
 
   @Test
   void messageToLongTest() {
     byte[] bytes = {100, 51, 5, 1, 3, 4, 97, 101, 97, 3, -4, 105, 1, -6, -52, -10, 65, 15, 51, -96, 0, 9, -34, 13, 10, 10};
-    ModelTrackDTO dto = MessageTranslator.getDTO(bytes);
-    assertNull(dto);
+    assertThrows(IllegalArgumentException.class, () -> MessageTranslator.getDTO(bytes));
   }
 
   @Test
   void messageNullTest() {
-    ModelTrackDTO dto = MessageTranslator.getDTO(null);
-    assertNull(dto);
+    assertThrows(IllegalArgumentException.class, () -> MessageTranslator.getDTO(null));
   }
 }
