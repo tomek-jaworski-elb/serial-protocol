@@ -46,7 +46,11 @@ public class SerialPortListenerImpl implements SerialPortMessageListener {
         byte[] delimitedMessage = event.getReceivedData();
         LOG.info("On port {} Received delimited message: {}", serialPort.getPortDescription(), delimitedMessage);
         webSocketRawPublisher.publishForAllClients(Arrays.toString(delimitedMessage));
-        ModelTrackDTO dto = MessageTranslator.getDTO(delimitedMessage);
-        webSocketJsonPublisher.publishForAllClients(dto.toString());
+        try {
+            ModelTrackDTO dto = MessageTranslator.getDTO(delimitedMessage);
+            webSocketJsonPublisher.publishForAllClients(dto.toString());
+        } catch (IllegalArgumentException e) {
+            LOG.error("Failed to translate message: {}", Arrays.toString(delimitedMessage));
+        }
     }
 }
