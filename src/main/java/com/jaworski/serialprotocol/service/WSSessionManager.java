@@ -1,6 +1,5 @@
 package com.jaworski.serialprotocol.service;
 
-import com.jaworski.serialprotocol.service.impl.WebSocketPublisherImpl;
 import lombok.Getter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
