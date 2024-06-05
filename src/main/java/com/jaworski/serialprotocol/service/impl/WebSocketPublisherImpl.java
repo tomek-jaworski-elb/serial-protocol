@@ -15,9 +15,9 @@ import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
-public class WebSocketRawPublisher implements WebSocketPublisher {
+public class WebSocketPublisherImpl implements WebSocketPublisher {
 
-    private static final Logger LOG = LogManager.getLogger(WebSocketRawPublisher.class);
+    private static final Logger LOG = LogManager.getLogger(WebSocketPublisherImpl.class);
     private final WSSessionManager wsSessionManager;
 
     @Override
@@ -25,8 +25,6 @@ public class WebSocketRawPublisher implements WebSocketPublisher {
         wsSessionManager.getWebSocketSessions().stream()
                 .filter(Objects::nonNull)
                 .filter(WebSocketSession::isOpen)
-                .filter(webSocketSession -> webSocketSession.getUri() != null)
-                .filter(webSocketSession -> webSocketSession.getUri().toString().contains(SessionType.JSON.getName()))
                 .forEach(session -> {
                     try {
                         session.sendMessage(new TextMessage(message));
@@ -38,12 +36,37 @@ public class WebSocketRawPublisher implements WebSocketPublisher {
     }
 
     @Override
+    public void publishForAllClients(String message, SessionType sessionType) {
+      wsSessionManager.getWebSocketSessions().stream()
+              .filter(Objects::nonNull)
+              .filter(WebSocketSession::isOpen)
+              .filter(webSocketSession -> webSocketSession.getUri() != null)
+              .filter(webSocketSession -> webSocketSession.getUri().toString().contains(sessionType.getName()))
+              .forEach(session -> {
+                try {
+                  session.sendMessage(new TextMessage(message));
+                  LOG.info("Message sent to client {}: {}", session.getId(), message);
+                } catch (IOException e) {
+                  LOG.error("Error sending message to client {}", session.getId(), e);
+                }
+              });
+    }
+
+    @Override
     public long sessionsCount() {
         return wsSessionManager.getWebSocketSessions().stream()
                 .filter(Objects::nonNull)
                 .filter(WebSocketSession::isOpen)
-                .filter(webSocketSession -> webSocketSession.getUri() != null)
-                .filter(webSocketSession -> webSocketSession.getUri().toString().contains(SessionType.JSON.getName()))
                 .count();
     }
+
+  @Override
+  public long sessionsCount(SessionType sessionType) {
+    return wsSessionManager.getWebSocketSessions().stream()
+            .filter(Objects::nonNull)
+            .filter(WebSocketSession::isOpen)
+            .filter(webSocketSession -> webSocketSession.getUri() != null)
+            .filter(webSocketSession -> webSocketSession.getUri().toString().contains(sessionType.getName()))
+            .count();
+  }
 }

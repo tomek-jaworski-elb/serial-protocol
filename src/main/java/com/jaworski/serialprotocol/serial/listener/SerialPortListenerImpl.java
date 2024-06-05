@@ -5,8 +5,8 @@ import com.fazecast.jSerialComm.SerialPortEvent;
 import com.fazecast.jSerialComm.SerialPortMessageListener;
 import com.jaworski.serialprotocol.dto.ModelTrackDTO;
 import com.jaworski.serialprotocol.resources.Resources;
-import com.jaworski.serialprotocol.service.impl.WebSocketJsonPublisher;
-import com.jaworski.serialprotocol.service.impl.WebSocketRawPublisher;
+import com.jaworski.serialprotocol.serial.SessionType;
+import com.jaworski.serialprotocol.service.WebSocketPublisher;
 import com.jaworski.serialprotocol.service.utils.MessageTranslator;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
@@ -21,8 +21,7 @@ public class SerialPortListenerImpl implements SerialPortMessageListener {
 
     private static final Logger LOG = LogManager.getLogger(SerialPortListenerImpl.class);
     private final Resources resources;
-    private final WebSocketRawPublisher webSocketRawPublisher;
-    private final WebSocketJsonPublisher webSocketJsonPublisher;
+    private final WebSocketPublisher webSocketPublisher;
 
     @Override
     public byte[] getMessageDelimiter() {
@@ -45,8 +44,12 @@ public class SerialPortListenerImpl implements SerialPortMessageListener {
         SerialPort serialPort = event.getSerialPort();
         byte[] delimitedMessage = event.getReceivedData();
         LOG.info("On port {} Received delimited message: {}", serialPort.getPortDescription(), delimitedMessage);
-        webSocketRawPublisher.publishForAllClients(Arrays.toString(delimitedMessage));
-        ModelTrackDTO dto = MessageTranslator.getDTO(delimitedMessage);
-        webSocketJsonPublisher.publishForAllClients(dto.toString());
+        webSocketPublisher.publishForAllClients(Arrays.toString(delimitedMessage), SessionType.RS);
+        try {
+            ModelTrackDTO dto = MessageTranslator.getDTO(delimitedMessage);
+            webSocketPublisher.publishForAllClients(dto.toString(), SessionType.JSON);
+        } catch (IllegalArgumentException e) {
+            LOG.error("Failed to translate message: {}", Arrays.toString(delimitedMessage));
+        }
     }
 }
