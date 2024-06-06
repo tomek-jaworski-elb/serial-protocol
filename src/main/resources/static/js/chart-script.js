@@ -69,28 +69,88 @@ window.onload = function () {
         const y = Math.random() * canvas.height;
         return {x, y};
     }
-        // Function to clear the first canvas
-        function clearCanvas() {
-            overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+    function getRandomAngle() {
+        return Math.random() * 2 * 180;
+    }
+
+    // Function to clear the first canvas
+    function clearCanvas() {
+        overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+    }
+
+    // Function to clear the first canvas
+    function clearCanvas2() {
+        overlayCtx2.clearRect(0, 0, overlayCanvas2.width, overlayCanvas2.height);
+    }
+
+    // Function to draw a circle
+    function drawCircle(ctx, x, y, radius) {
+        ctx.beginPath();        // Begin a new path
+        ctx.arc(x, y, radius, 0, 2 * Math.PI);  // Draw an arc (circle)
+        ctx.fillStyle = 'gold'; // Set the fill style
+        ctx.fill();             // Fill the circle
+        ctx.stroke();           // Outline the circle
+    }
+
+// Function to draw a triangle
+    function drawTriangle(ctx, x, y, scale, angle) {
+        // Define the vertices of the triangle (equilateral triangle centered at origin)
+        let vertices = [
+            {x: 0, y: -1},
+            {x: 0.866, y: 0.5},
+            {x: -0.866, y: 0.5}
+        ];
+
+        // Scale the vertices
+        vertices = vertices.map(vertex => {
+            return {
+                x: vertex.x * scale,
+                y: vertex.y * scale
+            };
+        });
+
+        // Rotate the vertices
+        const radians = angle * Math.PI / 180;
+        vertices = vertices.map(vertex => {
+            return {
+                x: vertex.x * Math.cos(radians) - vertex.y * Math.sin(radians),
+                y: vertex.x * Math.sin(radians) + vertex.y * Math.cos(radians)
+            };
+        });
+
+        // Translate the vertices to the (x, y) position
+        vertices = vertices.map(vertex => {
+            return {
+                x: vertex.x + x,
+                y: vertex.y + y
+            };
+        });
+
+        // Draw the triangle
+        ctx.beginPath();
+        ctx.moveTo(vertices[0].x, vertices[0].y);
+        for (let i = 1; i < vertices.length; i++) {
+            ctx.lineTo(vertices[i].x, vertices[i].y);
         }
+        ctx.closePath();
 
-                // Function to clear the first canvas
-                function clearCanvas2() {
-                    overlayCtx2.clearRect(0, 0, overlayCanvas2.width, overlayCanvas2.height);
-                }
-
-    // Draw a new ship at a random position every 1 second
-    setInterval(() => {
-        const point = getRandomPoint(overlayCanvas2);
-        clearCanvas2();
-        drawShip(overlayCtx2, point.x, point.y);
-    }, 1000);
-
+        // Fill and stroke
+        ctx.fillStyle = 'blue';
+        ctx.fill();
+        ctx.strokeStyle = 'black';
+        ctx.stroke();
+    }
 
     // Draw a new star at a random position every 1 second
     setInterval(() => {
         const point = getRandomPoint(overlayCanvas);
-        drawStar(overlayCtx, point.x, point.y, 8, 30, 15);
+        const randomAngle = getRandomAngle();
+        console.log('Random angle:', randomAngle);
+        console.log('Random point:', point);
+        clearCanvas()
+        drawTriangle(overlayCtx, point.x, point.y, 20, randomAngle);
+        // drawCircle(overlayCtx, point.x, point.y, 5);
+        // drawStar(overlayCtx, point.x, point.y, 8, 30, 15);
     }, 1000);
-
 };
