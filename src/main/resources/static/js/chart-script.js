@@ -14,8 +14,45 @@ window.onload = function () {
     overlayCanvas.width = container.clientWidth;
     overlayCanvas.height = container.clientHeight;
 
+    // Websocket configuration
+    const hostname = window.location.hostname; // Gets the hostname of the current page
+    const port = 8080;
+    const path = '/json';
+// Create a WebSocket instance
+    const socket = new WebSocket(`ws://${hostname}:${port}${path}`);
     // Set up the text field
     const textField = document.getElementById("textField");
+
+    socket.onmessage = function (event) {
+        console.log("WebSocket message received: ", event.data);
+
+        // Update the text field
+        textField.textContent = event.data;
+        try {
+            const data = JSON.parse(event.data)
+            const positionX = data.positionX;
+            const positionY = data.positionY;
+            const angle = data.heading;
+            const shift = 200;
+            drawTriangle(overlayCtx, positionX + shift, positionY + shift, 20, angle);
+        } catch (error) {
+            console.error("Error parsing JSON data:", error);
+        }
+    };
+
+    socket.onerror = function (error) {
+        console.error("WebSocket error: ", error);
+    };
+
+    socket.onopen = function (event) {
+        console.log("WebSocket connection opened.");
+    };
+
+    socket.onclose = function (event) {
+        console.log("WebSocket connection closed.");
+    };
+
+
 
     // Load the background image
     const bgImg = new Image();
@@ -146,15 +183,15 @@ window.onload = function () {
     }
 
     // Draw a new star at a random position every 1 second
-    setInterval(() => {
-        const point = getRandomPoint(overlayCanvas);
-        const randomAngle = getRandomAngle();
-        textField.innerText = 'Angle= ' + randomAngle + '°' + ', X=' + point.x + ', Y=' + point.y;
-        console.log('Random angle:', randomAngle);
-        console.log('Random point:', point);
-        clearCanvas()
-        drawTriangle(overlayCtx, point.x, point.y, 20, randomAngle);
-        // drawCircle(overlayCtx, point.x, point.y, 5);
-        // drawStar(overlayCtx, point.x, point.y, 8, 30, 15);
-    }, 1000);
+    // setInterval(() => {
+    //     const point = getRandomPoint(overlayCanvas);
+    //     const randomAngle = getRandomAngle();
+    //     textField.innerText = 'Angle= ' + randomAngle + '°' + ', X=' + point.x + ', Y=' + point.y;
+    //     console.log('Random angle:', randomAngle);
+    //     console.log('Random point:', point);
+    //     clearCanvas()
+    //     drawTriangle(overlayCtx, point.x, point.y, 20, randomAngle);
+    //     // drawCircle(overlayCtx, point.x, point.y, 5);
+    //     // drawStar(overlayCtx, point.x, point.y, 8, 30, 15);
+    // }, 1000);
 };
