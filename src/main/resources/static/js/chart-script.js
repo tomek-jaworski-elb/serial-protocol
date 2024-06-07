@@ -14,6 +14,9 @@ window.onload = function () {
     overlayCanvas.width = container.clientWidth;
     overlayCanvas.height = container.clientHeight;
 
+    // Set up the text field
+    const textField = document.getElementById("textField");
+
     // Load the background image
     const bgImg = new Image();
     bgImg.src = '/img/kamionka.png'; // Replace with the path to your background image
@@ -146,6 +149,7 @@ window.onload = function () {
     setInterval(() => {
         const point = getRandomPoint(overlayCanvas);
         const randomAngle = getRandomAngle();
+        textField.innerText = 'Angle= ' + randomAngle + '°' + ', X=' + point.x + ', Y=' + point.y;
         console.log('Random angle:', randomAngle);
         console.log('Random point:', point);
         clearCanvas()

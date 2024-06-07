@@ -39,8 +39,11 @@
 <body>
 <header th:replace="~{fragment::header}"></header>
 <div class="d-flex justify-content-center align-items-center border-2 p-3 m-1">
-    <div class="container mt-5">
+    <div class="container m-1">
         <div class="row justify-content-center">
+            <div class="container text-center border border-info mb-2">
+                <p id="textField" class="p-1 m-1">Text</p>
+            </div>
             <div class="canvas-container">
                 <canvas id="backgroundCanvas"></canvas>
                 <canvas id="overlayCanvas"></canvas>
