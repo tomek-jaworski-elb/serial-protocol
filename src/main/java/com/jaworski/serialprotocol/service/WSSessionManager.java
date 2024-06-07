@@ -19,20 +19,20 @@ public class WSSessionManager {
     private final ConcurrentHashMap<String ,WebSocketSession> webSocketSessions = new ConcurrentHashMap<>();
 
     public void addSession(WebSocketSession session) {
-        WebSocketSession webSocketSession = webSocketSessions.put(session.getId(), session);
-        if (webSocketSession != null) {
+      WebSocketSession webSocketSession = webSocketSessions.put(session.getId(), session);
+      if (webSocketSession == null) {
         LOG.info("Session added. Session count: {}", webSocketSessions.size());
-        } else {
-            LOG.warn("Session already exists. Session count: {}", webSocketSessions.size());
-        }
+      } else {
+        LOG.warn("Session already exists. Session count: {}", webSocketSessions.size());
+      }
     }
 
     public void removeSession(WebSocketSession session) {
-        WebSocketSession removed = webSocketSessions.remove(session.getId());
-        if (removed != null) {
-            LOG.info("Session removed. Session count: {}", webSocketSessions.size());
-        } else {
-            LOG.warn("Session not found. Session count: {}", webSocketSessions.size());
-        }
+      WebSocketSession removed = webSocketSessions.remove(session.getId());
+      if (removed != null) {
+        LOG.info("Session removed. Session count: {}", webSocketSessions.size());
+      } else {
+        LOG.warn("Session not found. Session count: {}", webSocketSessions.size());
+      }
     }
 }
