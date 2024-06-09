@@ -30,9 +30,9 @@ window.onload = function () {
         textField.textContent = event.data;
         try {
             const data = JSON.parse(event.data)
-            const positionX = data.positionX;
-            const positionY = data.positionY;
-            const angle = data.heading;
+            const positionX = parseFloat(data.positionX);
+            const positionY = parseFloat(data.positionY);
+            const angle = parseFloat(data.heading);
             const shift = 200;
             drawTriangle(overlayCtx, positionX + shift, positionY + shift, 20, angle);
         } catch (error) {

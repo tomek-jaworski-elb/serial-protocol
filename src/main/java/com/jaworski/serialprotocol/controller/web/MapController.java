@@ -9,16 +9,19 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class MapController {
 
     @GetMapping("/")
-    public String index() {
+    public String index(Model model) {
+        model.addAttribute("name", "home");
         return "maps";
     }
 
     @GetMapping("/terminal")
-    public String terminal() {
+    public String terminal(Model model) {
+        model.addAttribute("name", "terminal");
         return "terminal";
     }
     @GetMapping("/about")
-    public String about() {
+    public String about(Model model) {
+        model.addAttribute("name", "about");
         return "about";
     }
 
@@ -29,7 +32,8 @@ public class MapController {
     }
 
     @GetMapping("/chart")
-    public String greeting() {
+    public String greeting(Model model) {
+        model.addAttribute("name", "chart");
         return "chart2";
     }
 }
