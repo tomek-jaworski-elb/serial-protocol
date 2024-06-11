@@ -8,9 +8,14 @@
     <style>
         .canvas-container {
             position: relative;
-            width: 900px; /* Adjust as needed */
-            height: 900px; /* Adjust as needed */
-            border: 1px solid black;
+            width: 1200px; /* Adjust as needed */
+            height: 1800px; /* Adjust as needed */
+            border: 1px solid #ce4242;
+            padding-left: 0;
+            padding-right: 0;
+            margin-left: auto;
+            margin-right: auto;
+            display: block;
         }
 
         canvas {
@@ -44,13 +49,13 @@
             <div class="container text-center border border-info mb-2">
                 <p id="textField" class="p-1 m-1">Text</p>
             </div>
-            <div class="canvas-container">
-                <canvas id="backgroundCanvas"></canvas>
-                <canvas id="overlayCanvas"></canvas>
-                <canvas id="overlayCanvas2"></canvas>
-            </div>
         </div>
     </div>
+</div>
+<div class="canvas-container">
+    <canvas id="backgroundCanvas"></canvas>
+    <canvas id="overlayCanvas"></canvas>
+    <canvas id="overlayCanvas2"></canvas>
 </div>
 <footer th:replace="~{fragment::footer}"></footer>
 <script th:src="@{/bootstrap-5-3-3/js/bootstrap.js}"></script>

@@ -56,7 +56,7 @@ window.onload = function () {
 
     // Load the background image
     const bgImg = new Image();
-    bgImg.src = '/img/kamionka.png'; // Replace with the path to your background image
+    bgImg.src = '/img/MapaSilm.jpg'; // Replace with the path to your background image
 
     bgImg.onload = function () {
         bgCtx.drawImage(bgImg, 0, 0, backgroundCanvas.width, backgroundCanvas.height);
@@ -183,15 +183,15 @@ window.onload = function () {
     }
 
     // Draw a new star at a random position every 1 second
-    // setInterval(() => {
-    //     const point = getRandomPoint(overlayCanvas);
-    //     const randomAngle = getRandomAngle();
-    //     textField.innerText = 'Angle= ' + randomAngle + '°' + ', X=' + point.x + ', Y=' + point.y;
-    //     console.log('Random angle:', randomAngle);
-    //     console.log('Random point:', point);
-    //     clearCanvas()
-    //     drawTriangle(overlayCtx, point.x, point.y, 20, randomAngle);
-    //     // drawCircle(overlayCtx, point.x, point.y, 5);
-    //     // drawStar(overlayCtx, point.x, point.y, 8, 30, 15);
-    // }, 1000);
+    setInterval(() => {
+        const point = getRandomPoint(overlayCanvas);
+        const randomAngle = getRandomAngle();
+        textField.innerText = 'Angle= ' + randomAngle.toFixed(1) + '°' + ', X=' + point.x.toFixed(2) + ', Y=' + point.y.toFixed(2);
+        console.log('Random angle:', randomAngle);
+        console.log('Random point:', point);
+        clearCanvas()
+        drawTriangle(overlayCtx, point.x, point.y, 20, randomAngle);
+        // drawCircle(overlayCtx, point.x, point.y, 5);
+        // drawStar(overlayCtx, point.x, point.y, 8, 30, 15);
+    }, 1000);
 };
