@@ -4,15 +4,19 @@ window.onload = function () {
     const bgCtx = backgroundCanvas.getContext('2d');
 
     const overlayCanvas = document.getElementById('overlayCanvas');
-    const overlayCtx = overlayCanvas.getContext('2d');
+    const overlayCanvas1 = document.getElementById('overlayCanvas1');
     const overlayCanvas2 = document.getElementById('overlayCanvas2');
-    const overlayCtx2 = overlayCanvas.getContext('2d');
+
     // Set canvas dimensions to match the container
     const container = document.querySelector('.canvas-container');
     backgroundCanvas.width = container.clientWidth;
     backgroundCanvas.height = container.clientHeight;
     overlayCanvas.width = container.clientWidth;
     overlayCanvas.height = container.clientHeight;
+    overlayCanvas1.width = container.clientWidth;
+    overlayCanvas1.height = container.clientHeight;
+    overlayCanvas2.width = container.clientWidth;
+    overlayCanvas2.height = container.clientHeight;
 
     // Websocket configuration
     const hostname = window.location.hostname; // Gets the hostname of the current page
@@ -34,7 +38,7 @@ window.onload = function () {
             const positionY = parseFloat(data.positionY);
             const angle = parseFloat(data.heading);
             const shift = 200;
-            drawTriangle(overlayCtx, positionX + shift, positionY + shift, 20, angle);
+            drawTriangle('overlayCanvas', positionX + shift, positionY + shift, 20, angle);
         } catch (error) {
             console.error("Error parsing JSON data:", error);
         }
@@ -52,8 +56,6 @@ window.onload = function () {
         console.log("WebSocket connection closed.");
     };
 
-
-
     // Load the background image
     const bgImg = new Image();
     bgImg.src = '/img/MapaSilm.jpg'; // Replace with the path to your background image
@@ -62,51 +64,11 @@ window.onload = function () {
         bgCtx.drawImage(bgImg, 0, 0, backgroundCanvas.width, backgroundCanvas.height);
     };
 
-    // Draw a non-typical shape (e.g., a ship waterline) on the overlay canvas
-    function drawShip(ctx, x, y) {
-        ctx.beginPath();
-        ctx.moveTo(x, y); // Start point
-        ctx.lineTo(x + 60, y); // Top edge
-        ctx.lineTo(x + 70, y + 10); // Front tip
-        ctx.lineTo(x + 10, y + 10); // Bottom edge
-        ctx.lineTo(x, y); // Back to start
-        ctx.closePath();
-        ctx.fillStyle = 'blue';
-        ctx.fill();
-        ctx.strokeStyle = 'black';
-        ctx.stroke();
-    }
-
-    // Draw a non-typical shape (e.g., a star) on the overlay canvas
-    function drawStar(ctx, cx, cy, spikes, outerRadius, innerRadius) {
-        let rot = Math.PI / 2 * 3;
-        let x = cx;
-        let y = cy;
-        let step = Math.PI / spikes;
-
-        ctx.beginPath();
-        ctx.moveTo(cx, cy - outerRadius);
-        for (let i = 0; i < spikes; i++) {
-            x = cx + Math.cos(rot) * outerRadius;
-            y = cy - Math.sin(rot) * outerRadius;
-            ctx.lineTo(x, y);
-            rot += step;
-
-            x = cx + Math.cos(rot) * innerRadius;
-            y = cy - Math.sin(rot) * innerRadius;
-            ctx.lineTo(x, y);
-            rot += step;
-        }
-        ctx.lineTo(cx, cy - outerRadius);
-        ctx.closePath();
-        ctx.fillStyle = 'gold';
-        ctx.fill();
-    }
-
     // Function to generate a random point within the canvas
-    function getRandomPoint(canvas) {
-        const x = Math.random() * canvas.width;
-        const y = Math.random() * canvas.height;
+    function getRandomPoint(elementId) {
+        const element = document.getElementById(elementId);
+        const x = Math.random() * element.width;
+        const y = Math.random() * element.height;
         return {x, y};
     }
 
@@ -115,26 +77,16 @@ window.onload = function () {
     }
 
     // Function to clear the first canvas
-    function clearCanvas() {
-        overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-    }
-
-    // Function to clear the first canvas
-    function clearCanvas2() {
-        overlayCtx2.clearRect(0, 0, overlayCanvas2.width, overlayCanvas2.height);
-    }
-
-    // Function to draw a circle
-    function drawCircle(ctx, x, y, radius) {
-        ctx.beginPath();        // Begin a new path
-        ctx.arc(x, y, radius, 0, 2 * Math.PI);  // Draw an arc (circle)
-        ctx.fillStyle = 'gold'; // Set the fill style
-        ctx.fill();             // Fill the circle
-        ctx.stroke();           // Outline the circle
+    function clearCanvas(elementId) {
+        const element = document.getElementById(elementId);
+        const context = element.getContext('2d');
+        context.clearRect(0, 0, element.width, element.height);
     }
 
 // Function to draw a triangle
-    function drawTriangle(ctx, x, y, scale, angle) {
+    function drawTriangle(elementId, x, y, scale, angle, fillColor) {
+        const element = document.getElementById(elementId);
+        const ctx = element.getContext('2d');
         // Define the vertices of the triangle (equilateral triangle centered at origin)
         let vertices = [
             {x: 0, y: -1},
@@ -176,22 +128,42 @@ window.onload = function () {
         ctx.closePath();
 
         // Fill and stroke
-        ctx.fillStyle = 'blue';
+        ctx.fillStyle = fillColor;
         ctx.fill();
         ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
         ctx.stroke();
     }
 
     // Draw a new star at a random position every 1 second
     setInterval(() => {
-        const point = getRandomPoint(overlayCanvas);
+        const point = getRandomPoint('overlayCanvas')
         const randomAngle = getRandomAngle();
         textField.innerText = 'Angle= ' + randomAngle.toFixed(1) + '°' + ', X=' + point.x.toFixed(2) + ', Y=' + point.y.toFixed(2);
         console.log('Random angle:', randomAngle);
         console.log('Random point:', point);
-        clearCanvas()
-        drawTriangle(overlayCtx, point.x, point.y, 20, randomAngle);
-        // drawCircle(overlayCtx, point.x, point.y, 5);
-        // drawStar(overlayCtx, point.x, point.y, 8, 30, 15);
+        clearCanvas('overlayCanvas')
+        drawTriangle('overlayCanvas', point.x, point.y, 22, randomAngle, 'blue');
     }, 1000);
+
+    // Draw a new star at a random position every 1 second
+    setInterval(() => {
+        const point = getRandomPoint('overlayCanvas2');
+        const randomAngle = getRandomAngle();
+        textField.innerText = 'Angle= ' + randomAngle.toFixed(1) + '°' + ', X=' + point.x.toFixed(2) + ', Y=' + point.y.toFixed(2);
+        console.log('Random angle:', randomAngle);
+        console.log('Random point:', point);
+        clearCanvas('overlayCanvas2')
+        drawTriangle('overlayCanvas2', point.x, point.y, 18, randomAngle, 'orange');
+    }, 1233);
+
+    setInterval(() => {
+        const point = getRandomPoint('overlayCanvas1');
+        const randomAngle = getRandomAngle();
+        textField.innerText = 'Angle= ' + randomAngle.toFixed(1) + '°' + ', X=' + point.x.toFixed(2) + ', Y=' + point.y.toFixed(2);
+        console.log('Random angle:', randomAngle);
+        console.log('Random point:', point);
+        clearCanvas('overlayCanvas1')
+        drawTriangle('overlayCanvas1', point.x, point.y, 18, randomAngle, 'black');
+    }, 666);
 };
