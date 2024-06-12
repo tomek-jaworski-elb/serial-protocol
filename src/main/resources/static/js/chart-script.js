@@ -3,20 +3,12 @@ window.onload = function () {
     const backgroundCanvas = document.getElementById('backgroundCanvas');
     const bgCtx = backgroundCanvas.getContext('2d');
 
-    const overlayCanvas = document.getElementById('overlayCanvas');
-    const overlayCanvas1 = document.getElementById('overlayCanvas1');
-    const overlayCanvas2 = document.getElementById('overlayCanvas2');
-
-    // Set canvas dimensions to match the container
+    // Set canvases dimensions to match the container
     const container = document.querySelector('.canvas-container');
-    backgroundCanvas.width = container.clientWidth;
-    backgroundCanvas.height = container.clientHeight;
-    overlayCanvas.width = container.clientWidth;
-    overlayCanvas.height = container.clientHeight;
-    overlayCanvas1.width = container.clientWidth;
-    overlayCanvas1.height = container.clientHeight;
-    overlayCanvas2.width = container.clientWidth;
-    overlayCanvas2.height = container.clientHeight;
+    for (let elementsByTagNameElement of container.getElementsByTagName('canvas')) {
+        elementsByTagNameElement.width = container.clientWidth;
+        elementsByTagNameElement.height = container.clientHeight;
+    }
 
     // Websocket configuration
     const hostname = window.location.hostname; // Gets the hostname of the current page
@@ -34,11 +26,36 @@ window.onload = function () {
         textField.textContent = event.data;
         try {
             const data = JSON.parse(event.data)
+            const modelId = Number(data.modelName);
             const positionX = parseFloat(data.positionX);
             const positionY = parseFloat(data.positionY);
             const angle = parseFloat(data.heading);
             const shift = 200;
-            drawTriangle('overlayCanvas', positionX + shift, positionY + shift, 20, angle);
+            switch (modelId) {
+                case 1:
+                    drawTriangle('overlayCanvas', positionX + shift, positionY + shift, 20, angle);
+                    console.log("Drawing model with ID: " + modelId);
+                    break;
+                case 2:
+                    drawTriangle('overlayCanvas1', positionX + shift, positionY + shift, 20, angle);
+                    console.log("Drawing model with ID: " + modelId);
+                    break;
+                case 3:
+                    drawTriangle('overlayCanvas2', positionX + shift, positionY + shift, 20, angle);
+                    console.log("Drawing model with ID: " + modelId);
+                    break;
+                case 4:
+                    drawTriangle('overlayCanvas3', positionX + shift, positionY + shift, 20, angle);
+                    console.log("Drawing model with ID: " + modelId);
+                    break;
+                case 5:
+                    drawTriangle('overlayCanvas4', positionX + shift, positionY + shift, 20, angle);
+                    console.log("Drawing model with ID: " + modelId);
+                    break;
+                default:
+                    drawTriangle('overlayCanvas', positionX + shift, positionY + shift, 20, angle);
+                    console.log("Unknown model ID: " + modelId);
+            }
         } catch (error) {
             console.error("Error parsing JSON data:", error);
         }
@@ -166,4 +183,24 @@ window.onload = function () {
         clearCanvas('overlayCanvas1')
         drawTriangle('overlayCanvas1', point.x, point.y, 18, randomAngle, 'black');
     }, 666);
+
+    setInterval(() => {
+        const point = getRandomPoint('overlayCanvas3');
+        const randomAngle = getRandomAngle();
+        textField.innerText = 'Angle= ' + randomAngle.toFixed(1) + '°' + ', X=' + point.x.toFixed(2) + ', Y=' + point.y.toFixed(2);
+        console.log('Random angle:', randomAngle);
+        console.log('Random point:', point);
+        clearCanvas('overlayCanvas3')
+        drawTriangle('overlayCanvas3', point.x, point.y, 13, randomAngle, 'yellow');
+    }, 500);
+
+    setInterval(() => {
+        const point = getRandomPoint('overlayCanvas4');
+        const randomAngle = getRandomAngle();
+        textField.innerText = 'Angle= ' + randomAngle.toFixed(1) + '°' + ', X=' + point.x.toFixed(2) + ', Y=' + point.y.toFixed(2);
+        console.log('Random angle:', randomAngle);
+        console.log('Random point:', point);
+        clearCanvas('overlayCanvas4')
+        drawTriangle('overlayCanvas4', point.x, point.y, 10, randomAngle, 'green');
+    }, 2000);
 };
