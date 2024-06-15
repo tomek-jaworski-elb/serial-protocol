@@ -27,25 +27,30 @@ window.onload = function () {
         try {
             const data = JSON.parse(event.data)
             const modelId = Number(data.modelName);
-            const positionX = parseFloat(data.positionX);
-            const positionY = parseFloat(data.positionY);
+            let positionX = parseFloat(data.positionX);
+            let positionY = parseFloat(data.positionY);
             const angle = parseFloat(data.heading);
-            const shift = 200;
+            const scaleX = 10;
+            const scaleY = 10;
+            positionX *= scaleX;
+            positionY *= scaleY;
+            const shiftX = 200;
+            const shiftY = 200;
             switch (modelId) {
                 case 1:
-                    drawTriangle('overlayCanvas', positionX + shift, positionY + shift, 20, angle);
+                    drawTriangle('overlayCanvas', positionX + shiftX, positionY + shiftY, 20, angle);
                     console.log("Drawing model with ID: " + modelId);
                     break;
                 case 2:
-                    drawTriangle('overlayCanvas1', positionX + shift, positionY + shift, 20, angle);
+                    drawTriangle('overlayCanvas1', positionX + shiftX, positionY + shiftY, 20, angle);
                     console.log("Drawing model with ID: " + modelId);
                     break;
                 case 3:
-                    drawTriangle('overlayCanvas2', positionX + shift, positionY + shift, 20, angle);
+                    drawTriangle('overlayCanvas2', positionX + shiftX, positionY + shiftY, 20, angle);
                     console.log("Drawing model with ID: " + modelId);
                     break;
                 case 4:
-                    drawTriangle('overlayCanvas3', positionX + shift, positionY + shift, 20, angle);
+                    drawTriangle('overlayCanvas3', positionX + shiftX, positionY + shiftY, 20, angle);
                     console.log("Drawing model with ID: " + modelId);
                     break;
                 case 5:
