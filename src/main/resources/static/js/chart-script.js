@@ -158,54 +158,54 @@ window.onload = function () {
     }
 
     // Draw a new star at a random position every 1 second
-    setInterval(() => {
-        const point = getRandomPoint('overlayCanvas')
-        const randomAngle = getRandomAngle();
-        textField.innerText = 'Angle= ' + randomAngle.toFixed(1) + '°' + ', X=' + point.x.toFixed(2) + ', Y=' + point.y.toFixed(2);
-        console.log('Random angle:', randomAngle);
-        console.log('Random point:', point);
-        clearCanvas('overlayCanvas')
-        drawTriangle('overlayCanvas', point.x, point.y, 22, randomAngle, 'blue');
-    }, 1000);
+//    setInterval(() => {
+//        const point = getRandomPoint('overlayCanvas')
+//        const randomAngle = getRandomAngle();
+//        textField.innerText = 'Angle= ' + randomAngle.toFixed(1) + '°' + ', X=' + point.x.toFixed(2) + ', Y=' + point.y.toFixed(2);
+//        console.log('Random angle:', randomAngle);
+//        console.log('Random point:', point);
+//        clearCanvas('overlayCanvas')
+//        drawTriangle('overlayCanvas', point.x, point.y, 22, randomAngle, 'blue');
+//    }, 1000);
 
     // Draw a new star at a random position every 1 second
-    setInterval(() => {
-        const point = getRandomPoint('overlayCanvas2');
-        const randomAngle = getRandomAngle();
-        textField.innerText = 'Angle= ' + randomAngle.toFixed(1) + '°' + ', X=' + point.x.toFixed(2) + ', Y=' + point.y.toFixed(2);
-        console.log('Random angle:', randomAngle);
-        console.log('Random point:', point);
-        clearCanvas('overlayCanvas2')
-        drawTriangle('overlayCanvas2', point.x, point.y, 18, randomAngle, 'orange');
-    }, 1233);
+//    setInterval(() => {
+//        const point = getRandomPoint('overlayCanvas2');
+//        const randomAngle = getRandomAngle();
+//        textField.innerText = 'Angle= ' + randomAngle.toFixed(1) + '°' + ', X=' + point.x.toFixed(2) + ', Y=' + point.y.toFixed(2);
+//        console.log('Random angle:', randomAngle);
+//        console.log('Random point:', point);
+//        clearCanvas('overlayCanvas2')
+//        drawTriangle('overlayCanvas2', point.x, point.y, 18, randomAngle, 'orange');
+//    }, 1233);
 
-    setInterval(() => {
-        const point = getRandomPoint('overlayCanvas1');
-        const randomAngle = getRandomAngle();
-        textField.innerText = 'Angle= ' + randomAngle.toFixed(1) + '°' + ', X=' + point.x.toFixed(2) + ', Y=' + point.y.toFixed(2);
-        console.log('Random angle:', randomAngle);
-        console.log('Random point:', point);
-        clearCanvas('overlayCanvas1')
-        drawTriangle('overlayCanvas1', point.x, point.y, 18, randomAngle, 'black');
-    }, 666);
+//    setInterval(() => {
+//        const point = getRandomPoint('overlayCanvas1');
+//        const randomAngle = getRandomAngle();
+//        textField.innerText = 'Angle= ' + randomAngle.toFixed(1) + '°' + ', X=' + point.x.toFixed(2) + ', Y=' + point.y.toFixed(2);
+//        console.log('Random angle:', randomAngle);
+//        console.log('Random point:', point);
+//        clearCanvas('overlayCanvas1')
+//        drawTriangle('overlayCanvas1', point.x, point.y, 18, randomAngle, 'black');
+//    }, 666);
 
-    setInterval(() => {
-        const point = getRandomPoint('overlayCanvas3');
-        const randomAngle = getRandomAngle();
-        textField.innerText = 'Angle= ' + randomAngle.toFixed(1) + '°' + ', X=' + point.x.toFixed(2) + ', Y=' + point.y.toFixed(2);
-        console.log('Random angle:', randomAngle);
-        console.log('Random point:', point);
-        clearCanvas('overlayCanvas3')
-        drawTriangle('overlayCanvas3', point.x, point.y, 13, randomAngle, 'yellow');
-    }, 500);
+//    setInterval(() => {
+//        const point = getRandomPoint('overlayCanvas3');
+//        const randomAngle = getRandomAngle();
+//        textField.innerText = 'Angle= ' + randomAngle.toFixed(1) + '°' + ', X=' + point.x.toFixed(2) + ', Y=' + point.y.toFixed(2);
+//        console.log('Random angle:', randomAngle);
+//        console.log('Random point:', point);
+//        clearCanvas('overlayCanvas3')
+//        drawTriangle('overlayCanvas3', point.x, point.y, 13, randomAngle, 'yellow');
+//    }, 500);
 
-    setInterval(() => {
-        const point = getRandomPoint('overlayCanvas4');
-        const randomAngle = getRandomAngle();
-        textField.innerText = 'Angle= ' + randomAngle.toFixed(1) + '°' + ', X=' + point.x.toFixed(2) + ', Y=' + point.y.toFixed(2);
-        console.log('Random angle:', randomAngle);
-        console.log('Random point:', point);
-        clearCanvas('overlayCanvas4')
-        drawTriangle('overlayCanvas4', point.x, point.y, 10, randomAngle, 'green');
-    }, 2000);
+//    setInterval(() => {
+//        const point = getRandomPoint('overlayCanvas4');
+//        const randomAngle = getRandomAngle();
+//        textField.innerText = 'Angle= ' + randomAngle.toFixed(1) + '°' + ', X=' + point.x.toFixed(2) + ', Y=' + point.y.toFixed(2);
+//        console.log('Random angle:', randomAngle);
+//        console.log('Random point:', point);
+//        clearCanvas('overlayCanvas4')
+//        drawTriangle('overlayCanvas4', point.x, point.y, 10, randomAngle, 'green');
+//    }, 2000);
 };
