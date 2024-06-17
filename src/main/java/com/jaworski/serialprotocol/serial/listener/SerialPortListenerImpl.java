@@ -1,5 +1,6 @@
 package com.jaworski.serialprotocol.serial.listener;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fazecast.jSerialComm.SerialPort;
 import com.fazecast.jSerialComm.SerialPortEvent;
 import com.fazecast.jSerialComm.SerialPortMessageListener;
@@ -7,6 +8,7 @@ import com.jaworski.serialprotocol.dto.ModelTrackDTO;
 import com.jaworski.serialprotocol.resources.Resources;
 import com.jaworski.serialprotocol.serial.SessionType;
 import com.jaworski.serialprotocol.service.WebSocketPublisher;
+import com.jaworski.serialprotocol.service.utils.JsonMapperService;
 import com.jaworski.serialprotocol.service.utils.MessageTranslator;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
@@ -22,6 +24,7 @@ public class SerialPortListenerImpl implements SerialPortMessageListener {
     private static final Logger LOG = LogManager.getLogger(SerialPortListenerImpl.class);
     private final Resources resources;
     private final WebSocketPublisher webSocketPublisher;
+    private final JsonMapperService jsonMapperService;
 
     @Override
     public byte[] getMessageDelimiter() {
@@ -47,9 +50,12 @@ public class SerialPortListenerImpl implements SerialPortMessageListener {
         webSocketPublisher.publishForAllClients(Arrays.toString(delimitedMessage), SessionType.RS);
         try {
             ModelTrackDTO dto = MessageTranslator.getDTO(delimitedMessage);
-            webSocketPublisher.publishForAllClients(dto.toString(), SessionType.JSON);
+            String jsonString = jsonMapperService.toJsonString(dto);
+            webSocketPublisher.publishForAllClients(jsonString, SessionType.JSON);
         } catch (IllegalArgumentException e) {
-            LOG.error("Failed to translate message: {}", Arrays.toString(delimitedMessage));
+            LOG.error("Failed to translate message: {}", Arrays.toString(delimitedMessage), e);
+        } catch (JsonProcessingException e) {
+            LOG.error("Failed to serialize message: {}", Arrays.toString(delimitedMessage), e);
         }
     }
 }

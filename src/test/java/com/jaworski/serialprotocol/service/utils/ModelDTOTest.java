@@ -1,19 +1,27 @@
 package com.jaworski.serialprotocol.service.utils;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.jaworski.serialprotocol.dto.ModelTrackDTO;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@SpringBootTest(classes = JsonMapperService.class)
 class ModelDTOTest {
 
-  private static Stream<Arguments> provideInputData() {
+    @Autowired
+    private JsonMapperService jsonMapperService;
+
+
+    private static Stream<Arguments> provideInputData() {
     return Stream.of(
             Arguments.of(new byte[]{119, 49, 8, -69, 8, -69, 0, 6, 0, 8, -69, -123, 1, 50, 73, -114, 66, 4, 27, 111, 66, 111, 0, 3, 10, 13, 10}, 1),
             Arguments.of(new byte[]{119, 49, 8, -69, 8, -69, 0, 6, 0, 8, -69, -123, 1, 50, 73, -114, 66, 4, 27, 111, 66, 111, 0, 3, 10, 13, 10}, 1),
@@ -37,9 +45,11 @@ class ModelDTOTest {
   @ParameterizedTest
   @MethodSource("provideInputData")
   @DisplayName("Test getModelId with various inputs")
-  void realDataMessageToDTOTest(byte[] message, int expected) {
+  void realDataMessageToDTOTest(byte[] message, int expected) throws JsonProcessingException {
     ModelTrackDTO dto = MessageTranslator.getDTO(message);
     System.out.println(dto);
+    System.out.println(jsonMapperService.toJsonString(dto));
+    System.out.println("---------");
     assertNotNull(dto);
     assertEquals(expected, dto.getModelName());
   }
