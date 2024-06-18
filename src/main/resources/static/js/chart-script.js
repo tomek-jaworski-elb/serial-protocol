@@ -27,8 +27,8 @@ window.onload = function () {
         try {
             const data = JSON.parse(event.data)
             const modelId = Number(data.modelName);
-            let positionX = parseFloat(data.positionX);
-            let positionY = parseFloat(data.positionY);
+            let positionY = parseFloat(data.positionX);
+            let positionX = parseFloat(data.positionY);
             const angle = parseFloat(data.heading);
             const scaleX = 1;
             const scaleY = 1;
@@ -63,8 +63,8 @@ window.onload = function () {
                     console.log("Drawing model with ID: " + modelId + " at position: " + positionX + ", " + positionY);
                     break;
                 default:
-                    clearCanvas("overlayCanvas4");
-                    drawTriangle('overlayCanvas4', positionX, positionY, 12, angle, 'black');
+//                    clearCanvas("overlayCanvas4");
+//                    drawTriangle('overlayCanvas4', positionX, positionY, 12, angle, 'black');
                     console.log("Unknown model ID: " + modelId + " at position: " + positionX + ", " + positionY);
             }
         } catch (error) {
