@@ -34,8 +34,8 @@ window.onload = function () {
             const scaleY = 10;
             const shiftX = 200;
             const shiftY = 200;
-            positionX = positionX * scaleX + shiftX;
-            positionY = positionY * scaleY + shiftY;
+            positionX = (positionX + shiftX) * scaleX;
+            positionY = (positionY + shiftY) * scaleY;
             switch (modelId) {
                 case 1:
                     clearCanvas("overlayCanvas");
