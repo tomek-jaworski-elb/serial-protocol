@@ -30,12 +30,12 @@ window.onload = function () {
             let positionX = parseFloat(data.positionX);
             let positionY = parseFloat(data.positionY);
             const angle = parseFloat(data.heading);
-            const scaleX = 10;
-            const scaleY = 10;
-            const shiftX = 200;
-            const shiftY = 200;
-            positionX = (positionX + shiftX) * scaleX;
-            positionY = (positionY + shiftY) * scaleY;
+            const scaleX = 1;
+            const scaleY = 1;
+            const shiftX = 0;
+            const shiftY = 0;
+            positionX = Math.abs((positionX + shiftX) * scaleX);
+            positionY = Math.abs((positionY + shiftY) * scaleY);
             switch (modelId) {
                 case 1:
                     clearCanvas("overlayCanvas");
