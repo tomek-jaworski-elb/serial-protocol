@@ -38,27 +38,27 @@ window.onload = function () {
             const shiftY = 200;
             switch (modelId) {
                 case 1:
-                    drawTriangle('overlayCanvas', positionX + shiftX, positionY + shiftY, 20, angle);
+                    drawTriangle('overlayCanvas', positionX + shiftX, positionY + shiftY, 9, angle, 'orange');
                     console.log("Drawing model with ID: " + modelId);
                     break;
                 case 2:
-                    drawTriangle('overlayCanvas1', positionX + shiftX, positionY + shiftY, 20, angle);
+                    drawTriangle('overlayCanvas1', positionX + shiftX, positionY + shiftY, 10, angle, 'blue');
                     console.log("Drawing model with ID: " + modelId);
                     break;
                 case 3:
-                    drawTriangle('overlayCanvas2', positionX + shiftX, positionY + shiftY, 20, angle);
+                    drawTriangle('overlayCanvas2', positionX + shiftX, positionY + shiftY, 9, angle, 'green');
                     console.log("Drawing model with ID: " + modelId);
                     break;
                 case 4:
-                    drawTriangle('overlayCanvas3', positionX + shiftX, positionY + shiftY, 20, angle);
+                    drawTriangle('overlayCanvas3', positionX + shiftX, positionY + shiftY, 10, angle, 'purple');
                     console.log("Drawing model with ID: " + modelId);
                     break;
                 case 5:
-                    drawTriangle('overlayCanvas4', positionX + shift, positionY + shift, 20, angle);
+                    drawTriangle('overlayCanvas4', positionX + shiftX, positionY + shiftY, 8, angle, 'white');
                     console.log("Drawing model with ID: " + modelId);
                     break;
                 default:
-                    drawTriangle('overlayCanvas', positionX + shift, positionY + shift, 20, angle);
+                    drawTriangle('overlayCanvas', positionX + shiftX, positionY + shiftY, 12, angle, 'black');
                     console.log("Unknown model ID: " + modelId);
             }
         } catch (error) {
