@@ -34,38 +34,38 @@ window.onload = function () {
             const scaleY = 1;
             const shiftX = 0;
             const shiftY = 0;
-            positionX = Math.abs((positionX + shiftX) * scaleX);
-            positionY = Math.abs((positionY + shiftY) * scaleY);
+            positionX = Math.abs(positionX);
+            positionY = Math.abs(positionY);
             switch (modelId) {
                 case 1:
                     clearCanvas("overlayCanvas");
                     drawTriangle('overlayCanvas', positionX, positionY, 9, angle, 'orange');
-                    console.log("Drawing model with ID: " + modelId + " at position: " + positionX + ", " + positionY);
+                    console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 2:
                     clearCanvas("overlayCanvas1");
                     drawTriangle('overlayCanvas1', positionX, positionY, 10, angle, 'blue');
-                    console.log("Drawing model with ID: " + modelId + " at position: " + positionX + ", " + positionY);
+                    console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 3:
                     clearCanvas("overlayCanvas2");
                     drawTriangle('overlayCanvas2', positionX, positionY, 9, angle, 'green');
-                    console.log("Drawing model with ID: " + modelId + " at position: " + positionX + ", " + positionY);
+                    console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 4:
                     clearCanvas("overlayCanvas3");
                     drawTriangle('overlayCanvas3', positionX, positionY, 10, angle, 'purple');
-                    console.log("Drawing model with ID: " + modelId + " at position: " + positionX + ", " + positionY);
+                    console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 5:
                     clearCanvas("overlayCanvas4");
                     drawTriangle('overlayCanvas4', positionX, positionY, 8, angle, 'white');
-                    console.log("Drawing model with ID: " + modelId + " at position: " + positionX + ", " + positionY);
+                    console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 default:
 //                    clearCanvas("overlayCanvas4");
 //                    drawTriangle('overlayCanvas4', positionX, positionY, 12, angle, 'black');
-                    console.log("Unknown model ID: " + modelId + " at position: " + positionX + ", " + positionY);
+                    console.log("Unknown model ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
             }
         } catch (error) {
             console.error("Error parsing JSON data:", error);
