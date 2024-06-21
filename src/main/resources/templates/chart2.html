@@ -30,27 +30,32 @@
             z-index: 0;
         }
 
-        #overlayCanvas {
+        #overlayCanvas1 {
             z-index: 1;
             pointer-events: none; /* To make sure the background canvas can still receive events */
         }
-        #overlayCanvas {
+        #overlayCanvas2 {
             z-index: 2;
             pointer-events: none; /* To make sure the background canvas can still receive events */
         }
 
-        #overlayCanvas2 {
+        #overlayCanvas3 {
             z-index: 3;
             pointer-events: none; /* To make sure the background canvas can still receive events */
         }
 
-        #overlayCanvas3 {
+        #overlayCanvas4 {
             z-index: 4;
             pointer-events: none; /* To make sure the background canvas can still receive events */
         }
 
-        #overlayCanvas4 {
+        #overlayCanvas5 {
             z-index: 5;
+            pointer-events: none; /* To make sure the background canvas can still receive events */
+        }
+
+        #overlayCanvas6 {
+            z-index: 6;
             pointer-events: none; /* To make sure the background canvas can still receive events */
         }
     </style>
@@ -68,11 +73,12 @@
 </div>
 <div class="canvas-container">
     <canvas id="backgroundCanvas"></canvas>
-    <canvas id="overlayCanvas"></canvas>
     <canvas id="overlayCanvas1"></canvas>
     <canvas id="overlayCanvas2"></canvas>
     <canvas id="overlayCanvas3"></canvas>
     <canvas id="overlayCanvas4"></canvas>
+    <canvas id="overlayCanvas5"></canvas>
+    <canvas id="overlayCanvas6"></canvas>
 </div>
 <footer th:replace="~{fragment::footer}"></footer>
 <script th:src="@{/bootstrap-5-3-3/js/bootstrap.js}"></script>
