@@ -41,37 +41,37 @@ window.onload = function () {
                 case 1:
                     canvasName = "overlayCanvas1"
                     clearCanvas(canvasName);
-                    drawTriangle(canvasName, positionX, positionY, 9, angle, 'orange');
+                    drawTriangle(canvasName, positionX, positionY, 4, angle, 'orange');
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 2:
                     canvasName = "overlayCanvas2"
                     clearCanvas(canvasName);
-                    drawTriangle(canvasName, positionX, positionY, 10, angle, 'blue');
+                    drawTriangle(canvasName, positionX, positionY, 4, angle, 'blue');
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 3:
                     canvasName = "overlayCanvas3"
                     clearCanvas(canvasName);
-                    drawTriangle(canvasName, positionX, positionY, 9, angle, 'green');
+                    drawTriangle(canvasName, positionX, positionY, 4, angle, 'green');
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 4:
                     canvasName = "overlayCanvas4"
                     clearCanvas(canvasName);
-                    drawTriangle(canvasName, positionX, positionY, 10, angle, 'purple');
+                    drawTriangle(canvasName, positionX, positionY, 4, angle, 'purple');
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 5:
                     canvasName = "overlayCanvas5"
                     clearCanvas(canvasName);
-                    drawTriangle(canvasName, positionX, positionY, 8, angle, 'white');
+                    drawTriangle(canvasName, positionX, positionY, 4, angle, 'white');
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 6:
                     canvasName = "overlayCanvas6"
                     clearCanvas(canvasName);
-                    drawTriangle(canvasName, positionX, positionY, 8, angle, 'blue');
+                    drawTriangle(canvasName, positionX, positionY, 4, angle, 'blue');
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 default:
