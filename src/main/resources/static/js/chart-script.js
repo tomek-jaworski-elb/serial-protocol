@@ -27,15 +27,16 @@ window.onload = function () {
         try {
             const data = JSON.parse(event.data)
             const modelId = Number(data.modelName);
-            let positionY = parseFloat(data.positionX);
-            let positionX = parseFloat(data.positionY);
+            let positionX = parseFloat(data.positionX);
+            let positionY = parseFloat(data.positionY);
             const angle = parseFloat(data.heading);
             const scaleX = 1;
             const scaleY = 1;
             const shiftX = 0;
             const shiftY = 0;
-            positionX = Math.abs(positionX);
-            positionY = Math.abs(positionY);
+            const newPoints = getScaledPoints(positionX, positionY);
+            positionX = newPoints.x;
+            positionY = newPoints.y;
             let canvasName;
             switch (modelId) {
                 case 1:
@@ -103,6 +104,23 @@ window.onload = function () {
     bgImg.onload = function () {
         bgCtx.drawImage(bgImg, 0, 0, backgroundCanvas.width, backgroundCanvas.height);
     };
+
+    function getScaledPoints(oldX, oldY) {
+//      chart size L/G x=430 y=-60   PD x=-1570 y=1040
+//      x = 430 + 1570 = 2000   ||  y = 60 + 1040 = 1100
+        const bgY = backgroundCanvas.height;
+        const bgX = backgroundCanvas.width;
+        scaleX = bgX/1100;
+        scaleY = bgY/2000;
+        console.log("ScaleX: " + scaleX);
+        console.log("ScaleY: " + scaleY);
+        console.log("Old: " + oldX + " | " + oldY)
+        // Changed coordinate system x->y , y->x
+        const y = (-oldX + 430) * scaleY;
+        const x = (oldY + 60) * scaleX;
+        console.log("New: " + x + " | " +  y);
+        return {x, y};
+    }
 
     // Function to generate a random point within the canvas
     function getRandomPoint(elementId) {
