@@ -110,15 +110,15 @@ window.onload = function () {
 //      x = 430 + 1570 = 2000   ||  y = 60 + 1040 = 1100
         const bgY = backgroundCanvas.height;
         const bgX = backgroundCanvas.width;
+        const staticShift = 180;
         scaleX = bgX/1100;
         scaleY = bgY/2000;
-        console.log("ScaleX: " + scaleX);
-        console.log("ScaleY: " + scaleY);
-        console.log("Old: " + oldX + " | " + oldY)
+        console.log("ScaleX: " + scaleX + ", ScaleY: " + scaleY);
+        console.log("Old X: " + oldX + ", Old Y:  " + oldY)
         // Changed coordinate system x->y , y->x
-        const y = (-oldX + 430) * scaleY;
+        const y = (-oldX + 430 + staticShift) * scaleY;
         const x = (oldY + 60) * scaleX;
-        console.log("New: " + x + " | " +  y);
+        console.log("New X: " + x + ", New Y: " +  y);
         return {x, y};
     }
 
@@ -189,7 +189,7 @@ window.onload = function () {
         ctx.fillStyle = fillColor;
         ctx.fill();
         ctx.strokeStyle = 'black';
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 1;
         ctx.stroke();
     }
 
