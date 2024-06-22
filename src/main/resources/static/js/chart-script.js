@@ -27,39 +27,52 @@ window.onload = function () {
         try {
             const data = JSON.parse(event.data)
             const modelId = Number(data.modelName);
-            let positionY = parseFloat(data.positionX);
-            let positionX = parseFloat(data.positionY);
+            let positionX = parseFloat(data.positionX);
+            let positionY = parseFloat(data.positionY);
             const angle = parseFloat(data.heading);
             const scaleX = 1;
             const scaleY = 1;
             const shiftX = 0;
             const shiftY = 0;
-            positionX = Math.abs(positionX);
-            positionY = Math.abs(positionY);
+            const newPoints = getScaledPoints(positionX, positionY);
+            positionX = newPoints.x;
+            positionY = newPoints.y;
+            let canvasName;
             switch (modelId) {
                 case 1:
-                    clearCanvas("overlayCanvas");
-                    drawTriangle('overlayCanvas', positionX, positionY, 9, angle, 'orange');
+                    canvasName = "overlayCanvas1"
+                    clearCanvas(canvasName);
+                    drawTriangle(canvasName, positionX, positionY, 4, angle, 'orange');
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 2:
-                    clearCanvas("overlayCanvas1");
-                    drawTriangle('overlayCanvas1', positionX, positionY, 10, angle, 'blue');
+                    canvasName = "overlayCanvas2"
+                    clearCanvas(canvasName);
+                    drawTriangle(canvasName, positionX, positionY, 4, angle, 'blue');
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 3:
-                    clearCanvas("overlayCanvas2");
-                    drawTriangle('overlayCanvas2', positionX, positionY, 9, angle, 'green');
+                    canvasName = "overlayCanvas3"
+                    clearCanvas(canvasName);
+                    drawTriangle(canvasName, positionX, positionY, 4, angle, 'green');
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 4:
-                    clearCanvas("overlayCanvas3");
-                    drawTriangle('overlayCanvas3', positionX, positionY, 10, angle, 'purple');
+                    canvasName = "overlayCanvas4"
+                    clearCanvas(canvasName);
+                    drawTriangle(canvasName, positionX, positionY, 4, angle, 'purple');
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 5:
-                    clearCanvas("overlayCanvas4");
-                    drawTriangle('overlayCanvas4', positionX, positionY, 8, angle, 'white');
+                    canvasName = "overlayCanvas5"
+                    clearCanvas(canvasName);
+                    drawTriangle(canvasName, positionX, positionY, 4, angle, 'white');
+                    console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
+                    break;
+                case 6:
+                    canvasName = "overlayCanvas6"
+                    clearCanvas(canvasName);
+                    drawTriangle(canvasName, positionX, positionY, 4, angle, 'blue');
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 default:
@@ -91,6 +104,23 @@ window.onload = function () {
     bgImg.onload = function () {
         bgCtx.drawImage(bgImg, 0, 0, backgroundCanvas.width, backgroundCanvas.height);
     };
+
+    function getScaledPoints(oldX, oldY) {
+//      chart size L/G x=430 y=-60   PD x=-1570 y=1040
+//      x = 430 + 1570 = 2000   ||  y = 60 + 1040 = 1100
+        const bgY = backgroundCanvas.height;
+        const bgX = backgroundCanvas.width;
+        scaleX = bgX/1100;
+        scaleY = bgY/2000;
+        console.log("ScaleX: " + scaleX);
+        console.log("ScaleY: " + scaleY);
+        console.log("Old: " + oldX + " | " + oldY)
+        // Changed coordinate system x->y , y->x
+        const y = (-oldX + 430) * scaleY;
+        const x = (oldY + 60) * scaleX;
+        console.log("New: " + x + " | " +  y);
+        return {x, y};
+    }
 
     // Function to generate a random point within the canvas
     function getRandomPoint(elementId) {
