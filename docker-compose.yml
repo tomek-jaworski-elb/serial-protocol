@@ -10,7 +10,7 @@ services:
             - ws.heartbeat.interval=2000  # value in ms > 1
 #            - ws.endpoint=/echo
         ports:
-            - "8080:8080"
+            - "8081:8081"
         volumes:
             - ./logs:/app/logs
         devices:
