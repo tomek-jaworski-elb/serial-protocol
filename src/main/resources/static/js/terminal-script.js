@@ -6,8 +6,6 @@
     }
 
     function connectWebSocket(endpoint, messageAreaId) {
-    const hostname = window.location.hostname; // Gets the hostname of the current page
-    const port = 8081;
         const ws = new WebSocket(`ws://${hostname}:${port}${endpoint}`);
 
         ws.onopen = function(event) {
