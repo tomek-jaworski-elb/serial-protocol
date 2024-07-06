@@ -2,11 +2,10 @@ package com.jaworski.serialprotocol.service.utils;
 
 import com.jaworski.serialprotocol.dto.ModelTrackDTO;
 import com.jaworski.serialprotocol.dto.TugDTO;
-import com.jaworski.serialprotocol.service.utils.impl.MessageCommon;
-import com.jaworski.serialprotocol.service.utils.impl.MessageLadyMarie;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
@@ -18,8 +17,12 @@ public class MessageTranslator {
     private static final Logger LOG = LogManager.getLogger(MessageTranslator.class);
     public static final int MESSAGE_LENGTH = 27;
     public static final int MESSAGE_LENGTH_LADY_MARIE = 29;
-    private final MessageCommon messageCommon;
-    private final MessageLadyMarie messageLadyMarie;
+    private static final int HEADING_CORRECTION = 0;
+    @Qualifier("messageCommon")
+    private final SerialMessageTranslator messageCommon;
+
+    @Qualifier("messageLadyMarie")
+    private final SerialMessageTranslator messageLadyMarie;
 
     public static final Map<String, Integer> MODEL_MAP = Map.of("w1", 1,
             "b2", 2,
@@ -38,7 +41,7 @@ public class MessageTranslator {
                     .positionX(messageLadyMarie.getPositionX(message))
                     .positionY(messageLadyMarie.getPositionY(message))
                     .speed(messageLadyMarie.getSpeed(message))
-                    .heading(messageLadyMarie.getHeading(message))
+                    .heading(messageLadyMarie.getHeading(message) + HEADING_CORRECTION)
                     .rudder(messageLadyMarie.getRudder(message))
                     .gpsQuality(messageLadyMarie.getGPSQuality(message))
                     .engine(messageLadyMarie.getEngine(message))
@@ -60,7 +63,7 @@ public class MessageTranslator {
                     .positionX(messageCommon.getPositionX(message))
                     .positionY(messageCommon.getPositionY(message))
                     .speed(messageCommon.getSpeed(message))
-                    .heading(messageCommon.getHeading(message))
+                    .heading(messageCommon.getHeading(message) + HEADING_CORRECTION)
                     .rudder(messageCommon.getRudder(message))
                     .gpsQuality(messageCommon.getGPSQuality(message))
                     .engine(messageCommon.getEngine(message))

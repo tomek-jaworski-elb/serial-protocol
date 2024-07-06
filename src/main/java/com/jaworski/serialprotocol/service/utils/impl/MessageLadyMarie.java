@@ -15,6 +15,8 @@ import static com.jaworski.serialprotocol.service.utils.MessageTranslator.MODEL_
 @Component
 public class MessageLadyMarie implements SerialMessageTranslator {
 
+    private static final int POSITION_OFFSET = 2;
+
     @Override
     public int getModelId(byte[] delimitedMessage) {
         String modelId = new String(delimitedMessage, 0, 2);
@@ -30,7 +32,7 @@ public class MessageLadyMarie implements SerialMessageTranslator {
 
     @Override
     public Double getGPSQuality(byte[] message) {
-        int headingValue = (message[22] & 0xFF) << 8 | (message[23] & 0xFF);
+        int headingValue = (message[22 + POSITION_OFFSET] & 0xFF) << 8 | (message[23 + POSITION_OFFSET] & 0xFF);
         return headingValue / 100d;
     }
 
@@ -78,14 +80,14 @@ public class MessageLadyMarie implements SerialMessageTranslator {
 
     @Override
     public Double getBowThruster(byte[] message) {
-        byte b = message[21];
+        byte b = message[21 + POSITION_OFFSET];
         return (double) b;
     }
 
     @Override
     public Float getPositionY(byte[] message) throws IllegalArgumentException {
         try {
-            float aFloat = ByteBuffer.wrap(message, 17, 4).order(ByteOrder.LITTLE_ENDIAN).getFloat();
+            float aFloat = ByteBuffer.wrap(message, 17 + POSITION_OFFSET, 4).order(ByteOrder.LITTLE_ENDIAN).getFloat();
             return BigDecimal.valueOf(aFloat).setScale(2, RoundingMode.HALF_UP).floatValue();
         } catch (BufferOverflowException | IndexOutOfBoundsException | NumberFormatException e) {
             throw new IllegalArgumentException("Buffer wrap exception for PositionY! " + Arrays.toString(message), e);
@@ -94,7 +96,7 @@ public class MessageLadyMarie implements SerialMessageTranslator {
     @Override
     public Float getPositionX(byte[] message) throws IllegalArgumentException {
         try {
-            float aFloat = ByteBuffer.wrap(message, 13, 4).order(ByteOrder.LITTLE_ENDIAN).getFloat();
+            float aFloat = ByteBuffer.wrap(message, 13 + POSITION_OFFSET, 4).order(ByteOrder.LITTLE_ENDIAN).getFloat();
             return BigDecimal.valueOf(aFloat).setScale(2, RoundingMode.HALF_UP).floatValue();
         } catch (BufferOverflowException | IndexOutOfBoundsException | NumberFormatException e) {
             throw new IllegalArgumentException("Buffer wrap exception for PositionX! " + Arrays.toString(message), e);
