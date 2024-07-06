@@ -24,13 +24,13 @@ public class MessageLadyMarie implements SerialMessageTranslator {
 
     @Override
     public Double getSpeed(byte[] message) {
-        byte speed = message[12];
+        byte speed = message[12];            // 12 lub 12+2  ?
         return speed / 10d;
     }
 
     @Override
     public Double getGPSQuality(byte[] message) {
-        int headingValue = (message[22] & 0xFF) << 8 | (message[23] & 0xFF);
+        int headingValue = (message[22+2] & 0xFF) << 8 | (message[23+2] & 0xFF);
         return headingValue / 100d;
     }
 
@@ -78,14 +78,14 @@ public class MessageLadyMarie implements SerialMessageTranslator {
 
     @Override
     public Double getBowThruster(byte[] message) {
-        byte b = message[21];
+        byte b = message[21+2];
         return (double) b;
     }
 
     @Override
     public Float getPositionY(byte[] message) throws IllegalArgumentException {
         try {
-            float aFloat = ByteBuffer.wrap(message, 17, 4).order(ByteOrder.LITTLE_ENDIAN).getFloat();
+            float aFloat = ByteBuffer.wrap(message, 17+2, 4).order(ByteOrder.LITTLE_ENDIAN).getFloat();
             return BigDecimal.valueOf(aFloat).setScale(2, RoundingMode.HALF_UP).floatValue();
         } catch (BufferOverflowException | IndexOutOfBoundsException | NumberFormatException e) {
             throw new IllegalArgumentException("Buffer wrap exception for PositionY! " + Arrays.toString(message), e);
@@ -94,7 +94,7 @@ public class MessageLadyMarie implements SerialMessageTranslator {
     @Override
     public Float getPositionX(byte[] message) throws IllegalArgumentException {
         try {
-            float aFloat = ByteBuffer.wrap(message, 13, 4).order(ByteOrder.LITTLE_ENDIAN).getFloat();
+            float aFloat = ByteBuffer.wrap(message, 13+2, 4).order(ByteOrder.LITTLE_ENDIAN).getFloat();
             return BigDecimal.valueOf(aFloat).setScale(2, RoundingMode.HALF_UP).floatValue();
         } catch (BufferOverflowException | IndexOutOfBoundsException | NumberFormatException e) {
             throw new IllegalArgumentException("Buffer wrap exception for PositionX! " + Arrays.toString(message), e);
