@@ -1,6 +1,8 @@
 package com.jaworski.serialprotocol.service.utils.impl;
 
+import com.jaworski.serialprotocol.service.utils.MassageValuesOperations;
 import com.jaworski.serialprotocol.service.utils.SerialMessageTranslator;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -12,8 +14,11 @@ import java.util.Arrays;
 
 import static com.jaworski.serialprotocol.service.utils.MessageTranslator.MODEL_MAP;
 
+@RequiredArgsConstructor
 @Component
 public class MessageCommon implements SerialMessageTranslator {
+
+    private final MassageValuesOperations massageValuesOperations;
 
     @Override
     public int getModelId(byte[] delimitedMessage) {
@@ -30,14 +35,15 @@ public class MessageCommon implements SerialMessageTranslator {
 
     @Override
     public Double getGPSQuality(byte[] message) {
-        int headingValue = (message[22] & 0xFF) << 8 | (message[23] & 0xFF);
-        return headingValue / 100d;
+        int gpsQuality = (message[22] & 0xFF) << 8 | (message[23] & 0xFF);
+        return gpsQuality / 100d;
     }
 
     @Override
     public Double getHeading(byte[] message) {
         int headingValue = (message[2] & 0xFF) << 8 | (message[3] & 0xFF);
-        return headingValue / 10d;
+        double heading = headingValue / 10d;
+        return massageValuesOperations.headingAlignment(heading);
     }
 
     @Override
