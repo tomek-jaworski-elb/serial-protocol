@@ -42,7 +42,7 @@ window.onload = function () {
                 case 1:
                     canvasName = "overlayCanvas1"
                     clearCanvas(canvasName);
-                    drawTriangle(canvasName, positionX, positionY, 4, angle, 'orange');
+                    drawTriangle(canvasName, positionX, positionY, 14, angle, 'orange');
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 2:
