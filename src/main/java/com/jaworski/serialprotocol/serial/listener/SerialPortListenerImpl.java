@@ -25,6 +25,7 @@ public class SerialPortListenerImpl implements SerialPortMessageListener {
     private final Resources resources;
     private final WebSocketPublisher webSocketPublisher;
     private final JsonMapperService jsonMapperService;
+    private final MessageTranslator messageTranslator;
 
     @Override
     public byte[] getMessageDelimiter() {
@@ -49,7 +50,7 @@ public class SerialPortListenerImpl implements SerialPortMessageListener {
         LOG.info("On port {} Received delimited message: {}", serialPort.getPortDescription(), delimitedMessage);
         webSocketPublisher.publishForAllClients(Arrays.toString(delimitedMessage), SessionType.RS);
         try {
-            ModelTrackDTO dto = MessageTranslator.getDTO(delimitedMessage);
+            ModelTrackDTO dto = messageTranslator.getDTO(delimitedMessage);
             String jsonString = jsonMapperService.toJsonString(dto);
             webSocketPublisher.publishForAllClients(jsonString, SessionType.JSON);
         } catch (IllegalArgumentException e) {

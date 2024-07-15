@@ -3,5 +3,5 @@ LABEL authors="tomaszja"
 ARG VERSION=1.3
 WORKDIR /app
 COPY target/serial-protocol-${VERSION}.jar app.jar
-EXPOSE 8080
+EXPOSE 8081
 CMD ["java", "-jar", "app.jar"]
