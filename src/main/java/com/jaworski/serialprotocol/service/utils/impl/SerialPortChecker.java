@@ -29,7 +29,7 @@ public class SerialPortChecker {
 
   @Scheduled(fixedRate = 10, timeUnit = TimeUnit.SECONDS)
   public void checkPorts() {
-    LOG.info("Checking all open ports...");
+    LOG.info("Checking all open ports health...");
     serialController.getAllPorts().forEach(this::isPortAvailable);
   }
 }

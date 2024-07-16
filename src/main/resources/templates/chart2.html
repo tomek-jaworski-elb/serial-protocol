@@ -60,15 +60,95 @@
             z-index: 6;
             pointer-events: none; /* To make sure the background canvas can still receive events */
         }
+
+        .form-control {
+            font-family: "Courier New", Times, Monospace,serif;
+            font-size: 12px;
+            text-align: left;
+        }
     </style>
 </head>
 <body>
 <header th:replace="~{fragment::header}"></header>
-<div class="d-flex justify-content-center align-items-center border-2 p-3 m-1">
-    <div class="container m-1">
-        <div class="row justify-content-center">
-            <div class="container text-center border border-info mb-2">
-                <p id="textField" class="p-1 m-1">Text</p>
+<div class="container-fluid">
+    <!-- Parent Div -->
+    <div class="row bg-light p-4 justify-content-center">
+
+        <!-- Nested Div 1 -->
+        <div class="col-sm mb-1">
+            <div class="container p-2 text-white border border-dark" style="background-color: orange;">
+                <h5 class="text-center">WARTA</h5>
+                <p class="text-center"><b>Speed: </b>
+                    <span id="speed1" class="text-center p-1 border-0">0</span>
+                </p>
+                <p class="text-center"><b>Heading: </b>
+                    <span id="heading1" class="text-center p-1 border-0">0</span>
+                </p>
+            </div>
+        </div>
+
+        <!-- Nested Div 2 -->
+        <div class="col-sm mb-1">
+            <div class="container p-2 text-white border border-dark" style="background-color: blue;">
+                <h5 class="text-center">BLUE LADY</h5>
+                <p class="text-center"><b>Speed: </b>
+                    <span id="speed2" class="text-center p-1 border-0">0</span>
+                </p>
+                <p class="text-center"><b>Heading: </b>
+                    <span id="heading2" class="text-center p-1 border-0">0</span>
+                </p>
+            </div>
+        </div>
+
+        <!-- Nested Div 3 -->
+        <div class="col-sm mb-1">
+            <div class="container p-2 text-white border border-dark" style="background-color: darkmagenta;">
+                <h5 class="text-center">CHERRY LADY</h5>
+                <p class="text-center"><b>Speed: </b>
+                    <span id="speed4" class="text-center p-1 border-0">0</span>
+                </p>
+                <p class="text-center"><b>Heading: </b>
+                    <span id="heading4" class="text-center p-1 border-0">0</span>
+                </p>
+            </div>
+        </div>
+
+        <!-- Nested Div 4 -->
+        <div class="col-sm mb-1">
+            <div class="container p-2 text-white border border-dark" style="background-color: green;">
+                <h5 class="text-center">DORCHESTER LADY</h5>
+                <p class="text-center"><b>Speed: </b>
+                    <span id="speed3" class="text-center p-1 border-0">0</span>
+                </p>
+                <p class="text-center"><b>Heading: </b>
+                    <span id="heading3" class="text-center p-1 border-0">0</span>
+                </p>
+            </div>
+        </div>
+
+        <!-- Nested Div 5 -->
+        <div class="col-sm mb-1">
+            <div class="p-2 text-white border border-dark" style="background-color: darkblue;">
+                <h5 class="text-center">LADY MARIE</h5>
+                <p class="text-center"><b>Speed: </b>
+                    <span id="speed6" class="text-center p-1 border-0">0</span>
+                </p>
+                <p class="text-center"><b>Heading: </b>
+                    <span id="heading6" class="text-center p-1 border-0">0</span>
+                </p>
+            </div>
+        </div>
+
+        <!-- Nested Div 6 -->
+        <div class="col-sm mb-1">
+            <div class="p-2 text-black border border-dark" style="background-color: white;">
+                <h5 class="text-center">KOŁOBRZEG</h5>
+                <p class="text-center"><b>Speed: </b>
+                    <span id="speed5" class="text-center p-1 border-0">0</span>
+                </p>
+                <p class="text-center"><b>Heading: </b>
+                    <span id="heading5" class="text-center p-1 border-0">0</span>
+                </p>
             </div>
         </div>
     </div>
@@ -81,6 +161,9 @@
     <canvas id="overlayCanvas4"></canvas>
     <canvas id="overlayCanvas5"></canvas>
     <canvas id="overlayCanvas6"></canvas>
+</div>
+<div class="container-fluid mt-3">
+    <p id="textField" class="form-control">Text</p>
 </div>
 <footer th:replace="~{fragment::footer}"></footer>
 <script type="text/javascript"  th:src="@{/js/ws-params.js}"></script>

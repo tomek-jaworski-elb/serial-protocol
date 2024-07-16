@@ -28,6 +28,7 @@ window.onload = function () {
             let positionX = parseFloat(data.positionX);
             let positionY = parseFloat(data.positionY);
             const angle = parseFloat(data.heading);
+            const speed = parseFloat(data.speed);
             const scaleX = 1;
             const scaleY = 1;
             const shiftX = 0;
@@ -40,6 +41,8 @@ window.onload = function () {
                 case 1:
                     canvasName = "overlayCanvas1"
                     clearCanvas(canvasName);
+                    fillFieldValues("heading1", angle);
+                    fillFieldValues("speed1", speed);
                     //drawTriangle(canvasName, positionX, positionY, 8, angle, 'orange');
                     drawShip(canvasName, positionX, positionY, 9, angle, 'orange');                                     // Kalibracja DanePM do MAPY
 //                  drawTriangle(canvasName, (  0    + 60+4) * 3.61 , ( 0    + 506) * 3.61 , 6,    1, 'white');         // pozycja 0 x 0             0x0
@@ -57,6 +60,8 @@ window.onload = function () {
                 case 2:
                     canvasName = "overlayCanvas2"
                     clearCanvas(canvasName);
+                    fillFieldValues("heading2", angle);
+                    fillFieldValues("speed2", speed);
                     //drawTriangle(canvasName, positionX, positionY, 8, angle, 'blue');
                     drawShip(canvasName, positionX, positionY, 10, angle, 'blue');
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
@@ -64,6 +69,8 @@ window.onload = function () {
                 case 3:
                     canvasName = "overlayCanvas3"
                     clearCanvas(canvasName);
+                    fillFieldValues("heading3", angle);
+                    fillFieldValues("speed3", speed);
                     //drawTriangle(canvasName, positionX, positionY, 8, angle, 'green');
                     drawShip(canvasName, positionX, positionY, 8, angle, 'green');
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
@@ -71,6 +78,8 @@ window.onload = function () {
                 case 4:
                     canvasName = "overlayCanvas4"
                     clearCanvas(canvasName);
+                    fillFieldValues("heading4", angle);
+                    fillFieldValues("speed4", speed);
                     //drawTriangle(canvasName, positionX, positionY, 8, angle, 'purple');
                     drawShip(canvasName, positionX, positionY, 8, angle, 'purple');
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
@@ -78,6 +87,8 @@ window.onload = function () {
                 case 5:
                     canvasName = "overlayCanvas5"
                     clearCanvas(canvasName);
+                    fillFieldValues("heading5", angle);
+                    fillFieldValues("speed5", speed);
                     //drawTriangle(canvasName, positionX, positionY, 8, angle, 'white');
                     drawShip(canvasName, positionX, positionY, 8, angle, 'white');
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
@@ -85,6 +96,8 @@ window.onload = function () {
                 case 6:
                     canvasName = "overlayCanvas6"
                     clearCanvas(canvasName);
+                    fillFieldValues("heading6", angle);
+                    fillFieldValues("speed6", speed);
                     //drawTriangle(canvasName, positionX, positionY, 8, angle, 'red'); // 'blue'
                     drawShip(canvasName, positionX, positionY, 12, angle, 'Blue'); // 'blue'
 //                  drawTriangle(canvasName, ( 10 + 60+4) * 3.61 , ( 10 + 506) * 3.61 , 12,    1, 'red'); // pozycja 0 x 0
@@ -261,5 +274,10 @@ window.onload = function () {
         ctx.strokeStyle = 'black';
         ctx.lineWidth = 1;
         ctx.stroke();
+    }
+
+    function fillFieldValues(elementId, value) {
+        const spanElement = document.getElementById(elementId);
+        spanElement.innerHTML = value;
     }
 };
