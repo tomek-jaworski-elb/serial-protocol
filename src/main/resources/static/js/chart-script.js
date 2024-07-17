@@ -285,7 +285,7 @@ window.onload = function () {
 
     function fillFieldValues(elementId, value) {
         const spanElement = document.getElementById(elementId);
-        spanElement.innerHTML = value;
+        spanElement.innerHTML = value.toFixed(1);
     }
 
     function lightenBackgroundColor(elementId, lighterColor, duration) {
