@@ -31,7 +31,7 @@
         <append>true</append>
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
             <Pattern>
-                %d{dd-MM-yyyy HH:mm:ss.SSS} [%thread] %-5level %logger{36}.%M - %msg%n
+                %d{dd-MM-yyyy HH:mm:ss.SSS} - %msg%n
             </Pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
@@ -39,8 +39,6 @@
                 ${LOG_PATH}/tracking_%d{dd-MM-yyyy}_%i.log
             </fileNamePattern>
             <maxFileSize>100MB</maxFileSize>
-<!--            <maxHistory>10</maxHistory>-->
-<!--            <totalSizeCap>100MB</totalSizeCap>-->
         </rollingPolicy>
     </appender>
 
