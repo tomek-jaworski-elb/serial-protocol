@@ -1,8 +1,4 @@
 window.onload = function () {
-    // Set up the canvases and their contexts
-    const backgroundCanvas = document.getElementById('backgroundCanvas');
-    const bgCtx = backgroundCanvas.getContext('2d');
-
     // Set canvases dimensions to match the container
     const container = document.querySelector('.canvas-container');
     for (let elementsByTagNameElement of container.getElementsByTagName('canvas')) {
@@ -130,14 +126,6 @@ window.onload = function () {
 
     socket.onclose = function (event) {
         console.log("WebSocket connection closed.");
-    };
-
-    // Load the background image
-    const bgImg = new Image();
-    bgImg.src = '/img/MapaSilm.jpg'; // Replace with the path to your background image
-
-    bgImg.onload = function () {
-        bgCtx.drawImage(bgImg, 0, 0, backgroundCanvas.width, backgroundCanvas.height);
     };
 
     function getScaledPoints(oldX, oldY) {
