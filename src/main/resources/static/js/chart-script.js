@@ -46,8 +46,9 @@ window.onpageshow = function () {
                     fillFieldValues("heading1", angle);
                     fillFieldValues("speed1", speed);
                     lightenBackgroundColor("bg-color-1", "yellow", blinkDuration);
+                    //drawShip(canvasName, positionX, positionY, 8, angle, 'orange', Length, Beam, PositionGPS);
+                    drawShip(canvasName, positionX, positionY, 3, angle, 'orange', 12.21, 2, 1);             // Warta // Kalibracja DanePM do MAPY
                     //drawTriangle(canvasName, positionX, positionY, 8, angle, 'orange');
-                    drawShip(canvasName, positionX, positionY, 9, angle, 'orange');                                     // Kalibracja DanePM do MAPY
 //                  drawTriangle(canvasName, (  0    + 60+4) * 3.61 , ( 0    + 506) * 3.61 , 6,    1, 'white');         // pozycja 0 x 0             0x0
 //                  drawTriangle(canvasName, ( 77.07 + 60+4) * 3.61 , (97.25 + 506) * 3.61 , 6,    1, 'orange');        // SBM    -97.25x77.07
 //                  drawTriangle(canvasName, (378.3  + 60+4) * 3.61 , (191.8 + 506) * 3.61 , 6,    1, 'orange');        // FPSO   -191.8x378.3
@@ -58,6 +59,41 @@ window.onpageshow = function () {
 //                  drawTriangle(canvasName, (570  + 64) * 3.61 , ( -362 + 506) * 3.61 , 6,    1, 'red');               // boja kompielisko         320x570
 //                  drawTriangle(canvasName, (820  + 64) * 3.61 , (  610 + 506) * 3.61 , 6,    1, 'red');               // -> zatoka               -610x820
 //                  drawTriangle(canvasName, (926  + 64) * 3.61 , ( 1149 + 506) * 3.61 , 6,    1, 'red');               // Wiata END jeziora      -1149x926
+/*
+Linux -> Futro 720 :
+serial-ports-server  | 18-07-2024 14:11:06.876 [scheduling-1   ] INFO  c.j.s.s.utils.impl.SerialPortChecker.checkPorts - Checking all open ports health...
+serial-ports-server  | 18-07-2024 14:11:06.940 [main           ] INFO  c.j.s.s.controller.SerialController.lambda$openAllPorts$1 - Found 1 ports: (Physical Port S0)
+serial-ports-server  | 18-07-2024 14:11:06.953 [main           ] INFO  c.j.s.s.l.SerialPortListenerImpl.getMessageDelimiter - Set message delimiter: [13, 10]
+serial-ports-server  | 18-07-2024 14:11:06.960 [main           ] INFO  c.j.s.s.controller.SerialController.openAllPorts - On port Physical Port S0 with baud rate 9600 added listener: true
+
+Windows10 -> PC_FBZ :
+18-07-2024 16:14:13.052 [scheduling-1   ] INFO  c.j.s.s.utils.impl.SerialPortChecker.checkPorts - Checking all open ports health...
+18-07-2024 16:14:13.113 [restartedMain  ] INFO  c.j.s.s.controller.SerialController.lambda$openAllPorts$1 - Found 11 ports: (Multifunction Device,Multifunction Device,Multifunction Device,Multifunction Device,Multifunction Device,Multifunction Device,Port komunikacyjny (COM1),com0com - serial port emulator,com0com - serial port emulator,com0com - serial port emulator,com0com - serial port emulator)
+18-07-2024 16:14:13.151 [restartedMain  ] INFO  c.j.s.s.l.SerialPortListenerImpl.getMessageDelimiter - Set message delimiter: [13, 10]
+18-07-2024 16:14:13.153 [restartedMain  ] INFO  c.j.s.s.controller.SerialController.openAllPorts - On port Multifunction Device with baud rate 9600 added listener: true
+18-07-2024 16:14:13.155 [restartedMain  ] INFO  c.j.s.s.l.SerialPortListenerImpl.getMessageDelimiter - Set message delimiter: [13, 10]
+18-07-2024 16:14:13.156 [restartedMain  ] INFO  c.j.s.s.controller.SerialController.openAllPorts - On port Multifunction Device with baud rate 9600 added listener: true
+18-07-2024 16:14:13.159 [restartedMain  ] INFO  c.j.s.s.l.SerialPortListenerImpl.getMessageDelimiter - Set message delimiter: [13, 10]
+18-07-2024 16:14:13.159 [restartedMain  ] INFO  c.j.s.s.controller.SerialController.openAllPorts - On port Multifunction Device with baud rate 9600 added listener: true
+18-07-2024 16:14:13.163 [restartedMain  ] INFO  c.j.s.s.l.SerialPortListenerImpl.getMessageDelimiter - Set message delimiter: [13, 10]
+18-07-2024 16:14:13.163 [restartedMain  ] INFO  c.j.s.s.controller.SerialController.openAllPorts - On port Multifunction Device with baud rate 9600 added listener: true
+18-07-2024 16:14:13.166 [restartedMain  ] INFO  c.j.s.s.l.SerialPortListenerImpl.getMessageDelimiter - Set message delimiter: [13, 10]
+18-07-2024 16:14:13.167 [restartedMain  ] INFO  c.j.s.s.controller.SerialController.openAllPorts - On port Multifunction Device with baud rate 9600 added listener: true
+18-07-2024 16:14:13.171 [restartedMain  ] INFO  c.j.s.s.l.SerialPortListenerImpl.getMessageDelimiter - Set message delimiter: [13, 10]
+18-07-2024 16:14:13.171 [restartedMain  ] INFO  c.j.s.s.controller.SerialController.openAllPorts - On port Multifunction Device with baud rate 9600 added listener: true
+18-07-2024 16:14:13.173 [restartedMain  ] INFO  c.j.s.s.l.SerialPortListenerImpl.getMessageDelimiter - Set message delimiter: [13, 10]
+18-07-2024 16:14:13.174 [restartedMain  ] INFO  c.j.s.s.controller.SerialController.openAllPorts - On port Port komunikacyjny (COM1) with baud rate 9600 added listener: true
+18-07-2024 16:14:13.176 [restartedMain  ] INFO  c.j.s.s.l.SerialPortListenerImpl.getMessageDelimiter - Set message delimiter: [13, 10]
+18-07-2024 16:14:13.176 [restartedMain  ] INFO  c.j.s.s.controller.SerialController.openAllPorts - On port com0com - serial port emulator with baud rate 9600 added listener: true
+18-07-2024 16:14:13.178 [restartedMain  ] INFO  c.j.s.s.l.SerialPortListenerImpl.getMessageDelimiter - Set message delimiter: [13, 10]
+18-07-2024 16:14:13.178 [restartedMain  ] INFO  c.j.s.s.controller.SerialController.openAllPorts - On port com0com - serial port emulator with baud rate 9600 added listener: true
+18-07-2024 16:14:13.181 [restartedMain  ] INFO  c.j.s.s.l.SerialPortListenerImpl.getMessageDelimiter - Set message delimiter: [13, 10]
+18-07-2024 16:14:13.181 [restartedMain  ] INFO  c.j.s.s.controller.SerialController.openAllPorts - On port com0com - serial port emulator with baud rate 9600 added listener: true
+18-07-2024 16:14:13.186 [restartedMain  ] INFO  c.j.s.s.l.SerialPortListenerImpl.getMessageDelimiter - Set message delimiter: [13, 10]
+18-07-2024 16:14:13.186 [restartedMain  ] INFO  c.j.s.s.controller.SerialController.openAllPorts - On port com0com - serial port emulator with baud rate 9600 added listener: true
+18-07-2024 16:14:13.197 [Thread-14      ] INFO  c.j.s.s.l.SerialPortListenerImpl.serialEvent - On port Port komunikacyjny (COM1) Received delimited message: [16, -120, -115, 108, -12, -74, -126, 19, -119, -56, 37, 65, 111, 0, 4, -83, 13, 10]
+*/
+
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 2:
@@ -66,8 +102,8 @@ window.onpageshow = function () {
                     fillFieldValues("heading2", angle);
                     fillFieldValues("speed2", speed);
                     lightenBackgroundColor("bg-color-2", "lightblue", blinkDuration);
-                    //drawTriangle(canvasName, positionX, positionY, 8, angle, 'blue');
-                    drawShip(canvasName, positionX, positionY, 10, angle, 'blue');
+                    //drawShip(canvasName, positionX, positionY, 8, angle, 'orange', Length, Beam, PositionGPS);
+                    drawShip(canvasName, positionX, positionY, 3, angle, 'blue', 13.78, 2.38, 1);              // B.L.
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 3:
@@ -76,8 +112,8 @@ window.onpageshow = function () {
                     fillFieldValues("heading3", angle);
                     fillFieldValues("speed3", speed);
                     lightenBackgroundColor("bg-color-3", "lightgreen", blinkDuration);
-                    //drawTriangle(canvasName, positionX, positionY, 8, angle, 'green');
-                    drawShip(canvasName, positionX, positionY, 8, angle, 'green');
+                    //drawShip(canvasName, positionX, positionY, 8, angle, 'orange', Length, Beam, PositionGPS);
+                    drawShip(canvasName, positionX, positionY, 3, angle, 'green', 11.55, 1.8, 1);               //D.L.
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 4:
@@ -86,8 +122,8 @@ window.onpageshow = function () {
                     fillFieldValues("heading4", angle);
                     fillFieldValues("speed4", speed);
                     lightenBackgroundColor("bg-color-4", "darkmagenta", blinkDuration);
-                    //drawTriangle(canvasName, positionX, positionY, 8, angle, 'purple');
-                    drawShip(canvasName, positionX, positionY, 8, angle, 'purple');
+                    //drawShip(canvasName, positionX, positionY, 8, angle, 'orange', Length, Beam, PositionGPS);
+                    drawShip(canvasName, positionX, positionY, 3, angle, 'purple', 15.5, 1.79, 1);            // Ch.L.
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 5:
@@ -96,8 +132,8 @@ window.onpageshow = function () {
                     fillFieldValues("heading5", angle);
                     fillFieldValues("speed5", speed);
                     lightenBackgroundColor("bg-color-5", "lightgrey", blinkDuration);
-                    //drawTriangle(canvasName, positionX, positionY, 8, angle, 'white');
-                    drawShip(canvasName, positionX, positionY, 8, angle, 'white');
+                    //drawShip(canvasName, positionX, positionY, 8, angle, 'orange', Length, Beam, PositionGPS);
+                    drawShip(canvasName, positionX, positionY, 3, angle, 'white', 10.98, 1.78, 2);             // PROM "Position_GPS" = Length/2 + PositionGPS * Length/10
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 6:
@@ -106,8 +142,8 @@ window.onpageshow = function () {
                     fillFieldValues("heading6", angle);
                     fillFieldValues("speed6", speed);
                     lightenBackgroundColor("bg-color-6", "mediumblue", blinkDuration);
-                    //drawTriangle(canvasName, positionX, positionY, 8, angle, 'red'); // 'blue'
-                    drawShip(canvasName, positionX, positionY, 12, angle, 'Blue'); // 'blue'
+                    //drawShip(canvasName, positionX, positionY, 8, angle, 'orange', Length, Beam, PositionGPS);
+                    drawShip(canvasName, positionX, positionY, 3, angle, 'Blue', 16.43, 2.23, 1);               //L.M.
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 default:
@@ -220,22 +256,22 @@ window.onpageshow = function () {
     }
 
 // Function to draw a triangle
-    function drawShip(elementId, x, y, scale, angle, fillColor) {
+    function drawShip(elementId, x, y, scale, angle, fillColor, yy, xx, pp) {
         const element = document.getElementById(elementId);
         const ctx = element.getContext('2d');
         // Define the vertices of the triangle (equilateral triangle centered at origin)
         let vertices = [
-            {x: 0, y: -2},
-            {x: 0.466, y: -1.0},
-            {x: 0.466, y: 2.5},
-            {x: -0.466, y: 2.5},
-            {x: -0.466, y: -1.0}
+            {x: 0, y: -0.6*yy + pp*(yy/10)},
+            {x: 0.5*xx, y: -0.5*yy + pp*(yy/10)},
+            {x: 0.5*xx, y: 0.5*yy + pp*(yy/10)},
+            {x: -0.5*xx, y: 0.5*yy + pp*(yy/10)},
+            {x: -0.5*xx, y: -0.5*yy + pp*(yy/10)}
         ];
 
         // Scale the vertices
         vertices = vertices.map(vertex => {
             return {
-                x: vertex.x * scale,
+                x: vertex.x * scale * 1.2 ,                                                                             //  * 1.2
                 y: vertex.y * scale
             };
         });
