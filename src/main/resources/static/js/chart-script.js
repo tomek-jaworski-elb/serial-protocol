@@ -2,8 +2,13 @@ window.onpageshow = function () {
     // Set canvases dimensions to match the container
     const container = document.querySelector('.canvas-container');
     for (let elementsByTagNameElement of container.getElementsByTagName('canvas')) {
-        elementsByTagNameElement.width = container.clientWidth;
-        elementsByTagNameElement.height = container.clientHeight;
+        if (navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad')) {
+            elementsByTagNameElement.width = 4000;
+            elementsByTagNameElement.height = 6000;
+        } else {
+            elementsByTagNameElement.width = container.clientWidth;
+            elementsByTagNameElement.height = container.clientHeight;
+        }
     }
 
     // Websocket configuration
