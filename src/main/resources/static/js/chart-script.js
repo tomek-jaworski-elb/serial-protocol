@@ -46,15 +46,15 @@ window.onload = function () {
                     //drawTriangle(canvasName, positionX, positionY, 8, angle, 'orange');
                     drawShip(canvasName, positionX, positionY, 9, angle, 'orange');                                     // Kalibracja DanePM do MAPY
 //                  drawTriangle(canvasName, (  0    + 60+4) * 3.61 , ( 0    + 506) * 3.61 , 6,    1, 'white');         // pozycja 0 x 0             0x0
-                    drawTriangle(canvasName, ( 77.07 + 60+4) * 3.61 , (97.25 + 506) * 3.61 , 6,    1, 'orange');        // SBM    -97.25x77.07
-                    drawTriangle(canvasName, (378.3  + 60+4) * 3.61 , (191.8 + 506) * 3.61 , 6,    1, 'orange');        // FPSO   -191.8x378.3
-                    drawTriangle(canvasName, (-25  + 64) * 3.61 , (   84 + 506) * 3.61 , 6,    1, 'red');               // <- nabieznik             -84x25
-                    drawTriangle(canvasName, ( 82.8+ 64) * 3.61 , (  -69 + 506) * 3.61 , 6,    1, 'red');               // port nabieznik ->         69x82.8
-                    drawTriangle(canvasName, (  2  + 64) * 3.61 , ( -130 + 506) * 3.61 , 6,    1, 'red');               // pomost Lesniczowka        130x2
-                    drawTriangle(canvasName, ( 79  + 64) * 3.61 , ( -188 + 506) * 3.61 , 6,    1, 'red');               // Slip kolej END           188x79
-                    drawTriangle(canvasName, (570  + 64) * 3.61 , ( -362 + 506) * 3.61 , 6,    1, 'red');               // boja kompielisko         320x570
-                    drawTriangle(canvasName, (820  + 64) * 3.61 , (  610 + 506) * 3.61 , 6,    1, 'red');               // -> zatoka               -610x820
-                    drawTriangle(canvasName, (926  + 64) * 3.61 , ( 1149 + 506) * 3.61 , 6,    1, 'red');               // Wiata END jeziora      -1149x926
+//                  drawTriangle(canvasName, ( 77.07 + 60+4) * 3.61 , (97.25 + 506) * 3.61 , 6,    1, 'orange');        // SBM    -97.25x77.07
+//                  drawTriangle(canvasName, (378.3  + 60+4) * 3.61 , (191.8 + 506) * 3.61 , 6,    1, 'orange');        // FPSO   -191.8x378.3
+//                  drawTriangle(canvasName, (-25  + 64) * 3.61 , (   84 + 506) * 3.61 , 6,    1, 'red');               // <- nabieznik             -84x25
+//                  drawTriangle(canvasName, ( 82.8+ 64) * 3.61 , (  -69 + 506) * 3.61 , 6,    1, 'red');               // port nabieznik ->         69x82.8
+//                  drawTriangle(canvasName, (  2  + 64) * 3.61 , ( -130 + 506) * 3.61 , 6,    1, 'red');               // pomost Lesniczowka        130x2
+//                  drawTriangle(canvasName, ( 79  + 64) * 3.61 , ( -188 + 506) * 3.61 , 6,    1, 'red');               // Slip kolej END           188x79
+//                  drawTriangle(canvasName, (570  + 64) * 3.61 , ( -362 + 506) * 3.61 , 6,    1, 'red');               // boja kompielisko         320x570
+//                  drawTriangle(canvasName, (820  + 64) * 3.61 , (  610 + 506) * 3.61 , 6,    1, 'red');               // -> zatoka               -610x820
+//                  drawTriangle(canvasName, (926  + 64) * 3.61 , ( 1149 + 506) * 3.61 , 6,    1, 'red');               // Wiata END jeziora      -1149x926
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 2:
@@ -100,7 +100,6 @@ window.onload = function () {
                     fillFieldValues("speed6", speed);
                     //drawTriangle(canvasName, positionX, positionY, 8, angle, 'red'); // 'blue'
                     drawShip(canvasName, positionX, positionY, 12, angle, 'Blue'); // 'blue'
-//                  drawTriangle(canvasName, ( 10 + 60+4) * 3.61 , ( 10 + 506) * 3.61 , 12,    1, 'red'); // pozycja 0 x 0
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 default:
@@ -134,19 +133,17 @@ window.onload = function () {
     };
 
     function getScaledPoints(oldX, oldY) {
-//      chart size L/G x=430 y=-60   PD x=-1570 y=1040
-//      x = 430 + 1570 = 2000   ||  y = 60 + 1040 = 1100
-        const bgY = backgroundCanvas.height;
+        const bgY = backgroundCanvas.height;                                                                            // 4000x6000
         const bgX = backgroundCanvas.width;
-        const staticShift_y = 506;//505+2 /*430 + 112*/;  // 505 for /1667
-        const staticShift_x = 64;//60 +3*1;//60 + 15;    // 60+3 for /1110
-        scaleX = 3.61;//bgX/1110;//1200;
-        scaleY = 3.61;//bgY/1667;//1800;
+        const staticShift_y = 506;                                                                                      // 506
+        const staticShift_x = 64;                                                                                       //  64
+        scaleX = 3.61;                                                                                                  //   3.61
+        scaleY = 3.61;                                                                                                  //   3.61
         console.log("ScaleX: " + scaleX + ", ScaleY: " + scaleY);
         console.log("Old X: " + oldX + ", Old Y:  " + oldY)
         // Changed coordinate system x->y , y->x
-        const y = (-oldX /*+ 430*/ + staticShift_y) * scaleY;
-        const x = (oldY /*+ 60*/ + staticShift_x ) * scaleX;
+        const y = (-oldX + staticShift_y) * scaleY;
+        const x = (oldY + staticShift_x ) * scaleX;
         console.log("New X: " + x + ", New Y: " +  y);
         return {x, y};
     }
