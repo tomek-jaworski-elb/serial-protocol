@@ -36,6 +36,7 @@ window.onload = function () {
             const newPoints = getScaledPoints(positionX, positionY);
             positionX = newPoints.x;
             positionY = newPoints.y;
+            const blinkDuration = 70;
             let canvasName;
             switch (modelId) {
                 case 1:
@@ -43,6 +44,7 @@ window.onload = function () {
                     clearCanvas(canvasName);
                     fillFieldValues("heading1", angle);
                     fillFieldValues("speed1", speed);
+                    lightenBackgroundColor("bg-color-1", "yellow", blinkDuration);
                     //drawTriangle(canvasName, positionX, positionY, 8, angle, 'orange');
                     drawShip(canvasName, positionX, positionY, 9, angle, 'orange');                                     // Kalibracja DanePM do MAPY
 //                  drawTriangle(canvasName, (  0    + 60+4) * 3.61 , ( 0    + 506) * 3.61 , 6,    1, 'white');         // pozycja 0 x 0             0x0
@@ -62,6 +64,7 @@ window.onload = function () {
                     clearCanvas(canvasName);
                     fillFieldValues("heading2", angle);
                     fillFieldValues("speed2", speed);
+                    lightenBackgroundColor("bg-color-2", "lightblue", blinkDuration);
                     //drawTriangle(canvasName, positionX, positionY, 8, angle, 'blue');
                     drawShip(canvasName, positionX, positionY, 10, angle, 'blue');
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
@@ -71,6 +74,7 @@ window.onload = function () {
                     clearCanvas(canvasName);
                     fillFieldValues("heading3", angle);
                     fillFieldValues("speed3", speed);
+                    lightenBackgroundColor("bg-color-3", "lightgreen", blinkDuration);
                     //drawTriangle(canvasName, positionX, positionY, 8, angle, 'green');
                     drawShip(canvasName, positionX, positionY, 8, angle, 'green');
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
@@ -80,6 +84,7 @@ window.onload = function () {
                     clearCanvas(canvasName);
                     fillFieldValues("heading4", angle);
                     fillFieldValues("speed4", speed);
+                    lightenBackgroundColor("bg-color-4", "darkmagenta", blinkDuration);
                     //drawTriangle(canvasName, positionX, positionY, 8, angle, 'purple');
                     drawShip(canvasName, positionX, positionY, 8, angle, 'purple');
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
@@ -89,6 +94,7 @@ window.onload = function () {
                     clearCanvas(canvasName);
                     fillFieldValues("heading5", angle);
                     fillFieldValues("speed5", speed);
+                    lightenBackgroundColor("bg-color-5", "lightgrey", blinkDuration);
                     //drawTriangle(canvasName, positionX, positionY, 8, angle, 'white');
                     drawShip(canvasName, positionX, positionY, 8, angle, 'white');
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
@@ -98,6 +104,7 @@ window.onload = function () {
                     clearCanvas(canvasName);
                     fillFieldValues("heading6", angle);
                     fillFieldValues("speed6", speed);
+                    lightenBackgroundColor("bg-color-6", "mediumblue", blinkDuration);
                     //drawTriangle(canvasName, positionX, positionY, 8, angle, 'red'); // 'blue'
                     drawShip(canvasName, positionX, positionY, 12, angle, 'Blue'); // 'blue'
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
@@ -275,6 +282,15 @@ window.onload = function () {
 
     function fillFieldValues(elementId, value) {
         const spanElement = document.getElementById(elementId);
-        spanElement.innerHTML = value;
+        spanElement.innerHTML = value.toFixed(1);
+    }
+
+    function lightenBackgroundColor(elementId, lighterColor, duration) {
+        const element = document.getElementById(elementId);
+        const originalBackgroundColor = window.getComputedStyle(element).backgroundColor;
+        element.style.backgroundColor = lighterColor;
+        setTimeout(() => {
+            element.style.backgroundColor = originalBackgroundColor;
+        }, duration);
     }
 };

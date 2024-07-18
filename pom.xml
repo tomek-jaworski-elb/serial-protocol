@@ -12,7 +12,7 @@
     <artifactId>serial-protocol</artifactId>
     <version>1.3</version>
     <name>serial-protocol</name>
-    <description>serial-protocol</description>
+    <description>Simple AIS</description>
     <properties>
         <java.version>17</java.version>
         <jSerialComm.version>2.11.0</jSerialComm.version>

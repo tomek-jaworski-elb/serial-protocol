@@ -21,7 +21,8 @@ public class HeartBeat {
     public void beat() {
         if (webSocketPublisher.sessionsCount(SessionType.HEARTBEAT) > 0) {
             LOG.info("Timestamp {}", System.currentTimeMillis());
-            webSocketPublisher.publishForAllClients(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME), SessionType.HEARTBEAT);
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMMM, yyyy HH:mm:ss");
+            webSocketPublisher.publishForAllClients(LocalDateTime.now().format(formatter), SessionType.HEARTBEAT);
         }
     }
 }
