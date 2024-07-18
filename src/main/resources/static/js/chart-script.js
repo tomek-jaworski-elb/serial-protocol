@@ -1,4 +1,4 @@
-window.onload = function () {
+window.onpageshow = function () {
     // Set canvases dimensions to match the container
     const container = document.querySelector('.canvas-container');
     for (let elementsByTagNameElement of container.getElementsByTagName('canvas')) {
