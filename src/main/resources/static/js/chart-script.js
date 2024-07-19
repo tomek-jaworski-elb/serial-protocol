@@ -10,7 +10,12 @@ window.onpageshow = function () {
             elementsByTagNameElement.height = container.clientHeight;
         }
     }
-
+    let rs_model1_no = 0;
+    let rs_model2_no = 0;
+    let rs_model3_no = 0;
+    let rs_model4_no = 0;
+    let rs_model5_no = 0;
+    let rs_model6_no = 0;
     // Websocket configuration
     const path = '/json';
 // Create a WebSocket instance
@@ -46,6 +51,11 @@ window.onpageshow = function () {
                     fillFieldValues("heading1", angle);
                     fillFieldValues("speed1", speed);
                     lightenBackgroundColor("bg-color-1", "yellow", blinkDuration);
+                    rs_model1_no++;
+                    if (rs_model1_no > 9) {
+                      rs_model1_no = 0;
+                    }
+                    fillFieldValues0("rs_model1_no", rs_model1_no);
                     //drawShip(canvasName, positionX, positionY, 8, angle, 'orange', Length, Beam, PositionGPS);
                     drawShip(canvasName, positionX, positionY, 3, angle, 'orange', 12.21, 2, 0);                        // Warta
                     //drawTriangle(canvasName, positionX, positionY, 8, angle, 'orange');                               // Kalibracja DanePM do MAPY
@@ -67,6 +77,11 @@ window.onpageshow = function () {
                     fillFieldValues("heading2", angle);
                     fillFieldValues("speed2", speed);
                     lightenBackgroundColor("bg-color-2", "lightblue", blinkDuration);
+                    rs_model2_no++;
+                    if (rs_model2_no > 9) {
+                      rs_model2_no = 0;
+                    }
+                    fillFieldValues0("rs_model2_no", rs_model2_no);
                     //drawShip(canvasName, positionX, positionY, 8, angle, 'orange', Length, Beam, PositionGPS);
                     drawShip(canvasName, positionX, positionY, 3, angle, 'blue', 13.78, 2.38, 0);                       // B.L.
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
@@ -77,6 +92,11 @@ window.onpageshow = function () {
                     fillFieldValues("heading3", angle);
                     fillFieldValues("speed3", speed);
                     lightenBackgroundColor("bg-color-3", "lightgreen", blinkDuration);
+                    rs_model3_no++;
+                    if (rs_model3_no > 9) {
+                      rs_model3_no = 0;
+                    }
+                    fillFieldValues0("rs_model3_no", rs_model3_no);
                     //drawShip(canvasName, positionX, positionY, 8, angle, 'orange', Length, Beam, PositionGPS);
                     drawShip(canvasName, positionX, positionY, 3, angle, 'green', 11.55, 1.8, 0);                       // D.L.
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
@@ -87,6 +107,11 @@ window.onpageshow = function () {
                     fillFieldValues("heading4", angle);
                     fillFieldValues("speed4", speed);
                     lightenBackgroundColor("bg-color-4", "darkmagenta", blinkDuration);
+                    rs_model4_no++;
+                    if (rs_model4_no > 9) {
+                      rs_model4_no = 0;
+                    }
+                    fillFieldValues0("rs_model4_no", rs_model4_no);
                     //drawShip(canvasName, positionX, positionY, 8, angle, 'orange', Length, Beam, PositionGPS);
                     drawShip(canvasName, positionX, positionY, 3, angle, 'purple', 15.5, 1.79, 0);                      // Ch.L.
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
@@ -97,6 +122,11 @@ window.onpageshow = function () {
                     fillFieldValues("heading5", angle);
                     fillFieldValues("speed5", speed);
                     lightenBackgroundColor("bg-color-5", "lightgrey", blinkDuration);
+                    rs_model5_no++;
+                    if (rs_model5_no > 9) {
+                      rs_model5_no = 0;
+                    }
+                    fillFieldValues0("rs_model5_no", rs_model5_no);
                     //drawShip(canvasName, positionX, positionY, 8, angle, 'orange', Length, Beam, PositionGPS);
                     drawShip(canvasName, positionX, positionY, 3, angle, 'white', 10.98, 1.78, 1);                      // PROM
                     //                                        "Position_GPS" = Length / 2 + PositionGPS * Length / 10
@@ -108,6 +138,11 @@ window.onpageshow = function () {
                     fillFieldValues("heading6", angle);
                     fillFieldValues("speed6", speed);
                     lightenBackgroundColor("bg-color-6", "mediumblue", blinkDuration);
+                    rs_model6_no++;
+                    if (rs_model6_no > 9) {
+                      rs_model6_no = 0;
+                    }
+                    fillFieldValues0("rs_model6_no", rs_model6_no);
                     //drawShip(canvasName, positionX, positionY, 8, angle, 'orange', Length, Beam, PositionGPS);
                     drawShip(canvasName, positionX, positionY, 3, angle, 'Blue', 16.43, 2.23, 0);                       // L.M.
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
@@ -279,7 +314,10 @@ window.onpageshow = function () {
         const spanElement = document.getElementById(elementId);
         spanElement.innerHTML = value.toFixed(1);
     }
-
+    function fillFieldValues0(elementId, value) {
+        const spanElement = document.getElementById(elementId);
+        spanElement.innerHTML = value;
+    }
     function lightenBackgroundColor(elementId, lighterColor, duration) {
         const element = document.getElementById(elementId);
         const originalBackgroundColor = window.getComputedStyle(element).backgroundColor;
