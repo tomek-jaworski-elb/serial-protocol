@@ -51,6 +51,7 @@ window.onpageshow = function () {
                     fillFieldValues("heading1", angle);
                     fillFieldValues("speed1", speed);
                     lightenBackgroundColor("bg-color-1", "yellow", blinkDuration);
+                    ledBlink('led1', blinkDuration);
                     rs_model1_no++;
                     if (rs_model1_no > 9) {
                       rs_model1_no = 0;
@@ -77,6 +78,7 @@ window.onpageshow = function () {
                     fillFieldValues("heading2", angle);
                     fillFieldValues("speed2", speed);
                     lightenBackgroundColor("bg-color-2", "lightblue", blinkDuration);
+                    ledBlink('led2', blinkDuration);
                     rs_model2_no++;
                     if (rs_model2_no > 9) {
                       rs_model2_no = 0;
@@ -92,6 +94,7 @@ window.onpageshow = function () {
                     fillFieldValues("heading3", angle);
                     fillFieldValues("speed3", speed);
                     lightenBackgroundColor("bg-color-3", "lightgreen", blinkDuration);
+                    ledBlink('led3', blinkDuration);
                     rs_model3_no++;
                     if (rs_model3_no > 9) {
                       rs_model3_no = 0;
@@ -107,6 +110,7 @@ window.onpageshow = function () {
                     fillFieldValues("heading4", angle);
                     fillFieldValues("speed4", speed);
                     lightenBackgroundColor("bg-color-4", "darkmagenta", blinkDuration);
+                    ledBlink('led4', blinkDuration);
                     rs_model4_no++;
                     if (rs_model4_no > 9) {
                       rs_model4_no = 0;
@@ -122,6 +126,7 @@ window.onpageshow = function () {
                     fillFieldValues("heading5", angle);
                     fillFieldValues("speed5", speed);
                     lightenBackgroundColor("bg-color-5", "lightgrey", blinkDuration);
+                    ledBlink('led5', blinkDuration);
                     rs_model5_no++;
                     if (rs_model5_no > 9) {
                       rs_model5_no = 0;
@@ -138,6 +143,7 @@ window.onpageshow = function () {
                     fillFieldValues("heading6", angle);
                     fillFieldValues("speed6", speed);
                     lightenBackgroundColor("bg-color-6", "mediumblue", blinkDuration);
+                    ledBlink('led6', blinkDuration);
                     rs_model6_no++;
                     if (rs_model6_no > 9) {
                       rs_model6_no = 0;
@@ -324,6 +330,14 @@ window.onpageshow = function () {
         element.style.backgroundColor = lighterColor;
         setTimeout(() => {
             element.style.backgroundColor = originalBackgroundColor;
+        }, duration);
+    }
+
+    function ledBlink(elementId, duration) {
+        let element = document.getElementById(elementId);
+        element.src = "/img/led_connection_green.bmp";
+        setTimeout(() => {
+            element.src = "/img/led_connection_1.bmp";
         }, duration);
     }
 };
