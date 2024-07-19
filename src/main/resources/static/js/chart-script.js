@@ -47,8 +47,8 @@ window.onpageshow = function () {
                     fillFieldValues("speed1", speed);
                     lightenBackgroundColor("bg-color-1", "yellow", blinkDuration);
                     //drawShip(canvasName, positionX, positionY, 8, angle, 'orange', Length, Beam, PositionGPS);
-                    drawShip(canvasName, positionX, positionY, 3, angle, 'orange', 12.21, 2, 1);             // Warta // Kalibracja DanePM do MAPY
-                    //drawTriangle(canvasName, positionX, positionY, 8, angle, 'orange');
+                    drawShip(canvasName, positionX, positionY, 3, angle, 'orange', 12.21, 2, 0);                        // Warta
+                    //drawTriangle(canvasName, positionX, positionY, 8, angle, 'orange');                               // Kalibracja DanePM do MAPY
 //                  drawTriangle(canvasName, (  0    + 60+4) * 3.61 , ( 0    + 506) * 3.61 , 6,    1, 'white');         // pozycja 0 x 0             0x0
 //                  drawTriangle(canvasName, ( 77.07 + 60+4) * 3.61 , (97.25 + 506) * 3.61 , 6,    1, 'orange');        // SBM    -97.25x77.07
 //                  drawTriangle(canvasName, (378.3  + 60+4) * 3.61 , (191.8 + 506) * 3.61 , 6,    1, 'orange');        // FPSO   -191.8x378.3
@@ -103,7 +103,7 @@ Windows10 -> PC_FBZ :
                     fillFieldValues("speed2", speed);
                     lightenBackgroundColor("bg-color-2", "lightblue", blinkDuration);
                     //drawShip(canvasName, positionX, positionY, 8, angle, 'orange', Length, Beam, PositionGPS);
-                    drawShip(canvasName, positionX, positionY, 3, angle, 'blue', 13.78, 2.38, 1);              // B.L.
+                    drawShip(canvasName, positionX, positionY, 3, angle, 'blue', 13.78, 2.38, 0);                       // B.L.
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 3:
@@ -113,7 +113,7 @@ Windows10 -> PC_FBZ :
                     fillFieldValues("speed3", speed);
                     lightenBackgroundColor("bg-color-3", "lightgreen", blinkDuration);
                     //drawShip(canvasName, positionX, positionY, 8, angle, 'orange', Length, Beam, PositionGPS);
-                    drawShip(canvasName, positionX, positionY, 3, angle, 'green', 11.55, 1.8, 1);               //D.L.
+                    drawShip(canvasName, positionX, positionY, 3, angle, 'green', 11.55, 1.8, 0);                       // D.L.
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 4:
@@ -123,7 +123,7 @@ Windows10 -> PC_FBZ :
                     fillFieldValues("speed4", speed);
                     lightenBackgroundColor("bg-color-4", "darkmagenta", blinkDuration);
                     //drawShip(canvasName, positionX, positionY, 8, angle, 'orange', Length, Beam, PositionGPS);
-                    drawShip(canvasName, positionX, positionY, 3, angle, 'purple', 15.5, 1.79, 1);            // Ch.L.
+                    drawShip(canvasName, positionX, positionY, 3, angle, 'purple', 15.5, 1.79, 0);                      // Ch.L.
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 5:
@@ -133,7 +133,8 @@ Windows10 -> PC_FBZ :
                     fillFieldValues("speed5", speed);
                     lightenBackgroundColor("bg-color-5", "lightgrey", blinkDuration);
                     //drawShip(canvasName, positionX, positionY, 8, angle, 'orange', Length, Beam, PositionGPS);
-                    drawShip(canvasName, positionX, positionY, 3, angle, 'white', 10.98, 1.78, 2);             // PROM "Position_GPS" = Length/2 + PositionGPS * Length/10
+                    drawShip(canvasName, positionX, positionY, 3, angle, 'white', 10.98, 1.78, 1);                      // PROM
+                    //                                        "Position_GPS" = Length / 2 + PositionGPS * Length / 10
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 6:
@@ -143,7 +144,7 @@ Windows10 -> PC_FBZ :
                     fillFieldValues("speed6", speed);
                     lightenBackgroundColor("bg-color-6", "mediumblue", blinkDuration);
                     //drawShip(canvasName, positionX, positionY, 8, angle, 'orange', Length, Beam, PositionGPS);
-                    drawShip(canvasName, positionX, positionY, 3, angle, 'Blue', 16.43, 2.23, 1);               //L.M.
+                    drawShip(canvasName, positionX, positionY, 3, angle, 'Blue', 16.43, 2.23, 0);                       // L.M.
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 default:
@@ -255,23 +256,23 @@ Windows10 -> PC_FBZ :
         ctx.stroke();
     }
 
-// Function to draw a triangle
+// Function to draw a Ship
     function drawShip(elementId, x, y, scale, angle, fillColor, yy, xx, pp) {
         const element = document.getElementById(elementId);
         const ctx = element.getContext('2d');
-        // Define the vertices of the triangle (equilateral triangle centered at origin)
+        // Define the outline of the ship (ship with the bow at the beginning)
         let vertices = [
-            {x: 0, y: -0.6*yy + pp*(yy/10)},
-            {x: 0.5*xx, y: -0.5*yy + pp*(yy/10)},
-            {x: 0.5*xx, y: 0.5*yy + pp*(yy/10)},
-            {x: -0.5*xx, y: 0.5*yy + pp*(yy/10)},
-            {x: -0.5*xx, y: -0.5*yy + pp*(yy/10)}
-        ];
+            {x:       0, y: -0.5*yy + pp*(yy/10)},                                                                      // nr1    //      1      |
+            {x:  0.5*xx, y: -0.4*yy + pp*(yy/10)},                                                                      // nr2    //   2     5
+            {x:  0.5*xx, y:  0.5*yy + pp*(yy/10)},                                                                      // nr3    //      o      y
+            {x: -0.5*xx, y:  0.5*yy + pp*(yy/10)},                                                                      // nr4    //
+            {x: -0.5*xx, y: -0.4*yy + pp*(yy/10)}                                                                       // nr5    //   3     4   |
+        ];                                                                                                              //             -  x  -
 
         // Scale the vertices
         vertices = vertices.map(vertex => {
             return {
-                x: vertex.x * scale * 1.2 ,                                                                             //  * 1.2
+                x: vertex.x * scale * 1.1 ,                                                                             //  * 1.1
                 y: vertex.y * scale
             };
         });
@@ -293,7 +294,7 @@ Windows10 -> PC_FBZ :
             };
         });
 
-        // Draw the triangle
+        // Draw the ship
         ctx.beginPath();
         ctx.moveTo(vertices[0].x, vertices[0].y);
         for (let i = 1; i < vertices.length; i++) {
