@@ -11,7 +11,7 @@ public class MapController {
     @GetMapping("/")
     public String index(Model model) {
         model.addAttribute("name", "home");
-        return "maps";
+        return "index";
     }
 
     @GetMapping("/terminal")
@@ -34,7 +34,7 @@ public class MapController {
     @GetMapping("/chart")
     public String greeting(Model model) {
         model.addAttribute("name", "chart");
-        return "chart2";
+        return "chart";
     }
 }
 
