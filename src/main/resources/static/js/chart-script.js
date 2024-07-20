@@ -48,7 +48,7 @@ window.onpageshow = function () {
             const newPoints = getScaledPoints(positionX, positionY);
             positionX = newPoints.x;
             positionY = newPoints.y;
-            const blinkDuration = 70;
+            const blinkDuration = 250;
             let canvasName;
             switch (modelId) {
                 case 1:
