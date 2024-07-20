@@ -10,6 +10,12 @@ window.onpageshow = function () {
             elementsByTagNameElement.height = container.clientHeight;
         }
     }
+
+    const imgLedOn = new Image();
+    imgLedOn.src = "/img/led_connection_green.bmp";
+    const imgLedOff = new Image();
+    imgLedOff.src = "/img/led_connection_1.bmp";
+
     let rs_model1_no = 0;
     let rs_model2_no = 0;
     let rs_model3_no = 0;
@@ -335,9 +341,9 @@ window.onpageshow = function () {
 
     function ledBlink(elementId, duration) {
         let element = document.getElementById(elementId);
-        element.src = "/img/led_connection_green.bmp";
+        element.src = imgLedOn.src;
         setTimeout(() => {
-            element.src = "/img/led_connection_1.bmp";
+            element.src = imgLedOff.src;
         }, duration);
     }
 };
