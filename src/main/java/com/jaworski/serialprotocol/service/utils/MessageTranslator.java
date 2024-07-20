@@ -79,6 +79,25 @@ public class MessageTranslator {
                     .build();
             LOG.info("Translated message: {}", modelTrackDTO);
             return modelTrackDTO;
+        } else if (message.length > MESSAGE_LENGTH) {
+            LOG.info("Received override message with length {}. Trying to parse...", message.length);
+            byte[] trimmedMessage = Arrays.copyOfRange(message, message.length - MESSAGE_LENGTH, message.length);
+            ModelTrackDTO dto = getDTO(trimmedMessage);
+            if (dto.getModelName() != -1) {
+                return dto;
+            } else if (message.length > MESSAGE_LENGTH_LADY_MARIE) {
+                trimmedMessage = Arrays.copyOfRange(message, message.length - MESSAGE_LENGTH_LADY_MARIE, message.length);
+                dto = getDTO(trimmedMessage);
+                if (dto.getModelName() != -1) {
+                    return dto;
+                } else {
+                    LOG.warn("Message length not supported! {} ", Arrays.toString(message));
+                    throw new IllegalArgumentException("Message length not supported! " + Arrays.toString(message));
+                }
+            } else {
+                LOG.warn("Message length not supported! {} ", Arrays.toString(message));
+                throw new IllegalArgumentException("Message length not supported! " + Arrays.toString(message));
+            }
         } else {
             throw new IllegalArgumentException("Message length not supported! " + Arrays.toString(message));
         }

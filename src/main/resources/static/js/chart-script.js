@@ -11,6 +11,17 @@ window.onpageshow = function () {
         }
     }
 
+    const imgLedOn = new Image();
+    imgLedOn.src = "/img/led_connection_green.bmp";
+    const imgLedOff = new Image();
+    imgLedOff.src = "/img/led_connection_1.bmp";
+
+    let rs_model1_no = 0;
+    let rs_model2_no = 0;
+    let rs_model3_no = 0;
+    let rs_model4_no = 0;
+    let rs_model5_no = 0;
+    let rs_model6_no = 0;
     // Websocket configuration
     const path = '/json';
 // Create a WebSocket instance
@@ -37,17 +48,24 @@ window.onpageshow = function () {
             const newPoints = getScaledPoints(positionX, positionY);
             positionX = newPoints.x;
             positionY = newPoints.y;
-            const blinkDuration = 70;
+            const blinkDuration = 250;
             let canvasName;
+            const no_max = 999;
             switch (modelId) {
                 case 1:
                     canvasName = "overlayCanvas1"
                     clearCanvas(canvasName);
                     fillFieldValues("heading1", angle);
                     fillFieldValues("speed1", speed);
-                    lightenBackgroundColor("bg-color-1", "yellow", blinkDuration);
-                    //drawTriangle(canvasName, positionX, positionY, 8, angle, 'orange');
-                    drawShip(canvasName, positionX, positionY, 9, angle, 'orange');                                     // Kalibracja DanePM do MAPY
+                    ledBlink('led1', blinkDuration);
+                    rs_model1_no++;
+                    if (rs_model1_no > no_max) {
+                      rs_model1_no = 0;
+                    }
+                    fillFieldValues0("rs_model1_no", rs_model1_no);
+                    //drawShip(canvasName, positionX, positionY, 8, angle, 'orange', Length, Beam, PositionGPS);
+                    drawShip(canvasName, positionX, positionY, 3, angle, 'orange', 12.21, 2, 0);                        // Warta
+                    //drawTriangle(canvasName, positionX, positionY, 8, angle, 'orange');                               // Kalibracja DanePM do MAPY
 //                  drawTriangle(canvasName, (  0    + 60+4) * 3.61 , ( 0    + 506) * 3.61 , 6,    1, 'white');         // pozycja 0 x 0             0x0
 //                  drawTriangle(canvasName, ( 77.07 + 60+4) * 3.61 , (97.25 + 506) * 3.61 , 6,    1, 'orange');        // SBM    -97.25x77.07
 //                  drawTriangle(canvasName, (378.3  + 60+4) * 3.61 , (191.8 + 506) * 3.61 , 6,    1, 'orange');        // FPSO   -191.8x378.3
@@ -65,9 +83,14 @@ window.onpageshow = function () {
                     clearCanvas(canvasName);
                     fillFieldValues("heading2", angle);
                     fillFieldValues("speed2", speed);
-                    lightenBackgroundColor("bg-color-2", "lightblue", blinkDuration);
-                    //drawTriangle(canvasName, positionX, positionY, 8, angle, 'blue');
-                    drawShip(canvasName, positionX, positionY, 10, angle, 'blue');
+                    ledBlink('led2', blinkDuration);
+                    rs_model2_no++;
+                    if (rs_model2_no > no_max) {
+                      rs_model2_no = 0;
+                    }
+                    fillFieldValues0("rs_model2_no", rs_model2_no);
+                    //drawShip(canvasName, positionX, positionY, 8, angle, 'orange', Length, Beam, PositionGPS);
+                    drawShip(canvasName, positionX, positionY, 3, angle, 'blue', 13.78, 2.38, 0);                       // B.L.
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 3:
@@ -75,9 +98,14 @@ window.onpageshow = function () {
                     clearCanvas(canvasName);
                     fillFieldValues("heading3", angle);
                     fillFieldValues("speed3", speed);
-                    lightenBackgroundColor("bg-color-3", "lightgreen", blinkDuration);
-                    //drawTriangle(canvasName, positionX, positionY, 8, angle, 'green');
-                    drawShip(canvasName, positionX, positionY, 8, angle, 'green');
+                    ledBlink('led3', blinkDuration);
+                    rs_model3_no++;
+                    if (rs_model3_no > no_max) {
+                      rs_model3_no = 0;
+                    }
+                    fillFieldValues0("rs_model3_no", rs_model3_no);
+                    //drawShip(canvasName, positionX, positionY, 8, angle, 'orange', Length, Beam, PositionGPS);
+                    drawShip(canvasName, positionX, positionY, 3, angle, 'green', 11.55, 1.8, 0);                       // D.L.
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 4:
@@ -85,9 +113,14 @@ window.onpageshow = function () {
                     clearCanvas(canvasName);
                     fillFieldValues("heading4", angle);
                     fillFieldValues("speed4", speed);
-                    lightenBackgroundColor("bg-color-4", "darkmagenta", blinkDuration);
-                    //drawTriangle(canvasName, positionX, positionY, 8, angle, 'purple');
-                    drawShip(canvasName, positionX, positionY, 8, angle, 'purple');
+                    ledBlink('led4', blinkDuration);
+                    rs_model4_no++;
+                    if (rs_model4_no > no_max) {
+                      rs_model4_no = 0;
+                    }
+                    fillFieldValues0("rs_model4_no", rs_model4_no);
+                    //drawShip(canvasName, positionX, positionY, 8, angle, 'orange', Length, Beam, PositionGPS);
+                    drawShip(canvasName, positionX, positionY, 3, angle, 'purple', 15.5, 1.79, 0);                      // Ch.L.
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 5:
@@ -95,9 +128,15 @@ window.onpageshow = function () {
                     clearCanvas(canvasName);
                     fillFieldValues("heading5", angle);
                     fillFieldValues("speed5", speed);
-                    lightenBackgroundColor("bg-color-5", "lightgrey", blinkDuration);
-                    //drawTriangle(canvasName, positionX, positionY, 8, angle, 'white');
-                    drawShip(canvasName, positionX, positionY, 8, angle, 'white');
+                    ledBlink('led5', blinkDuration);
+                    rs_model5_no++;
+                    if (rs_model5_no > no_max) {
+                      rs_model5_no = 0;
+                    }
+                    fillFieldValues0("rs_model5_no", rs_model5_no);
+                    //drawShip(canvasName, positionX, positionY, 8, angle, 'orange', Length, Beam, PositionGPS);
+                    drawShip(canvasName, positionX, positionY, 3, angle, 'white', 10.98, 1.78, 1);                      // PROM
+                    //                                        "Position_GPS" = Length / 2 + PositionGPS * Length / 10
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 6:
@@ -105,9 +144,14 @@ window.onpageshow = function () {
                     clearCanvas(canvasName);
                     fillFieldValues("heading6", angle);
                     fillFieldValues("speed6", speed);
-                    lightenBackgroundColor("bg-color-6", "mediumblue", blinkDuration);
-                    //drawTriangle(canvasName, positionX, positionY, 8, angle, 'red'); // 'blue'
-                    drawShip(canvasName, positionX, positionY, 12, angle, 'Blue'); // 'blue'
+                    ledBlink('led6', blinkDuration);
+                    rs_model6_no++;
+                    if (rs_model6_no > no_max) {
+                      rs_model6_no = 0;
+                    }
+                    fillFieldValues0("rs_model6_no", rs_model6_no);
+                    //drawShip(canvasName, positionX, positionY, 8, angle, 'orange', Length, Beam, PositionGPS);
+                    drawShip(canvasName, positionX, positionY, 3, angle, 'Blue', 16.43, 2.23, 0);                       // L.M.
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 default:
@@ -219,23 +263,23 @@ window.onpageshow = function () {
         ctx.stroke();
     }
 
-// Function to draw a triangle
-    function drawShip(elementId, x, y, scale, angle, fillColor) {
+// Function to draw a Ship
+    function drawShip(elementId, x, y, scale, angle, fillColor, yy, xx, pp) {
         const element = document.getElementById(elementId);
         const ctx = element.getContext('2d');
-        // Define the vertices of the triangle (equilateral triangle centered at origin)
+        // Define the outline of the ship (ship with the bow at the beginning)
         let vertices = [
-            {x: 0, y: -2},
-            {x: 0.466, y: -1.0},
-            {x: 0.466, y: 2.5},
-            {x: -0.466, y: 2.5},
-            {x: -0.466, y: -1.0}
-        ];
+            {x:       0, y: -0.5*yy + pp*(yy/10)},                                                                      // nr1    //      1      |
+            {x:  0.5*xx, y: -0.4*yy + pp*(yy/10)},                                                                      // nr2    //   2     5
+            {x:  0.5*xx, y:  0.5*yy + pp*(yy/10)},                                                                      // nr3    //      o      y
+            {x: -0.5*xx, y:  0.5*yy + pp*(yy/10)},                                                                      // nr4    //
+            {x: -0.5*xx, y: -0.4*yy + pp*(yy/10)}                                                                       // nr5    //   3     4   |
+        ];                                                                                                              //             -  x  -
 
         // Scale the vertices
         vertices = vertices.map(vertex => {
             return {
-                x: vertex.x * scale,
+                x: vertex.x * scale * 1.1 ,                                                                             //  * 1.1
                 y: vertex.y * scale
             };
         });
@@ -257,7 +301,7 @@ window.onpageshow = function () {
             };
         });
 
-        // Draw the triangle
+        // Draw the ship
         ctx.beginPath();
         ctx.moveTo(vertices[0].x, vertices[0].y);
         for (let i = 1; i < vertices.length; i++) {
@@ -277,13 +321,16 @@ window.onpageshow = function () {
         const spanElement = document.getElementById(elementId);
         spanElement.innerHTML = value.toFixed(1);
     }
+    function fillFieldValues0(elementId, value) {
+        const spanElement = document.getElementById(elementId);
+        spanElement.innerHTML = value;
+    }
 
-    function lightenBackgroundColor(elementId, lighterColor, duration) {
-        const element = document.getElementById(elementId);
-        const originalBackgroundColor = window.getComputedStyle(element).backgroundColor;
-        element.style.backgroundColor = lighterColor;
+    function ledBlink(elementId, duration) {
+        let element = document.getElementById(elementId);
+        element.src = imgLedOn.src;
         setTimeout(() => {
-            element.style.backgroundColor = originalBackgroundColor;
+            element.src = imgLedOff.src;
         }, duration);
     }
 };
