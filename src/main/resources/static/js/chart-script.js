@@ -50,16 +50,16 @@ window.onpageshow = function () {
             positionY = newPoints.y;
             const blinkDuration = 250;
             let canvasName;
+            const no_max = 999;
             switch (modelId) {
                 case 1:
                     canvasName = "overlayCanvas1"
                     clearCanvas(canvasName);
                     fillFieldValues("heading1", angle);
                     fillFieldValues("speed1", speed);
-                    lightenBackgroundColor("bg-color-1", "yellow", blinkDuration);
                     ledBlink('led1', blinkDuration);
                     rs_model1_no++;
-                    if (rs_model1_no > 9) {
+                    if (rs_model1_no > no_max) {
                       rs_model1_no = 0;
                     }
                     fillFieldValues0("rs_model1_no", rs_model1_no);
@@ -83,10 +83,9 @@ window.onpageshow = function () {
                     clearCanvas(canvasName);
                     fillFieldValues("heading2", angle);
                     fillFieldValues("speed2", speed);
-                    lightenBackgroundColor("bg-color-2", "lightblue", blinkDuration);
                     ledBlink('led2', blinkDuration);
                     rs_model2_no++;
-                    if (rs_model2_no > 9) {
+                    if (rs_model2_no > no_max) {
                       rs_model2_no = 0;
                     }
                     fillFieldValues0("rs_model2_no", rs_model2_no);
@@ -99,10 +98,9 @@ window.onpageshow = function () {
                     clearCanvas(canvasName);
                     fillFieldValues("heading3", angle);
                     fillFieldValues("speed3", speed);
-                    lightenBackgroundColor("bg-color-3", "lightgreen", blinkDuration);
                     ledBlink('led3', blinkDuration);
                     rs_model3_no++;
-                    if (rs_model3_no > 9) {
+                    if (rs_model3_no > no_max) {
                       rs_model3_no = 0;
                     }
                     fillFieldValues0("rs_model3_no", rs_model3_no);
@@ -115,10 +113,9 @@ window.onpageshow = function () {
                     clearCanvas(canvasName);
                     fillFieldValues("heading4", angle);
                     fillFieldValues("speed4", speed);
-                    lightenBackgroundColor("bg-color-4", "darkmagenta", blinkDuration);
                     ledBlink('led4', blinkDuration);
                     rs_model4_no++;
-                    if (rs_model4_no > 9) {
+                    if (rs_model4_no > no_max) {
                       rs_model4_no = 0;
                     }
                     fillFieldValues0("rs_model4_no", rs_model4_no);
@@ -131,10 +128,9 @@ window.onpageshow = function () {
                     clearCanvas(canvasName);
                     fillFieldValues("heading5", angle);
                     fillFieldValues("speed5", speed);
-                    lightenBackgroundColor("bg-color-5", "lightgrey", blinkDuration);
                     ledBlink('led5', blinkDuration);
                     rs_model5_no++;
-                    if (rs_model5_no > 9) {
+                    if (rs_model5_no > no_max) {
                       rs_model5_no = 0;
                     }
                     fillFieldValues0("rs_model5_no", rs_model5_no);
@@ -148,10 +144,9 @@ window.onpageshow = function () {
                     clearCanvas(canvasName);
                     fillFieldValues("heading6", angle);
                     fillFieldValues("speed6", speed);
-                    lightenBackgroundColor("bg-color-6", "mediumblue", blinkDuration);
                     ledBlink('led6', blinkDuration);
                     rs_model6_no++;
-                    if (rs_model6_no > 9) {
+                    if (rs_model6_no > no_max) {
                       rs_model6_no = 0;
                     }
                     fillFieldValues0("rs_model6_no", rs_model6_no);
@@ -329,14 +324,6 @@ window.onpageshow = function () {
     function fillFieldValues0(elementId, value) {
         const spanElement = document.getElementById(elementId);
         spanElement.innerHTML = value;
-    }
-    function lightenBackgroundColor(elementId, lighterColor, duration) {
-        const element = document.getElementById(elementId);
-        const originalBackgroundColor = window.getComputedStyle(element).backgroundColor;
-        element.style.backgroundColor = lighterColor;
-        setTimeout(() => {
-            element.style.backgroundColor = originalBackgroundColor;
-        }, duration);
     }
 
     function ledBlink(elementId, duration) {
