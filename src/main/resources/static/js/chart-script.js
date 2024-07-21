@@ -16,6 +16,12 @@ window.onpageshow = function () {
     const imgLedOff = new Image();
     imgLedOff.src = "/img/led_connection_1.bmp";
 
+    // Ensure images are fully loaded before using them
+    const imagesLoaded = Promise.all([
+        new Promise(resolve => imgLedOn.onload = resolve),
+        new Promise(resolve => imgLedOff.onload = resolve)
+    ]);
+
     let rs_model1_no = 0;
     let rs_model2_no = 0;
     let rs_model3_no = 0;
@@ -63,19 +69,7 @@ window.onpageshow = function () {
                       rs_model1_no = 0;
                     }
                     fillFieldValues0("rs_model1_no", rs_model1_no);
-                    //drawShip(canvasName, positionX, positionY, 8, angle, 'orange', Length, Beam, PositionGPS);
                     drawShip(canvasName, positionX, positionY, 3, angle, 'orange', 12.21, 2, 0);                        // Warta
-                    //drawTriangle(canvasName, positionX, positionY, 8, angle, 'orange');                               // Kalibracja DanePM do MAPY
-//                  drawTriangle(canvasName, (  0    + 60+4) * 3.61 , ( 0    + 506) * 3.61 , 6,    1, 'white');         // pozycja 0 x 0             0x0
-//                  drawTriangle(canvasName, ( 77.07 + 60+4) * 3.61 , (97.25 + 506) * 3.61 , 6,    1, 'orange');        // SBM    -97.25x77.07
-//                  drawTriangle(canvasName, (378.3  + 60+4) * 3.61 , (191.8 + 506) * 3.61 , 6,    1, 'orange');        // FPSO   -191.8x378.3
-//                  drawTriangle(canvasName, (-25  + 64) * 3.61 , (   84 + 506) * 3.61 , 6,    1, 'red');               // <- nabieznik             -84x25
-//                  drawTriangle(canvasName, ( 82.8+ 64) * 3.61 , (  -69 + 506) * 3.61 , 6,    1, 'red');               // port nabieznik ->         69x82.8
-//                  drawTriangle(canvasName, (  2  + 64) * 3.61 , ( -130 + 506) * 3.61 , 6,    1, 'red');               // pomost Lesniczowka        130x2
-//                  drawTriangle(canvasName, ( 79  + 64) * 3.61 , ( -188 + 506) * 3.61 , 6,    1, 'red');               // Slip kolej END           188x79
-//                  drawTriangle(canvasName, (570  + 64) * 3.61 , ( -362 + 506) * 3.61 , 6,    1, 'red');               // boja kompielisko         320x570
-//                  drawTriangle(canvasName, (820  + 64) * 3.61 , (  610 + 506) * 3.61 , 6,    1, 'red');               // -> zatoka               -610x820
-//                  drawTriangle(canvasName, (926  + 64) * 3.61 , ( 1149 + 506) * 3.61 , 6,    1, 'red');               // Wiata END jeziora      -1149x926
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 2:
@@ -89,7 +83,6 @@ window.onpageshow = function () {
                       rs_model2_no = 0;
                     }
                     fillFieldValues0("rs_model2_no", rs_model2_no);
-                    //drawShip(canvasName, positionX, positionY, 8, angle, 'orange', Length, Beam, PositionGPS);
                     drawShip(canvasName, positionX, positionY, 3, angle, 'blue', 13.78, 2.38, 0);                       // B.L.
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
@@ -104,7 +97,6 @@ window.onpageshow = function () {
                       rs_model3_no = 0;
                     }
                     fillFieldValues0("rs_model3_no", rs_model3_no);
-                    //drawShip(canvasName, positionX, positionY, 8, angle, 'orange', Length, Beam, PositionGPS);
                     drawShip(canvasName, positionX, positionY, 3, angle, 'green', 11.55, 1.8, 0);                       // D.L.
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
@@ -119,7 +111,6 @@ window.onpageshow = function () {
                       rs_model4_no = 0;
                     }
                     fillFieldValues0("rs_model4_no", rs_model4_no);
-                    //drawShip(canvasName, positionX, positionY, 8, angle, 'orange', Length, Beam, PositionGPS);
                     drawShip(canvasName, positionX, positionY, 3, angle, 'purple', 15.5, 1.79, 0);                      // Ch.L.
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
@@ -134,7 +125,6 @@ window.onpageshow = function () {
                       rs_model5_no = 0;
                     }
                     fillFieldValues0("rs_model5_no", rs_model5_no);
-                    //drawShip(canvasName, positionX, positionY, 8, angle, 'orange', Length, Beam, PositionGPS);
                     drawShip(canvasName, positionX, positionY, 3, angle, 'white', 10.98, 1.78, 1);                      // PROM
                     //                                        "Position_GPS" = Length / 2 + PositionGPS * Length / 10
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
@@ -150,13 +140,10 @@ window.onpageshow = function () {
                       rs_model6_no = 0;
                     }
                     fillFieldValues0("rs_model6_no", rs_model6_no);
-                    //drawShip(canvasName, positionX, positionY, 8, angle, 'orange', Length, Beam, PositionGPS);
                     drawShip(canvasName, positionX, positionY, 3, angle, 'Blue', 16.43, 2.23, 0);                       // L.M.
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 default:
-//                    clearCanvas("overlayCanvas4");
-//                    drawTriangle('overlayCanvas4', positionX, positionY, 12, angle, 'black');
                     console.log("Unknown model ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
             }
         } catch (error) {
@@ -192,14 +179,6 @@ window.onpageshow = function () {
         return {x, y};
     }
 
-    // Function to generate a random point within the canvas
-    function getRandomPoint(elementId) {
-        const element = document.getElementById(elementId);
-        const x = Math.random() * element.width;
-        const y = Math.random() * element.height;
-        return {x, y};
-    }
-
     function getRandomAngle() {
         return Math.random() * 2 * 180;
     }
@@ -209,58 +188,6 @@ window.onpageshow = function () {
         const element = document.getElementById(elementId);
         const context = element.getContext('2d');
         context.clearRect(0, 0, element.width, element.height);
-    }
-
-// Function to draw a triangle
-    function drawTriangle(elementId, x, y, scale, angle, fillColor) {
-        const element = document.getElementById(elementId);
-        const ctx = element.getContext('2d');
-        // Define the vertices of the triangle (equilateral triangle centered at origin)
-        let vertices = [
-            {x: 0, y: -1},
-            {x: 0.866, y: 0.5},
-            {x: -0.866, y: 0.5}
-        ];
-
-        // Scale the vertices
-        vertices = vertices.map(vertex => {
-            return {
-                x: vertex.x * scale,
-                y: vertex.y * scale
-            };
-        });
-
-        // Rotate the vertices
-        const radians = angle * Math.PI / 180;
-        vertices = vertices.map(vertex => {
-            return {
-                x: vertex.x * Math.cos(radians) - vertex.y * Math.sin(radians),
-                y: vertex.x * Math.sin(radians) + vertex.y * Math.cos(radians)
-            };
-        });
-
-        // Translate the vertices to the (x, y) position
-        vertices = vertices.map(vertex => {
-            return {
-                x: vertex.x + x,
-                y: vertex.y + y
-            };
-        });
-
-        // Draw the triangle
-        ctx.beginPath();
-        ctx.moveTo(vertices[0].x, vertices[0].y);
-        for (let i = 1; i < vertices.length; i++) {
-            ctx.lineTo(vertices[i].x, vertices[i].y);
-        }
-        ctx.closePath();
-
-        // Fill and stroke
-        ctx.fillStyle = fillColor;
-        ctx.fill();
-        ctx.strokeStyle = 'black';
-        ctx.lineWidth = 1;
-        ctx.stroke();
     }
 
 // Function to draw a Ship
@@ -327,10 +254,18 @@ window.onpageshow = function () {
     }
 
     function ledBlink(elementId, duration) {
-        let element = document.getElementById(elementId);
-        element.src = imgLedOn.src;
-        setTimeout(() => {
-            element.src = imgLedOff.src;
-        }, duration);
+        imagesLoaded.then(() => {
+            const element = document.getElementById(elementId);
+            if (!element) {
+                console.error(`Element with ID '${elementId}' not found`);
+                return;
+            }
+            element.src = imgLedOn.src;
+            setTimeout(() => {
+                element.src = imgLedOff.src;
+            }, duration);
+        }).catch(error => {
+            console.error('Error loading images:', error);
+        });
     }
 };
