@@ -8,7 +8,6 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
@@ -21,7 +20,7 @@ public class SerialPortChecker {
   public void isPortAvailable(SerialPort serialPort) {
     int lastErrorCode = serialPort.getLastErrorCode();
     if (lastErrorCode != 0) {
-      LOG.error("Error code: {}", lastErrorCode);
+      LOG.error("Error code: {}, error location: {}", lastErrorCode, serialPort.getLastErrorLocation());
       serialPort.closePort();
       serialPort.openPort();
     }
