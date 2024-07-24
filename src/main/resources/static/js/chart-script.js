@@ -8,6 +8,9 @@ window.onpageshow = function () {
             const rect = elementsByTagNameElement.getBoundingClientRect();
             elementsByTagNameElement.width = rect.width * dpr;
             elementsByTagNameElement.height = rect.height * dpr;
+            // use the device pixel ratio instead of the backing store ratio
+            // elementsByTagNameElement.width = window.innerWidth * dpr;
+            // elementsByTagNameElement.height = window.innerHeight * dpr;
             elementsByTagNameElement.style.width = window.innerWidth + 'px';
             elementsByTagNameElement.style.height = window.innerHeight + 'px';
         } else {
