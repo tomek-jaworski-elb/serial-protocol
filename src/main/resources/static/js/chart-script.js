@@ -2,9 +2,14 @@ window.onpageshow = function () {
     // Set canvases dimensions to match the container
     const container = document.querySelector('.canvas-container');
     for (let elementsByTagNameElement of container.getElementsByTagName('canvas')) {
-        if (navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad')) {
-            elementsByTagNameElement.width = 4000;
-            elementsByTagNameElement.height = 6000;
+        if (navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad') || navigator.userAgent.includes('ios')) {
+            // Set canvas dimensions based on device pixel ratio
+            const dpr = window.devicePixelRatio || 1;
+            const rect = elementsByTagNameElement.getBoundingClientRect();
+            elementsByTagNameElement.width = rect.width * dpr;
+            elementsByTagNameElement.height = rect.height * dpr;
+            elementsByTagNameElement.style.width = window.innerWidth + 'px';
+            elementsByTagNameElement.style.height = window.innerHeight + 'px';
         } else {
             elementsByTagNameElement.width = container.clientWidth;
             elementsByTagNameElement.height = container.clientHeight;
