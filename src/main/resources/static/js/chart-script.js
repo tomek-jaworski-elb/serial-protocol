@@ -52,10 +52,6 @@ window.onpageshow = function () {
             let positionY = parseFloat(data.positionY);
             const angle = parseFloat(data.heading);
             const speed = parseFloat(data.speed);
-            const scaleX = 1;
-            const scaleY = 1;
-            const shiftX = 0;
-            const shiftY = 0;
             const newPoints = getScaledPoints(positionX, positionY);
             positionX = newPoints.x;
             positionY = newPoints.y;
@@ -169,8 +165,6 @@ window.onpageshow = function () {
     };
 
     function getScaledPoints(oldX, oldY) {
-        const bgY = backgroundCanvas.height;                                                                            // 4000x6000
-        const bgX = backgroundCanvas.width;
         const staticShift_y = 506;                                                                                      // 506
         const staticShift_x = 64;                                                                                       //  64
         scaleX = 3.61;                                                                                                  //   3.61
@@ -182,10 +176,6 @@ window.onpageshow = function () {
         const x = (oldY + staticShift_x ) * scaleX;
         console.log("New X: " + x + ", New Y: " +  y);
         return {x, y};
-    }
-
-    function getRandomAngle() {
-        return Math.random() * 2 * 180;
     }
 
     // Function to clear the first canvas
