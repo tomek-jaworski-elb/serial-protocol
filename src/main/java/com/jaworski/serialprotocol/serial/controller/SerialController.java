@@ -22,7 +22,7 @@ public class SerialController {
 
     public void openAllPorts() {
         LOG.info("Opening all ports");
-        LOG.debug("SerialPort version: {}", SerialPort.getVersion());
+        LOG.info("jSerialComm library version: {}", SerialPort.getVersion());
         LOG.info("Found ports: {}",  getAllPorts().size());
         if (serialPortService.getSerialPorts().isEmpty()) {
             LOG.info("No ports found.");
