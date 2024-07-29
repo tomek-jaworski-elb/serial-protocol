@@ -1,6 +1,5 @@
 package com.jaworski.serialprotocol.configuration;
 
-import com.jaworski.serialprotocol.resources.Resources;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
