@@ -1,7 +1,7 @@
 package com.jaworski.serialprotocol.service.utils.impl;
 
 import com.fazecast.jSerialComm.SerialPort;
-import com.jaworski.serialprotocol.serial.controller.SerialController;
+import com.jaworski.serialprotocol.service.SerialPortService;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 public class SerialPortChecker {
 
   private static final Logger LOG = LogManager.getLogger(SerialPortChecker.class);
-  private final SerialController serialController;
+  private final SerialPortService serialController;
 
   public void isPortAvailable(SerialPort serialPort) {
     int lastErrorCode = serialPort.getLastErrorCode();
@@ -29,6 +29,6 @@ public class SerialPortChecker {
   @Scheduled(fixedRate = 10, timeUnit = TimeUnit.SECONDS)
   public void checkPorts() {
     LOG.info("Checking all open ports health...");
-    serialController.getAllPorts().forEach(this::isPortAvailable);
+    serialController.getSerialPorts().forEach(this::isPortAvailable);
   }
 }
