@@ -18,7 +18,6 @@ public class WebSocketConfiguration implements WebSocketConfigurer {
 
 
     private final JsonWebSocketHandler jsonWebSocketHandler;
-    private final Resources resources;
     private final RSWebsocketHandler rsWebsocketHandler;
     private final HeartBeatWebSocketHandler heartBeatWebSocketHandler;
 
@@ -32,11 +31,11 @@ public class WebSocketConfiguration implements WebSocketConfigurer {
                 .setAllowedOrigins("*");
     }
 
-//    @Bean
-//    public ServletServerContainerFactoryBean createWebSocketContainer() {
-//        ServletServerContainerFactoryBean container = new ServletServerContainerFactoryBean();
-//        container.setMaxSessionIdleTimeout(Duration.ofSeconds(60).toMillis());
-//        container.setMaxTextMessageBufferSize(60_000);
-//        return container;
-//    }
+    @Bean
+    public ServletServerContainerFactoryBean createWebSocketContainer() {
+        ServletServerContainerFactoryBean container = new ServletServerContainerFactoryBean();
+        container.setMaxSessionIdleTimeout(Duration.ofSeconds(60).toMillis());
+        container.setMaxTextMessageBufferSize(60_000);
+        return container;
+    }
 }
