@@ -2,8 +2,6 @@ package com.jaworski.serialprotocol.service.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.jaworski.serialprotocol.dto.ModelTrackDTO;
-import com.jaworski.serialprotocol.service.utils.impl.MessageCommon;
-import com.jaworski.serialprotocol.service.utils.impl.MessageLadyMarie;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -14,21 +12,17 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@SpringBootTest
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class ModelDTOTest {
 
     @Autowired
     private JsonMapperService jsonMapperService;
-    @Autowired(required = true)
+    @Autowired
     private MessageTranslator messageTranslator;
-
-    @Autowired(required = true)
-    private MessageCommon messageCommon;
-    @Autowired(required = true)
-    private MessageLadyMarie messageLadyMarie;
-
 
     private static Stream<Arguments> provideInputData() {
     return Stream.of(
