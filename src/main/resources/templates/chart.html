@@ -66,6 +66,11 @@
             font-size: 12px;
             text-align: left;
         }
+
+        #bg-color-1, #bg-color-2, #bg-color-3, #bg-color-4, #bg-color-5, #bg-color-6 {
+           color: white;
+           text-shadow: black 0px 0px 8px; /* color offset-x offset-y blur-radius */
+        }
     </style>
 </head>
 <body>
@@ -109,7 +114,7 @@
 
         <!-- Nested Div 3 -->
         <div class="col-sm mb-1">
-            <div id="bg-color-4" class="container p-2 text-white border border-dark text-center" style="background-color: darkmagenta;">
+            <div id="bg-color-4" class="container p-2 text-white border border-dark text-center" style="background-color: purple;">
                 <div class="container justify-content-center pb-1">
                     <img id="led4" th:src="@{/img/led_connection_1.bmp}" alt="Led indicator">
                     <span id="rs_model4_no" class="text-center p-1 border-0">0</span>
@@ -160,7 +165,7 @@
 
         <!-- Nested Div 6 -->
         <div class="col-sm mb-1">
-            <div id="bg-color-5" class="p-2 text-black border border-dark text-center" style="background-color: white;">
+            <div id="bg-color-5" class="p-2 text-white border border-dark text-center" style="background-color: lightgray;">
                 <div class="container justify-content-center pb-1">
                     <img id="led5" th:src="@{/img/led_connection_1.bmp}" alt="Led indicator">
                     <span id="rs_model5_no" class="text-center p-1 border-0">0</span>
