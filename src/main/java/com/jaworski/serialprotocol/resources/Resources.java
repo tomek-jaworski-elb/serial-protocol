@@ -15,9 +15,9 @@ public class Resources {
     @Value("${rs.baud_rate}")
     private String rsBaudRate;
 
-    @Value("${rs.comport}")
+    @Value("${rs.comports}")
     @Getter
-    private String comportName;
+    private String comportsName;
 
     @Value("${rs.message_delimiter}")
     @Getter

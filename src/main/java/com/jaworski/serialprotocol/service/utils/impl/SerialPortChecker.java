@@ -28,7 +28,9 @@ public class SerialPortChecker {
 
   @Scheduled(fixedRate = 10, timeUnit = TimeUnit.SECONDS)
   public void checkPorts() {
-    LOG.info("Checking all open ports health...");
+    if (serialController.getSerialPorts().isEmpty()) {
+      return;
+    }
     serialController.getSerialPorts().forEach(this::isPortAvailable);
   }
 }

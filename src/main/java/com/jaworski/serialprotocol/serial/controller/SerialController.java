@@ -9,6 +9,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -27,11 +29,25 @@ public class SerialController {
         if (serialPortService.getSerialPorts().isEmpty()) {
             LOG.info("No ports found.");
         } else {
-            serialPortService.getSerialPorts().forEach(getSerialPortConsumer());
+            serialPortService.getSerialPorts().stream()
+                    .filter(serialPort ->  {
+                        String descriptivePortName = serialPort.getDescriptivePortName();
+                        String systemPortName = serialPort.getSystemPortName();
+                        LOG.info("Checking port: {} with description: {}", descriptivePortName, systemPortName);
+                        return getResourcesComPorts().contains(descriptivePortName) || getResourcesComPorts().contains(systemPortName);
+                    })
+                    .forEach(serialPortInit());
         }
     }
 
-    private Consumer<SerialPort> getSerialPortConsumer() {
+    private List<String> getResourcesComPorts() {
+        if (resources.getComportsName() == null) {
+            return Collections.emptyList();
+        }
+        return Arrays.stream(resources.getComportsName().split(",")).toList();
+    }
+
+    private Consumer<SerialPort> serialPortInit() {
         return port -> {
             boolean listener = port.addDataListener(serialPortDataListener);
             port.openPort(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, 0, 0);
