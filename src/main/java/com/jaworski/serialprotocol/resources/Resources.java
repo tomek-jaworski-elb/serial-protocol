@@ -5,6 +5,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 @Component
 public class Resources {
@@ -34,5 +35,19 @@ public class Resources {
             LOG.error("Could not parse baud rate: {}", rsBaudRate);
             return DEFAULT_BAUD_RATE;
         }
+    }
+
+    @Value("${ip.db-client}")
+    private String dbClientIp;
+
+    public String getDbClientIp() {
+        return StringUtils.hasLength(dbClientIp) ? dbClientIp : "";
+    }
+
+    @Value("rest.service.enabled")
+    private String restServiceEnabled;
+
+    public boolean isRestServiceEnabled() {
+        return Boolean.parseBoolean(restServiceEnabled);
     }
 }
