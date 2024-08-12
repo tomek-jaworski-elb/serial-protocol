@@ -5,6 +5,7 @@ import com.jaworski.serialprotocol.resources.Resources;
 import com.jaworski.serialprotocol.serial.listener.SerialPortListenerImpl;
 import com.jaworski.serialprotocol.service.SerialPortService;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -26,9 +27,7 @@ public class SerialController {
         LOG.info("Opening all ports");
         LOG.info("jSerialComm library version: {}", SerialPort.getVersion());
         LOG.info("Found ports: {}", getAllPorts().size());
-        if (serialPortService.getSerialPorts().isEmpty()) {
-            LOG.info("No ports found.");
-        } else {
+        if (CollectionUtils.isNotEmpty(serialPortService.getSerialPorts())) {
             serialPortService.getSerialPorts().stream()
                     .filter(serialPort -> {
                         String portDescription = serialPort.getPortDescription();
@@ -43,8 +42,9 @@ public class SerialController {
     private Consumer<SerialPort> serialPortInit() {
         return port -> {
             boolean listener = port.addDataListener(serialPortDataListener);
-            port.openPort(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, 0, 0);
-            LOG.info("On port {} with baud rate {} added listener: {}", port.getPortDescription(), port.getBaudRate(), listener);
+            boolean openedPort = port.openPort(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, 0, 0);
+            LOG.info("Port {} with baud rate {} open status: {}, added listener: {}", port.getPortDescription(),
+                    port.getBaudRate(), openedPort, listener);
         };
     }
 
