@@ -2,6 +2,10 @@ version: "3.7"
 services:
     server:
         build: .
+        depends_on:
+          db:
+            condition: service_healthy
+            restart: true
         restart: unless-stopped
         container_name: serial-ports-server
         environment:
@@ -11,6 +15,9 @@ services:
 #            - ws.endpoint=/echo
         ports:
             - "8081:8081"
+        networks:
+          backend:
+            ipv4_address: 192.168.2.2
         volumes:
             - ./logs:/app/logs
         devices:
@@ -20,3 +27,14 @@ services:
             - /dev/ttyACM0:/dev/ttyACM0
             - /dev:/dev
         privileged: true
+    db:
+      extends:
+        file: ../db-access-service/docker-compose.yml
+        service: db
+networks:
+  backend:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.2.0/24
+          gateway: 192.168.2.1
