@@ -5,12 +5,11 @@ import com.jaworski.serialprotocol.resources.Resources;
 import com.jaworski.serialprotocol.serial.listener.SerialPortListenerImpl;
 import com.jaworski.serialprotocol.service.SerialPortService;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -18,6 +17,7 @@ import java.util.function.Consumer;
 @Component
 public class SerialController {
     private static final Logger LOG = LogManager.getLogger(SerialController.class);
+    public static final String REGEX = ",";
     private final SerialPortListenerImpl serialPortDataListener;
     private final Resources resources;
     private final SerialPortService serialPortService;
@@ -25,26 +25,19 @@ public class SerialController {
     public void openAllPorts() {
         LOG.info("Opening all ports");
         LOG.info("jSerialComm library version: {}", SerialPort.getVersion());
-        LOG.info("Found ports: {}",  getAllPorts().size());
+        LOG.info("Found ports: {}", getAllPorts().size());
         if (serialPortService.getSerialPorts().isEmpty()) {
             LOG.info("No ports found.");
         } else {
             serialPortService.getSerialPorts().stream()
-                    .filter(serialPort ->  {
+                    .filter(serialPort -> {
+                        String portDescription = serialPort.getPortDescription();
                         String descriptivePortName = serialPort.getDescriptivePortName();
-                        String systemPortName = serialPort.getSystemPortName();
-                        LOG.info("Checking port: {} with description: {}", descriptivePortName, systemPortName);
-                        return getResourcesComPorts().contains(descriptivePortName) || getResourcesComPorts().contains(systemPortName);
+                        return StringUtils.containsAnyIgnoreCase(portDescription, resources.getComportsName().split(REGEX)) ||
+                                StringUtils.containsAnyIgnoreCase(descriptivePortName, resources.getComportsName().split(REGEX));
                     })
                     .forEach(serialPortInit());
         }
-    }
-
-    private List<String> getResourcesComPorts() {
-        if (resources.getComportsName() == null) {
-            return Collections.emptyList();
-        }
-        return Arrays.stream(resources.getComportsName().split(",")).toList();
     }
 
     private Consumer<SerialPort> serialPortInit() {
