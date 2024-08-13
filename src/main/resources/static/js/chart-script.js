@@ -129,7 +129,7 @@ window.onpageshow = function () {
                       rs_model5_no = 0;
                     }
                     fillFieldValues0("rs_model5_no", rs_model5_no);
-                    drawShip(canvasName, positionX, positionY, 3, angle, 'white', 10.98, 1.78, 1);                      // PROM
+                    drawShip(canvasName, positionX, positionY, 3, angle, 'lightgray', 10.98, 1.78, 1);                      // PROM
                     //                                        "Position_GPS" = Length / 2 + PositionGPS * Length / 10
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
@@ -144,7 +144,7 @@ window.onpageshow = function () {
                       rs_model6_no = 0;
                     }
                     fillFieldValues0("rs_model6_no", rs_model6_no);
-                    drawShip(canvasName, positionX, positionY, 3, angle, 'Blue', 16.43, 2.23, 0);                       // L.M.
+                    drawShip(canvasName, positionX, positionY, 3, angle, 'darkblue', 16.43, 2.23, 0);                       // L.M.
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 default:

@@ -1,6 +1,6 @@
 package com.jaworski.serialprotocol;
 
-import com.jaworski.serialprotocol.serial.controller.SerialController;
+import com.jaworski.serialprotocol.service.StartUp;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -12,9 +12,7 @@ public class SerialProtocolApplication {
 
     public static void main(String[] args) {
         ConfigurableApplicationContext context = SpringApplication.run(SerialProtocolApplication.class, args);
-        SerialController serialController = context.getBean(SerialController.class);
-        serialController.openAllPorts();
-
+        StartUp startUp = context.getBean(StartUp.class);
+        startUp.start();
     }
-
 }

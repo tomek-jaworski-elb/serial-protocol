@@ -1,10 +1,10 @@
-version: "3.7"
 services:
     server:
         build: .
         restart: unless-stopped
         container_name: serial-ports-server
         environment:
+            - rs.comports=COM1,S0
             - rs.baud_rate=9600
             - rs.message_delimiter=13,10  # 10 = \n, 13 = \r
             - ws.heartbeat.interval=2000  # value in ms > 1
