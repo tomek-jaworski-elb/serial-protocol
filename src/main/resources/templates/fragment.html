@@ -38,6 +38,10 @@
                         <a th:if="${name == 'terminal'}" class="nav-link active" th:href="@{/terminal}">Terminal</a>
                         <a th:unless="${name == 'terminal'}" class="nav-link" th:href="@{/terminal}">Terminal</a>
                     </li>
+                    <li class="nav-item">
+                        <a th:if="${name == 'name-service'}" class="nav-link active" th:href="@{/name-service}">Names</a>
+                        <a th:unless="${name == 'name-service'}" class="nav-link" th:href="@{/name-service}">Names</a>
+                    </li>
                 </ul>
                 <!-- Left links -->
             </div>

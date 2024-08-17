@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head th:insert="~{fragment::head}"></head>
+<head>
+    <title th:text="${@environment.getProperty('spring.application.name')} + ' : Names'">Serial port server</title>
+</head>
+<body>
+<header th:replace="~{fragment::header}"></header>
+<div class="container">
+    <h6 th:if="${!#strings.isEmpty(error)}" th:text="${error}">Names</h6>
+    <h6 th:if="${#lists.isEmpty(names)}"><span class="text-warning text-center">No information!</span></h6>
+    <table th:if="${!#lists.isEmpty(names)}" class="table table-striped">
+        <thead>
+        <tr>
+            <th scope="col">#</th>
+            <th scope="col">ID</th>
+            <th scope="col">First</th>
+            <th scope="col">Last</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="name : ${names}">
+            <th scope="row">1</th>
+            <td th:text="${name.id}"></td>
+            <td th:text="${name.name}"></td>
+            <td th:text="${name.lastName}"></td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+<footer th:replace="~{fragment::footer}"></footer>
+</body>
+</html>
