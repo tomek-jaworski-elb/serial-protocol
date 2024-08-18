@@ -20,19 +20,18 @@ import java.util.List;
 
 @RequiredArgsConstructor
 @Component
-public class DiscoveryService {
+public class RestNameService {
 
     private final RestTemplateClient restTemplateClient;
-    private static final Logger LOG = LogManager.getLogger(DiscoveryService.class);
+    private static final Logger LOG = LogManager.getLogger(RestNameService.class);
     private final Resources resources;
 
     public void checkConnection() {
         URI uri;
-        String dbClientIp = resources.getDbClientIp();
         try {
-            uri = URI.create("http://" + dbClientIp + "/api/hello");
-        } catch (IllegalArgumentException e) {
-            LOG.error("Failed to create URI for {}", dbClientIp, e);
+            uri = getUri("hello");
+        } catch (CustomRestException e) {
+            LOG.error("Failed to create URI for {}", resources.getDbClientIp(), e);
             return;
         }
 
@@ -48,15 +47,7 @@ public class DiscoveryService {
     }
 
     public Collection<Personel> getNames() throws CustomRestException {
-        URI uri;
-        String dbClientIp = resources.getDbClientIp();
-        try {
-            uri = URI.create("http://" + dbClientIp + "/api/names");
-        } catch (IllegalArgumentException e) {
-            LOG.error("Failed to create URI for {}", dbClientIp, e);
-            throw new CustomRestException(e.getMessage());
-        }
-
+        URI uri = getUri("names");
         try {
             ResponseEntity<List<Personel>> forEntity = restTemplateClient.restClient()
                     .exchange(uri, HttpMethod.GET, null, new ParameterizedTypeReference<List<Personel>>() {
@@ -65,6 +56,18 @@ public class DiscoveryService {
         } catch (KeyStoreException | RestClientException e) {
             throw new CustomRestException(e.getMessage());
         }
+    }
+
+    private URI getUri(String url) throws CustomRestException {
+        URI uri;
+        String dbClientIp = resources.getDbClientIp();
+        try {
+            uri = URI.create("http://" + dbClientIp + "/api/" + url);
+        } catch (IllegalArgumentException e) {
+            LOG.error("Failed to create URI for {}", dbClientIp, e);
+            throw new CustomRestException(e.getMessage());
+        }
+        return uri;
     }
 
 }

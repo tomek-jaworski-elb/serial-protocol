@@ -2,7 +2,7 @@ package com.jaworski.serialprotocol.controller.web;
 
 import com.jaworski.serialprotocol.dto.Personel;
 import com.jaworski.serialprotocol.exception.CustomRestException;
-import com.jaworski.serialprotocol.restclient.DiscoveryService;
+import com.jaworski.serialprotocol.restclient.RestNameService;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -18,7 +18,7 @@ import java.util.Collection;
 public class MapController {
 
     private static final Logger LOG = LogManager.getLogger(MapController.class);
-    private final DiscoveryService discoveryService;
+    private final RestNameService restNameService;
 
     @GetMapping("/")
     public String index(Model model) {
@@ -54,8 +54,9 @@ public class MapController {
     public String nameService(Model model) {
         Collection<Personel> names = null;
         try {
-            names = discoveryService.getNames();
+            names = restNameService.getNames();
         } catch (CustomRestException e) {
+            LOG.error("Failed to get names from name-service", e);
             model.addAttribute("error", e.getMessage());
         }
         model.addAttribute("names", names);

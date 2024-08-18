@@ -7,8 +7,14 @@
 <body>
 <header th:replace="~{fragment::header}"></header>
 <div class="container">
-    <h6 th:if="${!#strings.isEmpty(error)}" th:text="${error}">Names</h6>
-    <h6 th:if="${#lists.isEmpty(names)}"><span class="text-warning text-center">No information!</span></h6>
+    <div th:if="${!#strings.isEmpty(error)}" class="container text-center">
+        <span class="text-danger text-center">Error occurred!</span><br>
+        <span class="text-danger text-center">Message: </span>
+        <span th:text="${error}" class="text-danger text-center">Error message</span>
+    </div>
+    <div th:if="${#lists.isEmpty(names) and #strings.isEmpty(error)}" class="container text-center">
+        <span class="text-danger text-center">No information!</span>
+    </div>
     <table th:if="${!#lists.isEmpty(names)}" class="table table-striped">
         <thead>
         <tr>
@@ -20,10 +26,10 @@
         </thead>
         <tbody>
         <tr th:each="name : ${names}">
-            <th scope="row">1</th>
-            <td th:text="${name.id}"></td>
-            <td th:text="${name.name}"></td>
-            <td th:text="${name.lastName}"></td>
+            <th scope="row" th:text="${name.id}">Index</th>
+            <td th:text="${name.id}">Id</td>
+            <td th:text="${name.name}">Name</td>
+            <td th:text="${name.lastName}">Last Name</td>
         </tr>
         </tbody>
     </table>
