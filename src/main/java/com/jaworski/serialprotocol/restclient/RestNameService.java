@@ -1,7 +1,7 @@
 package com.jaworski.serialprotocol.restclient;
 
 import com.jaworski.serialprotocol.configuration.RestTemplateClient;
-import com.jaworski.serialprotocol.dto.Personel;
+import com.jaworski.serialprotocol.dto.Student;
 import com.jaworski.serialprotocol.exception.CustomRestException;
 import com.jaworski.serialprotocol.resources.Resources;
 import lombok.RequiredArgsConstructor;
@@ -46,11 +46,11 @@ public class RestNameService {
         }
     }
 
-    public Collection<Personel> getNames() throws CustomRestException {
+    public Collection<Student> getNames() throws CustomRestException {
         URI uri = getUri("names");
         try {
-            ResponseEntity<List<Personel>> forEntity = restTemplateClient.restClient()
-                    .exchange(uri, HttpMethod.GET, null, new ParameterizedTypeReference<List<Personel>>() {
+            ResponseEntity<List<Student>> forEntity = restTemplateClient.restClient()
+                    .exchange(uri, HttpMethod.GET, null, new ParameterizedTypeReference<List<Student>>() {
                     });
             return forEntity.getBody();
         } catch (KeyStoreException | RestClientException e) {

@@ -1,6 +1,6 @@
 package com.jaworski.serialprotocol.controller.web;
 
-import com.jaworski.serialprotocol.dto.Personel;
+import com.jaworski.serialprotocol.dto.Student;
 import com.jaworski.serialprotocol.exception.CustomRestException;
 import com.jaworski.serialprotocol.restclient.RestNameService;
 import lombok.RequiredArgsConstructor;
@@ -52,7 +52,7 @@ public class MapController {
 
     @GetMapping("/name-service")
     public String nameService(Model model) {
-        Collection<Personel> names = null;
+        Collection<Student> names = null;
         try {
             names = restNameService.getNames();
         } catch (CustomRestException e) {

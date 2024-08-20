@@ -20,16 +20,22 @@
         <tr>
             <th scope="col">#</th>
             <th scope="col">ID</th>
-            <th scope="col">First</th>
-            <th scope="col">Last</th>
+            <th scope="col">Name</th>
+            <th scope="col">Course No</th>
+            <th scope="col">Start Date</th>
+            <th scope="col">End Date</th>
+            <th scope="col">Certificate Type</th>
         </tr>
         </thead>
         <tbody>
         <tr th:each="name : ${names}">
-            <th scope="row" th:text="${name.id}">Index</th>
+            <th scope="row" th:text="${nameStat.index + 1}">Index</th>
             <td th:text="${name.id}">Id</td>
-            <td th:text="${name.name}">Name</td>
-            <td th:text="${name.lastName}">Last Name</td>
+            <td th:text="${name.name + ' ' + name.lastName}">Name</td>
+            <td th:text="${name.courseNo}">Course No</td>
+            <td th:text="${#dates.format(name.dateBegine, 'dd-MM-yyyy')}">Start</td>
+            <td th:text="${#dates.format(name.dateEnd, 'dd-MM-yyyy')}">End</td>
+            <td th:text="${name.certType}">Cert type</td>
         </tr>
         </tbody>
     </table>
