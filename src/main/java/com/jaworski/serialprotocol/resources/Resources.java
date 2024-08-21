@@ -44,10 +44,14 @@ public class Resources {
         return StringUtils.hasLength(dbClientIp) ? dbClientIp : "";
     }
 
-    @Value("rest.service.enabled")
+    @Value("${rest.service.enabled}")
     private String restServiceEnabled;
 
     public boolean isRestServiceEnabled() {
         return Boolean.parseBoolean(restServiceEnabled);
     }
+
+    @Value("${name.service.password}")
+    @Getter
+    private String nameServicePassword;
 }

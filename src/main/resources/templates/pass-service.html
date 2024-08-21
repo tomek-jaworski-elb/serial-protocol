@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head th:insert="~{fragment::head}"></head>
+<head>
+    <title th:text="${@environment.getProperty('spring.application.name')} + ' : Names'">Serial port server</title>
+</head>
+<body>
+<header th:replace="~{fragment::header}"></header>
+<div class="container">
+    <div class="row text-center">
+        <div class="col">
+        </div>
+        <div class="col-5">
+            <div class="p-3 border bg-light">
+                <form method="post" th:action="@{/name-service}">
+                    <label class="form-label" for="password">Password:</label>
+                    <input class="form-control mb-3" type="password" id="password" name="password"
+                           placeholder="Enter password"
+                           th:value="${password}"/>
+                    <button class="btn btn-primary w-100" type="submit">Submit</button>
+                </form>
+                <p class="text-danger m-2" th:text="${error}">Error</p>
+            </div>
+        </div>
+        <div class="col">
+        </div>
+    </div>
+</div>
+<footer th:replace="~{fragment::footer}"></footer>
+</body>
+</html>

@@ -1,5 +1,6 @@
 package com.jaworski.serialprotocol.controller.web;
 
+import com.jaworski.serialprotocol.authorization.AuthorizationService;
 import com.jaworski.serialprotocol.dto.Student;
 import com.jaworski.serialprotocol.exception.CustomRestException;
 import com.jaworski.serialprotocol.restclient.RestNameService;
@@ -9,6 +10,7 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.Collection;
@@ -19,6 +21,7 @@ public class MapController {
 
     private static final Logger LOG = LogManager.getLogger(MapController.class);
     private final RestNameService restNameService;
+    private final AuthorizationService authorizationService;
 
     @GetMapping("/")
     public String index(Model model) {
@@ -50,8 +53,21 @@ public class MapController {
         return "chart";
     }
 
-    @GetMapping("/name-service")
-    public String nameService(Model model) {
+    @PostMapping("/name-service")
+    public String passService(Model model, @RequestParam(defaultValue = "") String password) {
+        model.addAttribute("name", "pass-service");
+        return authorizationService.authorize(password) ?
+                getNameModel(model) :
+                getErrorString(model, password);
+    }
+
+    private String getErrorString(Model model, String password) {
+        LOG.info("Wrong password: {}", password);
+        model.addAttribute("error", "Wrong password");
+        return "pass-service";
+    }
+
+    private String getNameModel(Model model) {
         Collection<Student> names = null;
         try {
             names = restNameService.getNames();
@@ -62,6 +78,12 @@ public class MapController {
         model.addAttribute("names", names);
         model.addAttribute("name", "name-service");
         return "name-service";
+    }
+
+    @GetMapping("/name-service")
+    public String passServiceGet(Model model) {
+        model.addAttribute("name", "pass-service");
+        return "pass-service";
     }
 }
 
