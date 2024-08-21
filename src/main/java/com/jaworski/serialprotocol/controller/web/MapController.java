@@ -7,11 +7,13 @@ import com.jaworski.serialprotocol.restclient.RestNameService;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.client.HttpStatusCodeException;
 
 import java.util.Collection;
 
@@ -72,8 +74,14 @@ public class MapController {
         try {
             names = restNameService.getNames();
         } catch (CustomRestException e) {
-            LOG.error("Failed to get names from name-service", e);
-            model.addAttribute("error", e.getMessage());
+            if (e.getCause() instanceof HttpStatusCodeException) {
+                HttpStatusCode statusCode = ((HttpStatusCodeException) e.getCause()).getStatusCode();
+                LOG.error("Http status {}", statusCode, e.getCause());
+                model.addAttribute("error", "Http Status code: " + statusCode);
+            } else {
+                LOG.error("Failed to get names from name-service", e);
+                model.addAttribute("error", e.getMessage());
+            }
         }
         model.addAttribute("names", names);
         model.addAttribute("name", "name-service");
