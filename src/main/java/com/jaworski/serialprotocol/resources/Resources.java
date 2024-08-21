@@ -54,4 +54,8 @@ public class Resources {
     @Value("${name.service.password}")
     @Getter
     private String nameServicePassword;
+
+    @Value("${rest.service.credentials}")
+    @Getter
+    private String restServiceCredentials;
 }

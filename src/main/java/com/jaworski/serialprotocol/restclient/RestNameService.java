@@ -9,6 +9,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
@@ -16,6 +17,7 @@ import org.springframework.web.client.RestClientException;
 import java.net.URI;
 import java.security.KeyStoreException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -39,7 +41,7 @@ public class RestNameService {
         try {
             ResponseEntity<String> forEntity = restTemplateClient.restClient().getForEntity(uri, String.class);
             LOG.info("Response: {}, status: {}", forEntity.getBody(), forEntity.getStatusCode());
-        } catch (RestClientException e) {
+        } catch (CustomRestException e) {
             LOG.error("Failed to send request to {}", uri, e);
         } catch (KeyStoreException e) {
             throw new RuntimeException(e);
@@ -52,9 +54,13 @@ public class RestNameService {
             ResponseEntity<List<Student>> forEntity = restTemplateClient.restClient()
                     .exchange(uri, HttpMethod.GET, null, new ParameterizedTypeReference<List<Student>>() {
                     });
-            return forEntity.getBody();
+            LOG.info("Response: {}, status: {} {}", forEntity.getBody(), forEntity.getStatusCode(), HttpStatus.valueOf(forEntity.getStatusCode().value()));
+            return forEntity.getBody() == null ?
+                    Collections.emptyList() :
+                    forEntity.getBody();
         } catch (KeyStoreException | RestClientException e) {
-            throw new CustomRestException(e.getMessage());
+            LOG.error("Rest error: ", e);
+            throw new CustomRestException(e.getMessage(), e);
         }
     }
 
