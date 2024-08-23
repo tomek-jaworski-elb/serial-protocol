@@ -8,9 +8,12 @@ services:
             - rs.baud_rate=9600
             - rs.message_delimiter=13,10  # 10 = \n, 13 = \r
             - ws.heartbeat.interval=2000  # value in ms > 1
-#            - ws.endpoint=/echo
+            - ip.db-client=192.168.2.4:8085
         ports:
             - "8081:8081"
+        networks:
+          backend:
+            ipv4_address: 192.168.2.2
         volumes:
             - ./logs:/app/logs
         devices:
@@ -20,3 +23,19 @@ services:
             - /dev/ttyACM0:/dev/ttyACM0
             - /dev:/dev
         privileged: true
+#    db:
+#      extends:
+#        file: ../db-access-service/docker-compose.yml
+#        service: db
+
+networks:
+  backend:
+    name: backend
+    attachable: true
+    driver: bridge
+    driver_opts:
+      com.docker.network.enable_ipv6: "false"
+    ipam:
+      config:
+        - subnet: 192.168.2.0/24
+          gateway: 192.168.2.1
