@@ -72,8 +72,10 @@ public class MapController {
 
     private String getNameModel(Model model) {
         Collection<Student> names = null;
+        Collection<Student> namesLatest = null;
         try {
             names = restNameService.getNames();
+            namesLatest = restNameService.getNamesLatest();
         } catch (CustomRestException e) {
             if (e.getCause() instanceof HttpStatusCodeException) {
                 HttpStatusCode statusCode = ((HttpStatusCodeException) e.getCause()).getStatusCode();
@@ -88,6 +90,7 @@ public class MapController {
             }
         }
         model.addAttribute("names", names);
+        model.addAttribute("namesLatest", namesLatest);
         model.addAttribute("name", "name-service");
         return "name-service";
     }
