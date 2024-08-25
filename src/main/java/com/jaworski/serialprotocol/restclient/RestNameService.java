@@ -24,6 +24,9 @@ import java.util.List;
 @Component
 public class RestNameService {
 
+    private static final String NAMES_LATEST = "names/4";
+    private static final String NAMES = "names";
+    private static final String HELLO = "hello";
     private final RestTemplateClient restTemplateClient;
     private static final Logger LOG = LogManager.getLogger(RestNameService.class);
     private final Resources resources;
@@ -31,7 +34,7 @@ public class RestNameService {
     public void checkConnection() {
         URI uri;
         try {
-            uri = getUri("hello");
+            uri = getUri(HELLO);
         } catch (CustomRestException e) {
             LOG.error("Failed to create URI for {}", resources.getDbClientIp(), e);
             return;
@@ -49,19 +52,8 @@ public class RestNameService {
     }
 
     public Collection<Student> getNames() throws CustomRestException {
-        URI uri = getUri("names");
-        try {
-            ResponseEntity<List<Student>> forEntity = restTemplateClient.restClient()
-                    .exchange(uri, HttpMethod.GET, null, new ParameterizedTypeReference<List<Student>>() {
-                    });
-            LOG.info("Response: {}, status: {} {}", forEntity.getBody(), forEntity.getStatusCode(), HttpStatus.valueOf(forEntity.getStatusCode().value()));
-            return forEntity.getBody() == null ?
-                    Collections.emptyList() :
-                    forEntity.getBody();
-        } catch (KeyStoreException | RestClientException e) {
-            LOG.error("Rest error: ", e);
-            throw new CustomRestException(e.getMessage(), e);
-        }
+        URI uri = getUri(NAMES);
+        return getStudents(uri);
     }
 
     private URI getUri(String url) throws CustomRestException {
@@ -76,4 +68,23 @@ public class RestNameService {
         return uri;
     }
 
+    public Collection<Student> getNamesLatest() throws CustomRestException {
+        URI uri = getUri(NAMES_LATEST);
+        return getStudents(uri);
+    }
+
+    private Collection<Student> getStudents(URI uri) throws CustomRestException {
+        try {
+            ResponseEntity<List<Student>> forEntity = restTemplateClient.restClient()
+                    .exchange(uri, HttpMethod.GET, null, new ParameterizedTypeReference<List<Student>>() {
+                    });
+            LOG.info("Response: {}, status: {} {}", forEntity.getBody(), forEntity.getStatusCode(), HttpStatus.valueOf(forEntity.getStatusCode().value()));
+            return forEntity.getBody() == null ?
+                    Collections.emptyList() :
+                    forEntity.getBody();
+        } catch (KeyStoreException | RestClientException e) {
+            LOG.error("Rest error: ", e);
+            throw new CustomRestException(e.getMessage(), e);
+        }
+    }
 }

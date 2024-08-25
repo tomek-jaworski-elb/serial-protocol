@@ -7,38 +7,77 @@
 <body>
 <header th:replace="~{fragment::header}"></header>
 <div class="container">
-    <div th:if="${!#strings.isEmpty(error)}" class="container text-center">
-        <span class="text-danger text-center">Error occurred!</span><br>
-        <span class="text-danger text-center">Message: </span>
-        <span th:text="${error}" class="text-danger text-center">Error message</span>
+    <nav th:if="${!#lists.isEmpty(names) and !#lists.isEmpty(namesLatest)}">
+        <div class="nav nav-tabs nav-fill" id="nav-tab" role="tablist">
+            <a class="nav-link active" id="nav-home-tab" data-bs-toggle="tab" data-bs-target="#nav-home" type="button"
+               role="tab" aria-controls="nav-home" aria-selected="true">All names</a>
+            <a class="nav-link" id="nav-profile-tab" data-bs-toggle="tab" data-bs-target="#nav-profile" type="button"
+               role="tab" aria-controls="nav-profile" aria-selected="false">Last week names</a>
+        </div>
+    </nav>
+    <div class="tab-content" id="nav-tabContent" th:if="${!#lists.isEmpty(names)}">
+        <div class="tab-pane fade show active" id="nav-home" role="tabpanel" aria-labelledby="nav-home-tab">
+            <table th:if="${!#lists.isEmpty(names)}" class="table table-striped">
+                <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">ID</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Course No</th>
+                    <th scope="col">Start Date</th>
+                    <th scope="col">End Date</th>
+                    <th scope="col">Certificate Type</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="name : ${names}">
+                    <th scope="row" th:text="${nameStat.index + 1}">Index</th>
+                    <td th:text="${name.id}">Id</td>
+                    <td th:text="${name.name + ' ' + name.lastName}">Name</td>
+                    <td th:text="${name.courseNo}">Course No</td>
+                    <td th:text="${#dates.format(name.dateBegine, 'dd-MM-yyyy')}">Start</td>
+                    <td th:text="${#dates.format(name.dateEnd, 'dd-MM-yyyy')}">End</td>
+                    <td th:text="${name.certType}">Cert type</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="tab-pane fade" id="nav-profile" role="tabpanel" aria-labelledby="nav-profile-tab">
+            <table th:if="${!#lists.isEmpty(namesLatest)}" class="table table-striped">
+                <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">ID</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Course No</th>
+                    <th scope="col">Start Date</th>
+                    <th scope="col">End Date</th>
+                    <th scope="col">Certificate Type</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="name : ${namesLatest}">
+                    <th scope="row" th:text="${nameStat.index + 1}">Index</th>
+                    <td th:text="${name.id}">Id</td>
+                    <td th:text="${name.name + ' ' + name.lastName}">Name</td>
+                    <td th:text="${name.courseNo}">Course No</td>
+                    <td th:text="${#dates.format(name.dateBegine, 'dd-MM-yyyy')}">Start</td>
+                    <td th:text="${#dates.format(name.dateEnd, 'dd-MM-yyyy')}">End</td>
+                    <td th:text="${name.certType}">Cert type</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
-    <div th:if="${#lists.isEmpty(names) and #strings.isEmpty(error)}" class="container text-center">
-        <span class="text-danger text-center">No information!</span>
-    </div>
-    <table th:if="${!#lists.isEmpty(names)}" class="table table-striped">
-        <thead>
-        <tr>
-            <th scope="col">#</th>
-            <th scope="col">ID</th>
-            <th scope="col">Name</th>
-            <th scope="col">Course No</th>
-            <th scope="col">Start Date</th>
-            <th scope="col">End Date</th>
-            <th scope="col">Certificate Type</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="name : ${names}">
-            <th scope="row" th:text="${nameStat.index + 1}">Index</th>
-            <td th:text="${name.id}">Id</td>
-            <td th:text="${name.name + ' ' + name.lastName}">Name</td>
-            <td th:text="${name.courseNo}">Course No</td>
-            <td th:text="${#dates.format(name.dateBegine, 'dd-MM-yyyy')}">Start</td>
-            <td th:text="${#dates.format(name.dateEnd, 'dd-MM-yyyy')}">End</td>
-            <td th:text="${name.certType}">Cert type</td>
-        </tr>
-        </tbody>
-    </table>
+</div>
+
+<div th:if="${!#strings.isEmpty(error)}" class="container text-center">
+    <span class="text-danger text-center">Error occurred!</span><br>
+    <span class="text-danger text-center">Message: </span>
+    <span th:text="${error}" class="text-danger text-center">Error message</span>
+</div>
+<div th:if="${#lists.isEmpty(names) and #strings.isEmpty(error)}" class="container text-center">
+    <span class="text-danger text-center">No information!</span>
 </div>
 <footer th:replace="~{fragment::footer}"></footer>
 </body>
