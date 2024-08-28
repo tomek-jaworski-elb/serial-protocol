@@ -97,6 +97,48 @@ window.onpageshow = function () {
                     }
                     fillFieldValues0("rs_model1_no", rs_model1_no);
                     drawShip(canvasName, positionX, positionY, 3, angle, 'orange', 12.21, 2, 0);                        // Warta
+
+                    drawShip(canvasName, 100, 100, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 200, 200, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 300, 300, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 400, 400, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 500, 500, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 600, 600, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 700, 700, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 800, 800, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 900, 900, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 1000, 1000, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 1100, 1100, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 1200, 1200, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 1300, 1300, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 1400, 1400, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 1500, 1500, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 1600, 1600, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 1700, 1700, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 1800, 1800, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 1900, 1900, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 2000, 2000, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 2100, 2100, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 2200, 2200, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 2300, 2300, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 2400, 2400, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 2500, 2500, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 2600, 2600, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 2700, 2700, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 2800, 2800, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 2900, 2900, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 3000, 3000, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 3100, 3100, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 3200, 3200, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 3300, 3300, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 3400, 3400, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 3500, 3500, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 3600, 3600, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 3700, 3700, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 3800, 3800, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 3900, 3900, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 4000, 4000, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 2:
