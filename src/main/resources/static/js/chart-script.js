@@ -2,17 +2,36 @@ window.onpageshow = function () {
     // Set canvases dimensions to match the container
     const container = document.querySelector('.canvas-container');
     for (let elementsByTagNameElement of container.getElementsByTagName('canvas')) {
-        if (navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad') || navigator.userAgent.includes('ios')) {
+        if (navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad') || navigator.userAgent.includes('ios') || navigator.userAgent.includes('Windows')) {
             // Set canvas dimensions based on device pixel ratio
             const dpr = window.devicePixelRatio || 1;
             const rect = elementsByTagNameElement.getBoundingClientRect();
             elementsByTagNameElement.width = rect.width * dpr;
             elementsByTagNameElement.height = rect.height * dpr;
             // use the device pixel ratio instead of the backing store ratio
-            // elementsByTagNameElement.width = window.innerWidth * dpr;
-            // elementsByTagNameElement.height = window.innerHeight * dpr;
-            elementsByTagNameElement.style.width = window.innerWidth + 'px';
-            elementsByTagNameElement.style.height = window.innerHeight + 'px';
+            elementsByTagNameElement.width = window.innerWidth * dpr;
+            elementsByTagNameElement.height = window.innerHeight * dpr;
+            // elementsByTagNameElement.style.width = window.innerWidth + 'px';
+            // elementsByTagNameElement.style.height = window.innerHeight + 'px';
+
+            document.getElementById("test-field-key-1").innerHTML = "navigator.userAgent: ";
+            document.getElementById("test-field-value-1").innerHTML = navigator.userAgent;
+
+            document.getElementById("test-field-key-2").innerHTML = "dpr: ";
+            document.getElementById("test-field-value-2").innerHTML = dpr.toString();
+
+            document.getElementById("test-field-key-3").innerHTML = "rect.width: ";
+            document.getElementById("test-field-value-3").innerHTML = rect.width.toString();
+
+            document.getElementById("test-field-key-4").innerHTML = "rect.height: ";
+            document.getElementById("test-field-value-4").innerHTML = rect.height.toString();
+
+            document.getElementById("test-field-key-5").innerHTML = "window.innerWidth: ";
+            document.getElementById("test-field-value-5").innerHTML = window.innerWidth.toString();
+
+            document.getElementById("test-field-key-6").innerHTML = "window.innerHeight: ";
+            document.getElementById("test-field-value-6").innerHTML = window.innerHeight.toString();
+
         } else {
             elementsByTagNameElement.width = container.clientWidth;
             elementsByTagNameElement.height = container.clientHeight;
