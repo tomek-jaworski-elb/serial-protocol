@@ -13,8 +13,8 @@ window.onpageshow = function () {
             elementsByTagNameElement.width = rect.width;
             elementsByTagNameElement.height = rect.height;
             // use the device pixel ratio instead of the backing store ratio
-            // elementsByTagNameElement.width = window.innerWidth * dpr;
-            // elementsByTagNameElement.height = window.innerHeight * dpr;
+            elementsByTagNameElement.width = window.innerWidth * dpr;
+            elementsByTagNameElement.height = window.innerHeight * dpr;
             // elementsByTagNameElement.style.width = window.innerWidth + 'px';
             // elementsByTagNameElement.style.height = window.innerHeight + 'px';
 
@@ -37,8 +37,9 @@ window.onpageshow = function () {
             document.getElementById("test-field-value-6").innerHTML = window.innerHeight.toString();
 
         } else {
-            elementsByTagNameElement.width = container.clientWidth;
-            elementsByTagNameElement.height = container.clientHeight;
+            const rect = elementsByTagNameElement.getBoundingClientRect();
+            elementsByTagNameElement.width = rect.width;
+            elementsByTagNameElement.height = rect.height;
         }
     }
 
