@@ -26,18 +26,9 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Run docker compose build
-echo "Building Docker images..."
-docker compose build
-
-if [ $? -ne 0 ]; then
-    echo "Docker compose build failed."
-    exit 1
-fi
-
-# Run docker compose up
+# Run docker compose build and up service
 echo "Starting Docker containers..."
-docker compose up
+docker compose up --build
 
 if [ $? -ne 0 ]; then
     echo "Docker compose up failed."
