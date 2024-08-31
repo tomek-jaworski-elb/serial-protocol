@@ -1,11 +1,10 @@
 window.onpageshow = function () {
     // Set canvases dimensions to match the container
     const container = document.querySelector('.canvas-container');
+                document.getElementById("test-field-key-1").innerHTML = "navigator.userAgent: ";
+                document.getElementById("test-field-value-1").innerHTML = navigator.userAgent;
+
     for (let elementsByTagNameElement of container.getElementsByTagName('canvas')) {
-        document.getElementById("test-field-key-7").innerHTML = "elementsByTagNameElement.innerHeight: ";
-        document.getElementById("test-field-value-7").innerHTML = elementsByTagNameElement.clientHeight.toString();
-        document.getElementById("test-field-key-8").innerHTML = "elementsByTagNameElement.innerWidth: ";
-        document.getElementById("test-field-value-8").innerHTML = elementsByTagNameElement.clientWidth.toString();
         if (navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad') || navigator.userAgent.includes('ios')) {
             // Set canvas dimensions based on device pixel ratio
             const dpr = window.devicePixelRatio || 1;
@@ -13,13 +12,11 @@ window.onpageshow = function () {
             elementsByTagNameElement.width = rect.width;
             elementsByTagNameElement.height = rect.height;
             // use the device pixel ratio instead of the backing store ratio
-            // elementsByTagNameElement.width = window.innerWidth * dpr;
-            // elementsByTagNameElement.height = window.innerHeight * dpr;
+             elementsByTagNameElement.width = window.innerWidth * dpr;
+             elementsByTagNameElement.height = window.innerHeight * dpr;
             // elementsByTagNameElement.style.width = window.innerWidth + 'px';
             // elementsByTagNameElement.style.height = window.innerHeight + 'px';
 
-            document.getElementById("test-field-key-1").innerHTML = "navigator.userAgent: ";
-            document.getElementById("test-field-value-1").innerHTML = navigator.userAgent;
 
             document.getElementById("test-field-key-2").innerHTML = "dpr: ";
             document.getElementById("test-field-value-2").innerHTML = dpr.toString();
@@ -36,10 +33,20 @@ window.onpageshow = function () {
             document.getElementById("test-field-key-6").innerHTML = "window.innerHeight: ";
             document.getElementById("test-field-value-6").innerHTML = window.innerHeight.toString();
 
+                    document.getElementById("test-field-key-7").innerHTML = "elementsByTagNameElement.innerHeight: ";
+                    document.getElementById("test-field-value-7").innerHTML = elementsByTagNameElement.clientHeight.toString();
+                    document.getElementById("test-field-key-8").innerHTML = "elementsByTagNameElement.innerWidth: ";
+                    document.getElementById("test-field-value-8").innerHTML = elementsByTagNameElement.clientWidth.toString();
+
         } else {
             const rect = elementsByTagNameElement.getBoundingClientRect();
             elementsByTagNameElement.width = rect.width;
             elementsByTagNameElement.height = rect.height;
+
+                    document.getElementById("test-field-key-7").innerHTML = "elementsByTagNameElement.innerHeight: ";
+                    document.getElementById("test-field-value-7").innerHTML = elementsByTagNameElement.clientHeight.toString();
+                    document.getElementById("test-field-key-8").innerHTML = "elementsByTagNameElement.innerWidth: ";
+                    document.getElementById("test-field-value-8").innerHTML = elementsByTagNameElement.clientWidth.toString();
         }
     }
 
@@ -97,11 +104,13 @@ window.onpageshow = function () {
                       rs_model1_no = 0;
                     }
                     fillFieldValues0("rs_model1_no", rs_model1_no);
-                    drawShip(canvasName, positionX, positionY, 3, angle, 'orange', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, positionX, positionY, 2, angle, 'orange', 12.21, 2, 0);                        // Warta
+//                     x    y
+drawShip(canvasName, 64, 506, 2, 90, 'blue', 12.21, 2, 0);                        // Warta
 
                     drawShip(canvasName, 100, 100, 23, 90, 'red', 12.21, 2, 0);                        // Warta
                     drawShip(canvasName, 200, 200, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 300, 300, 23, 90, 'red', 12.21, 2, 0);                        // Warta
+                    drawShip(canvasName, 300, 300, 23, 90, 'orange', 12.21, 2, 0);                        // Warta
                     drawShip(canvasName, 400, 400, 23, 90, 'red', 12.21, 2, 0);                        // Warta
                     drawShip(canvasName, 500, 500, 23, 90, 'red', 12.21, 2, 0);                        // Warta
                     drawShip(canvasName, 600, 600, 23, 90, 'red', 12.21, 2, 0);                        // Warta
@@ -153,7 +162,7 @@ window.onpageshow = function () {
                       rs_model2_no = 0;
                     }
                     fillFieldValues0("rs_model2_no", rs_model2_no);
-                    drawShip(canvasName, positionX, positionY, 3, angle, 'blue', 13.78, 2.38, 0);                       // B.L.
+                    drawShip(canvasName, positionX, positionY, 2, angle, 'blue', 13.78, 2.38, 0);                       // B.L.
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 3:
@@ -167,7 +176,7 @@ window.onpageshow = function () {
                       rs_model3_no = 0;
                     }
                     fillFieldValues0("rs_model3_no", rs_model3_no);
-                    drawShip(canvasName, positionX, positionY, 3, angle, 'green', 11.55, 1.8, 0);                       // D.L.
+                    drawShip(canvasName, positionX, positionY, 2, angle, 'green', 11.55, 1.8, 0);                       // D.L.
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 4:
@@ -181,7 +190,7 @@ window.onpageshow = function () {
                       rs_model4_no = 0;
                     }
                     fillFieldValues0("rs_model4_no", rs_model4_no);
-                    drawShip(canvasName, positionX, positionY, 3, angle, 'purple', 15.5, 1.79, 0);                      // Ch.L.
+                    drawShip(canvasName, positionX, positionY, 2, angle, 'purple', 15.5, 1.79, 0);                      // Ch.L.
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 5:
@@ -195,7 +204,7 @@ window.onpageshow = function () {
                       rs_model5_no = 0;
                     }
                     fillFieldValues0("rs_model5_no", rs_model5_no);
-                    drawShip(canvasName, positionX, positionY, 3, angle, 'lightgray', 10.98, 1.78, 1);                      // PROM
+                    drawShip(canvasName, positionX, positionY, 2, angle, 'lightgray', 10.98, 1.78, 1);                      // PROM
                     //                                        "Position_GPS" = Length / 2 + PositionGPS * Length / 10
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
@@ -210,7 +219,7 @@ window.onpageshow = function () {
                       rs_model6_no = 0;
                     }
                     fillFieldValues0("rs_model6_no", rs_model6_no);
-                    drawShip(canvasName, positionX, positionY, 3, angle, 'darkblue', 16.43, 2.23, 0);                       // L.M.
+                    drawShip(canvasName, positionX, positionY, 2, angle, 'darkblue', 16.43, 2.23, 0);                       // L.M.
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 default:
@@ -236,8 +245,8 @@ window.onpageshow = function () {
     function getScaledPoints(oldX, oldY) {
         const staticShift_y = 506;                                                                                      // 506
         const staticShift_x = 64;                                                                                       //  64
-        scaleX = 3.61;                                                                                                  //   3.61
-        scaleY = 3.61;                                                                                                  //   3.61
+        scaleX = 2.4; // 3.61 / 1.5 ; /// 1;// 3.61;                                                                                                  //   3.61
+        scaleY = 2.4; // 3.61 / 1.5 ; /// 1;// 3.61;                                                                                                  //   3.61
         console.log("ScaleX: " + scaleX + ", ScaleY: " + scaleY);
         console.log("Old X: " + oldX + ", Old Y:  " + oldY)
         // Changed coordinate system x->y , y->x
@@ -249,7 +258,7 @@ window.onpageshow = function () {
 
     // Function to clear the first canvas
     function clearCanvas(elementId) {
-        const element = document.getElementById(elementId);
+        const element = document.getElementById(elementId);//.getBoundingClientRect;
         const context = element.getContext('2d');
         context.clearRect(0, 0, element.width, element.height);
     }
