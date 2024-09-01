@@ -9,13 +9,16 @@ window.onpageshow = function () {
             // Set canvas dimensions based on device pixel ratio
             const dpr = window.devicePixelRatio || 1;
             const rect = elementsByTagNameElement.getBoundingClientRect();
-            elementsByTagNameElement.width = rect.width;
-            elementsByTagNameElement.height = rect.height;
+            elementsByTagNameElement.width = rect.width;                         /// na mapie  stałe big modwle 5szt. widocznych = obcięte po prawej
+            elementsByTagNameElement.height = rect.height;                       ///
             // use the device pixel ratio instead of the backing store ratio
-             elementsByTagNameElement.width = window.innerWidth * dpr;
-             elementsByTagNameElement.height = window.innerHeight * dpr;
+///             elementsByTagNameElement.width = window.innerWidth * dpr;     /// na mapie  stałe big modwle są wąskie
+///             elementsByTagNameElement.height = window.innerHeight * dpr;   ///  - : -
             // elementsByTagNameElement.style.width = window.innerWidth + 'px';
             // elementsByTagNameElement.style.height = window.innerHeight + 'px';
+
+
+
 
 
             document.getElementById("test-field-key-2").innerHTML = "dpr: ";
@@ -39,9 +42,13 @@ window.onpageshow = function () {
                     document.getElementById("test-field-value-8").innerHTML = elementsByTagNameElement.clientWidth.toString();
 
         } else {
-            const rect = elementsByTagNameElement.getBoundingClientRect();
-            elementsByTagNameElement.width = rect.width;
-            elementsByTagNameElement.height = rect.height;
+        //  const rect = elementsByTagNameElement.getBoundingClientRect();
+        //  elementsByTagNameElement.width = rect.width;
+        //  elementsByTagNameElement.height = rect.height;
+
+
+            elementsByTagNameElement.width = container.clientWidth;
+            elementsByTagNameElement.height = container.clientHeight;
 
                     document.getElementById("test-field-key-7").innerHTML = "elementsByTagNameElement.innerHeight: ";
                     document.getElementById("test-field-value-7").innerHTML = elementsByTagNameElement.clientHeight.toString();
