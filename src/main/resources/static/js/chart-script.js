@@ -1,5 +1,8 @@
 window.onpageshow = function () {
     // Set canvases dimensions to match the container
+
+    const imgMap = document.getElementById("backgroundCanvas");
+
     const container = document.querySelector('.canvas-container');
                 document.getElementById("test-field-key-1").innerHTML = "navigator.userAgent: ";
                 document.getElementById("test-field-value-1").innerHTML = navigator.userAgent;
@@ -9,8 +12,8 @@ window.onpageshow = function () {
             // Set canvas dimensions based on device pixel ratio
             const dpr = window.devicePixelRatio || 1;
             const rect = elementsByTagNameElement.getBoundingClientRect();
-            elementsByTagNameElement.width = rect.width;                         /// na mapie  stałe big modwle 5szt. widocznych = obcięte po prawej
-            elementsByTagNameElement.height = rect.height;                       ///
+            elementsByTagNameElement.width = imgMap.width;                        /// na mapie  stałe big modwle 5szt. widocznych = obcięte po prawej
+            elementsByTagNameElement.height = imgMap.height;                      ///
             // use the device pixel ratio instead of the backing store ratio
 ///             elementsByTagNameElement.width = window.innerWidth * dpr;     /// na mapie  stałe big modwle są wąskie
 ///             elementsByTagNameElement.height = window.innerHeight * dpr;   ///  - : -
@@ -37,9 +40,9 @@ window.onpageshow = function () {
             document.getElementById("test-field-value-6").innerHTML = window.innerHeight.toString();
 
                     document.getElementById("test-field-key-7").innerHTML = "elementsByTagNameElement.innerHeight: ";
-                    document.getElementById("test-field-value-7").innerHTML = elementsByTagNameElement.clientHeight.toString();
+                    document.getElementById("test-field-value-7").innerHTML = elementsByTagNameElement.height.toString();
                     document.getElementById("test-field-key-8").innerHTML = "elementsByTagNameElement.innerWidth: ";
-                    document.getElementById("test-field-value-8").innerHTML = elementsByTagNameElement.clientWidth.toString();
+                    document.getElementById("test-field-value-8").innerHTML = elementsByTagNameElement.width.toString();
 
         } else {
         //  const rect = elementsByTagNameElement.getBoundingClientRect();
@@ -47,13 +50,16 @@ window.onpageshow = function () {
         //  elementsByTagNameElement.height = rect.height;
 
 
-            elementsByTagNameElement.width = container.clientWidth;
-            elementsByTagNameElement.height = container.clientHeight;
+            elementsByTagNameElement.width = imgMap.width;
+            elementsByTagNameElement.height = imgMap.height;
 
                     document.getElementById("test-field-key-7").innerHTML = "elementsByTagNameElement.innerHeight: ";
-                    document.getElementById("test-field-value-7").innerHTML = elementsByTagNameElement.clientHeight.toString();
+                    document.getElementById("test-field-value-7").innerHTML = elementsByTagNameElement.height.toString();
                     document.getElementById("test-field-key-8").innerHTML = "elementsByTagNameElement.innerWidth: ";
-                    document.getElementById("test-field-value-8").innerHTML = elementsByTagNameElement.clientWidth.toString();
+                    document.getElementById("test-field-value-8").innerHTML = elementsByTagNameElement.width.toString();
+                    console.log("Width: " + elementsByTagNameElement.width + ", NHei: " +  elementsByTagNameElement.height);
+                    console.log("Width: " + elementsByTagNameElement.width + ", NHei: " +  elementsByTagNameElement.height);
+
         }
     }
 
