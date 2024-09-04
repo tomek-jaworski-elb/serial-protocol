@@ -4,6 +4,7 @@ services:
         restart: unless-stopped
         container_name: serial-ports-server
         environment:
+            - JAVA_TOOL_OPTIONS=-Xms256m -Xmx512m
             - rs.comports=COM1,S0
             - rs.baud_rate=9600
             - rs.message_delimiter=13,10  # 10 = \n, 13 = \r
