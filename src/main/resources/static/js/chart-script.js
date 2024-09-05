@@ -1,67 +1,19 @@
 window.onpageshow = function () {
-    // Set canvases dimensions to match the container
-
     const imgMap = document.getElementById("backgroundCanvas");
 
     const container = document.querySelector('.canvas-container');
-                document.getElementById("test-field-key-1").innerHTML = "navigator.userAgent: ";
-                document.getElementById("test-field-value-1").innerHTML = navigator.userAgent;
 
     for (let elementsByTagNameElement of container.getElementsByTagName('canvas')) {
-        if (navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad') || navigator.userAgent.includes('ios')) {
-            // Set canvas dimensions based on device pixel ratio
-            const dpr = window.devicePixelRatio || 1;
-            const rect = elementsByTagNameElement.getBoundingClientRect();
-            elementsByTagNameElement.width = imgMap.width;                        /// na mapie  stałe big modwle 5szt. widocznych = obcięte po prawej
-            elementsByTagNameElement.height = imgMap.height;                      ///
-            // use the device pixel ratio instead of the backing store ratio
-///             elementsByTagNameElement.width = window.innerWidth * dpr;     /// na mapie  stałe big modwle są wąskie
-///             elementsByTagNameElement.height = window.innerHeight * dpr;   ///  - : -
-            // elementsByTagNameElement.style.width = window.innerWidth + 'px';
-            // elementsByTagNameElement.style.height = window.innerHeight + 'px';
-
-
-
-
-
-            document.getElementById("test-field-key-2").innerHTML = "dpr: ";
-            document.getElementById("test-field-value-2").innerHTML = dpr.toString();
-
-            document.getElementById("test-field-key-3").innerHTML = "rect.width: ";
-            document.getElementById("test-field-value-3").innerHTML = rect.width.toString();
-
-            document.getElementById("test-field-key-4").innerHTML = "rect.height: ";
-            document.getElementById("test-field-value-4").innerHTML = rect.height.toString();
-
-            document.getElementById("test-field-key-5").innerHTML = "window.innerWidth: ";
-            document.getElementById("test-field-value-5").innerHTML = window.innerWidth.toString();
-
-            document.getElementById("test-field-key-6").innerHTML = "window.innerHeight: ";
-            document.getElementById("test-field-value-6").innerHTML = window.innerHeight.toString();
-
-                    document.getElementById("test-field-key-7").innerHTML = "elementsByTagNameElement.innerHeight: ";
-                    document.getElementById("test-field-value-7").innerHTML = elementsByTagNameElement.height.toString();
-                    document.getElementById("test-field-key-8").innerHTML = "elementsByTagNameElement.innerWidth: ";
-                    document.getElementById("test-field-value-8").innerHTML = elementsByTagNameElement.width.toString();
-
-        } else {
-        //  const rect = elementsByTagNameElement.getBoundingClientRect();
-        //  elementsByTagNameElement.width = rect.width;
-        //  elementsByTagNameElement.height = rect.height;
-
-
-            elementsByTagNameElement.width = imgMap.width;
-            elementsByTagNameElement.height = imgMap.height;
-
-                    document.getElementById("test-field-key-7").innerHTML = "elementsByTagNameElement.innerHeight: ";
-                    document.getElementById("test-field-value-7").innerHTML = elementsByTagNameElement.height.toString();
-                    document.getElementById("test-field-key-8").innerHTML = "elementsByTagNameElement.innerWidth: ";
-                    document.getElementById("test-field-value-8").innerHTML = elementsByTagNameElement.width.toString();
-                    console.log("Width: " + elementsByTagNameElement.width + ", NHei: " +  elementsByTagNameElement.height);
-                    console.log("Width: " + elementsByTagNameElement.width + ", NHei: " +  elementsByTagNameElement.height);
-
-        }
+        elementsByTagNameElement.width = imgMap.width;
+        elementsByTagNameElement.height = imgMap.height;
+        elementsByTagNameElement.style.width = imgMap.width + 'px';
+        elementsByTagNameElement.style.height =imgMap.height + 'px';
     }
+
+//    todo - do usunięcia po testach
+// todo - potrzeba sprawdzić/dobrać nowy współczynnik skali
+    drawShip("overlayCanvas1", 100, 100, 10, 90, 'red', 12.21, 2, 0);                        // Warta
+    drawShip("overlayCanvas2", 200, 200, 10, 90, 'blue', 12.21, 2, 0);                        // Warta
 
     const imgLedOn = new Image();
     imgLedOn.src = "/img/led_connection_green.bmp";
@@ -271,9 +223,10 @@ drawShip(canvasName, 64, 506, 2, 90, 'blue', 12.21, 2, 0);                      
 
     // Function to clear the first canvas
     function clearCanvas(elementId) {
-        const element = document.getElementById(elementId);//.getBoundingClientRect;
+        const element = document.getElementById(elementId);
         const context = element.getContext('2d');
         context.clearRect(0, 0, element.width, element.height);
+        console.log("Clear canvas width: " + element.width + ", height: " +  element.height);
     }
 
 // Function to draw a Ship
