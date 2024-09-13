@@ -15,7 +15,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 
 import java.net.URI;
+import java.security.KeyManagementException;
 import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -39,15 +41,14 @@ public class RestNameService {
             LOG.error("Failed to create URI for {}", resources.getDbClientIp(), e);
             return;
         }
-
         LOG.info("Checking connection to {}", uri);
         try {
             ResponseEntity<String> forEntity = restTemplateClient.restClient().getForEntity(uri, String.class);
             LOG.info("Response: {}, status: {}", forEntity.getBody(), forEntity.getStatusCode());
         } catch (CustomRestException e) {
             LOG.error("Failed to send request to {}", uri, e);
-        } catch (KeyStoreException e) {
-            throw new RuntimeException(e);
+        } catch (KeyStoreException | NoSuchAlgorithmException | KeyManagementException e) {
+            LOG.error("Failed Https connection", e);
         }
     }
 
@@ -60,7 +61,7 @@ public class RestNameService {
         URI uri;
         String dbClientIp = resources.getDbClientIp();
         try {
-            uri = URI.create("http://" + dbClientIp + "/api/" + url);
+            uri = URI.create("https://" + dbClientIp + "/api/" + url);
         } catch (IllegalArgumentException e) {
             LOG.error("Failed to create URI for {}", dbClientIp, e);
             throw new CustomRestException(e.getMessage());
@@ -85,6 +86,9 @@ public class RestNameService {
         } catch (KeyStoreException | RestClientException e) {
             LOG.error("Rest error: ", e);
             throw new CustomRestException(e.getMessage(), e);
+        } catch (NoSuchAlgorithmException | KeyManagementException e) {
+            LOG.error("Failed Https connection", e);
+            throw new RuntimeException(e);
         }
     }
 }
