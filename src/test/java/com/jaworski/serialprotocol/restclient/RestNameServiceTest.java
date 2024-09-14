@@ -2,11 +2,9 @@ package com.jaworski.serialprotocol.restclient;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jaworski.serialprotocol.authorization.UserService;
 import com.jaworski.serialprotocol.configuration.RestTemplateClient;
 import com.jaworski.serialprotocol.dto.Student;
 import com.jaworski.serialprotocol.exception.CustomRestException;
-import com.jaworski.serialprotocol.resources.Resources;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,11 +33,12 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 
-@SpringBootTest(classes = {SpringBootTest.class, RestNameService.class, RestTemplateClient.class, UserService.class, Resources.class})
+//@SpringBootTest(classes = {SpringBootTest.class, RestNameService.class, RestTemplateClient.class, UserService.class, Resources.class})
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class RestNameServiceTest {
 
     @Autowired
-    private RestNameService empService;
+    private RestNameService nameService;
     @Autowired
     private RestTemplateClient restTemplateClient;
 
@@ -66,7 +65,7 @@ class RestNameServiceTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(mapper.writeValueAsString(studentsSet)));
 
-        Collection<Student> students = empService.getNames();
+        Collection<Student> students = nameService.getNames();
 
         mockServer.verify();
 
@@ -89,7 +88,7 @@ class RestNameServiceTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(mapper.writeValueAsString(studentsSet)));
 
-        Collection<Student> students = empService.getNamesLatest();
+        Collection<Student> students = nameService.getNamesLatest();
 
         mockServer.verify();
 
@@ -106,7 +105,7 @@ class RestNameServiceTest {
                 .andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR)
                         .contentType(MediaType.APPLICATION_JSON));
 
-        Assertions.assertThrows(HttpServerErrorException.InternalServerError.class, () -> empService.checkConnection());
+        Assertions.assertThrows(HttpServerErrorException.InternalServerError.class, () -> nameService.checkConnection());
 
         mockServer.verify();
 
@@ -121,7 +120,7 @@ class RestNameServiceTest {
                 .andRespond(withStatus(HttpStatus.OK)
                         .contentType(MediaType.APPLICATION_JSON));
 
-        empService.checkConnection();
+        nameService.checkConnection();
 
         mockServer.verify();
 
@@ -134,7 +133,7 @@ class RestNameServiceTest {
                 .andExpect(method(HttpMethod.GET))
                 .andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR));
 
-        Assertions.assertThrows(HttpServerErrorException.InternalServerError.class, () -> empService.checkConnection());
+        Assertions.assertThrows(HttpServerErrorException.InternalServerError.class, () -> nameService.checkConnection());
 
         mockServer.verify();
 
@@ -148,8 +147,7 @@ class RestNameServiceTest {
                 .andExpect(method(HttpMethod.GET))
                 .andRespond(withStatus(HttpStatus.UNAUTHORIZED));
 
-        Assertions.assertThrows(HttpClientErrorException.Unauthorized.class, () -> empService.checkConnection());
-//        empService.checkConnection();
+        Assertions.assertThrows(HttpClientErrorException.Unauthorized.class, () -> nameService.checkConnection());
 
         mockServer.verify();
 
