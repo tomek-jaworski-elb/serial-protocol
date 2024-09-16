@@ -170,8 +170,8 @@ window.onpageshow = function () {
     function getScaledPoints(oldX, oldY) {
         const staticShift_y = 506;                                                                                      // 506
         const staticShift_x = 64;                                                                                       //  64
-        scaleX = 3.61;                                                                                                  //   3.61
-        scaleY = 3.61;                                                                                                  //   3.61
+        const scaleX = 3.61;                                                                                                  //   3.61
+        const scaleY = 3.61;                                                                                                  //   3.61
         console.log("ScaleX: " + scaleX + ", ScaleY: " + scaleY);
         console.log("Old X: " + oldX + ", Old Y:  " + oldY)
         // Changed coordinate system x->y , y->x
@@ -244,8 +244,15 @@ window.onpageshow = function () {
 
     function fillFieldValues(elementId, value) {
         const spanElement = document.getElementById(elementId);
-        spanElement.innerHTML = value.toFixed(1);
+        if (String(elementId).includes("heading")) {
+            spanElement.innerHTML = value.toFixed(1).padStart(4, '0');
+            console.log("Heading: " + value.toFixed(1).padStart(4, '0'));
+        } else {
+            spanElement.innerHTML = value.toFixed(1);
+            console.log("Speed: " + value.toFixed(1));
+        }
     }
+
     function fillFieldValues0(elementId, value) {
         const spanElement = document.getElementById(elementId);
         spanElement.innerHTML = value;
