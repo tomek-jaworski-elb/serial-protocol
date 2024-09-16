@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jaworski.serialprotocol.configuration.RestTemplateClient;
 import com.jaworski.serialprotocol.dto.Student;
 import com.jaworski.serialprotocol.exception.CustomRestException;
+import org.apache.hc.core5.net.URIBuilder;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,7 +20,6 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
@@ -27,6 +27,10 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
 import java.util.List;
 
+import static com.jaworski.serialprotocol.restclient.ServiceUri.API_PATH;
+import static com.jaworski.serialprotocol.restclient.ServiceUri.HELLO_PATH;
+import static com.jaworski.serialprotocol.restclient.ServiceUri.NAMES_LATEST_PATH;
+import static com.jaworski.serialprotocol.restclient.ServiceUri.NAMES_PATH;
 import static org.hamcrest.Matchers.anything;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
@@ -58,7 +62,7 @@ class RestNameServiceTest {
         student.setId(1);
         List<Student> studentsSet = List.of(student);
         mockServer.expect(ExpectedCount.once(),
-                        requestTo(new URI("https://127.0.0.1:8085/api/names")))
+                        requestTo(new URIBuilder("https://127.0.0.1:8085").appendPathSegments(API_PATH, NAMES_PATH).build()))
                 .andExpect(method(HttpMethod.GET))
                 .andExpect(header(HttpHeaders.AUTHORIZATION, anything()))
                 .andRespond(withStatus(HttpStatus.OK)
@@ -76,12 +80,14 @@ class RestNameServiceTest {
     }
 
     @Test
-    void testGetNames_HappyPath_2() throws URISyntaxException, CustomRestException, JsonProcessingException {
+    void testGetNamesLatest_HappyPath() throws URISyntaxException, CustomRestException, JsonProcessingException {
         Student student = new Student();
         student.setName("name");
         List<Student> studentsSet = List.of(student);
         mockServer.expect(ExpectedCount.once(),
-                        requestTo(new URI("https://127.0.0.1:8085/api/names/4")))
+                        requestTo(new URIBuilder("https://127.0.0.1:8085").setPath(API_PATH)
+                                .appendPath(NAMES_LATEST_PATH)
+                                .build()))
                 .andExpect(method(HttpMethod.GET))
                 .andExpect(header(HttpHeaders.AUTHORIZATION, anything()))
                 .andRespond(withStatus(HttpStatus.OK)
@@ -100,7 +106,7 @@ class RestNameServiceTest {
     @Test
     void testCheckConnection_UnHappyPath() throws URISyntaxException {
         mockServer.expect(ExpectedCount.once(),
-                        requestTo(new URI("https://127.0.0.1:8085/api/hello")))
+                        requestTo(new URIBuilder("https://127.0.0.1:8085").appendPathSegments(API_PATH, HELLO_PATH).build()))
                 .andExpect(method(HttpMethod.GET))
                 .andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR)
                         .contentType(MediaType.APPLICATION_JSON));
@@ -114,7 +120,7 @@ class RestNameServiceTest {
     @Test
     void testCheckConnection_HappyPath() throws URISyntaxException {
         mockServer.expect(ExpectedCount.once(),
-                        requestTo(new URI("https://127.0.0.1:8085/api/hello")))
+                        requestTo(new URIBuilder("https://127.0.0.1:8085").appendPathSegments(API_PATH, HELLO_PATH).build()))
                 .andExpect(method(HttpMethod.GET))
                 .andExpect(header(HttpHeaders.AUTHORIZATION, anything()))
                 .andRespond(withStatus(HttpStatus.OK)
@@ -129,7 +135,7 @@ class RestNameServiceTest {
     @Test
     void testCheckConnection_whenInternalServerError() throws URISyntaxException {
         mockServer.expect(ExpectedCount.once(),
-                        requestTo(new URI("https://127.0.0.1:8085/api/hello")))
+                        requestTo(new URIBuilder("https://127.0.0.1:8085").appendPathSegments(API_PATH, HELLO_PATH).build()))
                 .andExpect(method(HttpMethod.GET))
                 .andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR));
 
@@ -142,7 +148,7 @@ class RestNameServiceTest {
     @Test
     void testCheckConnection_whenUnauthorized() throws URISyntaxException {
         mockServer.expect(ExpectedCount.once(),
-                        requestTo(new URI("https://127.0.0.1:8085/api/hello")))
+                        requestTo(new URIBuilder("https://127.0.0.1:8085").appendPathSegments(API_PATH, HELLO_PATH).build()))
                 .andExpect(header(HttpHeaders.AUTHORIZATION, anything("Basic dXNlcjpwYXNzd29yZA==")))
                 .andExpect(method(HttpMethod.GET))
                 .andRespond(withStatus(HttpStatus.UNAUTHORIZED));
