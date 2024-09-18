@@ -1,5 +1,5 @@
 @echo off
-REM Batch Script to Check Java Version and Run the db-access-service
+REM Batch Script to Check Java Version and Run the serial-protocol application
 
 SET JAR_FILE_VERSION=1.5
 SET JAVA_TOOL_OPTIONS=-Xms256m -Xmx512m
