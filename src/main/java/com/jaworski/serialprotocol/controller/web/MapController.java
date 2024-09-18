@@ -26,7 +26,7 @@ public class MapController {
     private final RestNameService restNameService;
     private final AuthorizationService authorizationService;
 
-    @GetMapping("/")
+    @GetMapping(path = {"/", "/index.html", "/index", "/index.htm"})
     public String index(Model model) {
         model.addAttribute("name", "home");
         return "index";
