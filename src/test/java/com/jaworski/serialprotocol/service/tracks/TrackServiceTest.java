@@ -157,4 +157,46 @@ class TrackServiceTest {
         assertNotNull(modelTrackDTOS);
         assertTrue(modelTrackDTOS.isEmpty());
     }
+
+    @Test
+    void readModel3_whenCollectionOf2Different() throws IOException {
+        List<String> collection = new ArrayList<>();
+        collection.add("21-09-2024 18:43:58.695 - Translated message: ModelTrackDTO(modelName=3, positionX=30.85, positionY=80.1, speed=0.1, heading=137.1, rudder=10.5, gpsQuality=0.09, engine=101.0, bowThruster=-128.0, bowTug=TugDTO(tugForce=9.7, tugDirection=7.72), sternTug=TugDTO(tugForce=9.7, tugDirection=10.2))\n");
+        collection.add("21-09-2024 18:50:13.723 - Translated message: ModelTrackDTO(modelName=6, positionX=55.96, positionY=63.71, speed=0.0, heading=229.8, rudder=0.0, gpsQuality=1.59, engine=100.0, bowThruster=-127.0, bowTug=TugDTO(tugForce=10.0, tugDirection=0.0), sternTug=TugDTO(tugForce=10.0, tugDirection=469.45))\n");
+        when(readLogsFileService.readLogs()).thenReturn(collection);
+        List<LogItem> modelTrackDTOS = trackService.getModel(logItem -> logItem.getModelTrack().getModelName() == 3);
+        assertNotNull(modelTrackDTOS);
+        assertFalse(modelTrackDTOS.isEmpty());
+        assertEquals(1, modelTrackDTOS.size());
+        LogItem modelTrackDTO = modelTrackDTOS.get(0);
+        assertNotNull(modelTrackDTO);
+        assertEquals(3, modelTrackDTO.getModelTrack().getModelName());
+        assertEquals(30.85, modelTrackDTO.getModelTrack().getPositionX(), 0.01);
+        assertEquals(80.1, modelTrackDTO.getModelTrack().getPositionY(), 0.01);
+        assertEquals(0.1, modelTrackDTO.getModelTrack().getSpeed(), 0.01);
+        assertEquals(137.1, modelTrackDTO.getModelTrack().getHeading(), 0.01);
+        assertEquals(10.5, modelTrackDTO.getModelTrack().getRudder());
+        assertEquals(0.09, modelTrackDTO.getModelTrack().getGpsQuality());
+        assertEquals(101.0, modelTrackDTO.getModelTrack().getEngine());
+        assertEquals(-128.0, modelTrackDTO.getModelTrack().getBowThruster());
+        TugDTO bowTug = modelTrackDTO.getModelTrack().getBowTug();
+        assertNotNull(bowTug);
+        assertEquals(9.7, bowTug.getTugForce(), 0.01);
+        assertEquals(7.72, bowTug.getTugDirection(), 0.01);
+        TugDTO sternTug = modelTrackDTO.getModelTrack().getSternTug();
+        assertNotNull(sternTug);
+        assertEquals(9.7, sternTug.getTugForce(), 0.01);
+        assertEquals(10.2, sternTug.getTugDirection(), 0.01);
+    }
+
+    @Test
+    void readModelZero_whenCollectionOf2Different() throws IOException {
+        List<String> collection = new ArrayList<>();
+        collection.add("21-09-2024 18:43:58.695 - Translated message: ModelTrackDTO(modelName=3, positionX=30.85, positionY=80.1, speed=0.1, heading=137.1, rudder=10.5, gpsQuality=0.09, engine=101.0, bowThruster=-128.0, bowTug=TugDTO(tugForce=9.7, tugDirection=7.72), sternTug=TugDTO(tugForce=9.7, tugDirection=10.2))\n");
+        collection.add("21-09-2024 18:50:13.723 - Translated message: ModelTrackDTO(modelName=6, positionX=55.96, positionY=63.71, speed=0.0, heading=229.8, rudder=0.0, gpsQuality=1.59, engine=100.0, bowThruster=-127.0, bowTug=TugDTO(tugForce=10.0, tugDirection=0.0), sternTug=TugDTO(tugForce=10.0, tugDirection=469.45))\n");
+        when(readLogsFileService.readLogs()).thenReturn(collection);
+        List<LogItem> modelTrackDTOS = trackService.getModel(logItem -> logItem.getModelTrack().getModelName() == 1);
+        assertNotNull(modelTrackDTOS);
+        assertTrue(modelTrackDTOS.isEmpty());
+    }
 }

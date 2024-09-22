@@ -20,6 +20,7 @@
         <commons-lang3.version>3.16.0</commons-lang3.version>
         <commons-collections4.version>4.4</commons-collections4.version>
         <spring-security-crypto.version>6.3.2</spring-security-crypto.version>
+        <spotbugs-annotations.version>4.8.6</spotbugs-annotations.version>
     </properties>
     <dependencies>
         <dependency>
@@ -79,6 +80,11 @@
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-crypto</artifactId>
             <version>${spring-security-crypto.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.spotbugs</groupId>
+            <artifactId>spotbugs-annotations</artifactId>
+            <version>${spotbugs-annotations.version}</version>
         </dependency>
     </dependencies>
 
