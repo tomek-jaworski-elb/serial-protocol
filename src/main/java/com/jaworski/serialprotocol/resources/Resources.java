@@ -58,4 +58,12 @@ public class Resources {
     @Value("${rest.service.credentials}")
     @Getter
     private String restServiceCredentials;
+
+    @Value("${logging.tracking.file.name}")
+    @Getter
+    private String trackingLogFileName;
+
+    @Value("${logging.file.path}")
+    @Getter
+    private String logFilePath;
 }
