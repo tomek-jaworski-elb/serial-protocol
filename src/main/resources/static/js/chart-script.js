@@ -27,16 +27,18 @@ window.onpageshow = function () {
     drawTriangle("overlayCanvas1", 100, 100, 10, 90, 'blue');
     drawTriangle("overlayCanvas2", 200, 200, 10, 90, 'red');
 
-                  drawTriangle("overlayCanvas2", (  0    + 60+4) * 2.4 , ( 0    + 506) * 2.4 , 6,    1, 'white');         // pozycja 0 x 0             0x0
-                  drawTriangle("overlayCanvas2", ( 77.07 + 60+4) * 2.4 , (97.25 + 506) * 2.4 , 6,    1, 'orange');        // SBM    -97.25x77.07
-                  drawTriangle("overlayCanvas2", (378.3  + 60+4) * 2.4 , (191.8 + 506) * 2.4 , 6,    1, 'orange');        // FPSO   -191.8x378.3
-                  drawTriangle("overlayCanvas2", (-25  + 64) * 2.4 , (   84 + 506) * 2.4 , 6,    1, 'red');               // <- nabieznik             -84x25
-                  drawTriangle("overlayCanvas2", ( 82.8+ 64) * 2.4 , (  -69 + 506) * 2.4 , 6,    1, 'red');               // port nabieznik ->         69x82.8
-                  drawTriangle("overlayCanvas2", (  2  + 64) * 2.4 , ( -130 + 506) * 2.4 , 6,    1, 'red');               // pomost Lesniczowka        130x2
-                  drawTriangle("overlayCanvas2", ( 79  + 64) * 2.4 , ( -188 + 506) * 2.4 , 6,    1, 'red');               // Slip kolej END           188x79
-                  drawTriangle("overlayCanvas2", (570  + 64) * 2.4 , ( -362 + 506) * 2.4 , 6,    1, 'red');               // boja kompielisko         320x570
-                  drawTriangle("overlayCanvas2", (820  + 64) * 2.4 , (  610 + 506) * 2.4 , 6,    1, 'red');               // -> zatoka               -610x820
-                  drawTriangle("overlayCanvas2", (926  + 64) * 2.4 , ( 1149 + 506) * 2.4 , 6,    1, 'red');               // Wiata END jeziora      -1149x926
+                  let mapa_x = 2.407; /// było 2.4   = kalibracja mapy
+
+                  drawTriangle("overlayCanvas2", (  0    + 60+4) * mapa_x , ( 0    + 506) * mapa_x , 6,    1, 'white');         // pozycja 0 x 0             0x0
+                  drawTriangle("overlayCanvas2", ( 77.07 + 60+4) * mapa_x , (97.25 + 506) * mapa_x , 6,    1, 'orange');        // SBM    -97.25x77.07
+                  drawTriangle("overlayCanvas2", (378.3  + 60+4) * mapa_x , (191.8 + 506) * mapa_x , 6,    1, 'orange');        // FPSO   -191.8x378.3
+                  drawTriangle("overlayCanvas2", (-25  + 64) * mapa_x , (   84 + 506) * mapa_x , 6,    1, 'red');               // <- nabieznik             -84x25
+                  drawTriangle("overlayCanvas2", ( 82.8+ 64) * mapa_x , (  -69 + 506) * mapa_x , 6,    1, 'red');               // port nabieznik ->         69x82.8
+                  drawTriangle("overlayCanvas2", (  2  + 64) * mapa_x , ( -130 + 506) * mapa_x , 6,    1, 'red');               // pomost Lesniczowka        130x2
+                  drawTriangle("overlayCanvas2", ( 79  + 64) * mapa_x , ( -188 + 506) * mapa_x , 6,    1, 'red');               // Slip kolej END           188x79
+                  drawTriangle("overlayCanvas2", (570  + 64) * mapa_x , ( -362 + 506) * mapa_x , 6,    1, 'red');               // boja kompielisko         320x570
+                  drawTriangle("overlayCanvas2", (820  + 64) * mapa_x, (  610 + 506) * mapa_x , 6,    1, 'red');               // -> zatoka               -610x820
+                  drawTriangle("overlayCanvas2", (926  + 64) * mapa_x , ( 1149 + 506) * mapa_x , 6,    1, 'red');               // Wiata END jeziora      -1149x926
 
     const imgLedOn = new Image();
     imgLedOn.src = "/img/led_connection_green.bmp";
@@ -102,16 +104,16 @@ window.onpageshow = function () {
     drawTriangle("overlayCanvas1", 400, 100, 10, 90, 'red');
     drawTriangle("overlayCanvas1", 500, 200, 10, 90, 'blue');
 
-                  drawTriangle("overlayCanvas1", (  0    + 60+4) * 2.4 , ( 0    + 506) * 2.4 , 6,    1, 'white');         // pozycja 0 x 0             0x0
-                  drawTriangle("overlayCanvas1", ( 77.07 + 60+4) * 2.4 , (97.25 + 506) * 2.4 , 6,    1, 'orange');        // SBM    -97.25x77.07
-                  drawTriangle("overlayCanvas1", (378.3  + 60+4) * 2.4 , (191.8 + 506) * 2.4 , 6,    1, 'orange');        // FPSO   -191.8x378.3
-                  drawTriangle("overlayCanvas1", (-25  + 64) * 2.4 , (   84 + 506) * 2.4 , 6,    1, 'red');               // <- nabieznik             -84x25
-                  drawTriangle("overlayCanvas1", ( 82.8+ 64) * 2.4 , (  -69 + 506) * 2.4 , 6,    1, 'red');               // port nabieznik ->         69x82.8
-                  drawTriangle("overlayCanvas1", (  2  + 64) * 2.4 , ( -130 + 506) * 2.4 , 6,    1, 'red');               // pomost Lesniczowka        130x2
-                  drawTriangle("overlayCanvas1", ( 79  + 64) * 2.4 , ( -188 + 506) * 2.4 , 6,    1, 'red');               // Slip kolej END           188x79
-                  drawTriangle("overlayCanvas1", (570  + 64) * 2.4 , ( -362 + 506) * 2.4 , 6,    1, 'red');               // boja kompielisko         320x570
-                  drawTriangle("overlayCanvas1", (820  + 64) * 2.4 , (  610 + 506) * 2.4 , 6,    1, 'red');               // -> zatoka               -610x820
-                  drawTriangle("overlayCanvas1", (926  + 64) * 2.4 , ( 1149 + 506) * 2.4 , 6,    1, 'red');               // Wiata END jeziora      -1149x926
+                  drawTriangle("overlayCanvas1", (  0    + 60+4) * mapa_x , ( 0    + 506) * mapa_x , 6,    1, 'white');         // pozycja 0 x 0             0x0
+                  drawTriangle("overlayCanvas1", ( 77.07 + 60+4) * mapa_x , (97.25 + 506) * mapa_x , 6,    1, 'orange');        // SBM    -97.25x77.07
+                  drawTriangle("overlayCanvas1", (378.3  + 60+4) * mapa_x , (191.8 + 506) * mapa_x , 6,    1, 'orange');        // FPSO   -191.8x378.3
+                  drawTriangle("overlayCanvas1", (-25  + 64) * mapa_x , (   84 + 506) * mapa_x , 6,    1, 'red');               // <- nabieznik             -84x25
+                  drawTriangle("overlayCanvas1", ( 82.8+ 64) * mapa_x , (  -69 + 506) * mapa_x , 6,    1, 'red');               // port nabieznik ->         69x82.8
+                  drawTriangle("overlayCanvas1", (  2  + 64) * mapa_x , ( -130 + 506) * mapa_x , 6,    1, 'red');               // pomost Lesniczowka        130x2
+                  drawTriangle("overlayCanvas1", ( 79  + 64) * mapa_x , ( -188 + 506) * mapa_x , 6,    1, 'red');               // Slip kolej END           188x79
+                  drawTriangle("overlayCanvas1", (570  + 64) * mapa_x , ( -362 + 506) * mapa_x , 6,    1, 'red');               // boja kompielisko         320x570
+                  drawTriangle("overlayCanvas1", (820  + 64) * mapa_x , (  610 + 506) * mapa_x , 6,    1, 'red');               // -> zatoka               -610x820
+                  drawTriangle("overlayCanvas1", (926  + 64) * mapa_x , ( 1149 + 506) * mapa_x , 6,    1, 'red');               // Wiata END jeziora      -1149x926
 
 
 
@@ -255,8 +257,8 @@ drawShip(canvasName, 64, 506, 2, 90, 'blue', 12.21, 2, 0);                      
     function getScaledPoints(oldX, oldY) {
         const staticShift_y = 506;                                                                                      // 506
         const staticShift_x = 64;                                                                                       //  64
-        scaleX = 2.4; // 3.61 / 1.5 ; /// 1;// 3.61;                                                                                                  //   3.61
-        scaleY = 2.4; // 3.61 / 1.5 ; /// 1;// 3.61;                                                                                                  //   3.61
+        scaleX = mapa_x; /// 2.4; // 3.61 / 1.5 ; /// 1;// 3.61;                   // 2.407                                                                               //   3.61
+        scaleY = mapa_x; /// 2.4; // 3.61 / 1.5 ; /// 1;// 3.61;                                                                                                  //   3.61
         console.log("ScaleX: " + scaleX + ", ScaleY: " + scaleY);
         console.log("Old X: " + oldX + ", Old Y:  " + oldY)
         // Changed coordinate system x->y , y->x
