@@ -4,16 +4,39 @@ window.onpageshow = function () {
     const container = document.querySelector('.canvas-container');
 
     for (let elementsByTagNameElement of container.getElementsByTagName('canvas')) {
-        elementsByTagNameElement.width = imgMap.width;
-        elementsByTagNameElement.height = imgMap.height;
-        elementsByTagNameElement.style.width = imgMap.width + 'px';
-        elementsByTagNameElement.style.height =imgMap.height + 'px';
+       if (navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad') || navigator.userAgent.includes('ios')) {
+          elementsByTagNameElement.width = imgMap.width;
+          elementsByTagNameElement.height = imgMap.height;
+          elementsByTagNameElement.style.width = imgMap.width + 'px';                                                    /// gdy zablokowane win=ok(ale zoom okna to zmiana pozycji modeli) andr-pozycja modeli ifonbai - modele cienkie po lewej stronie mapyi
+          elementsByTagNameElement.style.height =imgMap.height + 'px';                                                   /// gdy odblokowane win =ok android  z-win=ok z-lin przsuniete   ifonbasia  ok
+       } else {
+          elementsByTagNameElement.width = imgMap.width;
+          elementsByTagNameElement.height = imgMap.height;
+          ///elementsByTagNameElement.width = container.clientWidth;
+          ///elementsByTagNameElement.height = container.clientHeight;
+          elementsByTagNameElement.style.width = imgMap.width + 'px';
+          elementsByTagNameElement.style.height =imgMap.height + 'px';
+       }
     }
 
 //    todo - do usunięcia po testach
 // todo - potrzeba sprawdzić/dobrać nowy współczynnik skali
-    drawShip("overlayCanvas1", 100, 100, 10, 90, 'red', 12.21, 2, 0);                        // Warta
-    drawShip("overlayCanvas2", 200, 200, 10, 90, 'blue', 12.21, 2, 0);                        // Warta
+    drawShip("overlayCanvas1", 100, 100, 10, 90, 'red', 12.21, 2, 0);                         // Warta                  ///
+    drawShip("overlayCanvas2", 200, 200, 10, 90, 'blue', 12.21, 2, 0);                        // Warta                  ///
+//                                    x,y,4,angle,'blue'
+    drawTriangle("overlayCanvas1", 100, 100, 10, 90, 'blue');
+    drawTriangle("overlayCanvas2", 200, 200, 10, 90, 'red');
+
+                  drawTriangle("overlayCanvas2", (  0    + 60+4) * 2.4 , ( 0    + 506) * 2.4 , 6,    1, 'white');         // pozycja 0 x 0             0x0
+                  drawTriangle("overlayCanvas2", ( 77.07 + 60+4) * 2.4 , (97.25 + 506) * 2.4 , 6,    1, 'orange');        // SBM    -97.25x77.07
+                  drawTriangle("overlayCanvas2", (378.3  + 60+4) * 2.4 , (191.8 + 506) * 2.4 , 6,    1, 'orange');        // FPSO   -191.8x378.3
+                  drawTriangle("overlayCanvas2", (-25  + 64) * 2.4 , (   84 + 506) * 2.4 , 6,    1, 'red');               // <- nabieznik             -84x25
+                  drawTriangle("overlayCanvas2", ( 82.8+ 64) * 2.4 , (  -69 + 506) * 2.4 , 6,    1, 'red');               // port nabieznik ->         69x82.8
+                  drawTriangle("overlayCanvas2", (  2  + 64) * 2.4 , ( -130 + 506) * 2.4 , 6,    1, 'red');               // pomost Lesniczowka        130x2
+                  drawTriangle("overlayCanvas2", ( 79  + 64) * 2.4 , ( -188 + 506) * 2.4 , 6,    1, 'red');               // Slip kolej END           188x79
+                  drawTriangle("overlayCanvas2", (570  + 64) * 2.4 , ( -362 + 506) * 2.4 , 6,    1, 'red');               // boja kompielisko         320x570
+                  drawTriangle("overlayCanvas2", (820  + 64) * 2.4 , (  610 + 506) * 2.4 , 6,    1, 'red');               // -> zatoka               -610x820
+                  drawTriangle("overlayCanvas2", (926  + 64) * 2.4 , ( 1149 + 506) * 2.4 , 6,    1, 'red');               // Wiata END jeziora      -1149x926
 
     const imgLedOn = new Image();
     imgLedOn.src = "/img/led_connection_green.bmp";
@@ -71,7 +94,29 @@ window.onpageshow = function () {
                     fillFieldValues0("rs_model1_no", rs_model1_no);
                     drawShip(canvasName, positionX, positionY, 2, angle, 'orange', 12.21, 2, 0);                        // Warta
 //                     x    y
-drawShip(canvasName, 64, 506, 2, 90, 'blue', 12.21, 2, 0);                        // Warta
+//    todo - do usunięcia po testach
+// todo - potrzeba sprawdzić/dobrać nowy współczynnik skali
+    drawShip("overlayCanvas1", 400, 100, 10, 90, 'blue', 12.21, 2, 0);                         // Warta                  ///
+    drawShip("overlayCanvas1", 500, 200, 10, 90, 'red', 12.21, 2, 0);                          // Warta                  ///
+//                                    x,y,4,angle,'blue'
+    drawTriangle("overlayCanvas1", 400, 100, 10, 90, 'red');
+    drawTriangle("overlayCanvas1", 500, 200, 10, 90, 'blue');
+
+                  drawTriangle("overlayCanvas1", (  0    + 60+4) * 2.4 , ( 0    + 506) * 2.4 , 6,    1, 'white');         // pozycja 0 x 0             0x0
+                  drawTriangle("overlayCanvas1", ( 77.07 + 60+4) * 2.4 , (97.25 + 506) * 2.4 , 6,    1, 'orange');        // SBM    -97.25x77.07
+                  drawTriangle("overlayCanvas1", (378.3  + 60+4) * 2.4 , (191.8 + 506) * 2.4 , 6,    1, 'orange');        // FPSO   -191.8x378.3
+                  drawTriangle("overlayCanvas1", (-25  + 64) * 2.4 , (   84 + 506) * 2.4 , 6,    1, 'red');               // <- nabieznik             -84x25
+                  drawTriangle("overlayCanvas1", ( 82.8+ 64) * 2.4 , (  -69 + 506) * 2.4 , 6,    1, 'red');               // port nabieznik ->         69x82.8
+                  drawTriangle("overlayCanvas1", (  2  + 64) * 2.4 , ( -130 + 506) * 2.4 , 6,    1, 'red');               // pomost Lesniczowka        130x2
+                  drawTriangle("overlayCanvas1", ( 79  + 64) * 2.4 , ( -188 + 506) * 2.4 , 6,    1, 'red');               // Slip kolej END           188x79
+                  drawTriangle("overlayCanvas1", (570  + 64) * 2.4 , ( -362 + 506) * 2.4 , 6,    1, 'red');               // boja kompielisko         320x570
+                  drawTriangle("overlayCanvas1", (820  + 64) * 2.4 , (  610 + 506) * 2.4 , 6,    1, 'red');               // -> zatoka               -610x820
+                  drawTriangle("overlayCanvas1", (926  + 64) * 2.4 , ( 1149 + 506) * 2.4 , 6,    1, 'red');               // Wiata END jeziora      -1149x926
+
+
+
+/*
+drawShip(canvasName, 64, 506, 2, 90, 'blue', 12.21, 2, 0);                        // Warta                               ///
 
                     drawShip(canvasName, 100, 100, 23, 90, 'red', 12.21, 2, 0);                        // Warta
                     drawShip(canvasName, 200, 200, 23, 90, 'red', 12.21, 2, 0);                        // Warta
@@ -113,7 +158,7 @@ drawShip(canvasName, 64, 506, 2, 90, 'blue', 12.21, 2, 0);                      
                     drawShip(canvasName, 3800, 3800, 23, 90, 'red', 12.21, 2, 0);                        // Warta
                     drawShip(canvasName, 3900, 3900, 23, 90, 'red', 12.21, 2, 0);                        // Warta
                     drawShip(canvasName, 4000, 4000, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-
+                                                                                                                            */ ///
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 2:
@@ -282,7 +327,60 @@ drawShip(canvasName, 64, 506, 2, 90, 'blue', 12.21, 2, 0);                      
         ctx.lineWidth = 1;
         ctx.stroke();
     }
+///
 
+// Function to draw a triangle
+    function drawTriangle(elementId, x, y, scale, angle, fillColor) {
+        const element = document.getElementById(elementId);
+        const ctx = element.getContext('2d');
+        // Define the vertices of the triangle (equilateral triangle centered at origin)
+        let vertices = [
+            {x: 0, y: -1},
+            {x: 0.866, y: 0.5},
+            {x: -0.866, y: 0.5}
+        ];
+
+        // Scale the vertices
+        vertices = vertices.map(vertex => {
+            return {
+                x: vertex.x * scale,
+                y: vertex.y * scale
+            };
+        });
+
+        // Rotate the vertices
+        const radians = angle * Math.PI / 180;
+        vertices = vertices.map(vertex => {
+            return {
+                x: vertex.x * Math.cos(radians) - vertex.y * Math.sin(radians),
+                y: vertex.x * Math.sin(radians) + vertex.y * Math.cos(radians)
+            };
+        });
+
+        // Translate the vertices to the (x, y) position
+        vertices = vertices.map(vertex => {
+            return {
+                x: vertex.x + x,
+                y: vertex.y + y
+            };
+        });
+
+        // Draw the triangle
+        ctx.beginPath();
+        ctx.moveTo(vertices[0].x, vertices[0].y);
+        for (let i = 1; i < vertices.length; i++) {
+            ctx.lineTo(vertices[i].x, vertices[i].y);
+        }
+        ctx.closePath();
+
+        // Fill and stroke
+        ctx.fillStyle = fillColor;
+        ctx.fill();
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+    }
+///
     function fillFieldValues(elementId, value) {
         const spanElement = document.getElementById(elementId);
         spanElement.innerHTML = value.toFixed(1);
