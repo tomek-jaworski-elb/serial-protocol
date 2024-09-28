@@ -394,8 +394,15 @@ drawShip(canvasName, 64, 506, 2, 90, 'blue', 12.21, 2, 0);                      
 ///
     function fillFieldValues(elementId, value) {
         const spanElement = document.getElementById(elementId);
-        spanElement.innerHTML = value.toFixed(1);
+        if (String(elementId).includes("heading")) {
+            spanElement.innerHTML = value.toFixed(1).padStart(4, '0');
+            console.log("Heading: " + value.toFixed(1).padStart(4, '0'));
+        } else {
+            spanElement.innerHTML = value.toFixed(1);
+            console.log("Speed: " + value.toFixed(1));
+        }
     }
+
     function fillFieldValues0(elementId, value) {
         const spanElement = document.getElementById(elementId);
         spanElement.innerHTML = value;
