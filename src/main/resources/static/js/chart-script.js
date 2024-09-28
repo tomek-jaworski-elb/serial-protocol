@@ -1,4 +1,13 @@
 window.onpageshow = function () {
+
+    if (isSamsungBrowser()) {
+        alert("Samsung browser is not supported!\nSwitch to Chrome or Safari instead.")
+    }
+
+    function isSamsungBrowser() {
+        return navigator.userAgent.toLocaleLowerCase().includes('samsung');
+    }
+
     const imgMap = document.getElementById("backgroundCanvas");
 
     const container = document.querySelector('.canvas-container');
