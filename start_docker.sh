@@ -19,7 +19,7 @@ if [ -n "$existing_container" ]; then
   docker rm "$container_name"
 fi
 
-docker compose down
+docker compose stop
 
 if [ $? -ne 0 ]; then
     echo "Docker compose down failed."
