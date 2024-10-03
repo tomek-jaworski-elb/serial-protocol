@@ -31,7 +31,7 @@ public class MapController {
     private final AuthorizationService authorizationService;
     private final TrackService trackService;
 
-    @GetMapping("/")
+    @GetMapping(path = {"/", "/index.html", "/index", "/index.htm"})
     public String index(Model model) {
         model.addAttribute("name", "home");
         return "index";
