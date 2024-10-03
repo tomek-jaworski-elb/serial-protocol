@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head th:insert="~{fragment::head}"></head>
+<head>
+    <title th:text="${@environment.getProperty('spring.application.name')} + ' : Tracks'">Serial port server</title>
+    <style>
+        .canvas-container {
+            position: relative;
+            width: 4000px; /* Adjust as needed */  /* ----- width: 1100px; / JW4000 / JW2000 */
+            /*width: 1400px; !* Adjust as needed *!*/
+            height: 6000px; /* Adjust as needed */  /* ----- height: 2000px; /JW6000 /JW3000 */
+            /*height: 2100px; !* Adjust as needed *!*/
+            border: 1px solid #555151;
+            padding-left: 0;
+            padding-right: 0;
+            margin-left: auto;
+            margin-right: auto;
+            display: block;
+        }
+    canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4000px;
+        height: 6000px;
+    }
+
+    #backgroundCanvas {
+            z-index: 0;
+    }
+
+    #myCanvas {
+            z-index: 1;
+            pointer-events: none; /* To make sure the background canvas can still receive events */
+    }
+
+    </style>
+</head>
+<body>
+<header th:replace="~{fragment::header}"></header>
+<div>
+    <div class="container text-center p-2 justify-content-center mx-auto mb-3 mt-2">
+        <div class="form-check form-check-inline mx-3">
+            <input class="form-check-input" type="checkbox" id="Warta_Checkbox" value="Warta">
+            <label class="form-check-label" for="Warta_Checkbox">Warta</label>
+        </div>
+        <div class="form-check form-check-inline mx-3">
+            <input class="form-check-input" type="checkbox" id="Blue_Lady_Checkbox" value="Blue_Lady">
+            <label class="form-check-label" for="Blue_Lady_Checkbox">Blue Lady</label>
+        </div>
+        <div class="form-check form-check-inline mx-3">
+            <input class="form-check-input" type="checkbox" id="Lady_Marie_Checkbox" value="Lady_Marie">
+            <label class="form-check-label" for="Lady_Marie_Checkbox">Lady Marie</label>
+        </div>
+    </div>
+    <div class="canvas-container">
+        <div>
+            <canvas id="myCanvas" width="4000" height="6000" style="border:1px solid #000000;"></canvas>
+            <img id="backgroundCanvas" th:src="@{/img/MapaSilm.jpg}" src="/static/img/MapaSilm.jpg" width="2666"
+                 height="4000" alt="Silm Lake Chart should be here">
+        </div>
+    </div>
+</div>
+<footer th:replace="~{fragment::footer}"></footer>
+<script th:inline="javascript">
+    // Get points from Thymeleaf as a JavaScript variable
+    let items = /*[[${modelTrack}]]*/ null;
+    console.log(items);
+
+    let points = [];
+
+    for (let i = 0; i < items.length; i++) {
+        let item = items[i];
+        console.log(item);
+        const point = {x: item.modelTrack.positionX, y: item.modelTrack.positionX};
+        console.log(point);
+        points.push(point);
+    }
+    // Get the canvas element and its context
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    points.push({x: 0, y: 0});
+    console.log(points);
+
+    // Check if there are enough points to draw a line
+    if (points.length > 1) {
+        ctx.beginPath();
+        // Move to the first point
+        ctx.moveTo(points[0].x, points[0].y);
+        console.log(points[0].x, points[0].y);
+
+        // Draw lines between the points
+        for (let i = 1; i < points.length; i++) {
+        console.log(points[i].x, points[i].y);
+            ctx.lineTo(points[i].x, points[i].y);
+        }
+
+        // Set stroke style and draw the line
+        ctx.strokeStyle = '#FF0000';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+</script>
+</body>
+</html>

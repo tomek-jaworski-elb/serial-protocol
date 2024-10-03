@@ -1,9 +1,11 @@
 package com.jaworski.serialprotocol.controller.web;
 
 import com.jaworski.serialprotocol.authorization.AuthorizationService;
+import com.jaworski.serialprotocol.dto.LogItem;
 import com.jaworski.serialprotocol.dto.Student;
 import com.jaworski.serialprotocol.exception.CustomRestException;
 import com.jaworski.serialprotocol.restclient.RestNameService;
+import com.jaworski.serialprotocol.service.tracks.TrackService;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -16,7 +18,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.ResourceAccessException;
 
+import java.io.Serializable;
 import java.util.Collection;
+import java.util.List;
 
 @RequiredArgsConstructor
 @Controller
@@ -25,6 +29,7 @@ public class MapController {
     private static final Logger LOG = LogManager.getLogger(MapController.class);
     private final RestNameService restNameService;
     private final AuthorizationService authorizationService;
+    private final TrackService trackService;
 
     @GetMapping("/")
     public String index(Model model) {
@@ -54,6 +59,15 @@ public class MapController {
     public String greeting(Model model) {
         model.addAttribute("name", "chart");
         return "chart";
+    }
+
+    @GetMapping("/tracks")
+    public String tracks(Model model) {
+        model.addAttribute("name", "track");
+        List<LogItem> trackServiceModel = trackService.getModel(logItem -> logItem.getModelTrack().getModelName() == 1);
+        model.addAttribute("modelTrack", trackServiceModel);
+        LOG.info("Model: {}", model.getAttribute("modelTrack"));
+        return "tracks";
     }
 
     @PostMapping("/name-service")
@@ -99,6 +113,24 @@ public class MapController {
     public String passServiceGet(Model model) {
         model.addAttribute("name", "pass-service");
         return "pass-service";
+    }
+
+    static class Point implements Serializable {
+        private final float x;
+        private final float y;
+
+        public Point(float x, float y) {
+            this.x = x;
+            this.y = y;
+        }
+
+        @Override
+        public String toString() {
+            return "{" +
+                    "x: " + x +
+                    ", y: " + y +
+                    '}';
+        }
     }
 }
 

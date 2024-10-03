@@ -23,7 +23,7 @@ public class ReadLogsFileService {
 
     public List<String> readLogs() throws IOException {
 //        String uri = "D:\\github\\serial-protocol\\logs\\tracking.log";
-        URI uri = getUri();
+        URI uri = getUri().normalize();
         Path path = Paths.get(uri);
         if (!Files.exists(path)) {
             LOG.error("File does not exist: {}", uri);

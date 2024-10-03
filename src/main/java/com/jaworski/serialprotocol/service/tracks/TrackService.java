@@ -21,11 +21,13 @@ public class TrackService {
 
     private final ReadLogsFileService readLogsFileService;
 
-
     public List<LogItem> readModel() {
         List<LogItem> logItems;
         try {
-            List<String> strings = readLogsFileService.readLogs() == null ? Collections.emptyList() : readLogsFileService.readLogs();
+            List<String> strings = readLogsFileService.readLogs() == null ?
+                    Collections.emptyList() :
+                    readLogsFileService.readLogs();
+
             logItems = strings.stream()
                     .map(LogPatternMatcher::parseTrack)
                     .filter(Optional::isPresent)
@@ -33,7 +35,7 @@ public class TrackService {
                     .toList();
         } catch (IOException e) {
             LOG.error("Failed to read logs", e);
-            throw new RuntimeException(e);
+            return Collections.emptyList();
         }
         return logItems;
     }
