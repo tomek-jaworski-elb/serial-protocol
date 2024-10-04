@@ -39,35 +39,39 @@
 <body>
 <header th:replace="~{fragment::header}"></header>
 <div>
-    <div class="container text-center p-2 justify-content-center mx-auto mb-3 mt-2">
-        <div class="form-check form-check-inline mx-3">
-            <input class="form-check-input" type="checkbox" id="Warta_Checkbox" value="Warta">
-            <label class="form-check-label" for="Warta_Checkbox">Warta</label>
+    <form method="post" th:action="@{/tracks}" hidden="hidden">
+        <div class="container text-center p-2 justify-content-center mx-auto mb-3 mt-2">
+            <div class="form-check form-check-inline mx-3">
+                <input class="form-check-input" type="checkbox" id="Warta_Checkbox" value="Warta">
+                <label class="form-check-label" for="Warta_Checkbox">Warta</label>
+            </div>
+            <div class="form-check form-check-inline mx-3">
+                <input class="form-check-input" type="checkbox" id="Blue_Lady_Checkbox" value="Blue_Lady">
+                <label class="form-check-label" for="Blue_Lady_Checkbox">Blue Lady</label>
+            </div>
+            <div class="form-check form-check-inline mx-3">
+                <input class="form-check-input" type="checkbox" id="Lady_Marie_Checkbox" value="Lady_Marie">
+                <label class="form-check-label" for="Lady_Marie_Checkbox">Lady Marie</label>
+            </div>
         </div>
-        <div class="form-check form-check-inline mx-3">
-            <input class="form-check-input" type="checkbox" id="Blue_Lady_Checkbox" value="Blue_Lady">
-            <label class="form-check-label" for="Blue_Lady_Checkbox">Blue Lady</label>
-        </div>
-        <div class="form-check form-check-inline mx-3">
-            <input class="form-check-input" type="checkbox" id="Lady_Marie_Checkbox" value="Lady_Marie">
-            <label class="form-check-label" for="Lady_Marie_Checkbox">Lady Marie</label>
-        </div>
-    </div>
+    </form>
     <div class="canvas-container">
         <div>
             <canvas id="myCanvas" width="4000" height="6000" style="border:1px solid #000000;"></canvas>
-            <img id="backgroundCanvas" th:src="@{/img/MapaSilm.jpg}" src="/static/img/MapaSilm.jpg" width="2666"
+            <img id="backgroundCanvas" th:src="@{/img/MapaSilm_2666x4000.jpg}" src="/static/img/MapaSilm_2666x4000.jpg" width="2666"
                  height="4000" alt="Silm Lake Chart should be here">
         </div>
     </div>
 </div>
 <footer th:replace="~{fragment::footer}"></footer>
+<script type="text/javascript"  th:src="@{/js/common-draw-ship.js}"></script>
 <script th:inline="javascript">
-    // Get points from Thymeleaf as a JavaScript variable
+
     let items = /*[[${modelTrack}]]*/ null;
     console.log(items);
 
     let points = [];
+    let scaledPoints = [];
 
     for (let i = 0; i < items.length; i++) {
         let item = items[i];
@@ -81,6 +85,13 @@
     const ctx = canvas.getContext('2d');
 
     points.push({x: 0, y: 0});
+    console.log(points);
+    for (let i = 0; i < points.length; i++) {
+        scaledPoints[i] = getScaledPoints(points[i].x, points[i].y)
+    }
+    console.log(scaledPoints);
+
+    points = scaledPoints;
     console.log(points);
 
     // Check if there are enough points to draw a line
