@@ -1,6 +1,7 @@
 package com.jaworski.serialprotocol.controller.web;
 
 import com.jaworski.serialprotocol.authorization.AuthorizationService;
+import com.jaworski.serialprotocol.dto.CheckBoxOption;
 import com.jaworski.serialprotocol.dto.LogItem;
 import com.jaworski.serialprotocol.dto.Student;
 import com.jaworski.serialprotocol.exception.CustomRestException;
@@ -13,6 +14,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.client.HttpStatusCodeException;
@@ -67,6 +69,16 @@ public class MapController {
         List<LogItem> trackServiceModel = trackService.getModel(logItem -> logItem.getModelTrack().getModelName() == 1);
         model.addAttribute("modelTrack", trackServiceModel);
         LOG.info("Model: {}", model.getAttribute("modelTrack"));
+        return "tracks";
+    }
+
+    @PostMapping("/tracks")
+    public String submitForm(@ModelAttribute CheckBoxOption checkBoxOption, Model model) {
+        LOG.info("{}", checkBoxOption);
+        List<LogItem> trackServiceModel = trackService.getModel(logItem -> logItem.getModelTrack().getModelName() == 1);
+        model.addAttribute("modelTrack", trackServiceModel);
+        model.addAttribute("name", "track");
+        model.addAttribute("checkboxForm", checkBoxOption);
         return "tracks";
     }
 

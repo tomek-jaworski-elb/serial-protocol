@@ -39,20 +39,26 @@
 <body>
 <header th:replace="~{fragment::header}"></header>
 <div>
-    <form method="post" th:action="@{/tracks}" hidden="hidden">
+    <form method="post" action="#" th:action="@{/tracks}" th:object="${checkBoxOption}" id="trackForm">
         <div class="container text-center p-2 justify-content-center mx-auto mb-3 mt-2">
             <div class="form-check form-check-inline mx-3">
-                <input class="form-check-input" type="checkbox" id="Warta_Checkbox" value="Warta">
-                <label class="form-check-label" for="Warta_Checkbox">Warta</label>
+                <input class="form-check-input" field="*{option1}" type="checkbox" name="option1" id="option1"
+                       th:checked="${checkBoxOption?.option1 == true}"/>
+                <label class="form-check-label" for="option1">Warta</label>
             </div>
             <div class="form-check form-check-inline mx-3">
-                <input class="form-check-input" type="checkbox" id="Blue_Lady_Checkbox" value="Blue_Lady">
-                <label class="form-check-label" for="Blue_Lady_Checkbox">Blue Lady</label>
+                <input class="form-check-input" field="*{option2}" type="checkbox" name="option2" id="option2"
+                       th:checked="${checkBoxOption?.option2 == true}"/>
+                <label class="form-check-label" for="option2">Blue Lady</label>
             </div>
             <div class="form-check form-check-inline mx-3">
-                <input class="form-check-input" type="checkbox" id="Lady_Marie_Checkbox" value="Lady_Marie">
-                <label class="form-check-label" for="Lady_Marie_Checkbox">Lady Marie</label>
+                <input class="form-check-input" field="*{option3}" type="checkbox" name="option3" id="option3"
+                       th:checked="${checkBoxOption?.option3 == true}"/>
+                <label class="form-check-label" for="option3">Lady Marie</label>
             </div>
+        </div>
+        <div class="container justify-content-center text-center py-2 my-2">
+            <button type="submit" class="btn btn-primary">Submit</button>
         </div>
     </form>
     <div class="canvas-container">
@@ -67,51 +73,52 @@
 <script type="text/javascript"  th:src="@{/js/common-draw-ship.js}"></script>
 <script th:inline="javascript">
 
-    let items = /*[[${modelTrack}]]*/ null;
-    console.log(items);
+let items = /*[[${modelTrack}]]*/ null;
+console.log(items);
 
-    let points = [];
-    let scaledPoints = [];
+let points = [];
+let scaledPoints = [];
 
-    for (let i = 0; i < items.length; i++) {
-        let item = items[i];
-        console.log(item);
-        const point = {x: item.modelTrack.positionX, y: item.modelTrack.positionX};
-        console.log(point);
-        points.push(point);
+for (let i = 0; i < items.length; i++) {
+    let item = items[i];
+    console.log(item);
+    const point = {x: item.modelTrack.positionX, y: item.modelTrack.positionX};
+    console.log(point);
+    points.push(point);
+}
+// Get the canvas element and its context
+const canvas = document.getElementById('myCanvas');
+const ctx = canvas.getContext('2d');
+
+points.push({x: 0, y: 0});
+points.push({x: 110, y: 120});
+console.log(points);
+for (let i = 0; i < points.length; i++) {
+    scaledPoints[i] = getScaledPoints(points[i].x, points[i].y)
+}
+console.log(scaledPoints);
+
+points = scaledPoints;
+console.log(points);
+
+// Check if there are enough points to draw a line
+if (points.length > 1) {
+    ctx.beginPath();
+    // Move to the first point
+    ctx.moveTo(points[0].x, points[0].y);
+    console.log(points[0].x, points[0].y);
+
+    // Draw lines between the points
+    for (let i = 1; i < points.length; i++) {
+    console.log(points[i].x, points[i].y);
+        ctx.lineTo(points[i].x, points[i].y);
     }
-    // Get the canvas element and its context
-    const canvas = document.getElementById('myCanvas');
-    const ctx = canvas.getContext('2d');
 
-    points.push({x: 0, y: 0});
-    console.log(points);
-    for (let i = 0; i < points.length; i++) {
-        scaledPoints[i] = getScaledPoints(points[i].x, points[i].y)
-    }
-    console.log(scaledPoints);
-
-    points = scaledPoints;
-    console.log(points);
-
-    // Check if there are enough points to draw a line
-    if (points.length > 1) {
-        ctx.beginPath();
-        // Move to the first point
-        ctx.moveTo(points[0].x, points[0].y);
-        console.log(points[0].x, points[0].y);
-
-        // Draw lines between the points
-        for (let i = 1; i < points.length; i++) {
-        console.log(points[i].x, points[i].y);
-            ctx.lineTo(points[i].x, points[i].y);
-        }
-
-        // Set stroke style and draw the line
-        ctx.strokeStyle = '#FF0000';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-    }
+    // Set stroke style and draw the line
+    ctx.strokeStyle = '#FF0000';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+}
 </script>
 </body>
 </html>
