@@ -3,7 +3,6 @@ package com.jaworski.serialprotocol.controller.web;
 import com.jaworski.serialprotocol.authorization.AuthorizationService;
 import com.jaworski.serialprotocol.dto.CheckBoxOption;
 import com.jaworski.serialprotocol.dto.LogItem;
-import com.jaworski.serialprotocol.dto.Models;
 import com.jaworski.serialprotocol.dto.Student;
 import com.jaworski.serialprotocol.exception.CustomRestException;
 import com.jaworski.serialprotocol.restclient.RestNameService;
@@ -29,69 +28,69 @@ import java.util.*;
 public class MapController {
 
     private static final Logger LOG = LogManager.getLogger(MapController.class);
+    public static final String ATTRIBUTE_TRACK_MAP = "trackMap";
+    public static final String ATTRIBUTE_NAME = "name";
     private final RestNameService restNameService;
     private final AuthorizationService authorizationService;
     private final TrackService trackService;
 
     @GetMapping(path = {"/", "/index.html", "/index", "/index.htm"})
     public String index(Model model) {
-        model.addAttribute("name", "home");
+        model.addAttribute(ATTRIBUTE_NAME, "home");
         return "index";
     }
 
     @GetMapping("/terminal")
     public String terminal(Model model) {
-        model.addAttribute("name", "terminal");
+        model.addAttribute(ATTRIBUTE_NAME, "terminal");
         return "terminal";
     }
 
     @GetMapping("/about")
     public String about(Model model) {
-        model.addAttribute("name", "about");
+        model.addAttribute(ATTRIBUTE_NAME, "about");
         return "about";
     }
 
     @GetMapping("/greeting")
-    public String greeting(@RequestParam(name = "name", required = false, defaultValue = "World") String name, Model model) {
-        model.addAttribute("name", name);
+    public String greeting(@RequestParam(name = ATTRIBUTE_NAME, required = false, defaultValue = "World") String name, Model model) {
+        model.addAttribute(ATTRIBUTE_NAME, name);
         return "greetings";
     }
 
     @GetMapping("/chart")
     public String greeting(Model model) {
-        model.addAttribute("name", "chart");
+        model.addAttribute(ATTRIBUTE_NAME, "chart");
         return "chart";
     }
 
     @GetMapping("/tracks")
     public String tracks(Model model) {
-        model.addAttribute("name", "track");
-        model.addAttribute("modelTrack", Collections.emptyList());
-        model.addAttribute("trackMap", Collections.emptyMap());
-        LOG.info("Model: {}", model.getAttribute("modelTrack"));
+        model.addAttribute(ATTRIBUTE_NAME, "track");
+        model.addAttribute(ATTRIBUTE_TRACK_MAP, Collections.emptyMap());
+        LOG.info("Model: {}", model.getAttribute(ATTRIBUTE_TRACK_MAP));
         return "tracks";
     }
 
     @PostMapping("/tracks")
     public String submitForm(@ModelAttribute CheckBoxOption checkBoxOption, Model model) {
         LOG.info("{}", checkBoxOption);
-        List<LogItem> result = new ArrayList<>();
         Map<Integer, List<LogItem>> trackMap = new HashMap<>();
         checkBoxOption.getModels().forEach(modelId -> {
             List<LogItem> trackServiceModel = trackService.getModel(logItem -> logItem.getModelTrack().getModelName() == modelId);
             trackMap.put(modelId, trackServiceModel);
         });
         LOG.info("Result LogItems size {}", trackMap.size());
-        model.addAttribute("modelTrack", result);
-        model.addAttribute("name", "track");
+        model.addAttribute(ATTRIBUTE_NAME, "track");
         model.addAttribute("checkboxForm", checkBoxOption);
-        model.addAttribute("trackMap", trackMap);
+        model.addAttribute(ATTRIBUTE_TRACK_MAP, trackMap);
+        LOG.info("Model: {}", model.getAttribute(ATTRIBUTE_TRACK_MAP));
         return "tracks";
     }
 
     @PostMapping("/name-service")
     public String passService(Model model, @RequestParam(defaultValue = "") String password) {
-        model.addAttribute("name", "pass-service");
+        model.addAttribute(ATTRIBUTE_NAME, "pass-service");
         return authorizationService.authorize(password) ?
                 getNameModel(model) :
                 getErrorString(model, password);
@@ -124,13 +123,13 @@ public class MapController {
         }
         model.addAttribute("names", names);
         model.addAttribute("namesLatest", namesLatest);
-        model.addAttribute("name", "name-service");
+        model.addAttribute(ATTRIBUTE_NAME, "name-service");
         return "name-service";
     }
 
     @GetMapping("/name-service")
     public String passServiceGet(Model model) {
-        model.addAttribute("name", "pass-service");
+        model.addAttribute(ATTRIBUTE_NAME, "pass-service");
         return "pass-service";
     }
 
