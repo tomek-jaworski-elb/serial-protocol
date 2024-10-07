@@ -1,16 +1,45 @@
 package com.jaworski.serialprotocol.dto;
 
-import lombok.*;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
-import java.io.Serializable;
+import java.util.HashSet;
+import java.util.Set;
 
 @ToString
 @Setter
 @Getter
-public class CheckBoxOption implements Serializable {
+public class CheckBoxOption {
 
-    private boolean option1;
-    private boolean option2;
-    private boolean option3;
+    private boolean warta;
+    private boolean bluelady;
+    private boolean ladymarie;
+    private boolean cherrylady;
+    private boolean kolobrzeg;
+    private boolean dorchesterlady;
+
+    public Set<Integer> getModels() {
+        Set<Integer> models = new HashSet<>();
+        if (this.warta) {
+            models.add(Models.WARTA.getId());
+        }
+        if (this.bluelady) {
+            models.add(Models.BLUE_LADY.getId());
+        }
+        if (this.cherrylady) {
+            models.add(Models.CHERRY_LADY.getId());
+        }
+        if (this.ladymarie) {
+            models.add(Models.LADY_MARIE.getId());
+        }
+        if (this.kolobrzeg) {
+            models.add(Models.KOLOBRZEG.getId());
+        }
+        if (this.dorchesterlady) {
+            models.add(Models.DORCHERTER_LADY.getId());
+        }
+        return models;
+    }
 
 }

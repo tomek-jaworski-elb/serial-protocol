@@ -3,6 +3,7 @@ package com.jaworski.serialprotocol.controller.web;
 import com.jaworski.serialprotocol.authorization.AuthorizationService;
 import com.jaworski.serialprotocol.dto.CheckBoxOption;
 import com.jaworski.serialprotocol.dto.LogItem;
+import com.jaworski.serialprotocol.dto.Models;
 import com.jaworski.serialprotocol.dto.Student;
 import com.jaworski.serialprotocol.exception.CustomRestException;
 import com.jaworski.serialprotocol.restclient.RestNameService;
@@ -21,10 +22,7 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.ResourceAccessException;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 @RequiredArgsConstructor
 @Controller
@@ -69,6 +67,7 @@ public class MapController {
     public String tracks(Model model) {
         model.addAttribute("name", "track");
         model.addAttribute("modelTrack", Collections.emptyList());
+        model.addAttribute("trackMap", Collections.emptyMap());
         LOG.info("Model: {}", model.getAttribute("modelTrack"));
         return "tracks";
     }
@@ -77,22 +76,16 @@ public class MapController {
     public String submitForm(@ModelAttribute CheckBoxOption checkBoxOption, Model model) {
         LOG.info("{}", checkBoxOption);
         List<LogItem> result = new ArrayList<>();
-        if (checkBoxOption.isOption1()) {
-            List<LogItem> t = trackService.getModel(logItem -> logItem.getModelTrack().getModelName() == 1);
-            result.addAll(t);
-        }
-        if (checkBoxOption.isOption2()) {
-            List<LogItem> trackServiceModel = trackService.getModel(logItem -> logItem.getModelTrack().getModelName() == 2);
-            result.addAll(trackServiceModel);
-        }
-        if (checkBoxOption.isOption3()) {
-            List<LogItem> trackServiceModel = trackService.getModel(logItem -> logItem.getModelTrack().getModelName() == 3);
-            result.addAll(trackServiceModel);
-        }
-        LOG.info("Result LogItems size {}", result.size());
+        Map<Integer, List<LogItem>> trackMap = new HashMap<>();
+        checkBoxOption.getModels().forEach(modelId -> {
+            List<LogItem> trackServiceModel = trackService.getModel(logItem -> logItem.getModelTrack().getModelName() == modelId);
+            trackMap.put(modelId, trackServiceModel);
+        });
+        LOG.info("Result LogItems size {}", trackMap.size());
         model.addAttribute("modelTrack", result);
         model.addAttribute("name", "track");
         model.addAttribute("checkboxForm", checkBoxOption);
+        model.addAttribute("trackMap", trackMap);
         return "tracks";
     }
 
