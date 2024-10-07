@@ -6,9 +6,9 @@
     <style>
         .canvas-container {
             position: relative;
-            width: 4000px; /* Adjust as needed */ /* ----- width: 1100px; / JW4000 / JW2000 */
+            width: 2666px; /* Adjust as needed */ /* ----- width: 1100px; / JW4000 / JW2000 */
             /*width: 1400px; !* Adjust as needed *!*/
-            height: 6000px; /* Adjust as needed */ /* ----- height: 2000px; /JW6000 /JW3000 */
+            height: 4000px; /* Adjust as needed */ /* ----- height: 2000px; /JW6000 /JW3000 */
             /*height: 2100px; !* Adjust as needed *!*/
             border: 1px solid #555151;
             padding-left: 0;
@@ -79,7 +79,7 @@
     </form>
     <div class="canvas-container">
         <div>
-            <canvas id="myCanvas" width="4000" height="6000" style="border:1px solid #000000;"></canvas>
+            <canvas id="myCanvas" width="2666" height="4000" style="border:1px solid #000000;"></canvas>
             <img id="backgroundCanvas" th:src="@{/img/MapaSilm_2666x4000.jpg}" src="/static/img/MapaSilm_2666x4000.jpg"
                  width="2666" height="4000" alt="Silm Lake Chart should be here">
         </div>
@@ -98,48 +98,47 @@
         if (mapItems.hasOwnProperty(key)) {
             let values = mapItems[key]; // Access the values (arrays in this case)
             const keyNumber = Number(key);
-            console.log("Key:", keyNumber); // Log the key
-            console.log("Values:", values); // Log the values
+        //    console.log("Key:", keyNumber); // Log the key
+        //    console.log("Values:", values); // Log the values
 
             let points = [];
             let scaledPoints = [];
 
+            points.push({x: 0, y: 0});
+            points.push({x: 77, y: 97});
+            points.push({x: 500, y: 25});
+            points.push({x: 926, y: 1149});
+
             items = values;
             console.log("items: ", items);
 
-            for (let i = 0; i < items.length; i++) {
-                let item = items[i];
+            for (let i = 0; i < values.length; i++) {
+                let item = values[i];
                 console.log(item);
                 const point = {x: item.modelTrack.positionX, y: item.modelTrack.positionX};
-                console.log(point);
-                points.push(point);
             }
             // Get the canvas element and its context
             const canvas = document.getElementById('myCanvas');
             const ctx = canvas.getContext('2d');
 
-            // points.push({x: 0, y: 0});
-            // points.push({x: 110, y: 120});
             console.log(points);
             for (let i = 0; i < points.length; i++) {
                 scaledPoints[i] = getScaledPoints(points[i].x, points[i].y)
             }
             console.log(scaledPoints);
 
-            points = scaledPoints;
-            console.log(points);
-
             // Check if there are enough points to draw a line
-            if (points.length > 1) {
+            console.log("Scaled!");
                 ctx.beginPath();
+            if (scaledPoints.length > 1) {
                 // Move to the first point
-                ctx.moveTo(points[0].x, points[0].y);
-                console.log(points[0].x, points[0].y);
+                ctx.moveTo(scaledPoints[0].x, scaledPoints[0].y);
+            //    console.log(scaledPoints[0].x, scaledPoints[0].y);
 
                 // Draw lines between the points
-                for (let i = 1; i < points.length; i++) {
-                    console.log(points[i].x, points[i].y);
-                    ctx.lineTo(points[i].x, points[i].y);
+                for (let i = 1; i < scaledPoints.length; i++) {
+         //           console.log(scaledPoints[i].x, scaledPoints[i].y);
+                    ctx.lineTo(scaledPoints[i].x, scaledPoints[i].y);
                 }
 
                 // Set stroke style and draw the line
