@@ -68,7 +68,6 @@ public class MapController {
     public String tracks(Model model) {
         model.addAttribute(ATTRIBUTE_NAME, "track");
         model.addAttribute(ATTRIBUTE_TRACK_MAP, Collections.emptyMap());
-        LOG.info("Model: {}", model.getAttribute(ATTRIBUTE_TRACK_MAP));
         return "tracks";
     }
 
@@ -81,10 +80,11 @@ public class MapController {
             trackMap.put(modelId, trackServiceModel);
         });
         LOG.info("Result LogItems size {}", trackMap.size());
+        trackMap.keySet()
+                .forEach(integer -> LOG.info("Key {} size: {}", integer, trackMap.get(integer).size()));
         model.addAttribute(ATTRIBUTE_NAME, "track");
         model.addAttribute("checkboxForm", checkBoxOption);
         model.addAttribute(ATTRIBUTE_TRACK_MAP, trackMap);
-        LOG.info("Model: {}", model.getAttribute(ATTRIBUTE_TRACK_MAP));
         return "tracks";
     }
 
