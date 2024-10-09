@@ -8,10 +8,13 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.function.Predicate;
+import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
@@ -21,29 +24,30 @@ public class TrackService {
 
     private final ReadLogsFileService readLogsFileService;
 
-    public List<LogItem> readModel() {
-        List<LogItem> logItems;
+    public Map<Integer, List<LogItem>> getModels(@NonNull Set<Integer> modelsId) {
+        Map<Integer, List<LogItem>> trackMap = new HashMap<>();
         try {
             List<String> strings = readLogsFileService.readLogs() == null ?
                     Collections.emptyList() :
                     readLogsFileService.readLogs();
 
-            logItems = strings.stream()
+            strings.stream()
                     .map(LogPatternMatcher::parseTrack)
                     .filter(Optional::isPresent)
                     .map(Optional::get)
-                    .toList();
+                    .filter(logItem -> modelsId.contains(logItem.getModelTrack().getModelName()))
+                    .forEach(logItem -> {
+                        int modelName = logItem.getModelTrack().getModelName();
+                        if (!trackMap.containsKey(modelName)) {
+                            trackMap.put(modelName, new ArrayList<>());
+                        }
+                        trackMap.get(modelName).add(logItem);
+                    });
+
         } catch (IOException e) {
             LOG.error("Failed to read logs", e);
-            return Collections.emptyList();
+            return Collections.emptyMap();
         }
-        return logItems;
+        return trackMap;
     }
-
-    public List<LogItem> getModel(@NonNull Predicate<LogItem> filter) {
-       return readModel().stream()
-               .filter(filter)
-               .toList();
-    }
-
 }

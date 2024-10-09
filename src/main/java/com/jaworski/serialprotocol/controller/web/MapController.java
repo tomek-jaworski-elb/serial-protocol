@@ -20,8 +20,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.ResourceAccessException;
 
-import java.io.Serializable;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 @RequiredArgsConstructor
 @Controller
@@ -74,17 +76,17 @@ public class MapController {
     @PostMapping("/tracks")
     public String submitForm(@ModelAttribute CheckBoxOption checkBoxOption, Model model) {
         LOG.info("{}", checkBoxOption);
-        Map<Integer, List<LogItem>> trackMap = new HashMap<>();
-        checkBoxOption.getModels().forEach(modelId -> {
-            List<LogItem> trackServiceModel = trackService.getModel(logItem -> logItem.getModelTrack().getModelName() == modelId);
-            trackMap.put(modelId, trackServiceModel);
-        });
-        LOG.info("Result LogItems size {}", trackMap.size());
-        trackMap.keySet()
-                .forEach(integer -> LOG.info("Key {} size: {}", integer, trackMap.get(integer).size()));
+        model.addAttribute(ATTRIBUTE_TRACK_MAP, Collections.emptyMap());
+        if (!checkBoxOption.getModels().isEmpty()) {
+            Map<Integer, List<LogItem>> trackMap = trackService.getModels(checkBoxOption.getModels());
+
+            LOG.info("Result LogItems size {}", trackMap.size());
+            trackMap.keySet()
+                    .forEach(integer -> LOG.info("Key {} size: {}", integer, trackMap.get(integer).size()));
+            model.addAttribute(ATTRIBUTE_TRACK_MAP, trackMap);
+        }
         model.addAttribute(ATTRIBUTE_NAME, "track");
         model.addAttribute("checkboxForm", checkBoxOption);
-        model.addAttribute(ATTRIBUTE_TRACK_MAP, trackMap);
         return "tracks";
     }
 
@@ -133,23 +135,6 @@ public class MapController {
         return "pass-service";
     }
 
-    static class Point implements Serializable {
-        private final float x;
-        private final float y;
-
-        public Point(float x, float y) {
-            this.x = x;
-            this.y = y;
-        }
-
-        @Override
-        public String toString() {
-            return "{" +
-                    "x: " + x +
-                    ", y: " + y +
-                    '}';
-        }
-    }
 }
 
 
