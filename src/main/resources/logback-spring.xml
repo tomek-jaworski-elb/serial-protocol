@@ -37,7 +37,7 @@
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <fileNamePattern>
-                ${LOG_PATH}/${tracking}_%d{dd-MM-yyyy}_%i.log.gz
+                ${LOG_PATH}/%d{yyyy/MM}/${tracking}_%d{dd-MM-yyyy}.%i.log.gz
             </fileNamePattern>
             <maxFileSize>0</maxFileSize>
             <maxHistory>0</maxHistory>
