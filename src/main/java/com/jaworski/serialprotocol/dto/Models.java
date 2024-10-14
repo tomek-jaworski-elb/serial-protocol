@@ -13,9 +13,9 @@ public enum Models {
     WARTA(1, "Warta"),
     BLUE_LADY(2, "Blue Lady"),
     LADY_MARIE(6, "Lady Marie"),
-    CHERRY_LADY(3, "Cherry Lady"),
-    KOLOBRZEG(4, "Kołobrzeg"),
-    DORCHERTER_LADY(5, "Dorchester Lady");
+    CHERRY_LADY(4, "Cherry Lady"),
+    KOLOBRZEG(5, "Kołobrzeg"),
+    DORCHERTER_LADY(3, "Dorchester Lady");
 
     private final int id;
     private final String name;
