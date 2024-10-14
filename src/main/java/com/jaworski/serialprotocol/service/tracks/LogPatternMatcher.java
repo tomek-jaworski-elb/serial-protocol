@@ -15,6 +15,10 @@ import java.util.regex.PatternSyntaxException;
 
 public class LogPatternMatcher {
 
+    private LogPatternMatcher() {
+        throw new IllegalStateException("Utility class");
+    }
+
     // Regex to match the ModelTrackDTO and nested TugDTO fields
 //   19-09-2024 17:24:45.570 - Translated message: ModelTrackDTO(modelName=6, positionX=55.96, positionY=63.71, speed=0.0, heading=229.8, rudder=0.0, gpsQuality=1.59, engine=100.0, bowThruster=-127.0, bowTug=TugDTO(tugForce=10.0, tugDirection=0.0), sternTug=TugDTO(tugForce=10.0, tugDirection=469.45))
     private final static String REGEX_LADY_MARIE = "(\\d{2}-\\d{2}-\\d{4})\\s(\\d{2}:\\d{2}:\\d{2}\\.\\d{3})\\s-\\sTranslated message: ModelTrackDTO\\(modelName=(\\d+),\\spositionX=([-+]?\\d*\\.?\\d+),\\spositionY=([-+]?\\d*\\.?\\d+),\\sspeed=([\\d\\.]+),\\sheading=([\\d\\.]+),\\srudder=([\\d\\.]+),\\sgpsQuality=([\\d\\.]+),\\sengine=([\\d\\.]+),\\sbowThruster=([\\-\\d\\.]+),\\sbowTug=TugDTO\\(tugForce=([\\d\\.]+),\\stugDirection=([\\d\\.]+)\\),\\ssternTug=TugDTO\\(tugForce=([\\d\\.]+),\\stugDirection=([\\d\\.]+)\\)\\)";
@@ -48,18 +52,18 @@ public class LogPatternMatcher {
             var modelTrackDTO = ModelTrackDTO.builder()
                     .modelName(Integer.parseInt(matcherLadyMarie.group(3)))
                     .positionX(Float.parseFloat(matcherLadyMarie.group(4)))
-                    .positionY(Float.parseFloat(matcherLadyMarie.group(5)))
-                    .speed(Double.parseDouble(matcherLadyMarie.group(6)))
-                    .heading(Double.parseDouble(matcherLadyMarie.group(7)))
-                    .rudder(Double.parseDouble(matcherLadyMarie.group(8)))
-                    .gpsQuality(Double.parseDouble(matcherLadyMarie.group(9))) // gpsQuality
-                    .engine(Double.parseDouble(matcherLadyMarie.group(10))) // engine
-                    .bowThruster(Double.parseDouble(matcherLadyMarie.group(11))); // bowThruster
+                    .positionY(Float.parseFloat(matcherLadyMarie.group(5)));
+//                    .speed(Double.parseDouble(matcherLadyMarie.group(6)))
+//                    .heading(Double.parseDouble(matcherLadyMarie.group(7)));
+//                    .rudder(Double.parseDouble(matcherLadyMarie.group(8)))
+//                    .gpsQuality(Double.parseDouble(matcherLadyMarie.group(9))) // gpsQuality
+//                    .engine(Double.parseDouble(matcherLadyMarie.group(10))) // engine
+//                    .bowThruster(Double.parseDouble(matcherLadyMarie.group(11))); // bowThruster
 
             // Create and assign TugDTO for bow and stern tugs
-            modelTrackDTO.bowTug(bowTug);
+//            modelTrackDTO.bowTug(bowTug);
 
-            modelTrackDTO.sternTug(sternTug); // sternTug;
+//            modelTrackDTO.sternTug(sternTug); // sternTug;
 //            return modelTrackDTO.build();
 
             return Optional.of(LogItem.builder()
@@ -74,24 +78,24 @@ public class LogPatternMatcher {
             var modelTrackDTO = ModelTrackDTO.builder()
                     .modelName(Integer.parseInt(matcherOtherModels.group(3)))
                     .positionX(Float.parseFloat(matcherOtherModels.group(4)))
-                    .positionY(Float.parseFloat(matcherOtherModels.group(5)))
-                    .speed(Double.parseDouble(matcherOtherModels.group(6)))
-                    .heading(Double.parseDouble(matcherOtherModels.group(7)))
-                    .rudder(Double.parseDouble(matcherOtherModels.group(8)))
-                    .gpsQuality(Double.parseDouble(matcherOtherModels.group(9))) // gpsQuality
-                    .engine(Double.parseDouble(matcherOtherModels.group(10))) // engine
-                    .bowThruster(Double.parseDouble(matcherOtherModels.group(11))); // bowThruster
+                    .positionY(Float.parseFloat(matcherOtherModels.group(5)));
+//                    .speed(Double.parseDouble(matcherOtherModels.group(6)))
+//                    .heading(Double.parseDouble(matcherOtherModels.group(7)));
+//                    .rudder(Double.parseDouble(matcherOtherModels.group(8)))
+//                    .gpsQuality(Double.parseDouble(matcherOtherModels.group(9))) // gpsQuality
+//                    .engine(Double.parseDouble(matcherOtherModels.group(10))) // engine
+//                    .bowThruster(Double.parseDouble(matcherOtherModels.group(11))); // bowThruster
 
             // Create and assign TugDTO for bow and stern tugs
             var bowTug = TugDTO.builder();
             bowTug.tugForce(Double.parseDouble(matcherOtherModels.group(12))); // bowTug.tugForce
             bowTug.tugDirection(Double.parseDouble(matcherOtherModels.group(13))); // bowTug.tugDirection
-            modelTrackDTO.bowTug(bowTug.build());
+//            modelTrackDTO.bowTug(bowTug.build());
 
             var sternTug = TugDTO.builder();
             sternTug.tugForce(Double.parseDouble(matcherOtherModels.group(14))); // sternTug.tugForce
             sternTug.tugDirection(Double.parseDouble(matcherOtherModels.group(15))); // sternTug.tugDirection
-            modelTrackDTO.sternTug(sternTug.build()); // sternTug;
+//            modelTrackDTO.sternTug(sternTug.build()); // sternTug;
             return Optional.of(LogItem.builder()
                     .timestamp(getTimestamp(matcherOtherModels.group(1), matcherOtherModels.group(2)))
                     .modelTrack(modelTrackDTO.build())
