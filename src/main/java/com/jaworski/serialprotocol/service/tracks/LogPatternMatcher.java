@@ -1,9 +1,8 @@
 package com.jaworski.serialprotocol.service.tracks;
 
 import com.jaworski.serialprotocol.dto.LogItem;
-import com.jaworski.serialprotocol.dto.ModelTrackDTO;
+import com.jaworski.serialprotocol.dto.ModelTrackJSDTO;
 import com.jaworski.serialprotocol.dto.Models;
-import com.jaworski.serialprotocol.dto.TugDTO;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -36,6 +35,7 @@ public class LogPatternMatcher {
     public static Optional<LogItem> parseTrack(String input) throws IllegalArgumentException {
         Matcher matcherLadyMarie = getMatcher(REGEX_LADY_MARIE, input);
         Matcher matcherOtherModels = getMatcher(REGEX_OTHER_MODELS, input);
+        ModelTrackJSDTO.ModelTrackJSDTOBuilder builder = ModelTrackJSDTO.builder();
         if (matcherLadyMarie.find()) {
             if (isValidModelId(matcherLadyMarie)) {
                 return Optional.empty();
@@ -44,30 +44,13 @@ public class LogPatternMatcher {
             String date = matcherLadyMarie.group(1);
             String time = matcherLadyMarie.group(2);
 
-            // Parsing TugDTO objects
-            TugDTO bowTug = new TugDTO(Double.parseDouble(matcherLadyMarie.group(12)), Double.parseDouble(matcherLadyMarie.group(13)));
-            TugDTO sternTug = new TugDTO(Double.parseDouble(matcherLadyMarie.group(14)), Double.parseDouble(matcherLadyMarie.group(15)));
-
             // Create and return the DTO
-            var modelTrackDTO = ModelTrackDTO.builder()
-                    .modelName(Integer.parseInt(matcherLadyMarie.group(3)))
+            builder.modelName(Integer.parseInt(matcherLadyMarie.group(3)))
                     .positionX(Float.parseFloat(matcherLadyMarie.group(4)))
                     .positionY(Float.parseFloat(matcherLadyMarie.group(5)));
-//                    .speed(Double.parseDouble(matcherLadyMarie.group(6)))
-//                    .heading(Double.parseDouble(matcherLadyMarie.group(7)));
-//                    .rudder(Double.parseDouble(matcherLadyMarie.group(8)))
-//                    .gpsQuality(Double.parseDouble(matcherLadyMarie.group(9))) // gpsQuality
-//                    .engine(Double.parseDouble(matcherLadyMarie.group(10))) // engine
-//                    .bowThruster(Double.parseDouble(matcherLadyMarie.group(11))); // bowThruster
-
-            // Create and assign TugDTO for bow and stern tugs
-//            modelTrackDTO.bowTug(bowTug);
-
-//            modelTrackDTO.sternTug(sternTug); // sternTug;
-//            return modelTrackDTO.build();
 
             return Optional.of(LogItem.builder()
-                    .modelTrack(modelTrackDTO.build())
+                    .modelTrack(builder.build())
                     .timestamp(getTimestamp(date, time))
                     .build());
             // Parse each value from the match groups and create the DTO object
@@ -75,30 +58,14 @@ public class LogPatternMatcher {
             if (isValidModelId(matcherOtherModels)) {
                 return Optional.empty();
             }
-            var modelTrackDTO = ModelTrackDTO.builder()
-                    .modelName(Integer.parseInt(matcherOtherModels.group(3)))
+            // Create and return the DTO
+            builder.modelName(Integer.parseInt(matcherOtherModels.group(3)))
                     .positionX(Float.parseFloat(matcherOtherModels.group(4)))
                     .positionY(Float.parseFloat(matcherOtherModels.group(5)));
-//                    .speed(Double.parseDouble(matcherOtherModels.group(6)))
-//                    .heading(Double.parseDouble(matcherOtherModels.group(7)));
-//                    .rudder(Double.parseDouble(matcherOtherModels.group(8)))
-//                    .gpsQuality(Double.parseDouble(matcherOtherModels.group(9))) // gpsQuality
-//                    .engine(Double.parseDouble(matcherOtherModels.group(10))) // engine
-//                    .bowThruster(Double.parseDouble(matcherOtherModels.group(11))); // bowThruster
 
-            // Create and assign TugDTO for bow and stern tugs
-            var bowTug = TugDTO.builder();
-            bowTug.tugForce(Double.parseDouble(matcherOtherModels.group(12))); // bowTug.tugForce
-            bowTug.tugDirection(Double.parseDouble(matcherOtherModels.group(13))); // bowTug.tugDirection
-//            modelTrackDTO.bowTug(bowTug.build());
-
-            var sternTug = TugDTO.builder();
-            sternTug.tugForce(Double.parseDouble(matcherOtherModels.group(14))); // sternTug.tugForce
-            sternTug.tugDirection(Double.parseDouble(matcherOtherModels.group(15))); // sternTug.tugDirection
-//            modelTrackDTO.sternTug(sternTug.build()); // sternTug;
             return Optional.of(LogItem.builder()
                     .timestamp(getTimestamp(matcherOtherModels.group(1), matcherOtherModels.group(2)))
-                    .modelTrack(modelTrackDTO.build())
+                    .modelTrack(builder.build())
                     .build());
         } else {
             // Handle invalid input

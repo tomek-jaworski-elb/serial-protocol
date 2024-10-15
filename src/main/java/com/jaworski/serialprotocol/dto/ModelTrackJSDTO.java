@@ -1,17 +1,20 @@
 package com.jaworski.serialprotocol.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 
-@Builder
 @Getter
 @EqualsAndHashCode
+@AllArgsConstructor
 @ToString
-public class LogItem {
+@Builder
+public class ModelTrackJSDTO {
 
-    private long timestamp;
-    private ModelTrackJSDTO modelTrack;
+    private int modelName;
+    private float positionX;
+    private float positionY;
 
 }
