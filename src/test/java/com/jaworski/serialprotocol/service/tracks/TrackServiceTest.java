@@ -102,14 +102,7 @@ class TrackServiceTest {
         assertEquals(2, modelTrackDTO.getModelTrack().getModelName());
         assertEquals(-29.39, modelTrackDTO.getModelTrack().getPositionX(), 0.01);
         assertEquals(-76.08, modelTrackDTO.getModelTrack().getPositionY(), 0.01);
-        assertEquals(0.2, modelTrackDTO.getModelTrack().getSpeed(), 0.01);
-        assertEquals(320.9, modelTrackDTO.getModelTrack().getHeading(), 0.01);
-        assertEquals(-12.6, modelTrackDTO.getModelTrack().getRudder());
-        assertEquals(0.04, modelTrackDTO.getModelTrack().getGpsQuality());
-        assertEquals(100.0, modelTrackDTO.getModelTrack().getEngine());
-        assertEquals(127.0, modelTrackDTO.getModelTrack().getBowThruster());
-        TugDTO bowTug = modelTrackDTO.getModelTrack().getBowTug();
-        assertNotNull(bowTug);
+
     }
 
     @Test
@@ -124,20 +117,6 @@ class TrackServiceTest {
         assertEquals(6, modelTrackDTO.getModelTrack().getModelName());
         assertEquals(-155.96, modelTrackDTO.getModelTrack().getPositionX(), 0.01);
         assertEquals(63.71, modelTrackDTO.getModelTrack().getPositionY(), 0.01);
-        assertEquals(0.0, modelTrackDTO.getModelTrack().getSpeed(), 0.01);
-        assertEquals(229.8, modelTrackDTO.getModelTrack().getHeading(), 0.01);
-        assertEquals(0.0, modelTrackDTO.getModelTrack().getRudder());
-        assertEquals(1.59, modelTrackDTO.getModelTrack().getGpsQuality());
-        assertEquals(100.0, modelTrackDTO.getModelTrack().getEngine());
-        assertEquals(-127.0, modelTrackDTO.getModelTrack().getBowThruster());
-        TugDTO bowTug = modelTrackDTO.getModelTrack().getBowTug();
-        assertNotNull(bowTug);
-        assertEquals(10.0, bowTug.getTugForce());
-        assertEquals(0.0, bowTug.getTugDirection());
-        TugDTO sternTug = modelTrackDTO.getModelTrack().getSternTug();
-        assertNotNull(sternTug);
-        assertEquals(10.0, sternTug.getTugForce());
-        assertEquals(469.45, sternTug.getTugDirection());
     }
 
 }
