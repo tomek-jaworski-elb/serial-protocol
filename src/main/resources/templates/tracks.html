@@ -75,7 +75,7 @@
             <button type="reset" class="btn btn-secondary mx-3" id="resetButton">Reset</button>
         </div>
         <div class="container justify-content-center text-center py-2 my-2">
-            <p th:if="${#maps.isEmpty(trackMap)}" class="text-danger">No data</p>
+            <p th:if="${noData != null and #strings.length(noData) > 0}" class="text-danger" th:text="${noData}">No data</p>
         </div>
     </form>
     <div class="canvas-container">

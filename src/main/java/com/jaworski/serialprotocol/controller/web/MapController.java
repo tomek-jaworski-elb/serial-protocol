@@ -84,6 +84,7 @@ public class MapController {
             trackMap.keySet()
                     .forEach(integer -> LOG.info("Key {} size: {}", integer, trackMap.get(integer).size()));
             model.addAttribute(ATTRIBUTE_TRACK_MAP, trackMap);
+            model.addAttribute("noData", trackMap.isEmpty() ? "No data for selected models" : "");
         }
         model.addAttribute(ATTRIBUTE_NAME, "track");
         model.addAttribute("checkboxForm", checkBoxOption);
