@@ -26,7 +26,6 @@ public class LogPatternMatcher {
 //  07-10-2024 10:10:34.871 - Translated message: ModelTrackDTO(modelName=1, positionX=-208.19, positionY=185.31, speed=9.3, heading=105.9, rudder=2.5, gpsQuality=0.03, engine=7.0, bowThruster=111.0, bowTug=TugDTO(tugForce=0.0, tugDirection=9.69), sternTug=TugDTO(tugForce=0.0, tugDirection=9.69))
     private final static String REGEX_OTHER_MODELS = "(\\d{2}-\\d{2}-\\d{4})\\s(\\d{2}:\\d{2}:\\d{2}\\.\\d{3})\\s-\\sTranslated message: ModelTrackDTO\\(modelName=(\\d+), positionX=([-+]?\\d*\\.?\\d+), positionY=([-+]?\\d*\\.?\\d+), speed=([\\d.]+), heading=([\\d.]+), rudder=(-?[\\d.]+), gpsQuality=([\\d.]+), engine=([\\d.]+), bowThruster=([\\d.]+), bowTug=TugDTO\\(tugForce=([\\d.]+), tugDirection=([\\d.]+)\\), sternTug=TugDTO\\(tugForce=([\\d.]+), tugDirection=([\\d.]+)\\)\\)";
 
-
     private static Matcher getMatcher(String regex, String input) throws PatternSyntaxException {
         Pattern pattern = Pattern.compile(regex);
         return pattern.matcher(input);
@@ -35,45 +34,38 @@ public class LogPatternMatcher {
     public static Optional<LogItem> parseTrack(String input) throws IllegalArgumentException {
         Matcher matcherLadyMarie = getMatcher(REGEX_LADY_MARIE, input);
         Matcher matcherOtherModels = getMatcher(REGEX_OTHER_MODELS, input);
-        ModelTrackJSDTO.ModelTrackJSDTOBuilder builder = ModelTrackJSDTO.builder();
+
+        // Try to match Lady Marie's model first
         if (matcherLadyMarie.find()) {
-            if (isValidModelId(matcherLadyMarie)) {
-                return Optional.empty();
-            }
-            // Parsing date and time
-            String date = matcherLadyMarie.group(1);
-            String time = matcherLadyMarie.group(2);
-
-            // Create and return the DTO
-            builder.modelName(Integer.parseInt(matcherLadyMarie.group(3)))
-                    .positionX(Float.parseFloat(matcherLadyMarie.group(4)))
-                    .positionY(Float.parseFloat(matcherLadyMarie.group(5)));
-
-            return Optional.of(LogItem.builder()
-                    .modelTrack(builder.build())
-                    .timestamp(getTimestamp(date, time))
-                    .build());
-            // Parse each value from the match groups and create the DTO object
-        } else if (matcherOtherModels.find()) {
-            if (isValidModelId(matcherOtherModels)) {
-                return Optional.empty();
-            }
-            // Create and return the DTO
-            builder.modelName(Integer.parseInt(matcherOtherModels.group(3)))
-                    .positionX(Float.parseFloat(matcherOtherModels.group(4)))
-                    .positionY(Float.parseFloat(matcherOtherModels.group(5)));
-
-            return Optional.of(LogItem.builder()
-                    .timestamp(getTimestamp(matcherOtherModels.group(1), matcherOtherModels.group(2)))
-                    .modelTrack(builder.build())
-                    .build());
-        } else {
-            // Handle invalid input
-            return Optional.empty();
+            return processMatch(matcherLadyMarie);
         }
+
+        // Try to match other models
+        if (matcherOtherModels.find()) {
+            return processMatch(matcherOtherModels);
+        }
+
+        // Handle invalid input
+        return Optional.empty();
     }
 
-    private static boolean isValidModelId(Matcher matcherLadyMarie) {
+    private static Optional<LogItem> processMatch(Matcher matcher) {
+        if (isNotValidModelId(matcher)) {
+            return Optional.empty();
+        }
+
+        ModelTrackJSDTO.ModelTrackJSDTOBuilder builder = ModelTrackJSDTO.builder()
+                .modelName(Integer.parseInt(matcher.group(3)))
+                .positionX(Float.parseFloat(matcher.group(4)))
+                .positionY(Float.parseFloat(matcher.group(5)));
+
+        return Optional.of(LogItem.builder()
+                .modelTrack(builder.build())
+                .timestamp(getTimestamp(matcher.group(1), matcher.group(2)))
+                .build());
+    }
+
+    private static boolean isNotValidModelId(Matcher matcherLadyMarie) {
         return Models.fromId(Integer.parseInt(matcherLadyMarie.group(3))) == null;
     }
 
