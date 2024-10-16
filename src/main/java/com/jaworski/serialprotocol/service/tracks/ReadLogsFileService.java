@@ -20,6 +20,7 @@ public class ReadLogsFileService {
 
     private static final Logger LOG = LogManager.getLogger(ReadLogsFileService.class);
     private final Resources resources;
+    private static final String TRACKING_SUFFIX = ".log";
 
     public List<String> readLogs() throws IOException {
 //        String uri = "D:\\github\\serial-protocol\\logs\\tracking.log";
@@ -34,7 +35,7 @@ public class ReadLogsFileService {
 
     private URI getUri() {
         String logFilePath = resources.getLogFilePath();
-        String trackingLogFileName = resources.getTrackingLogFileName();
+        String trackingLogFileName = resources.getTrackingLogFileName() + TRACKING_SUFFIX;
         return Paths.get(".", logFilePath, trackingLogFileName).toUri();
     }
 
