@@ -26,9 +26,14 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Run docker compose build and up service
-echo "Starting Docker containers..."
-docker compose up --build
+# Determine whether to run in detached mode or not based on the argument
+if [ "$1" == "-d" ]; then
+    echo "Starting Docker containers in detached mode..."
+    docker compose up --build -d
+else
+    echo "Starting Docker containers..."
+    docker compose up --build
+fi
 
 if [ $? -ne 0 ]; then
     echo "Docker compose up failed."
