@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration info="false">
+    <springProperty name="tracking" value="tracking" source="logging.tracking.file.name"/>
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>
@@ -18,16 +19,16 @@
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <fileNamePattern>
-                ${LOG_PATH}/log_%d{dd-MM-yyyy}_%i.log
+                ${LOG_PATH}/log_%d{MM-yyyy}.%i.log.gz
             </fileNamePattern>
-            <maxFileSize>10MB</maxFileSize>
-            <maxHistory>10</maxHistory>
-            <totalSizeCap>100MB</totalSizeCap>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>50</maxHistory>
+            <totalSizeCap>200MB</totalSizeCap>
         </rollingPolicy>
     </appender>
 
     <appender name="SAVE-TRANSMISSION-FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${LOG_PATH}/tracking.log</file>
+        <file>${LOG_PATH}/${tracking}.log</file>
         <append>true</append>
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
             <Pattern>
@@ -36,9 +37,11 @@
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <fileNamePattern>
-                ${LOG_PATH}/tracking_%d{dd-MM-yyyy}_%i.log
+                ${LOG_PATH}/%d{yyyy/MM}/${tracking}_%d{dd-MM-yyyy}.%i.log
             </fileNamePattern>
-            <maxFileSize>100MB</maxFileSize>
+            <maxFileSize>0</maxFileSize>
+            <maxHistory>0</maxHistory>
+            <totalSizeCap>0</totalSizeCap>
         </rollingPolicy>
     </appender>
 

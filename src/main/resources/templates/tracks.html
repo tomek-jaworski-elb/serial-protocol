@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head th:insert="~{fragment::head}"></head>
+<head>
+    <link th:href="@{/nouislider/nouislider.min.css}" rel="stylesheet"/>
+    <title th:text="${@environment.getProperty('spring.application.name')} + ' : Tracks'">Serial port server</title>
+    <style>
+        .canvas-container {
+            position: relative;
+            width: 2666px;
+            height: 4000px;
+            border: 1px solid #555151;
+            padding-left: 0;
+            padding-right: 0;
+            margin-left: auto;
+            margin-right: auto;
+            display: block;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #backgroundCanvas {
+            z-index: 0;
+        }
+
+        #myCanvas {
+            z-index: 1;
+            pointer-events: none; /* To make sure the background canvas can still receive events */
+        }
+        #range-slider {
+            margin: 10px auto;
+            width: 50%;
+        }
+    </style>
+</head>
+<body>
+<header th:replace="~{fragment::header}"></header>
+<div>
+    <form method="post" action="#" th:action="@{/tracks}" th:object="${checkBoxOption}" id="trackForm">
+        <div class="container text-center p-2 justify-content-center mx-auto mb-3 mt-2">
+            <div class="form-check form-check-inline mx-3">
+                <input class="form-check-input" field="*{warta}" type="checkbox" name="warta" id="warta"
+                       th:checked="${checkBoxOption?.warta == true}"/>
+                <label class="form-check-label" for="warta">Warta</label>
+            </div>
+            <div class="form-check form-check-inline mx-3">
+                <input class="form-check-input" field="*{bluelady}" type="checkbox" name="bluelady" id="bluelady"
+                       th:checked="${checkBoxOption?.bluelady == true}"/>
+                <label class="form-check-label" for="bluelady">Blue Lady</label>
+            </div>
+            <div class="form-check form-check-inline mx-3">
+                <input class="form-check-input" field="*{cherrylady}" type="checkbox" name="cherrylady" id="cherrylady"
+                       th:checked="${checkBoxOption?.cherrylady == true}"/>
+                <label class="form-check-label" for="cherrylady">Cherry Lady</label>
+            </div>
+            <div class="form-check form-check-inline mx-3">
+                <input class="form-check-input" field="*{kolobrzeg}" type="checkbox" name="kolobrzeg" id="kolobrzeg"
+                       th:checked="${checkBoxOption?.kolobrzeg == true}"/>
+                <label class="form-check-label" for="kolobrzeg">Kołobrzeg</label>
+            </div>
+            <div class="form-check form-check-inline mx-3">
+                <input class="form-check-input" field="*{dorchesterlady}" type="checkbox" name="dorchesterlady"
+                       id="dorchesterlady" th:checked="${checkBoxOption?.dorchesterlady == true}"/>
+                <label class="form-check-label" for="dorchesterlady">Dorchester Lady</label>
+            </div>
+            <div class="form-check form-check-inline mx-3">
+                <input class="form-check-input" field="*{ladymarie}" type="checkbox" name="ladymarie" id="ladymarie"
+                       th:checked="${checkBoxOption?.ladymarie == true}"/>
+                <label class="form-check-label" for="ladymarie">Lady Marie</label>
+            </div>
+        </div>
+        <div id="range-slider"></div>
+        <div class="container text-center">
+            <span>Filter time range: <span id="min-value">00:00</span></span>
+            <span> - <span id="max-value">24:00</span></span>
+        </div>
+        <input type="hidden" id="minValueInput" name="minValue" value="20">
+        <input type="hidden" id="maxValueInput" name="maxValue" value="80">
+        <div class="container justify-content-center text-center py-2 my-2">
+            <button type="submit" class="btn btn-primary mx-3">Submit</button>
+            <button type="reset" class="btn btn-secondary mx-3" id="resetButton">Reset</button>
+        </div>
+        <div class="container justify-content-center text-center py-2 my-2">
+            <p th:if="${noData != null and #strings.length(noData) > 0}" class="text-danger" th:text="${noData}">No data</p>
+        </div>
+    </form>
+    <div class="canvas-container">
+        <div>
+            <canvas id="myCanvas" width="2666" height="4000" style="border:1px solid #000000;"></canvas>
+            <img id="backgroundCanvas" th:src="@{/img/MapaSilm_2666x4000.jpg}" src="/static/img/MapaSilm_2666x4000.jpg"
+                 width="2666" height="4000" alt="Silm Lake Chart should be here">
+        </div>
+    </div>
+</div>
+<footer th:replace="~{fragment::footer}"></footer>
+<script type="text/javascript" th:src="@{/js/common-draw-ship.js}"></script>
+<script type="text/javascript" th:src="@{/js/common/enums.js}"></script>
+<script type="text/javascript" th:src="@{/js/nouislider/nouislider.min.js}"></script>
+<script th:inline="javascript">
+
+    const slider = document.getElementById('range-slider');
+
+    function toTimeString(minutes) {
+        const hours = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+        return (hours < 10 ? '0' : '') + hours + ':' + (mins < 10 ? '0' : '') + mins;
+    }
+
+    noUiSlider.create(slider, {
+        start: [0, 1440],
+        connect: true,
+        range: {
+            'min': 0,
+            'max': 1440 // 1440 minut = 24 godziny
+        },
+        step: 30 // Krok co 30 minut
+    });
+
+    let minValueElement = document.getElementById('min-value');
+    let maxValueElement = document.getElementById('max-value');
+    let minValueInput = document.getElementById('minValueInput');
+    let maxValueInput = document.getElementById('maxValueInput');
+
+    slider.noUiSlider.on('update', function (values) {
+        const minVal = parseInt(values[0]);
+        const maxVal = parseInt(values[1]);
+
+        const minTime = toTimeString(minVal);
+        const maxTime = toTimeString(maxVal);
+
+        minValueElement.textContent = minTime;
+        maxValueElement.textContent = maxTime;
+
+        minValueInput.value = minTime;
+        maxValueInput.value = maxTime;
+    });
+
+    document.getElementById("resetButton").addEventListener("click", function () {
+        console.log("Click!");
+        const form = document.getElementById('trackForm');
+        // Clear text inputs, checkboxes, and radios
+        form.querySelectorAll('input').forEach(input => {
+            if (input.type === 'text' || input.type === 'radio' || input.type === 'checkbox') {
+                input.value = '';
+                input.checked = false;
+            }
+        });
+
+        // Submit the form
+        form.submit();
+    });
+
+    let mapItems = /*[[${trackMap}]]*/ null;
+    if (mapItems === null) {
+        mapItems = {};
+    }
+
+    // Loop through the map and log both keys and values
+    for (let key in mapItems) {
+        if (mapItems.hasOwnProperty(key)) {
+            let values = mapItems[key]; // Access the values (arrays in this case)
+            const keyNumber = Number(key);
+
+            let points = [];
+            let scaledPoints = [];
+
+            for (let i = 0; i < values.length; i++) {
+                let item = values[i];
+                const point = {x: item.modelTrack.positionX, y: item.modelTrack.positionY};
+                points.push(point);
+            }
+            // Get the canvas element and its context
+            const canvas = document.getElementById('myCanvas');
+            const ctx = canvas.getContext('2d');
+            console.log("Points:");
+            console.log(points);
+            for (let i = 0; i < points.length; i++) {
+                scaledPoints[i] = getScaledPointsNew(points[i].x, points[i].y)
+            }
+            console.log("Scaled points:");
+            console.log(scaledPoints);
+
+            ctx.beginPath();
+            if (scaledPoints.length > 1) {
+                // Move to the first point
+                ctx.moveTo(scaledPoints[0].x, scaledPoints[0].y);
+
+                // Draw lines between the points
+                for (let i = 1; i < points.length; i++) {
+                    if (scaledPoints[i - 1].x !== scaledPoints[i].x && scaledPoints[i - 1].y !== scaledPoints[i].y) {
+                        ctx.lineTo(scaledPoints[i].x, scaledPoints[i].y);
+                    }
+                }
+
+                // Set stroke style and draw the line
+                const colorFromId = ModelsOfShips.getColorFromId(keyNumber);
+                console.log(colorFromId);
+                ctx.strokeStyle = colorFromId == null ? 'black' : colorFromId;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+    }
+</script>
+</body>
+</html>

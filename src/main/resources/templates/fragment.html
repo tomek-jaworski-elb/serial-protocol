@@ -3,6 +3,8 @@
 <head th:fragment="head">
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta http-equiv="content-type" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="refresh" content="no-cache">
     <link th:href="@{/bootstrap-5-3-3/css/bootstrap.css}" rel="stylesheet"/>
     <script type="text/javascript" th:src="@{/bootstrap-5-3-3/js/bootstrap.js}"></script>
 </head>
@@ -29,6 +31,10 @@
                     <li class="nav-item">
                         <a th:if="${name == 'chart'}" class="nav-link active" th:href="@{/chart}">Chart</a>
                         <a th:unless="${name == 'chart'}" class="nav-link" th:href="@{/chart}">Chart</a>
+                    </li>
+                    <li class="nav-item">
+                        <a th:if="${name == 'track'}" class="nav-link active" th:href="@{/tracks}">Tracks</a>
+                        <a th:unless="${name == 'track'}" class="nav-link" th:href="@{/tracks}">Tracks</a>
                     </li>
                     <li class="nav-item">
                         <a th:if="${name == 'about'}" class="nav-link active" th:href="@{/about}">About</a>
