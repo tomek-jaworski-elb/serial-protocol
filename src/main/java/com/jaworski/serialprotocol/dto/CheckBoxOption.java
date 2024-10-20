@@ -18,6 +18,8 @@ public class CheckBoxOption {
     private boolean cherrylady;
     private boolean kolobrzeg;
     private boolean dorchesterlady;
+    private String minValue;
+    private String maxValue;
 
     public Set<Integer> getModels() {
         Set<Integer> models = new HashSet<>();

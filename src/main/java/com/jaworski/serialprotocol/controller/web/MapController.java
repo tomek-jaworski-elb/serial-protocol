@@ -78,7 +78,7 @@ public class MapController {
         LOG.info("{}", checkBoxOption);
         model.addAttribute(ATTRIBUTE_TRACK_MAP, Collections.emptyMap());
         if (!checkBoxOption.getModels().isEmpty()) {
-            Map<Integer, List<LogItem>> trackMap = trackService.getModels(checkBoxOption.getModels());
+            Map<Integer, List<LogItem>> trackMap = trackService.getModels(checkBoxOption);
 
             LOG.info("Result LogItems size {}", trackMap.size());
             trackMap.keySet()
