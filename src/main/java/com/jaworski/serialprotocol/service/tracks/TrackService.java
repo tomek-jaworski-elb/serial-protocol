@@ -102,7 +102,7 @@ public class TrackService {
                     .filter(Optional::isPresent)
                     .map(Optional::get)
                     .filter(logItem -> modelsId.contains(logItem.getModelTrack().getModelName()))
-                    .filter(timeFilter)
+//                    .filter(timeFilter)
                     .forEach(logItem -> {
                         int modelName = logItem.getModelTrack().getModelName();
                         if (!trackMap.containsKey(modelName)) {
