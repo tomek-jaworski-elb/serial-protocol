@@ -1,13 +1,17 @@
-<configuration>
-    <include resource="/org/springframework/boot/logging/logback/base.xml"/>
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration info="false">
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n
+            <pattern>
+                %d{dd-MM-yyyy HH:mm:ss.SSS} %magenta([%-15.15thread]) %highlight(%-5level) %logger{36}.%M - %msg%n
             </pattern>
         </encoder>
     </appender>
-    <root level="error">
+
+
+    <root level="info">
         <appender-ref ref="STDOUT"/>
+        <appender-ref ref="SAVE-TO-FILE"/>
     </root>
-    <logger name="com.jaworski" level="debug"/>
+
 </configuration>
