@@ -60,10 +60,24 @@ public class Resources {
     private String restServiceCredentials;
 
     @Value("${logging.tracking.file.name}")
-    @Getter
     private String trackingLogFileName;
 
     @Value("${logging.file.path}")
-    @Getter
     private String logFilePath;
+
+    public String getLogFilePath() {
+        if (org.apache.commons.lang3.StringUtils.isEmpty(logFilePath)) {
+            LOG.info("Cant find property for log file path. Set default logs");
+            return "logs";
+        }
+        return logFilePath;
+    }
+
+    public String getTrackingLogFileName() {
+        if (org.apache.commons.lang3.StringUtils.isEmpty(trackingLogFileName)) {
+            LOG.info("Cant find property for file name. Set default tracking");
+            return "tracking";
+        }
+        return trackingLogFileName;
+    }
 }
