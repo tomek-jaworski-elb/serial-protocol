@@ -1,5 +1,7 @@
 window.onpageshow = function () {
 
+    let track_1 = [];
+
     if (isSamsungBrowser()) {
         alert("Samsung browser is not supported!\nSwitch to Chrome or Safari instead.")
     }
@@ -63,6 +65,38 @@ window.onpageshow = function () {
     // Set up the text field
     const textField = document.getElementById("textField");
 
+    function drawTrack(overlayCanvas1Track, track, color) {
+        clearCanvas(overlayCanvas1Track);
+        const element = document.getElementById(overlayCanvas1Track);
+        const ctx = element.getContext('2d');
+        if (track.length < 2) return; // No need to draw if less than 2 points
+
+        ctx.beginPath(); // Ensures the path is started
+        ctx.moveTo(track[0].x, track[0].y);
+
+        // Use Path2D for potentially better performance
+        const path = new Path2D();
+        path.moveTo(track[0].x, track[0].y);
+        for (let i = 1; i < track.length; i++) {
+            path.lineTo(track[i].x, track[i].y);
+        }
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1;
+        ctx.stroke(path);
+    }
+
+    // track_1.push({x: 100, y: 100});
+    // track_1.push({x: 200, y: 400});
+    // track_1.push({x: 300, y: 130});
+    // track_1.push({x: 400, y: 200});
+    // track_1.push({x: 500, y: 20});
+    // track_1.push({x: 600, y: 100});
+    // track_1.push({x: 700, y: 250});
+    // track_1.push({x: 800, y: 300});
+
+
+    // drawTrack("overlayCanvas1_track", track_1, ModelsOfShips.getColorFromId(2));
+
     socket.onmessage = function (event) {
         console.log("WebSocket message received: ", event.data);
 
@@ -93,12 +127,9 @@ window.onpageshow = function () {
                       rs_model1_no = 0;
                     }
                     fillFieldValues0("rs_model1_no", rs_model1_no);
-                    drawShip(canvasName, positionX, positionY, 2, angle, 'orange', 12.21, 2, 0);                        // Warta
-//                     x    y
-//    todo - do usunięcia po testach
-// todo - potrzeba sprawdzić/dobrać nowy współczynnik skali
-    drawShip("overlayCanvas1", 400, 100, 10, 90, 'blue', 12.21, 2, 0);                         // Warta                  ///
-    drawShip("overlayCanvas1", 500, 200, 10, 90, 'red', 12.21, 2, 0);                          // Warta                  ///
+                    drawShip(canvasName, positionX, positionY, 2, angle, 'orange', 12.21, 2, 0);// Warta
+                    track_1.push({x: positionX, y: positionY});
+                    drawTrack("overlayCanvas1_track", track_1, ModelsOfShips.getColorFromId(modelId));
 //                                    x,y,4,angle,'blue'
     drawTriangle("overlayCanvas1", 400, 100, 10, 90, 'red');
     drawTriangle("overlayCanvas1", 500, 200, 10, 90, 'blue');
