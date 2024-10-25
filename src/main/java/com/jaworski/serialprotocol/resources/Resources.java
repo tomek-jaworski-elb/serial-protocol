@@ -1,17 +1,21 @@
 package com.jaworski.serialprotocol.resources;
 
 import lombok.Getter;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
+
+import java.util.Optional;
 
 @Component
 public class Resources {
 
     private static final Logger LOG = LogManager.getLogger(Resources.class);
     public static final int DEFAULT_BAUD_RATE = 9600;
+    private static final String LOGGING_FILE_PATH = "logging.file.path";
+    private static final String LOGGING_TRACKING_FILE_NAME = "logging.tracking.file.name";
 
     @Value("${rs.baud_rate}")
     private String rsBaudRate;
@@ -41,7 +45,7 @@ public class Resources {
     private String dbClientIp;
 
     public String getDbClientIp() {
-        return StringUtils.hasLength(dbClientIp) ? dbClientIp : "";
+        return StringUtils.isNoneEmpty(dbClientIp) ? dbClientIp : "";
     }
 
     @Value("${rest.service.enabled}")
@@ -59,25 +63,39 @@ public class Resources {
     @Getter
     private String restServiceCredentials;
 
-    @Value("${logging.tracking.file.name}")
-    private String trackingLogFileName;
+    @Value("${" + LOGGING_TRACKING_FILE_NAME + ":#{null}}")
+    private Optional<String> trackingLogFileName;
 
-    @Value("${logging.file.path}")
-    private String logFilePath;
+    @Value("${" + LOGGING_FILE_PATH + ":#{null}}")
+    private Optional<String> logFilePath;
 
     public String getLogFilePath() {
-        if (org.apache.commons.lang3.StringUtils.isEmpty(logFilePath)) {
-            LOG.info("Cant find property for log file path. Set default logs");
-            return "logs";
-        }
-        return logFilePath;
+        return logFilePath.filter(s -> {
+                    if (StringUtils.isNotBlank(s)) {
+                        return true;
+                    } else {
+                        LOG.info("Property + " + LOGGING_FILE_PATH + " is blank for log file path. Set default logs");
+                        return false;
+                    }
+                })
+                .orElseGet(() -> {
+                    LOG.info("Cant find property + " + LOGGING_FILE_PATH + " for file name. Set default logs");
+                    return "logs";
+                });
     }
 
     public String getTrackingLogFileName() {
-        if (org.apache.commons.lang3.StringUtils.isEmpty(trackingLogFileName)) {
-            LOG.info("Cant find property for file name. Set default tracking");
-            return "tracking";
-        }
-        return trackingLogFileName;
+        return trackingLogFileName.filter(s -> {
+                    if (StringUtils.isNotBlank(s)) {
+                        return true;
+                    } else {
+                        LOG.info("Property " + LOGGING_TRACKING_FILE_NAME + " is blank. Set default tracking");
+                        return false;
+                    }
+                })
+                .orElseGet(() -> {
+                    LOG.info("Cant find property " + LOGGING_TRACKING_FILE_NAME + ". Set default tracking");
+                    return "tracking";
+                });
     }
 }
