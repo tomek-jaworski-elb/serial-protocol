@@ -1,6 +1,7 @@
 window.onpageshow = function () {
 
-    let track_1 = [];
+    let trackWarta = []; // Warta
+    let trackCherryLady = []; // Cherry Lady
 
     if (isSamsungBrowser()) {
         alert("Samsung browser is not supported!\nSwitch to Chrome or Safari instead.")
@@ -8,6 +9,10 @@ window.onpageshow = function () {
 
     function isSamsungBrowser() {
         return navigator.userAgent.toLocaleLowerCase().includes('samsung');
+    }
+
+    function getTrackCanvasName(canvasName) {
+        return canvasName + "_track";
     }
 
     const imgMap = document.getElementById("backgroundCanvas");
@@ -66,7 +71,7 @@ window.onpageshow = function () {
     const textField = document.getElementById("textField");
 
     function drawTrack(overlayCanvas1Track, track, color) {
-        clearCanvas(overlayCanvas1Track);
+        // clearCanvas(overlayCanvas1Track);
         const element = document.getElementById(overlayCanvas1Track);
         const ctx = element.getContext('2d');
         if (track.length < 2) return; // No need to draw if less than 2 points
@@ -76,6 +81,7 @@ window.onpageshow = function () {
 
         // Use Path2D for potentially better performance
         const path = new Path2D();
+        requestAnimationFrame(drawTrack);
         path.moveTo(track[0].x, track[0].y);
         for (let i = 1; i < track.length; i++) {
             path.lineTo(track[i].x, track[i].y);
@@ -84,18 +90,6 @@ window.onpageshow = function () {
         ctx.lineWidth = 1;
         ctx.stroke(path);
     }
-
-    // track_1.push({x: 100, y: 100});
-    // track_1.push({x: 200, y: 400});
-    // track_1.push({x: 300, y: 130});
-    // track_1.push({x: 400, y: 200});
-    // track_1.push({x: 500, y: 20});
-    // track_1.push({x: 600, y: 100});
-    // track_1.push({x: 700, y: 250});
-    // track_1.push({x: 800, y: 300});
-
-
-    // drawTrack("overlayCanvas1_track", track_1, ModelsOfShips.getColorFromId(2));
 
     socket.onmessage = function (event) {
         console.log("WebSocket message received: ", event.data);
@@ -128,8 +122,8 @@ window.onpageshow = function () {
                     }
                     fillFieldValues0("rs_model1_no", rs_model1_no);
                     drawShip(canvasName, positionX, positionY, 2, angle, 'orange', 12.21, 2, 0);// Warta
-                    track_1.push({x: positionX, y: positionY});
-                    drawTrack("overlayCanvas1_track", track_1, ModelsOfShips.getColorFromId(modelId));
+                    trackWarta.push({x: positionX, y: positionY});
+                    drawTrack(getTrackCanvasName(canvasName), trackWarta, ModelsOfShips.getColorFromId(modelId));
 //                                    x,y,4,angle,'blue'
     drawTriangle("overlayCanvas1", 400, 100, 10, 90, 'red');
     drawTriangle("overlayCanvas1", 500, 200, 10, 90, 'blue');
@@ -186,7 +180,9 @@ window.onpageshow = function () {
                       rs_model4_no = 0;
                     }
                     fillFieldValues0("rs_model4_no", rs_model4_no);
-                    drawShip(canvasName, positionX, positionY, 2, angle, 'purple', 15.5, 1.79, 0);                      // Ch.L.
+                    drawShip(canvasName, positionX, positionY, 2, angle, 'purple', 15.5, 1.79, 0);
+                    trackCherryLady.push({x: positionX, y: positionY});
+                    drawTrack(getTrackCanvasName(canvasName), trackCherryLady, ModelsOfShips.getColorFromId(modelId));
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 5:
