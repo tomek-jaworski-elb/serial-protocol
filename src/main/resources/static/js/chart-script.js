@@ -2,6 +2,7 @@ window.onpageshow = function () {
 
     let trackWarta = []; // Warta
     let trackCherryLady = []; // Cherry Lady
+    let trackBlueLady = []; // Blue Lady
 
     if (isSamsungBrowser()) {
         alert("Samsung browser is not supported!\nSwitch to Chrome or Safari instead.")
@@ -71,7 +72,7 @@ window.onpageshow = function () {
     const textField = document.getElementById("textField");
 
     function drawTrack(overlayCanvas1Track, track, color) {
-        // clearCanvas(overlayCanvas1Track);
+        clearCanvas(overlayCanvas1Track);
         const element = document.getElementById(overlayCanvas1Track);
         const ctx = element.getContext('2d');
         if (track.length < 2) return; // No need to draw if less than 2 points
@@ -81,7 +82,7 @@ window.onpageshow = function () {
 
         // Use Path2D for potentially better performance
         const path = new Path2D();
-        requestAnimationFrame(drawTrack);
+        // requestAnimationFrame(drawTrack);
         path.moveTo(track[0].x, track[0].y);
         for (let i = 1; i < track.length; i++) {
             path.lineTo(track[i].x, track[i].y);
@@ -152,7 +153,9 @@ window.onpageshow = function () {
                       rs_model2_no = 0;
                     }
                     fillFieldValues0("rs_model2_no", rs_model2_no);
-                    drawShip(canvasName, positionX, positionY, 2, angle, 'blue', 13.78, 2.38, 0);                       // B.L.
+                    drawShip(canvasName, positionX, positionY, 2, angle, 'blue', 13.78, 2.38, 0);// B.L.
+                    trackBlueLady.push({x: positionX, y: positionY});
+                    drawTrack(getTrackCanvasName(canvasName), trackBlueLady, ModelsOfShips.getColorFromId(modelId));
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 3:
