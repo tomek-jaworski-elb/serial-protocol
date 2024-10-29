@@ -3,6 +3,9 @@ window.onpageshow = function () {
     let trackWarta = []; // Warta
     let trackCherryLady = []; // Cherry Lady
     let trackBlueLady = []; // Blue Lady
+    let trackDorchesterLady = []; // Blue Lady
+    let trackKolobrzeg = []; // Blue Lady
+    let trackLadyMarie = []; // Blue Lady
 
     if (isSamsungBrowser()) {
         alert("Samsung browser is not supported!\nSwitch to Chrome or Safari instead.")
@@ -180,7 +183,9 @@ window.onpageshow = function () {
                       rs_model3_no = 0;
                     }
                     fillFieldValues0("rs_model3_no", ShipCounter.incrementIntMap(modelId));
-                    drawShip(canvasName, positionX, positionY, 2, angle, ModelsOfShips.getColorFromId(modelId), 11.55, 1.8, 0);                       // D.L.
+                    drawShip(canvasName, positionX, positionY, 2, angle, ModelsOfShips.getColorFromId(modelId), 11.55, 1.8, 0);// D.L.
+                    trackDorchesterLady.push({x: positionX, y: positionY});
+                    drawTrack(getTrackCanvasName(canvasName), trackDorchesterLady, ModelsOfShips.getColorFromId(modelId));
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 4:
@@ -212,6 +217,8 @@ window.onpageshow = function () {
                     fillFieldValues0("rs_model5_no", ShipCounter.incrementIntMap(modelId));
                     drawShip(canvasName, positionX, positionY, 2, angle, ModelsOfShips.getColorFromId(modelId), 10.98, 1.78, 1);                      // PROM
                     //                                        "Position_GPS" = Length / 2 + PositionGPS * Length / 10
+                    trackKolobrzeg.push({x: positionX, y: positionY});
+                    drawTrack(getTrackCanvasName(canvasName), trackKolobrzeg, ModelsOfShips.getColorFromId(modelId));
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 6:
@@ -226,6 +233,8 @@ window.onpageshow = function () {
                     }
                     fillFieldValues0("rs_model6_no", ShipCounter.incrementIntMap(modelId));
                     drawShip(canvasName, positionX, positionY, 2, angle, ModelsOfShips.getColorFromId(modelId), 16.43, 2.23, 0);                       // L.M.
+                    trackLadyMarie.push({x: positionX, y: positionY});
+                    drawTrack(getTrackCanvasName(canvasName), trackLadyMarie, ModelsOfShips.getColorFromId(modelId));
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 default:
