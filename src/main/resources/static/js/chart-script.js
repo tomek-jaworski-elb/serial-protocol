@@ -92,6 +92,17 @@ window.onpageshow = function () {
         ctx.stroke(path);
     }
 
+    // trackWarta.push({x: 100, y: 100});
+    // trackWarta.push({x: -200, y: 400});
+    // trackWarta.push({x: 300, y: -130});
+    // trackWarta.push({x: 400, y: 200});
+    // trackWarta.push({x: 500, y: -20});
+    // trackWarta.push({x: -600, y: -100});
+    // trackWarta.push({x: 700, y: 250});
+    // trackWarta.push({x: -800, y: 300});
+
+    // drawTrack(getTrackCanvasName("overlayCanvas1"), trackWarta, ModelsOfShips.getColorFromId(2));
+
     socket.onmessage = function (event) {
         console.log("WebSocket message received: ", event.data);
 
@@ -121,8 +132,8 @@ window.onpageshow = function () {
                     if (rs_model1_no > no_max) {
                       rs_model1_no = 0;
                     }
-                    fillFieldValues0("rs_model1_no", rs_model1_no);
-                    drawShip(canvasName, positionX, positionY, 2, angle, 'orange', 12.21, 2, 0);// Warta
+                    fillFieldValues0("rs_model1_no", ShipCounter.incrementIntMap(modelId));
+                    drawShip(canvasName, positionX, positionY, 2, angle, ModelsOfShips.getColorFromId(modelId), 12.21, 2, 0);// Warta
                     trackWarta.push({x: positionX, y: positionY});
                     drawTrack(getTrackCanvasName(canvasName), trackWarta, ModelsOfShips.getColorFromId(modelId));
 //                                    x,y,4,angle,'blue'
@@ -152,8 +163,8 @@ window.onpageshow = function () {
                     if (rs_model2_no > no_max) {
                       rs_model2_no = 0;
                     }
-                    fillFieldValues0("rs_model2_no", rs_model2_no);
-                    drawShip(canvasName, positionX, positionY, 2, angle, 'blue', 13.78, 2.38, 0);// B.L.
+                    fillFieldValues0("rs_model2_no", ShipCounter.incrementIntMap(modelId));
+                    drawShip(canvasName, positionX, positionY, 2, angle, ModelsOfShips.getColorFromId(modelId), 13.78, 2.38, 0);// B.L.
                     trackBlueLady.push({x: positionX, y: positionY});
                     drawTrack(getTrackCanvasName(canvasName), trackBlueLady, ModelsOfShips.getColorFromId(modelId));
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
@@ -168,8 +179,8 @@ window.onpageshow = function () {
                     if (rs_model3_no > no_max) {
                       rs_model3_no = 0;
                     }
-                    fillFieldValues0("rs_model3_no", rs_model3_no);
-                    drawShip(canvasName, positionX, positionY, 2, angle, 'green', 11.55, 1.8, 0);                       // D.L.
+                    fillFieldValues0("rs_model3_no", ShipCounter.incrementIntMap(modelId));
+                    drawShip(canvasName, positionX, positionY, 2, angle, ModelsOfShips.getColorFromId(modelId), 11.55, 1.8, 0);                       // D.L.
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 4:
@@ -182,8 +193,8 @@ window.onpageshow = function () {
                     if (rs_model4_no > no_max) {
                       rs_model4_no = 0;
                     }
-                    fillFieldValues0("rs_model4_no", rs_model4_no);
-                    drawShip(canvasName, positionX, positionY, 2, angle, 'purple', 15.5, 1.79, 0);
+                    fillFieldValues0("rs_model4_no", ShipCounter.incrementIntMap(modelId));
+                    drawShip(canvasName, positionX, positionY, 2, angle, ModelsOfShips.getColorFromId(modelId), 15.5, 1.79, 0);
                     trackCherryLady.push({x: positionX, y: positionY});
                     drawTrack(getTrackCanvasName(canvasName), trackCherryLady, ModelsOfShips.getColorFromId(modelId));
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
@@ -198,8 +209,8 @@ window.onpageshow = function () {
                     if (rs_model5_no > no_max) {
                       rs_model5_no = 0;
                     }
-                    fillFieldValues0("rs_model5_no", rs_model5_no);
-                    drawShip(canvasName, positionX, positionY, 2, angle, 'lightgray', 10.98, 1.78, 1);                      // PROM
+                    fillFieldValues0("rs_model5_no", ShipCounter.incrementIntMap(modelId));
+                    drawShip(canvasName, positionX, positionY, 2, angle, ModelsOfShips.getColorFromId(modelId), 10.98, 1.78, 1);                      // PROM
                     //                                        "Position_GPS" = Length / 2 + PositionGPS * Length / 10
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
@@ -213,8 +224,8 @@ window.onpageshow = function () {
                     if (rs_model6_no > no_max) {
                       rs_model6_no = 0;
                     }
-                    fillFieldValues0("rs_model6_no", rs_model6_no);
-                    drawShip(canvasName, positionX, positionY, 2, angle, 'darkblue', 16.43, 2.23, 0);                       // L.M.
+                    fillFieldValues0("rs_model6_no", ShipCounter.incrementIntMap(modelId));
+                    drawShip(canvasName, positionX, positionY, 2, angle, ModelsOfShips.getColorFromId(modelId), 16.43, 2.23, 0);                       // L.M.
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 default:
