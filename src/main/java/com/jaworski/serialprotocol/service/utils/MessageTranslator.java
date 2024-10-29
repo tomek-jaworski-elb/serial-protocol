@@ -54,6 +54,7 @@ public class MessageTranslator {
                             .tugForce(messageLadyMarie.getTugSternForce(message))
                             .build())
                     .bowThruster(messageLadyMarie.getBowThruster(message))
+                    .isCRCValid(messageLadyMarie.isDataValid(message))
                     .build();
             LOG.info("Translated message: {}", modelTrackDTO);
             return modelTrackDTO;
@@ -76,6 +77,7 @@ public class MessageTranslator {
                             .tugForce(messageCommon.getTugSternForce(message))
                             .build())
                     .bowThruster(messageCommon.getBowThruster(message))
+                    .isCRCValid(messageCommon.isDataValid(message))
                     .build();
             LOG.info("Translated message: {}", modelTrackDTO);
             return modelTrackDTO;

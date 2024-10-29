@@ -11,6 +11,7 @@ import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
+import java.util.stream.IntStream;
 
 import static com.jaworski.serialprotocol.service.utils.MessageTranslator.MODEL_MAP;
 
@@ -106,5 +107,14 @@ public class MessageCommon implements SerialMessageTranslator {
         } catch (BufferOverflowException | IndexOutOfBoundsException | NumberFormatException e) {
             throw new IllegalArgumentException("Buffer wrap exception for PositionX! " + Arrays.toString(message), e);
         }
+    }
+
+    @Override
+    public boolean isDataValid(byte[] message) {
+        int index = 3;
+        int byteLo = IntStream.range(0, message.length - index)
+                .map(intValue -> message[intValue])
+                .sum() & 0xFF;
+        return byteLo == message[message.length - index];
     }
 }

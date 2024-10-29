@@ -1,6 +1,10 @@
 package com.jaworski.serialprotocol.dto;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.ToString;
 
 @Getter
 @EqualsAndHashCode
@@ -20,4 +24,6 @@ public class ModelTrackDTO {
     private double bowThruster;
     private TugDTO bowTug;
     private TugDTO sternTug;
+    private boolean isCRCValid;
+
 }
