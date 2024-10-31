@@ -1,6 +1,7 @@
 package com.jaworski.serialprotocol.service.utils;
 
 import com.jaworski.serialprotocol.dto.ModelTrackDTO;
+import com.jaworski.serialprotocol.dto.Models;
 import com.jaworski.serialprotocol.dto.TugDTO;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
@@ -24,12 +25,12 @@ public class MessageTranslator {
     @Qualifier("messageLadyMarie")
     private final SerialMessageTranslator messageLadyMarie;
 
-    public static final Map<String, Integer> MODEL_MAP = Map.of("w1", 1,
-            "b2", 2,
-            "d3", 3,
-            "c4", 4,
-            "l6", 6,
-            "k5", 5);
+    public static final Map<String, Integer> MODEL_MAP = Map.of("w1", Models.WARTA.getId(),
+            "b2", Models.BLUE_LADY.getId(),
+            "d3", Models.DORCHERTER_LADY.getId(),
+            "c4", Models.CHERRY_LADY.getId(),
+            "l6", Models.LADY_MARIE.getId(),
+            "k5", Models.KOLOBRZEG.getId());
 
     public ModelTrackDTO getDTO(byte[] message) throws IllegalArgumentException {
         if (message == null) {
