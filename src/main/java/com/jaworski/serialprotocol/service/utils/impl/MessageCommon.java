@@ -112,7 +112,7 @@ public class MessageCommon implements SerialMessageTranslator {
     @Override
     public boolean isDataValid(byte[] message) {
         int index = 3;
-        int calculateLowByte = CorrectionSumCalculation.calculateLowByte(Arrays.copyOfRange(message, 0, message.length - index));
+        int calculateLowByte = CorrectionSumCalculation.calculateLowerByte(Arrays.copyOfRange(message, 0, message.length - index));
         return calculateLowByte == message[message.length - index];
     }
 }

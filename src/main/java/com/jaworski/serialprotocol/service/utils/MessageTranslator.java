@@ -87,7 +87,10 @@ public class MessageTranslator {
             byte[] trimmedMessage = Arrays.copyOfRange(message, message.length - MESSAGE_LENGTH, message.length);
             ModelTrackDTO dto = getDTO(trimmedMessage);
             if (dto.getModelName() != -1) {
-                return dto;
+                return ModelTrackDTO.builder()
+                        .modelName(dto.getModelName())
+                        .isCRCValid(false)
+                        .build();
             } else if (message.length > MESSAGE_LENGTH_LADY_MARIE) {
                 trimmedMessage = Arrays.copyOfRange(message, message.length - MESSAGE_LENGTH_LADY_MARIE, message.length);
                 dto = getDTO(trimmedMessage);
