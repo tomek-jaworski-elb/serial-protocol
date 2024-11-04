@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -113,6 +114,6 @@ public class MessageTranslator {
     @Scheduled(fixedDelayString = "10")
     private void trackLog() {
         long currentTimeMillis = System.currentTimeMillis();
-        LOG.info("Test. Timestamp: {}", currentTimeMillis);
+        LOG.info("Test. Timestamp: {}, Date time: {}", currentTimeMillis, ZonedDateTime.now());
     }
 }
