@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration info="false">
     <springProperty name="tracking" value="tracking" source="logging.tracking.file.name"/>
+    <springProperty name="LOG_PATH" value="logs" source="logging.file.path"/>
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>
