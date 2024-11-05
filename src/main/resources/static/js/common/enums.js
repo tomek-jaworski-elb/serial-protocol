@@ -13,6 +13,6 @@ const ModelsOfShips = Object.freeze({
 
     getColorFromId(id) {
         const ship = ModelsOfShips.getValueFromId(id);
-        return ship ? ship.color.toString() : null; // Return the color or null if not found
+        return ship ? ship.color.toString() : 'black'; // Return the color or black if not found
     }
 });

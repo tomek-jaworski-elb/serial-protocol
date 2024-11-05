@@ -1,11 +1,22 @@
 window.onpageshow = function () {
 
+    let trackWarta = []; // Warta
+    let trackCherryLady = []; // Cherry Lady
+    let trackBlueLady = []; // Blue Lady
+    let trackDorchesterLady = []; // Blue Lady
+    let trackKolobrzeg = []; // Blue Lady
+    let trackLadyMarie = []; // Blue Lady
+
     if (isSamsungBrowser()) {
         alert("Samsung browser is not supported!\nSwitch to Chrome or Safari instead.")
     }
 
     function isSamsungBrowser() {
         return navigator.userAgent.toLocaleLowerCase().includes('samsung');
+    }
+
+    function getTrackCanvasName(canvasName) {
+        return canvasName + "_track";
     }
 
     const imgMap = document.getElementById("backgroundCanvas");
@@ -21,22 +32,12 @@ window.onpageshow = function () {
        } else {
           elementsByTagNameElement.width = imgMap.width;
           elementsByTagNameElement.height = imgMap.height;
-          ///elementsByTagNameElement.width = container.clientWidth;
-          ///elementsByTagNameElement.height = container.clientHeight;
           elementsByTagNameElement.style.width = imgMap.width + 'px';
           elementsByTagNameElement.style.height =imgMap.height + 'px';
        }
     }
 
-//    todo - do usunięcia po testach
-// todo - potrzeba sprawdzić/dobrać nowy współczynnik skali
-//    drawShip("overlayCanvas1", 100, 100, 10, 90, 'red', 12.21, 2, 0);                         // Warta                  ///
-//    drawShip("overlayCanvas2", 200, 200, 10, 90, 'blue', 12.21, 2, 0);                        // Warta                  ///
-//                                    x,y,4,angle,'blue'
-//    drawTriangle("overlayCanvas1", 100, 100, 10, 90, 'blue');
-//    drawTriangle("overlayCanvas2", 200, 200, 10, 90, 'red');
-
-                  let mapa_x = 2.407; /// było 2.4   = kalibracja mapy
+    let mapa_x = 2.407; /// było 2.4   = kalibracja mapy
 
 //    drawTriangle("overlayCanvas2", (  0    + 60+4) * mapa_x , ( 0    + 506) * mapa_x , 6,    1, 'white');         // pozycja 0 x 0             0x0
 //    drawTriangle("overlayCanvas2", ( 77.07 + 60+4) * mapa_x , (97.25 + 506) * mapa_x , 6,    1, 'orange');        // SBM    -97.25x77.07
@@ -60,18 +61,44 @@ window.onpageshow = function () {
         new Promise(resolve => imgLedOff.onload = resolve)
     ]);
 
-    let rs_model1_no = 0;
-    let rs_model2_no = 0;
-    let rs_model3_no = 0;
-    let rs_model4_no = 0;
-    let rs_model5_no = 0;
-    let rs_model6_no = 0;
     // Websocket configuration
     const path = '/json';
 // Create a WebSocket instance
     const socket = new WebSocket(`ws://${hostname}:${port}${path}`);
     // Set up the text field
     const textField = document.getElementById("textField");
+
+    function drawTrack(overlayCanvas1Track, track, color) {
+        clearCanvas(overlayCanvas1Track);
+        const element = document.getElementById(overlayCanvas1Track);
+        const ctx = element.getContext('2d');
+        if (track.length < 2) return; // No need to draw if less than 2 points
+
+        ctx.beginPath(); // Ensures the path is started
+        ctx.moveTo(track[0].x, track[0].y);
+
+        // Use Path2D for potentially better performance
+        const path = new Path2D();
+        // requestAnimationFrame(drawTrack);
+        path.moveTo(track[0].x, track[0].y);
+        for (let i = 1; i < track.length; i++) {
+            path.lineTo(track[i].x, track[i].y);
+        }
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1;
+        ctx.stroke(path);
+    }
+
+    // trackWarta.push({x: 100, y: 100});
+    // trackWarta.push({x: -200, y: 400});
+    // trackWarta.push({x: 300, y: -130});
+    // trackWarta.push({x: 400, y: 200});
+    // trackWarta.push({x: 500, y: -20});
+    // trackWarta.push({x: -600, y: -100});
+    // trackWarta.push({x: 700, y: 250});
+    // trackWarta.push({x: -800, y: 300});
+
+    // drawTrack(getTrackCanvasName("overlayCanvas1"), trackWarta, ModelsOfShips.getColorFromId(2));
 
     socket.onmessage = function (event) {
         console.log("WebSocket message received: ", event.data);
@@ -98,17 +125,10 @@ window.onpageshow = function () {
                     fillFieldValues("heading1", angle);
                     fillFieldValues("speed1", speed);
                     ledBlink('led1', blinkDuration);
-                    rs_model1_no++;
-                    if (rs_model1_no > no_max) {
-                      rs_model1_no = 0;
-                    }
-                    fillFieldValues0("rs_model1_no", rs_model1_no);
-                    drawShip(canvasName, positionX, positionY, 2, angle, 'orange', 12.21, 2, 0);                        // Warta
-//                     x    y
-//    todo - do usunięcia po testach
-// todo - potrzeba sprawdzić/dobrać nowy współczynnik skali
-    drawShip("overlayCanvas1", 400, 100, 10, 90, 'blue', 12.21, 2, 0);                         // Warta                  ///
-    drawShip("overlayCanvas1", 500, 200, 10, 90, 'red', 12.21, 2, 0);                          // Warta                  ///
+                    fillFieldValues0("rs_model1_no", ShipCounter.incrementIntMap(modelId));
+                    drawShip(canvasName, positionX, positionY, 2, angle, ModelsOfShips.getColorFromId(modelId), 12.21, 2, 0);// Warta
+                    trackWarta.push({x: positionX, y: positionY});
+                    drawTrack(getTrackCanvasName(canvasName), trackWarta, ModelsOfShips.getColorFromId(modelId));
 //                                    x,y,4,angle,'blue'
     drawTriangle("overlayCanvas1", 400, 100, 10, 90, 'red');
     drawTriangle("overlayCanvas1", 500, 200, 10, 90, 'blue');
@@ -124,52 +144,6 @@ window.onpageshow = function () {
                   drawTriangle("overlayCanvas1", (820  + 64) * mapa_x , (  610 + 506) * mapa_x , 6,    1, 'red');               // -> zatoka               -610x820
                   drawTriangle("overlayCanvas1", (926  + 64) * mapa_x , ( 1149 + 506) * mapa_x , 6,    1, 'red');               // Wiata END jeziora      -1149x926
 
-
-
-/*
-drawShip(canvasName, 64, 506, 2, 90, 'blue', 12.21, 2, 0);                        // Warta                               ///
-
-                    drawShip(canvasName, 100, 100, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 200, 200, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 300, 300, 23, 90, 'orange', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 400, 400, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 500, 500, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 600, 600, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 700, 700, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 800, 800, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 900, 900, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 1000, 1000, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 1100, 1100, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 1200, 1200, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 1300, 1300, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 1400, 1400, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 1500, 1500, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 1600, 1600, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 1700, 1700, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 1800, 1800, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 1900, 1900, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 2000, 2000, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 2100, 2100, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 2200, 2200, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 2300, 2300, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 2400, 2400, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 2500, 2500, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 2600, 2600, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 2700, 2700, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 2800, 2800, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 2900, 2900, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 3000, 3000, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 3100, 3100, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 3200, 3200, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 3300, 3300, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 3400, 3400, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 3500, 3500, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 3600, 3600, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 3700, 3700, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 3800, 3800, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 3900, 3900, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                    drawShip(canvasName, 4000, 4000, 23, 90, 'red', 12.21, 2, 0);                        // Warta
-                                                                                                                            */ ///
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 2:
@@ -178,12 +152,10 @@ drawShip(canvasName, 64, 506, 2, 90, 'blue', 12.21, 2, 0);                      
                     fillFieldValues("heading2", angle);
                     fillFieldValues("speed2", speed);
                     ledBlink('led2', blinkDuration);
-                    rs_model2_no++;
-                    if (rs_model2_no > no_max) {
-                      rs_model2_no = 0;
-                    }
-                    fillFieldValues0("rs_model2_no", rs_model2_no);
-                    drawShip(canvasName, positionX, positionY, 2, angle, 'blue', 13.78, 2.38, 0);                       // B.L.
+                    fillFieldValues0("rs_model2_no", ShipCounter.incrementIntMap(modelId));
+                    drawShip(canvasName, positionX, positionY, 2, angle, ModelsOfShips.getColorFromId(modelId), 13.78, 2.38, 0);// B.L.
+                    trackBlueLady.push({x: positionX, y: positionY});
+                    drawTrack(getTrackCanvasName(canvasName), trackBlueLady, ModelsOfShips.getColorFromId(modelId));
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 3:
@@ -192,12 +164,10 @@ drawShip(canvasName, 64, 506, 2, 90, 'blue', 12.21, 2, 0);                      
                     fillFieldValues("heading3", angle);
                     fillFieldValues("speed3", speed);
                     ledBlink('led3', blinkDuration);
-                    rs_model3_no++;
-                    if (rs_model3_no > no_max) {
-                      rs_model3_no = 0;
-                    }
-                    fillFieldValues0("rs_model3_no", rs_model3_no);
-                    drawShip(canvasName, positionX, positionY, 2, angle, 'green', 11.55, 1.8, 0);                       // D.L.
+                    fillFieldValues0("rs_model3_no", ShipCounter.incrementIntMap(modelId));
+                    drawShip(canvasName, positionX, positionY, 2, angle, ModelsOfShips.getColorFromId(modelId), 11.55, 1.8, 0);// D.L.
+                    trackDorchesterLady.push({x: positionX, y: positionY});
+                    drawTrack(getTrackCanvasName(canvasName), trackDorchesterLady, ModelsOfShips.getColorFromId(modelId));
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 4:
@@ -206,12 +176,10 @@ drawShip(canvasName, 64, 506, 2, 90, 'blue', 12.21, 2, 0);                      
                     fillFieldValues("heading4", angle);
                     fillFieldValues("speed4", speed);
                     ledBlink('led4', blinkDuration);
-                    rs_model4_no++;
-                    if (rs_model4_no > no_max) {
-                      rs_model4_no = 0;
-                    }
-                    fillFieldValues0("rs_model4_no", rs_model4_no);
-                    drawShip(canvasName, positionX, positionY, 2, angle, 'purple', 15.5, 1.79, 0);                      // Ch.L.
+                    fillFieldValues0("rs_model4_no", ShipCounter.incrementIntMap(modelId));
+                    drawShip(canvasName, positionX, positionY, 2, angle, ModelsOfShips.getColorFromId(modelId), 15.5, 1.79, 0);
+                    trackCherryLady.push({x: positionX, y: positionY});
+                    drawTrack(getTrackCanvasName(canvasName), trackCherryLady, ModelsOfShips.getColorFromId(modelId));
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 5:
@@ -220,13 +188,11 @@ drawShip(canvasName, 64, 506, 2, 90, 'blue', 12.21, 2, 0);                      
                     fillFieldValues("heading5", angle);
                     fillFieldValues("speed5", speed);
                     ledBlink('led5', blinkDuration);
-                    rs_model5_no++;
-                    if (rs_model5_no > no_max) {
-                      rs_model5_no = 0;
-                    }
-                    fillFieldValues0("rs_model5_no", rs_model5_no);
-                    drawShip(canvasName, positionX, positionY, 2, angle, 'lightgray', 10.98, 1.78, 1);                      // PROM
+                    fillFieldValues0("rs_model5_no", ShipCounter.incrementIntMap(modelId));
+                    drawShip(canvasName, positionX, positionY, 2, angle, ModelsOfShips.getColorFromId(modelId), 10.98, 1.78, 1);                      // PROM
                     //                                        "Position_GPS" = Length / 2 + PositionGPS * Length / 10
+                    trackKolobrzeg.push({x: positionX, y: positionY});
+                    drawTrack(getTrackCanvasName(canvasName), trackKolobrzeg, ModelsOfShips.getColorFromId(modelId));
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 case 6:
@@ -235,12 +201,10 @@ drawShip(canvasName, 64, 506, 2, 90, 'blue', 12.21, 2, 0);                      
                     fillFieldValues("heading6", angle);
                     fillFieldValues("speed6", speed);
                     ledBlink('led6', blinkDuration);
-                    rs_model6_no++;
-                    if (rs_model6_no > no_max) {
-                      rs_model6_no = 0;
-                    }
-                    fillFieldValues0("rs_model6_no", rs_model6_no);
-                    drawShip(canvasName, positionX, positionY, 2, angle, 'darkblue', 16.43, 2.23, 0);                       // L.M.
+                    fillFieldValues0("rs_model6_no", ShipCounter.incrementIntMap(modelId));
+                    drawShip(canvasName, positionX, positionY, 2, angle, ModelsOfShips.getColorFromId(modelId), 16.43, 2.23, 0);                       // L.M.
+                    trackLadyMarie.push({x: positionX, y: positionY});
+                    drawTrack(getTrackCanvasName(canvasName), trackLadyMarie, ModelsOfShips.getColorFromId(modelId));
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
                 default:

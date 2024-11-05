@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.2.5</version>
+        <version>3.3.5</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.jaworski</groupId>
@@ -19,7 +19,7 @@
         <junit-jupiter-api.version>5.10.3</junit-jupiter-api.version>
         <commons-lang3.version>3.16.0</commons-lang3.version>
         <commons-collections4.version>4.4</commons-collections4.version>
-        <spring-security-crypto.version>6.3.2</spring-security-crypto.version>
+        <spring-security-crypto.version>6.3.3</spring-security-crypto.version>
         <spotbugs-annotations.version>4.8.6</spotbugs-annotations.version>
         <httpclient5.version>5.3.1</httpclient5.version>
     </properties>

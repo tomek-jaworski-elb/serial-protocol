@@ -15,5 +15,6 @@ public interface SerialMessageTranslator {
     Double getBowThruster(byte[] message);
     Float getPositionY(byte[] message) throws IllegalArgumentException;
     Float getPositionX(byte[] message) throws IllegalArgumentException;
+    boolean isDataValid(byte[] message);
 
 }

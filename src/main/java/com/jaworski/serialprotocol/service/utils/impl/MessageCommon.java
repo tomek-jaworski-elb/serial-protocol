@@ -1,5 +1,6 @@
 package com.jaworski.serialprotocol.service.utils.impl;
 
+import com.jaworski.serialprotocol.service.utils.CorrectionSumCalculation;
 import com.jaworski.serialprotocol.service.utils.MassageValuesOperations;
 import com.jaworski.serialprotocol.service.utils.SerialMessageTranslator;
 import lombok.RequiredArgsConstructor;
@@ -106,5 +107,12 @@ public class MessageCommon implements SerialMessageTranslator {
         } catch (BufferOverflowException | IndexOutOfBoundsException | NumberFormatException e) {
             throw new IllegalArgumentException("Buffer wrap exception for PositionX! " + Arrays.toString(message), e);
         }
+    }
+
+    @Override
+    public boolean isDataValid(byte[] message) {
+        int index = 3;
+        int calculateLowByte = CorrectionSumCalculation.calculateLowerByte(Arrays.copyOfRange(message, 0, message.length - index));
+        return calculateLowByte == message[message.length - index];
     }
 }
