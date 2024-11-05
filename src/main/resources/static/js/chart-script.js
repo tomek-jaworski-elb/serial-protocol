@@ -61,12 +61,6 @@ window.onpageshow = function () {
         new Promise(resolve => imgLedOff.onload = resolve)
     ]);
 
-    let rs_model1_no = 0;
-    let rs_model2_no = 0;
-    let rs_model3_no = 0;
-    let rs_model4_no = 0;
-    let rs_model5_no = 0;
-    let rs_model6_no = 0;
     // Websocket configuration
     const path = '/json';
 // Create a WebSocket instance
@@ -131,10 +125,6 @@ window.onpageshow = function () {
                     fillFieldValues("heading1", angle);
                     fillFieldValues("speed1", speed);
                     ledBlink('led1', blinkDuration);
-                    rs_model1_no++;
-                    if (rs_model1_no > no_max) {
-                      rs_model1_no = 0;
-                    }
                     fillFieldValues0("rs_model1_no", ShipCounter.incrementIntMap(modelId));
                     drawShip(canvasName, positionX, positionY, 2, angle, ModelsOfShips.getColorFromId(modelId), 12.21, 2, 0);// Warta
                     trackWarta.push({x: positionX, y: positionY});
@@ -162,10 +152,6 @@ window.onpageshow = function () {
                     fillFieldValues("heading2", angle);
                     fillFieldValues("speed2", speed);
                     ledBlink('led2', blinkDuration);
-                    rs_model2_no++;
-                    if (rs_model2_no > no_max) {
-                      rs_model2_no = 0;
-                    }
                     fillFieldValues0("rs_model2_no", ShipCounter.incrementIntMap(modelId));
                     drawShip(canvasName, positionX, positionY, 2, angle, ModelsOfShips.getColorFromId(modelId), 13.78, 2.38, 0);// B.L.
                     trackBlueLady.push({x: positionX, y: positionY});
@@ -178,10 +164,6 @@ window.onpageshow = function () {
                     fillFieldValues("heading3", angle);
                     fillFieldValues("speed3", speed);
                     ledBlink('led3', blinkDuration);
-                    rs_model3_no++;
-                    if (rs_model3_no > no_max) {
-                      rs_model3_no = 0;
-                    }
                     fillFieldValues0("rs_model3_no", ShipCounter.incrementIntMap(modelId));
                     drawShip(canvasName, positionX, positionY, 2, angle, ModelsOfShips.getColorFromId(modelId), 11.55, 1.8, 0);// D.L.
                     trackDorchesterLady.push({x: positionX, y: positionY});
@@ -194,10 +176,6 @@ window.onpageshow = function () {
                     fillFieldValues("heading4", angle);
                     fillFieldValues("speed4", speed);
                     ledBlink('led4', blinkDuration);
-                    rs_model4_no++;
-                    if (rs_model4_no > no_max) {
-                      rs_model4_no = 0;
-                    }
                     fillFieldValues0("rs_model4_no", ShipCounter.incrementIntMap(modelId));
                     drawShip(canvasName, positionX, positionY, 2, angle, ModelsOfShips.getColorFromId(modelId), 15.5, 1.79, 0);
                     trackCherryLady.push({x: positionX, y: positionY});
@@ -210,10 +188,6 @@ window.onpageshow = function () {
                     fillFieldValues("heading5", angle);
                     fillFieldValues("speed5", speed);
                     ledBlink('led5', blinkDuration);
-                    rs_model5_no++;
-                    if (rs_model5_no > no_max) {
-                      rs_model5_no = 0;
-                    }
                     fillFieldValues0("rs_model5_no", ShipCounter.incrementIntMap(modelId));
                     drawShip(canvasName, positionX, positionY, 2, angle, ModelsOfShips.getColorFromId(modelId), 10.98, 1.78, 1);                      // PROM
                     //                                        "Position_GPS" = Length / 2 + PositionGPS * Length / 10
@@ -227,10 +201,6 @@ window.onpageshow = function () {
                     fillFieldValues("heading6", angle);
                     fillFieldValues("speed6", speed);
                     ledBlink('led6', blinkDuration);
-                    rs_model6_no++;
-                    if (rs_model6_no > no_max) {
-                      rs_model6_no = 0;
-                    }
                     fillFieldValues0("rs_model6_no", ShipCounter.incrementIntMap(modelId));
                     drawShip(canvasName, positionX, positionY, 2, angle, ModelsOfShips.getColorFromId(modelId), 16.43, 2.23, 0);                       // L.M.
                     trackLadyMarie.push({x: positionX, y: positionY});

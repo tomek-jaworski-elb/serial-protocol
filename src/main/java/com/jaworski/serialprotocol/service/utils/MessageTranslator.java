@@ -18,7 +18,7 @@ public class MessageTranslator {
     private static final Logger LOG = LogManager.getLogger(MessageTranslator.class);
     public static final int MESSAGE_LENGTH = 27;
     public static final int MESSAGE_LENGTH_LADY_MARIE = 29;
-    private static final int HEADING_CORRECTION = 9; //0;
+
     @Qualifier("messageCommon")
     private final SerialMessageTranslator messageCommon;
 
@@ -42,7 +42,7 @@ public class MessageTranslator {
                     .positionX(messageLadyMarie.getPositionX(message))
                     .positionY(messageLadyMarie.getPositionY(message))
                     .speed(messageLadyMarie.getSpeed(message))
-                    .heading(messageLadyMarie.getHeading(message) + HEADING_CORRECTION)
+                    .heading(messageLadyMarie.getHeading(message))
                     .rudder(messageLadyMarie.getRudder(message))
                     .gpsQuality(messageLadyMarie.getGPSQuality(message))
                     .engine(messageLadyMarie.getEngine(message))
@@ -65,7 +65,7 @@ public class MessageTranslator {
                     .positionX(messageCommon.getPositionX(message))
                     .positionY(messageCommon.getPositionY(message))
                     .speed(messageCommon.getSpeed(message))
-                    .heading(messageCommon.getHeading(message) + HEADING_CORRECTION)
+                    .heading(messageCommon.getHeading(message))
                     .rudder(messageCommon.getRudder(message))
                     .gpsQuality(messageCommon.getGPSQuality(message))
                     .engine(messageCommon.getEngine(message))
