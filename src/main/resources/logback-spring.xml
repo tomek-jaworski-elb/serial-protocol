@@ -38,11 +38,11 @@
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <fileNamePattern>
-                ${LOG_PATH}/%d{yyyy/MM}/${tracking}_%d{dd-MM-yyyy}.%i.log
+                ${LOG_PATH}/%d{yyyy/MM}/${tracking}_%d{dd-MM-yyyy}.%i.log.gz
             </fileNamePattern>
-            <maxFileSize>0</maxFileSize>
-            <maxHistory>0</maxHistory>
-            <totalSizeCap>0</totalSizeCap>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>356</maxHistory>
+            <totalSizeCap>1000MB</totalSizeCap>
         </rollingPolicy>
     </appender>
 
