@@ -32,7 +32,7 @@
                         <a th:if="${name == 'chart'}" class="nav-link active" th:href="@{/chart}">Chart</a>
                         <a th:unless="${name == 'chart'}" class="nav-link" th:href="@{/chart}">Chart</a>
                     </li>
-                    <li class="nav-item">
+                    <li hidden class="nav-item">
                         <a th:if="${name == 'track'}" class="nav-link active" th:href="@{/tracks}">Tracks</a>
                         <a th:unless="${name == 'track'}" class="nav-link" th:href="@{/tracks}">Tracks</a>
                     </li>
