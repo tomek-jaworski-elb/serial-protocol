@@ -251,6 +251,7 @@ window.onpageshow = function () {
 
 // Function to draw a Ship
     function drawShip(elementId, x, y, scale, angle, fillColor, yy, xx, pp) {
+        const ANGLE_CORRECTION = 9; // Add 9 degrees to the angle for correct display of the ship
         const element = document.getElementById(elementId);
         const ctx = element.getContext('2d');
         // Define the outline of the ship (ship with the bow at the beginning)
@@ -271,7 +272,7 @@ window.onpageshow = function () {
         });
 
         // Rotate the vertices
-        const radians = angle * Math.PI / 180;
+        const radians = (angle + ANGLE_CORRECTION) * Math.PI / 180;
         vertices = vertices.map(vertex => {
             return {
                 x: vertex.x * Math.cos(radians) - vertex.y * Math.sin(radians),
