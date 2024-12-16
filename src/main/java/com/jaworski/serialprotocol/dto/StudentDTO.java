@@ -11,7 +11,7 @@ import java.util.Date;
 @Setter
 @ToString
 @EqualsAndHashCode
-public class Student {
+public class StudentDTO {
 
     private int id;
     private String name;

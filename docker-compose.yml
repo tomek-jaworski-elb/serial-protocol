@@ -14,9 +14,8 @@ services:
             - "8081:8081"
         networks:
           backend:
-            ipv4_address: 192.168.2.2
         healthcheck:
-          test: ["CMD", "netcat", "-z", "192.168.2.2", "8081"]
+          test: ["CMD", "netcat", "-z", "localhost", "8081"]
           interval: 5s
           timeout: 5s
           retries: 3
@@ -30,10 +29,32 @@ services:
             - /dev/ttyACM0:/dev/ttyACM0
             - /dev:/dev
         privileged: true
-#    db:
-#      extends:
-#        file: ../db-access-service/docker-compose.yml
-#        service: db
+        depends_on:
+          mariadb:
+            condition: service_healthy
+    mariadb:
+      image: mariadb:11.6
+      restart: unless-stopped
+      container_name: mariadb
+      environment:
+        - MARIADB_USER=user
+        - MARIADB_PASSWORD=password
+        - MARIADB_DATABASE=mydb
+        - MARIADB_ROOT_PASSWORD=root
+      volumes:
+        - /var/lib/mysql
+#      expose:
+#        - "3306"
+      ports:
+        - "3306:3306"
+      networks:
+        - backend
+      healthcheck:
+        test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+        interval: 5s
+        timeout: 5s
+        retries: 3
+        start_period: 10s
 
 networks:
   backend:
@@ -42,7 +63,3 @@ networks:
     driver: bridge
     driver_opts:
       com.docker.network.enable_ipv6: "false"
-    ipam:
-      config:
-        - subnet: 192.168.2.0/24
-          gateway: 192.168.2.1

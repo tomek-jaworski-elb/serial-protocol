@@ -3,7 +3,7 @@ package com.jaworski.serialprotocol.controller.web;
 import com.jaworski.serialprotocol.authorization.AuthorizationService;
 import com.jaworski.serialprotocol.dto.CheckBoxOption;
 import com.jaworski.serialprotocol.dto.LogItem;
-import com.jaworski.serialprotocol.dto.Student;
+import com.jaworski.serialprotocol.dto.StudentDTO;
 import com.jaworski.serialprotocol.exception.CustomRestException;
 import com.jaworski.serialprotocol.restclient.RestNameService;
 import com.jaworski.serialprotocol.service.tracks.TrackService;
@@ -106,8 +106,8 @@ public class MapController {
     }
 
     private String getNameModel(Model model) {
-        Collection<Student> names = null;
-        Collection<Student> namesLatest = null;
+        Collection<StudentDTO> names = null;
+        Collection<StudentDTO> namesLatest = null;
         try {
             names = restNameService.getNames();
             namesLatest = restNameService.getNamesLatest();

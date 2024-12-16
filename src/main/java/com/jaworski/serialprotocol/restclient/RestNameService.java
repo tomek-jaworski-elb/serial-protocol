@@ -1,7 +1,7 @@
 package com.jaworski.serialprotocol.restclient;
 
 import com.jaworski.serialprotocol.configuration.RestTemplateClient;
-import com.jaworski.serialprotocol.dto.Student;
+import com.jaworski.serialprotocol.dto.StudentDTO;
 import com.jaworski.serialprotocol.exception.CustomRestException;
 import com.jaworski.serialprotocol.resources.Resources;
 import lombok.RequiredArgsConstructor;
@@ -58,7 +58,7 @@ public class RestNameService {
         }
     }
 
-    public Collection<Student> getNames() throws CustomRestException {
+    public Collection<StudentDTO> getNames() throws CustomRestException {
         URI uri = getUri(NAMES_PATH);
         return getStudents(uri);
     }
@@ -80,15 +80,15 @@ public class RestNameService {
         return uri;
     }
 
-    public Collection<Student> getNamesLatest() throws CustomRestException {
+    public Collection<StudentDTO> getNamesLatest() throws CustomRestException {
         URI uri = getUri(NAMES_LATEST_PATH);
         return getStudents(uri);
     }
 
-    private Collection<Student> getStudents(URI uri) throws CustomRestException {
+    private Collection<StudentDTO> getStudents(URI uri) throws CustomRestException {
         try {
-            ResponseEntity<List<Student>> forEntity = restTemplateClient.restClient()
-                    .exchange(uri, HttpMethod.GET, null, new ParameterizedTypeReference<List<Student>>() {
+            ResponseEntity<List<StudentDTO>> forEntity = restTemplateClient.restClient()
+                    .exchange(uri, HttpMethod.GET, null, new ParameterizedTypeReference<List<StudentDTO>>() {
                     });
             LOG.info("Response: {}, status: {} {}", forEntity.getBody(), forEntity.getStatusCode(), HttpStatus.valueOf(forEntity.getStatusCode().value()));
             return forEntity.getBody() == null ?
