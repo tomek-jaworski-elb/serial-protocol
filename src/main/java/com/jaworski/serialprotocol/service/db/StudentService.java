@@ -3,9 +3,8 @@ package com.jaworski.serialprotocol.service.db;
 import com.jaworski.serialprotocol.entity.Student;
 import com.jaworski.serialprotocol.repository.StudentRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -17,7 +16,8 @@ public class StudentService {
         return studentRepository.save(student);
     }
 
-    public List<Student> getAllStudents() {
-       return studentRepository.findAll();
+    @Nullable
+    public Student getStudentById(int id) {
+        return studentRepository.findStudentById((id));
     }
 }
