@@ -5,6 +5,8 @@ import com.jaworski.serialprotocol.entity.Student;
 
 public class StudentMapper {
 
+    private StudentMapper() {}
+
     public static StudentDTO mapToDTO(Student student) {
         StudentDTO studentDTO = new StudentDTO();
         studentDTO.setId(student.getId());
