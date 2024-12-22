@@ -13,7 +13,7 @@ import java.util.Date;
 @Data
 public class Student {
 
-    public final static String TABLE_NAME = "student";
+    public static final String TABLE_NAME = "student";
 
     @Id
     @Column(name = TABLE_NAME + "_id")
