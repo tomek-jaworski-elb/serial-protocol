@@ -16,7 +16,7 @@
     <properties>
         <java.version>17</java.version>
         <jSerialComm.version>2.11.0</jSerialComm.version>
-        <junit-jupiter-api.version>5.10.3</junit-jupiter-api.version>
+        <junit-jupiter-api.version>5.11.4</junit-jupiter-api.version>
         <commons-lang3.version>3.16.0</commons-lang3.version>
         <commons-collections4.version>4.4</commons-collections4.version>
         <spring-security-crypto.version>6.3.3</spring-security-crypto.version>
@@ -109,6 +109,12 @@
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit-jupiter-api.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
