@@ -40,7 +40,7 @@ services:
       environment:
         - MARIADB_USER=user
         - MARIADB_PASSWORD=password
-        - MARIADB_DATABASE=mydb
+        - MARIADB_DATABASE=certificates
         - MARIADB_ROOT_PASSWORD=root
       volumes:
         - mariadb-data:/var/lib/mysql
