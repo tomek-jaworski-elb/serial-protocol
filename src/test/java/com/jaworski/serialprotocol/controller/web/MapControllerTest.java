@@ -14,7 +14,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 class MapControllerTest {
 
@@ -25,28 +25,28 @@ class MapControllerTest {
     void test_AboutEndpoint() throws Exception {
         this.mockMvc.perform(get("/about"))
                 .andExpect(result -> assertEquals(HttpStatus.OK.value(), result.getResponse().getStatus()))
-                .andExpect(result -> assertEquals(result.getResponse().getHeaderValue(HttpHeaders.CONTENT_TYPE), "text/html;charset=UTF-8"));
+                .andExpect(result -> assertEquals("text/html;charset=UTF-8", result.getResponse().getHeaderValue(HttpHeaders.CONTENT_TYPE)));
     }
 
     @Test
     void test_TerminalEndpoint() throws Exception {
         this.mockMvc.perform(get("/terminal"))
                 .andExpect(result -> assertEquals(HttpStatus.OK.value(), result.getResponse().getStatus()))
-                .andExpect(result -> assertEquals(result.getResponse().getHeaderValue(HttpHeaders.CONTENT_TYPE), "text/html;charset=UTF-8"));
+                .andExpect(result -> assertEquals("text/html;charset=UTF-8", result.getResponse().getHeaderValue(HttpHeaders.CONTENT_TYPE)));
     }
 
     @Test
     void test_IndexEndpoint() throws Exception {
         this.mockMvc.perform(get("/"))
                 .andExpect(status().isOk())
-                .andExpect(result -> assertEquals(result.getResponse().getHeaderValue(HttpHeaders.CONTENT_TYPE), "text/html;charset=UTF-8"));
+                .andExpect(result -> assertEquals("text/html;charset=UTF-8", result.getResponse().getHeaderValue(HttpHeaders.CONTENT_TYPE)));
     }
 
     @Test
     void test_ChartEndpoint() throws Exception {
         this.mockMvc.perform(get("/chart"))
                 .andExpect(result -> assertEquals(HttpStatus.OK.value(), result.getResponse().getStatus()))
-                .andExpect(result -> assertEquals(result.getResponse().getHeaderValue(HttpHeaders.CONTENT_TYPE), "text/html;charset=UTF-8"));
+                .andExpect(result -> assertEquals("text/html;charset=UTF-8", result.getResponse().getHeaderValue(HttpHeaders.CONTENT_TYPE)));
     }
 
     @Test
@@ -60,13 +60,13 @@ class MapControllerTest {
     void test_NameServicePostEndpoint() throws Exception {
         this.mockMvc.perform(post("/name-service"))
                 .andExpect(result -> assertEquals(HttpStatus.OK.value(), result.getResponse().getStatus()))
-                .andExpect(result -> assertEquals(result.getResponse().getHeaderValue(HttpHeaders.CONTENT_TYPE), "text/html;charset=UTF-8"));
+                .andExpect(result -> assertEquals("text/html;charset=UTF-8", result.getResponse().getHeaderValue(HttpHeaders.CONTENT_TYPE)));
     }
 
     @Test
     void test_NameServiceGetEndpoint() throws Exception {
         this.mockMvc.perform(get("/name-service"))
                 .andExpect(result -> assertEquals(HttpStatus.OK.value(), result.getResponse().getStatus()))
-                .andExpect(result -> assertEquals(result.getResponse().getHeaderValue(HttpHeaders.CONTENT_TYPE), "text/html;charset=UTF-8"));
+                .andExpect(result -> assertEquals("text/html;charset=UTF-8", result.getResponse().getHeaderValue(HttpHeaders.CONTENT_TYPE)));
     }
 }
