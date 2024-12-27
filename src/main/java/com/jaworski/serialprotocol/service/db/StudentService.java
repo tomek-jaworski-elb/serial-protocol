@@ -14,7 +14,7 @@ import java.util.Collections;
 
 @Service
 @RequiredArgsConstructor
-public class StudentService {
+public class StudentService implements Repository<Student> {
 
     private final StudentRepository studentRepository;
 
@@ -25,6 +25,11 @@ public class StudentService {
     @Nullable
     public Student getStudentById(int id) {
         return studentRepository.findStudentById((id));
+    }
+
+    @Override
+    public Collection<Student> getAll() {
+        return studentRepository.findAll();
     }
 
     public Collection<StudentDTO> getStudents() {
