@@ -1,7 +1,7 @@
 package com.jaworski.serialprotocol.service;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -11,7 +11,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 @Service
 public class MyWSService extends TextWebSocketHandler {
 
-    private static final Logger LOG = LogManager.getLogger(MyWSService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MyWSService.class);
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {

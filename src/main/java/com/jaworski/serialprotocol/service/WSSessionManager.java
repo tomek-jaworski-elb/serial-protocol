@@ -1,8 +1,8 @@
 package com.jaworski.serialprotocol.service;
 
 import lombok.Getter;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Getter
 public class WSSessionManager {
 
-    private static final Logger LOG = LogManager.getLogger(WSSessionManager.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WSSessionManager.class);
     private final ConcurrentHashMap<String ,WebSocketSession> webSocketSessions = new ConcurrentHashMap<>();
 
     public void addSession(WebSocketSession session) {

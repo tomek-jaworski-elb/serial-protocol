@@ -2,8 +2,8 @@ package com.jaworski.serialprotocol.configuration;
 
 import com.jaworski.serialprotocol.service.WSSessionManager;
 import lombok.RequiredArgsConstructor;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -14,7 +14,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 @Component
 public class RSWebsocketHandler extends TextWebSocketHandler {
 
-    private static final Logger LOG = LogManager.getLogger(RSWebsocketHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RSWebsocketHandler.class);
     private final WSSessionManager wsSessionManager;
 
     @Override

@@ -3,8 +3,8 @@ package com.jaworski.serialprotocol.service.utils.impl;
 import com.fazecast.jSerialComm.SerialPort;
 import com.jaworski.serialprotocol.service.SerialPortService;
 import lombok.RequiredArgsConstructor;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class SerialPortChecker {
 
-  private static final Logger LOG = LogManager.getLogger(SerialPortChecker.class);
+  private static final Logger LOG = LoggerFactory.getLogger(SerialPortChecker.class);
   private final SerialPortService serialController;
 
   public void isPortAvailable(SerialPort serialPort) {

@@ -7,8 +7,8 @@ import com.jaworski.serialprotocol.dto.StudentDTO;
 import com.jaworski.serialprotocol.service.db.StudentService;
 import com.jaworski.serialprotocol.service.tracks.TrackService;
 import lombok.RequiredArgsConstructor;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,7 +25,7 @@ import java.util.Map;
 @Controller
 public class MapController {
 
-    private static final Logger LOG = LogManager.getLogger(MapController.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MapController.class);
     public static final String ATTRIBUTE_TRACK_MAP = "trackMap";
     public static final String ATTRIBUTE_NAME = "name";
     private static final String PASS_SERVICE = "pass-service";

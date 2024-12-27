@@ -7,8 +7,8 @@ import com.jaworski.serialprotocol.resources.Resources;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.core5.net.URIBuilder;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -36,7 +36,7 @@ import static com.jaworski.serialprotocol.restclient.ServiceUri.URI_SCHEME;
 public class RestNameService {
 
     private final RestTemplateClient restTemplateClient;
-    private static final Logger LOG = LogManager.getLogger(RestNameService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RestNameService.class);
     private final Resources resources;
 
     public void checkConnection() {

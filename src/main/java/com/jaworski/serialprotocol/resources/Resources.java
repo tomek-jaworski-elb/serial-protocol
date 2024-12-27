@@ -2,8 +2,8 @@ package com.jaworski.serialprotocol.resources;
 
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -12,7 +12,7 @@ import java.util.Optional;
 @Component
 public class Resources {
 
-    private static final Logger LOG = LogManager.getLogger(Resources.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Resources.class);
     public static final int DEFAULT_BAUD_RATE = 9600;
     private static final String LOGGING_FILE_PATH = "logging.file.path";
     private static final String LOGGING_TRACKING_FILE_NAME = "logging.tracking.file.name";

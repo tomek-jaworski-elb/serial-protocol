@@ -5,8 +5,8 @@ import com.jaworski.serialprotocol.dto.LogItem;
 import com.jaworski.serialprotocol.dto.ModelTrackJSDTO;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
@@ -31,7 +31,7 @@ import java.util.function.Predicate;
 @RequiredArgsConstructor
 public class TrackService {
 
-    private static final Logger LOG = LogManager.getLogger(TrackService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TrackService.class);
 
     private final ReadLogsFileService readLogsFileService;
     private final Map<Integer, List<LogItem>> trackMap = new HashMap<>();
