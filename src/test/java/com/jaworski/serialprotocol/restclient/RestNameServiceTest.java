@@ -3,7 +3,7 @@ package com.jaworski.serialprotocol.restclient;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jaworski.serialprotocol.configuration.RestTemplateClient;
-import com.jaworski.serialprotocol.dto.Student;
+import com.jaworski.serialprotocol.dto.StudentDTO;
 import com.jaworski.serialprotocol.exception.CustomRestException;
 import org.apache.hc.core5.net.URIBuilder;
 import org.junit.jupiter.api.Assertions;
@@ -57,10 +57,10 @@ class RestNameServiceTest {
 
     @Test
     void testGetNames_HappyPath() throws URISyntaxException, CustomRestException, JsonProcessingException {
-        Student student = new Student();
-        student.setName("name");
-        student.setId(1);
-        List<Student> studentsSet = List.of(student);
+        StudentDTO studentDTO = new StudentDTO();
+        studentDTO.setName("name");
+        studentDTO.setId(1);
+        List<StudentDTO> studentsSet = List.of(studentDTO);
         mockServer.expect(ExpectedCount.once(),
                         requestTo(new URIBuilder("https://127.0.0.1:8085").appendPathSegments(API_PATH, NAMES_PATH).build()))
                 .andExpect(method(HttpMethod.GET))
@@ -69,21 +69,21 @@ class RestNameServiceTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(mapper.writeValueAsString(studentsSet)));
 
-        Collection<Student> students = nameService.getNames();
+        Collection<StudentDTO> studentDTOS = nameService.getNames();
 
         mockServer.verify();
 
-        Assertions.assertNotNull(students);
-        Assertions.assertEquals(1, students.size());
-        Assertions.assertEquals("name", students.iterator().next().getName());
-        Assertions.assertEquals(1, students.iterator().next().getId());
+        Assertions.assertNotNull(studentDTOS);
+        Assertions.assertEquals(1, studentDTOS.size());
+        Assertions.assertEquals("name", studentDTOS.iterator().next().getName());
+        Assertions.assertEquals(1, studentDTOS.iterator().next().getId());
     }
 
     @Test
     void testGetNamesLatest_HappyPath() throws URISyntaxException, CustomRestException, JsonProcessingException {
-        Student student = new Student();
-        student.setName("name");
-        List<Student> studentsSet = List.of(student);
+        StudentDTO studentDTO = new StudentDTO();
+        studentDTO.setName("name");
+        List<StudentDTO> studentsSet = List.of(studentDTO);
         mockServer.expect(ExpectedCount.once(),
                         requestTo(new URIBuilder("https://127.0.0.1:8085").setPath(API_PATH)
                                 .appendPath(NAMES_LATEST_PATH)
@@ -94,13 +94,13 @@ class RestNameServiceTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(mapper.writeValueAsString(studentsSet)));
 
-        Collection<Student> students = nameService.getNamesLatest();
+        Collection<StudentDTO> studentDTOS = nameService.getNamesLatest();
 
         mockServer.verify();
 
-        Assertions.assertNotNull(students);
-        Assertions.assertEquals(1, students.size());
-        Assertions.assertEquals("name", students.iterator().next().getName());
+        Assertions.assertNotNull(studentDTOS);
+        Assertions.assertEquals(1, studentDTOS.size());
+        Assertions.assertEquals("name", studentDTOS.iterator().next().getName());
     }
 
     @Test
