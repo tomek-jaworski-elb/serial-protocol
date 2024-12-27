@@ -16,6 +16,7 @@ import java.util.Date;
 import java.util.List;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
@@ -23,6 +24,8 @@ class RestStudentTest {
 
     @Autowired
     private MockMvc mockMvc;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
 
     @Test
     void getStudent() throws Exception {
@@ -40,14 +43,16 @@ class RestStudentTest {
         studentDTO.setCertType("certType");
         List<StudentDTO> studentDTOS = List.of(studentDTO);
 
-        String writeValueAsString = new ObjectMapper().writeValueAsString(studentDTOS);
+        String writeValueAsString = objectMapper.writeValueAsString(studentDTOS);
         MvcResult mvcResult = mockMvc.perform(post("/api/v1/student")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(writeValueAsString)
                         .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().is2xxSuccessful())
                 .andReturn();
         Assertions.assertEquals(HttpStatus.OK.value(), mvcResult.getResponse().getStatus());
-        Assertions.assertEquals(List.of(1).toString(), mvcResult.getResponse().getContentAsString());
+        String valueAsString = objectMapper.writeValueAsString(List.of(1));
+        Assertions.assertEquals(valueAsString, mvcResult.getResponse().getContentAsString());
     }
 
 }
