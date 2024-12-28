@@ -24,6 +24,7 @@
         <httpclient5.version>5.4.1</httpclient5.version>
         <mariadb.connector.versio>3.5.1</mariadb.connector.versio>
         <logback.version>1.5.15</logback.version>
+        <start-class>com.jaworski.serialprotocol.SerialProtocolApplication</start-class>
     </properties>
     <dependencyManagement>
         <dependencies>
