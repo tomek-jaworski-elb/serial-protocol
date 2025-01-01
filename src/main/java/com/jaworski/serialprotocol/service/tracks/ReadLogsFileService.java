@@ -2,8 +2,8 @@ package com.jaworski.serialprotocol.service.tracks;
 
 import com.jaworski.serialprotocol.resources.Resources;
 import lombok.RequiredArgsConstructor;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -18,7 +18,7 @@ import java.util.List;
 @Component
 public class ReadLogsFileService {
 
-    private static final Logger LOG = LogManager.getLogger(ReadLogsFileService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ReadLogsFileService.class);
     private final Resources resources;
     private static final String TRACKING_SUFFIX = ".log";
 

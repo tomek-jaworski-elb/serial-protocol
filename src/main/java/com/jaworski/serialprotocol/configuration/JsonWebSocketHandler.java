@@ -4,8 +4,8 @@ import com.jaworski.serialprotocol.serial.SessionType;
 import com.jaworski.serialprotocol.service.WSSessionManager;
 import com.jaworski.serialprotocol.service.WebSocketPublisher;
 import lombok.RequiredArgsConstructor;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -19,7 +19,7 @@ public class JsonWebSocketHandler extends TextWebSocketHandler {
     private final WSSessionManager wsSessionManager;
     private final WebSocketPublisher webSocketPublisher;
 
-    private static final Logger LOG = LogManager.getLogger(JsonWebSocketHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JsonWebSocketHandler.class);
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {

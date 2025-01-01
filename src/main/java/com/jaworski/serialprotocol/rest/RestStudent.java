@@ -5,8 +5,8 @@ import com.jaworski.serialprotocol.entity.Student;
 import com.jaworski.serialprotocol.mappers.StudentMapper;
 import com.jaworski.serialprotocol.service.db.StudentService;
 import lombok.RequiredArgsConstructor;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,7 +22,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RestStudent {
 
-    private static final Logger LOG = LogManager.getLogger(RestStudent.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RestStudent.class);
 
     private final StudentService studentService;
 

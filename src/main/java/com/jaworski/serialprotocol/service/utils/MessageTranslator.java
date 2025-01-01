@@ -4,8 +4,8 @@ import com.jaworski.serialprotocol.dto.ModelTrackDTO;
 import com.jaworski.serialprotocol.dto.Models;
 import com.jaworski.serialprotocol.dto.TugDTO;
 import lombok.RequiredArgsConstructor;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
@@ -15,9 +15,10 @@ import java.util.Map;
 @Component
 @RequiredArgsConstructor
 public class MessageTranslator {
-    private static final Logger LOG = LogManager.getLogger(MessageTranslator.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MessageTranslator.class);
     public static final int MESSAGE_LENGTH = 27;
     public static final int MESSAGE_LENGTH_LADY_MARIE = 29;
+    public static final String MESSAGE_LENGTH_NOT_SUPPORTED = "Message length not supported! ";
 
     @Qualifier("messageCommon")
     private final SerialMessageTranslator messageCommon;
@@ -98,14 +99,14 @@ public class MessageTranslator {
                     return dto;
                 } else {
                     LOG.warn("Message length not supported! {} ", Arrays.toString(message));
-                    throw new IllegalArgumentException("Message length not supported! " + Arrays.toString(message));
+                    throw new IllegalArgumentException(MESSAGE_LENGTH_NOT_SUPPORTED + Arrays.toString(message));
                 }
             } else {
                 LOG.warn("Message length not supported! {} ", Arrays.toString(message));
-                throw new IllegalArgumentException("Message length not supported! " + Arrays.toString(message));
+                throw new IllegalArgumentException(MESSAGE_LENGTH_NOT_SUPPORTED + Arrays.toString(message));
             }
         } else {
-            throw new IllegalArgumentException("Message length not supported! " + Arrays.toString(message));
+            throw new IllegalArgumentException(MESSAGE_LENGTH_NOT_SUPPORTED + Arrays.toString(message));
         }
     }
 }

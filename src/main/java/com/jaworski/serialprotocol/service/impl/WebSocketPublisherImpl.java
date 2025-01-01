@@ -4,8 +4,8 @@ import com.jaworski.serialprotocol.serial.SessionType;
 import com.jaworski.serialprotocol.service.WSSessionManager;
 import com.jaworski.serialprotocol.service.WebSocketPublisher;
 import lombok.RequiredArgsConstructor;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -17,7 +17,7 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class WebSocketPublisherImpl implements WebSocketPublisher {
 
-    private static final Logger LOG = LogManager.getLogger(WebSocketPublisherImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WebSocketPublisherImpl.class);
     private final WSSessionManager wsSessionManager;
 
     @Override
