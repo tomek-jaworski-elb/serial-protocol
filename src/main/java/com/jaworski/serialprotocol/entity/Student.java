@@ -4,13 +4,19 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.util.Date;
 
 @Entity
 @Table(name = Student.TABLE_NAME)
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Student {
 
     public static final String TABLE_NAME = "student";
@@ -39,4 +45,9 @@ public class Student {
 
     @Column(name = TABLE_NAME + "_cert_type")
     private String certType;
+
+    @Column(name = TABLE_NAME + "_photo", columnDefinition = "BLOB")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private byte[] photo;
 }

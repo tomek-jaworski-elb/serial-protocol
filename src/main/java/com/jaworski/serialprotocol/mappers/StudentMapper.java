@@ -17,6 +17,7 @@ public class StudentMapper {
         studentDTO.setDateEnd(student.getDateEnd());
         studentDTO.setMrMs(student.getMrMs());
         studentDTO.setCertType(student.getCertType());
+        studentDTO.setPhoto(student.getPhoto());
         return studentDTO;
     }
 
@@ -30,6 +31,7 @@ public class StudentMapper {
         student.setDateEnd(studentDTO.getDateEnd());
         student.setMrMs(studentDTO.getMrMs());
         student.setCertType(studentDTO.getCertType());
+        student.setPhoto(studentDTO.getPhoto());
         return student;
     }
 }
