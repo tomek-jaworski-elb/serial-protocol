@@ -3,6 +3,8 @@ package com.jaworski.serialprotocol.mappers;
 import com.jaworski.serialprotocol.dto.StudentDTO;
 import com.jaworski.serialprotocol.entity.Student;
 
+import java.util.Base64;
+
 public class StudentMapper {
 
     private StudentMapper() {}
@@ -17,7 +19,9 @@ public class StudentMapper {
         studentDTO.setDateEnd(student.getDateEnd());
         studentDTO.setMrMs(student.getMrMs());
         studentDTO.setCertType(student.getCertType());
-        studentDTO.setPhoto(student.getPhoto());
+        byte[] photo = student.getPhoto();
+        String encoded = Base64.getEncoder().encodeToString(photo);
+        studentDTO.setPhoto(encoded);
         return studentDTO;
     }
 
@@ -31,7 +35,9 @@ public class StudentMapper {
         student.setDateEnd(studentDTO.getDateEnd());
         student.setMrMs(studentDTO.getMrMs());
         student.setCertType(studentDTO.getCertType());
-        student.setPhoto(studentDTO.getPhoto());
+        String photo = studentDTO.getPhoto();
+        Base64.Decoder decoder = Base64.getDecoder();
+        student.setPhoto(decoder.decode(photo));
         return student;
     }
 }

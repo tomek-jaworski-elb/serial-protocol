@@ -4,6 +4,9 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Lob;
+import jakarta.persistence.Basic;
+import jakarta.persistence.FetchType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -49,5 +52,7 @@ public class Student {
     @Column(name = TABLE_NAME + "_photo", columnDefinition = "BLOB")
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
+    @Lob
+    @Basic(fetch = FetchType.LAZY)
     private byte[] photo;
 }

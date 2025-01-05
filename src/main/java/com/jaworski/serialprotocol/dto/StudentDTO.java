@@ -19,6 +19,6 @@ public class StudentDTO {
     private Date dateEnd;
     private String mrMs;
     private String certType;
-    private byte[] photo;
+    private String photo;
 
 }
