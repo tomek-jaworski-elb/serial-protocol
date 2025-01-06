@@ -59,7 +59,7 @@
 </header>
 
 <footer th:fragment="footer" class="footer p-3">
-    <p class="text-center m-0">&copy; 2024. All rights reserved.</p>
+    <p th:text="${'&copy;'  + #dates.year(#dates.createNow())} + ', All rights reserved.'" class="text-center m-0">&copy; 2024. All rights reserved.</p>
     <p class="text-center small m-0" th:text="'Version: ' + ${@environment.getProperty('application.version')}">
         Application version</p>
 </footer>
