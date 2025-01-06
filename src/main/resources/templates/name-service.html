@@ -20,24 +20,29 @@
             <table th:if="${!#lists.isEmpty(names)}" class="table table-striped">
                 <thead>
                 <tr>
-                    <th scope="col">#</th>
-                    <th scope="col">ID</th>
-                    <th scope="col">Name</th>
-                    <th scope="col">Course No</th>
-                    <th scope="col">Start Date</th>
-                    <th scope="col">End Date</th>
-                    <th scope="col">Certificate Type</th>
+                    <th scope="col" style="text-align: center">#</th>
+                    <th scope="col" style="text-align: center">ID</th>
+                    <th scope="col" style="text-align: center">Name</th>
+                    <th scope="col" style="text-align: center">Course No</th>
+                    <th scope="col" style="text-align: center">Start Date</th>
+                    <th scope="col" style="text-align: center">End Date</th>
+                    <th scope="col" style="text-align: center">Certificate Type</th>
+                    <th scope="col" style="text-align: center">Photo</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr th:each="name : ${names}">
-                    <th scope="row" th:text="${nameStat.index + 1}">Index</th>
-                    <td th:text="${name.id}">Id</td>
-                    <td th:text="${name.name + ' ' + name.lastName}">Name</td>
-                    <td th:text="${name.courseNo}">Course No</td>
-                    <td th:text="${#dates.format(name.dateBegine, 'dd-MM-yyyy')}">Start</td>
-                    <td th:text="${#dates.format(name.dateEnd, 'dd-MM-yyyy')}">End</td>
-                    <td th:text="${name.certType}">Cert type</td>
+                    <th scope="row" th:text="${nameStat.index + 1}" style="text-align: center">Index</th>
+                    <td th:text="${name.id}" style="text-align: center">ID</td>
+                    <td th:text="${name.name + ' ' + name.lastName}" style="text-align: center">Name</td>
+                    <td th:text="${name.courseNo}" style="text-align: center">Course No</td>
+                    <td th:text="${#dates.format(name.dateBegine, 'dd-MM-yyyy')}" style="text-align: center">Start</td>
+                    <td th:text="${#dates.format(name.dateEnd, 'dd-MM-yyyy')}" style="text-align: center">End</td>
+                    <td th:text="${name.certType}" style="text-align: center">Cert type</td>
+                    <td style="text-align: center">
+                        <img th:src="@{'data:image/jpeg;base64,'+${name.getPhoto()}}" alt="Image from DB"
+                             style="width: 20%; height: 20%;">
+                    </td>
                 </tr>
                 </tbody>
             </table>
@@ -53,17 +58,22 @@
                     <th scope="col">Start Date</th>
                     <th scope="col">End Date</th>
                     <th scope="col">Certificate Type</th>
+                    <th scope="col">Photo</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr th:each="name : ${namesLatest}">
-                    <th scope="row" th:text="${nameStat.index + 1}">Index</th>
-                    <td th:text="${name.id}">Id</td>
-                    <td th:text="${name.name + ' ' + name.lastName}">Name</td>
-                    <td th:text="${name.courseNo}">Course No</td>
-                    <td th:text="${#dates.format(name.dateBegine, 'dd-MM-yyyy')}">Start</td>
-                    <td th:text="${#dates.format(name.dateEnd, 'dd-MM-yyyy')}">End</td>
-                    <td th:text="${name.certType}">Cert type</td>
+                    <th scope="row" th:text="${nameStat.index + 1}" style="text-align: center">Index</th>
+                    <td th:text="${name.id}" style="text-align: center">ID</td>
+                    <td th:text="${name.name + ' ' + name.lastName}" style="text-align: center">Name</td>
+                    <td th:text="${name.courseNo}" style="text-align: center">Course No</td>
+                    <td th:text="${#dates.format(name.dateBegine, 'dd-MM-yyyy')}" style="text-align: center">Start</td>
+                    <td th:text="${#dates.format(name.dateEnd, 'dd-MM-yyyy')}" style="text-align: center">End</td>
+                    <td th:text="${name.certType}" style="text-align: center">Cert type</td>
+                    <td style="text-align: center">
+                        <img th:src="@{'data:image/jpeg;base64,'+${name.getPhoto()}}" alt="Image from DB"
+                             style="width: 20%; height: 20%;">
+                    </td>
                 </tr>
                 </tbody>
             </table>
