@@ -1,16 +1,14 @@
 package com.jaworski.serialprotocol.dto;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Date;
 
-@Getter
-@Setter
-@ToString
-@EqualsAndHashCode
+@NoArgsConstructor
+@AllArgsConstructor
+@Data
 public class StudentDTO {
 
     private int id;
@@ -21,5 +19,6 @@ public class StudentDTO {
     private Date dateEnd;
     private String mrMs;
     private String certType;
+    private String photo;
 
 }

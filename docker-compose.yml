@@ -46,8 +46,8 @@ services:
         - mariadb-data:/var/lib/mysql
       expose:
         - "3306"
-#      ports:
-#        - "3306:3306"
+      ports:
+        - "3306:3306"
       networks:
         - backend
       healthcheck:
