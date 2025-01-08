@@ -19,7 +19,7 @@ public class StudentMapper {
         studentDTO.setDateEnd(student.getDateEnd());
         studentDTO.setMrMs(student.getMrMs());
         studentDTO.setCertType(student.getCertType());
-        byte[] photo = student.getPhoto();
+        byte[] photo = student.getPhoto() == null ? new byte[0] : student.getPhoto();
         String encoded = Base64.getEncoder().encodeToString(photo);
         studentDTO.setPhoto(encoded);
         return studentDTO;
@@ -35,7 +35,7 @@ public class StudentMapper {
         student.setDateEnd(studentDTO.getDateEnd());
         student.setMrMs(studentDTO.getMrMs());
         student.setCertType(studentDTO.getCertType());
-        String photo = studentDTO.getPhoto();
+        String photo = studentDTO.getPhoto() == null ? "" : studentDTO.getPhoto();
         Base64.Decoder decoder = Base64.getDecoder();
         student.setPhoto(decoder.decode(photo));
         return student;
