@@ -167,6 +167,29 @@
                     <mainClass>com.jaworski.serialprotocol.SerialProtocolApplication</mainClass>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>com.github.yadickson</groupId>
+                <artifactId>autocert</artifactId>
+                <version>2.0.2</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>generator</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <!--                    <pubFile>...</pubFile>-->
+                    <!--                    <keyFile>...</keyFile>-->
+                    <!--                    <certFile>...</certFile>-->
+                    <algorithm>ECDSA</algorithm>
+                    <signature>SHA256withECDSA</signature>
+                    <keySize>256</keySize>
+                    <years>10</years>
+                    <!--                    <directoryName>...</directoryName>-->
+                    <!--                    <outputDirectory>...</outputDirectory>-->
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
