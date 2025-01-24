@@ -36,3 +36,4 @@ build/
 /*.tgz
 /logs/
 /logs /
+/cert/

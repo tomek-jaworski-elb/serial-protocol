@@ -64,7 +64,7 @@ window.onpageshow = function () {
     // Websocket configuration
     const path = '/json';
 // Create a WebSocket instance
-    const socket = new WebSocket(`ws://${hostname}:${port}${path}`);
+    const socket = new WebSocket(`${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.hostname}:${window.location.port}${path}`);
     // Set up the text field
     const textField = document.getElementById("textField");
 

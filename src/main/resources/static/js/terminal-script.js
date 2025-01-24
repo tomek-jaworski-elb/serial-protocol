@@ -6,7 +6,7 @@
     }
 
     function connectWebSocket(endpoint, messageAreaId) {
-        const ws = new WebSocket(`ws://${hostname}:${port}${endpoint}`);
+        const ws = new WebSocket(`${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.hostname}:${window.location.port}${endpoint}`);
 
         ws.onopen = function(event) {
             console.log(`Connected to ${endpoint}`);

@@ -168,26 +168,26 @@
                 </configuration>
             </plugin>
             <plugin>
-                <groupId>com.github.yadickson</groupId>
-                <artifactId>autocert</artifactId>
-                <version>2.0.2</version>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>keytool-maven-plugin</artifactId>
+                <version>1.7</version>
                 <executions>
                     <execution>
                         <goals>
-                            <goal>generator</goal>
+                            <goal>generateKeyPair</goal>
                         </goals>
+                        <phase>generate-resources</phase>
                     </execution>
                 </executions>
                 <configuration>
-                    <!--                    <pubFile>...</pubFile>-->
-                    <!--                    <keyFile>...</keyFile>-->
-                    <!--                    <certFile>...</certFile>-->
-                    <algorithm>ECDSA</algorithm>
-                    <signature>SHA256withECDSA</signature>
-                    <keySize>256</keySize>
-                    <years>10</years>
-                    <!--                    <directoryName>...</directoryName>-->
-                    <!--                    <outputDirectory>...</outputDirectory>-->
+                    <keystore>${project.basedir}/cert/server.p12</keystore>
+                    <storepass>password</storepass>
+                    <dname>cn=www.example.com, ou=None, L=None, ST=None, o=Example</dname>
+                    <skipIfExist>true</skipIfExist>
+                    <storetype>PKCS12</storetype>
+                    <validity>3650</validity>
+                    <keyalg>RSA</keyalg>
+                    <keysize>2048</keysize>
                 </configuration>
             </plugin>
         </plugins>
