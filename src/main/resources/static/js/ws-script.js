@@ -1,6 +1,6 @@
 const path = '/heartbeat';
 // Create a WebSocket instance
-const socket = new WebSocket(`ws://${hostname}:${port}${path}`);
+const socket = new WebSocket(`${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.hostname}:${window.location.port}${path}`);
 
 socket.onmessage = function (event) {
     console.log("WebSocket message received: ", event.data);

@@ -11,11 +11,12 @@ services:
             - ws.heartbeat.interval=2000  # value in ms > 1
             - ip.db-client=192.168.2.4:8085
         ports:
+            - "443:443"
             - "8081:8081"
         networks:
           backend:
         healthcheck:
-          test: ["CMD", "netcat", "-z", "localhost", "8081"]
+          test: ["CMD", "netcat", "-z", "localhost", "443"]
           interval: 5s
           timeout: 5s
           retries: 3
