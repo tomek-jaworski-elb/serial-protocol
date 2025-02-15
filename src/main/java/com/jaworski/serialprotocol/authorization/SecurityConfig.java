@@ -36,19 +36,9 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests((authorizeHttpRequests) ->
                         authorizeHttpRequests
-                                .requestMatchers("/").anonymous()
-                                .requestMatchers("/about,").anonymous()
-                                .requestMatchers("/index").anonymous()
-                                .requestMatchers("/index.htm").anonymous()
-                                .requestMatchers("/index.html").anonymous()
-                                .requestMatchers("/chart").anonymous()
-                                .requestMatchers("/error").anonymous()
-                                .requestMatchers("/terminal").anonymous()
-                                .requestMatchers("/img/**").anonymous()
-                                .requestMatchers("/js/**").anonymous()
-                                .requestMatchers("/bootstrap-5-3-3/**").anonymous()
-                                .requestMatchers("/name-service").hasRole("USER")
-                                .requestMatchers("/api/").hasRole("USER")
+                                .requestMatchers("/name-service").authenticated()
+                                .requestMatchers("/api/").authenticated()
+                                .anyRequest().permitAll()
                 );
         return http.build();
     }
