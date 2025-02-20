@@ -109,8 +109,7 @@ public class MapController {
     public String login(Model model, @RequestParam(name = "error", required = false) String error) {
         model.addAttribute(ATTRIBUTE_NAME, "login");
         if (error != null) {
-            model.addAttribute("error", "true");
-            model.addAttribute("errorMessage", "Invalid username or password");
+            model.addAttribute("error", "Invalid username or password");
         }
         return "login";
     }
