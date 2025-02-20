@@ -1,12 +1,17 @@
 package com.jaworski.serialprotocol.controller.web;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.Base64;
+import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -58,15 +63,23 @@ class MapControllerTest {
 
     @Test
     void test_NameServicePostEndpoint() throws Exception {
-        this.mockMvc.perform(post("/name-service"))
+        ObjectMapper objectMapper = new ObjectMapper();
+        String json = objectMapper.writeValueAsString(Collections.emptyList());
+        this.mockMvc.perform(post("/api/v1/student").contentType(MediaType.APPLICATION_JSON).content(json)
+                        .header(HttpHeaders.AUTHORIZATION, getAuthorizationHeaderValue("user", "user")))
                 .andExpect(result -> assertEquals(HttpStatus.OK.value(), result.getResponse().getStatus()))
-                .andExpect(result -> assertEquals("text/html;charset=UTF-8", result.getResponse().getHeaderValue(HttpHeaders.CONTENT_TYPE)));
+                .andExpect(result -> assertEquals("application/json", result.getResponse().getHeaderValue(HttpHeaders.CONTENT_TYPE)));
     }
 
     @Test
     void test_NameServiceGetEndpoint() throws Exception {
-        this.mockMvc.perform(get("/name-service"))
+        this.mockMvc.perform(get("/name-service")
+                        .header(HttpHeaders.AUTHORIZATION, getAuthorizationHeaderValue("user", "user")))
                 .andExpect(result -> assertEquals(HttpStatus.OK.value(), result.getResponse().getStatus()))
                 .andExpect(result -> assertEquals("text/html;charset=UTF-8", result.getResponse().getHeaderValue(HttpHeaders.CONTENT_TYPE)));
+    }
+
+    private String getAuthorizationHeaderValue(String username, String password) {
+        return "Basic " + Base64.getEncoder().encodeToString((username + ":" + password).getBytes());
     }
 }
