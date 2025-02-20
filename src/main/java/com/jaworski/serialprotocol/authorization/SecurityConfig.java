@@ -1,5 +1,6 @@
 package com.jaworski.serialprotocol.authorization;
 
+import com.jaworski.serialprotocol.resources.Resources;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -23,18 +24,27 @@ public class SecurityConfig {
     private final CustomEncoder customEncoder;
     private final CustomLogoutHandler customLogoutHandler;
     private final CustomLoginHandler customLoginHandler;
+    private final Resources resources;
 
     @Bean
     public UserDetailsService userDetailsService() {
-        UserDetails userDetails = User.withUsername("user")
-                .password("user")
+        UserDetails userDetails = User.withUsername(resources.getServerUser())
+                .password(resources.getServerPassword())
                 .passwordEncoder(customEncoder.encoder()::encode)
                 .accountExpired(false)
                 .accountLocked(false)
                 .roles("USER")
                 .build();
 
-        return new InMemoryUserDetailsManager(userDetails);
+      UserDetails userAdmin = User.withUsername("admin")
+              .password("admin")
+              .passwordEncoder(customEncoder.encoder()::encode)
+              .accountExpired(false)
+              .accountLocked(false)
+              .roles("USER", "ADMIN")
+              .build();
+
+        return new InMemoryUserDetailsManager(userDetails, userAdmin);
     }
 
     @Bean
