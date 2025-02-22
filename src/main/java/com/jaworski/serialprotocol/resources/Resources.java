@@ -98,4 +98,12 @@ public class Resources {
                     return "tracking";
                 });
     }
+
+    @Value("${custom.server.credentials.name}")
+    @Getter
+    private String serverUser;
+
+    @Value("${custom.server.credentials.password}")
+    @Getter
+    private String serverPassword;
 }

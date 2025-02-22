@@ -12,7 +12,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
 @Configuration
-@Profile("production")
+@Profile("prod")
+// TODO: failing test, redirect doesn't work in this mode
 public class TomcatServerConfiguration {
 
     @Value("${server.port}")
@@ -39,7 +40,7 @@ public class TomcatServerConfiguration {
         Connector connector = new Connector(TomcatServletWebServerFactory.DEFAULT_PROTOCOL);
         connector.setScheme("http");
         connector.setPort(8081);
-        connector.setSecure(true);
+        connector.setSecure(false);
         connector.setRedirectPort(port);
         return connector;
     }

@@ -9,6 +9,7 @@ import com.jaworski.serialprotocol.service.tracks.TrackService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -88,18 +89,11 @@ public class MapController {
         return "tracks";
     }
 
-    @PostMapping("/name-service")
-    public String passService(Model model, @RequestParam(defaultValue = "") String password) {
+    @Secured("ROLE_ADMIN,ROLE_USER")
+    @GetMapping("/name-service")
+    public String passService(Model model) {
         model.addAttribute(ATTRIBUTE_NAME, PASS_SERVICE);
-        return authorizationService.authorize(password) ?
-                getNameModel(model) :
-                getErrorString(model, password);
-    }
-
-    private String getErrorString(Model model, String password) {
-        LOG.info("Wrong password: {}", password);
-        model.addAttribute("error", "Wrong password");
-        return PASS_SERVICE;
+        return getNameModel(model);
     }
 
     private String getNameModel(Model model) {
@@ -111,12 +105,20 @@ public class MapController {
         return "name-service";
     }
 
-    @GetMapping("/name-service")
-    public String passServiceGet(Model model) {
-        model.addAttribute(ATTRIBUTE_NAME, PASS_SERVICE);
-        return PASS_SERVICE;
+    @GetMapping("/login")
+    public String login(Model model, @RequestParam(name = "error", required = false) String error) {
+        model.addAttribute(ATTRIBUTE_NAME, "login");
+        if (error != null) {
+            model.addAttribute("error", "Invalid username or password");
+        }
+        return "login";
     }
 
+    @GetMapping("/logout")
+    public String logout(Model model) {
+        model.addAttribute(ATTRIBUTE_NAME, "logout");
+        return "redirect:/";
+    }
 }
 
 
