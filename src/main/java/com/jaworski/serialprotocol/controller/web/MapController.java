@@ -9,7 +9,7 @@ import com.jaworski.serialprotocol.service.tracks.TrackService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.access.annotation.Secured;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -88,8 +88,8 @@ public class MapController {
         model.addAttribute("checkboxForm", checkBoxOption);
         return "tracks";
     }
-
-    @Secured("ROLE_ADMIN,ROLE_USER")
+    @PreAuthorize(value = "hasRole(hasRole(T(com.jaworski.serialprotocol.authorization.SecurityRoles).ROLE_USER.getRole()) or" +
+            " hasRole(T(com.jaworski.serialprotocol.authorization.SecurityRoles).ROLE_USER.getName() + '_T')")
     @GetMapping("/name-service")
     public String passService(Model model) {
         model.addAttribute(ATTRIBUTE_NAME, PASS_SERVICE);

@@ -33,15 +33,15 @@ public class SecurityConfig {
                 .passwordEncoder(customEncoder.encoder()::encode)
                 .accountExpired(false)
                 .accountLocked(false)
-                .roles("USER")
+                .roles(SecurityRoles.ROLE_USER.getName())
                 .build();
 
-      UserDetails userAdmin = User.withUsername("admin")
-              .password("admin")
+      UserDetails userAdmin = User.withUsername(resources.getServerAdminUser())
+              .password(resources.getServerAdminPassword())
               .passwordEncoder(customEncoder.encoder()::encode)
               .accountExpired(false)
               .accountLocked(false)
-              .roles("USER", "ADMIN")
+              .roles(SecurityRoles.ROLE_ADMIN.getName(), SecurityRoles.ROLE_USER.getName())
               .build();
 
         return new InMemoryUserDetailsManager(userDetails, userAdmin);
@@ -52,9 +52,9 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests((authorizeHttpRequests) ->
                         authorizeHttpRequests
-                                .requestMatchers("/name-service").hasRole("USER")
-                                .requestMatchers("/api/**").hasRole("USER")
-                                .requestMatchers("/admin/**").hasRole("ADMIN")
+                                .requestMatchers("/name-service").hasRole(SecurityRoles.ROLE_USER.getName())
+                                .requestMatchers("/api/**").hasRole(SecurityRoles.ROLE_USER.getName())
+                                .requestMatchers("/admin/**").hasRole(SecurityRoles.ROLE_ADMIN.getName())
                                 .anyRequest().permitAll()
                 )
                 .httpBasic(withDefaults())

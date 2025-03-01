@@ -106,4 +106,12 @@ public class Resources {
     @Value("${custom.server.credentials.password}")
     @Getter
     private String serverPassword;
+
+    @Value("${custom.server.credentials.admin.name}")
+    @Getter
+    private String serverAdminUser;
+
+    @Value("${custom.server.credentials.admin.password}")
+    @Getter
+    private String serverAdminPassword;
 }
