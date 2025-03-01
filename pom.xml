@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.jaworski</groupId>
     <artifactId>serial-protocol</artifactId>
-    <version>1.6</version>
+    <version>1.7</version>
     <name>serial-protocol</name>
     <description>Simple AIS</description>
     <properties>
