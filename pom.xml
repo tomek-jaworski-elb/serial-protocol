@@ -17,11 +17,10 @@
         <java.version>17</java.version>
         <jSerialComm.version>2.11.0</jSerialComm.version>
         <junit-jupiter-api.version>5.11.4</junit-jupiter-api.version>
-        <commons-lang3.version>3.16.0</commons-lang3.version>
+        <commons-lang3.version>3.17.0</commons-lang3.version>
         <commons-collections4.version>4.4</commons-collections4.version>
-        <spotbugs-annotations.version>4.8.6</spotbugs-annotations.version>
-        <httpclient5.version>5.4.2</httpclient5.version>
-        <mariadb.connector.versio>3.5.1</mariadb.connector.versio>
+        <spotbugs-annotations.version>4.9.3</spotbugs-annotations.version>
+        <httpclient5.version>5.4.3</httpclient5.version>
         <logback.version>1.5.17</logback.version>
         <start-class>com.jaworski.serialprotocol.SerialProtocolApplication</start-class>
     </properties>
@@ -122,11 +121,12 @@
         <dependency>
             <groupId>org.hibernate.orm</groupId>
             <artifactId>hibernate-core</artifactId>
+            <version>6.6.13.Final</version>
         </dependency>
         <dependency>
             <groupId>org.mariadb.jdbc</groupId>
             <artifactId>mariadb-java-client</artifactId>
-            <version>3.5.1</version>
+            <version>3.5.3</version>
         </dependency>
         <dependency>
             <groupId>com.h2database</groupId>

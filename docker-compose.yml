@@ -35,7 +35,7 @@ services:
           mariadb:
             condition: service_healthy
     mariadb:
-      image: mariadb:11.6
+      image: mariadb:11.7
       restart: unless-stopped
       container_name: mariadb
       environment:
