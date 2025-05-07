@@ -49,7 +49,7 @@ public class Student {
     @Column(name = TABLE_NAME + "_cert_type")
     private String certType;
 
-    @Column(name = TABLE_NAME + "_photo", columnDefinition = "BLOB")
+    @Column(name = TABLE_NAME + "_photo", columnDefinition = "LONGBLOB")
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     @Lob
