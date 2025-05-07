@@ -11,8 +11,7 @@ services:
             - ws.heartbeat.interval=2000  # value in ms > 1
             - ip.db-client=192.168.2.4:8085
         ports:
-            - "443:443"
-            - "8081:8081"
+            - "8081:443"
         networks:
           backend:
         healthcheck:
