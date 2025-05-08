@@ -28,6 +28,7 @@
                     <th scope="col" style="text-align: center">End Date</th>
                     <th scope="col" style="text-align: center">Certificate Type</th>
                     <th scope="col" style="text-align: center">Photo</th>
+                    <th sec:authorize="hasRole('ROLE_ADMIN')" scope="col" style="text-align: center">Action</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -43,6 +44,12 @@
                         <img th:src="@{'data:image/jpeg;base64,'+${name.getPhoto()}}" alt="Image from DB"
                              style="width: 20%; height: 20%;">
                     </td>
+                    <td sec:authorize="hasRole('ROLE_ADMIN')" th:text="${name.id}" style="text-align: center">
+                        <div>
+                            <a th:href="@{/name-service/{id}/hide(id=${name.id})}" class="btn btn-danger">Hide</a>
+                            <a th:href="@{/name-service/{id}/show(id=${name.id})}" class="btn btn-danger">Show</a>
+                        </div>
+                    </td>
                 </tr>
                 </tbody>
             </table>
@@ -51,14 +58,14 @@
             <table th:if="${!#lists.isEmpty(namesLatest)}" class="table table-striped">
                 <thead>
                 <tr>
-                    <th scope="col">#</th>
-                    <th scope="col">ID</th>
-                    <th scope="col">Name</th>
-                    <th scope="col">Course No</th>
-                    <th scope="col">Start Date</th>
-                    <th scope="col">End Date</th>
-                    <th scope="col">Certificate Type</th>
-                    <th scope="col">Photo</th>
+                    <th scope="col" style="text-align: center">#</th>
+                    <th scope="col" style="text-align: center">ID</th>
+                    <th scope="col" style="text-align: center">Name</th>
+                    <th scope="col" style="text-align: center">Course No</th>
+                    <th scope="col" style="text-align: center">Start Date</th>
+                    <th scope="col" style="text-align: center">End Date</th>
+                    <th scope="col" style="text-align: center">Certificate Type</th>
+                    <th scope="col" style="text-align: center">Photo</th>
                 </tr>
                 </thead>
                 <tbody>

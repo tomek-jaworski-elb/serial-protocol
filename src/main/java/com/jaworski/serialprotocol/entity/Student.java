@@ -1,12 +1,6 @@
 package com.jaworski.serialprotocol.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.persistence.Lob;
-import jakarta.persistence.Basic;
-import jakarta.persistence.FetchType;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -14,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 import java.util.Date;
+import java.util.Set;
 
 @Entity
 @Table(name = Student.TABLE_NAME)
@@ -55,4 +50,15 @@ public class Student {
     @Lob
     @Basic(fetch = FetchType.LAZY)
     private byte[] photo;
+
+    @Column(name = TABLE_NAME + "_visible", nullable = false)
+    private boolean visible;
+
+    @Column(name = TABLE_NAME + "_instructors")
+    @OneToMany(mappedBy = "student", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    private Set<Instructor> instructors;
+
+    @Column(name = TABLE_NAME + "_staff")
+    @OneToMany(mappedBy = "student", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    private Set<Staff> staff;
 }
