@@ -1,6 +1,12 @@
 package com.jaworski.serialprotocol.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Basic;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -55,10 +61,8 @@ public class Student {
     private boolean visible;
 
     @Column(name = TABLE_NAME + "_instructors")
-    @OneToMany(mappedBy = "student", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private Set<Instructor> instructors;
 
     @Column(name = TABLE_NAME + "_staff")
-    @OneToMany(mappedBy = "student", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private Set<Staff> staff;
 }

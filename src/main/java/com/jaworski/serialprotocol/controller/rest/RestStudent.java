@@ -1,4 +1,4 @@
-package com.jaworski.serialprotocol.rest;
+package com.jaworski.serialprotocol.controller.rest;
 
 import com.jaworski.serialprotocol.dto.StudentDTO;
 import com.jaworski.serialprotocol.entity.Student;
