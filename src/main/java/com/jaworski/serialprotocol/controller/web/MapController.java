@@ -1,15 +1,19 @@
 package com.jaworski.serialprotocol.controller.web;
 
 import com.jaworski.serialprotocol.authorization.AuthorizationService;
+import com.jaworski.serialprotocol.authorization.SecurityRoles;
 import com.jaworski.serialprotocol.dto.CheckBoxOption;
 import com.jaworski.serialprotocol.dto.LogItem;
 import com.jaworski.serialprotocol.dto.StudentDTO;
 import com.jaworski.serialprotocol.service.db.StudentService;
 import com.jaworski.serialprotocol.service.tracks.TrackService;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -88,21 +92,34 @@ public class MapController {
         model.addAttribute("checkboxForm", checkBoxOption);
         return "tracks";
     }
+
     @PreAuthorize(value = "hasRole(hasRole(T(com.jaworski.serialprotocol.authorization.SecurityRoles).ROLE_USER.getRole()) or" +
             " hasRole(T(com.jaworski.serialprotocol.authorization.SecurityRoles).ROLE_USER.getName() + '_T')")
     @GetMapping("/name-service")
-    public String passService(Model model) {
+    public String passService(Model model, @AuthenticationPrincipal UserDetails userDetails) {
         model.addAttribute(ATTRIBUTE_NAME, PASS_SERVICE);
-        return getNameModel(model);
+        return getNameModel(model, userDetails);
     }
 
-    private String getNameModel(Model model) {
-        Collection<StudentDTO> names = studentService.getStudents();
-        Collection<StudentDTO> namesLatest = studentService.getLatestWeekAllStudents();
+    private String getNameModel(Model model, UserDetails userDetails) {
+        Collection<StudentDTO> names;
+        Collection<StudentDTO> namesLatest;
+        if (isAdminRole(userDetails)) {
+            names = studentService.getStudents();
+            namesLatest = studentService.getLatestWeekAllStudents();
+        } else {
+            names = studentService.getVisibleStudents();
+            namesLatest = studentService.getVisibleLatestWeekAllStudents();
+        }
         model.addAttribute("names", names);
         model.addAttribute("namesLatest", namesLatest);
         model.addAttribute(ATTRIBUTE_NAME, "name-service");
         return "name-service";
+    }
+
+    private static boolean isAdminRole(UserDetails userDetails) {
+        return userDetails.getAuthorities().stream()
+                .anyMatch(authority -> StringUtils.equals(authority.getAuthority(), SecurityRoles.ROLE_ADMIN.getRole()));
     }
 
     @GetMapping("/login")

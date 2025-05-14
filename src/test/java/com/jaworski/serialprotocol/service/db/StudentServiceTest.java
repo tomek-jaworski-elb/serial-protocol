@@ -32,8 +32,8 @@ class StudentServiceTest {
         studentService.save(student);
         assertEquals(1, studentService.getStudents().size());
         assertEquals(1, studentService.getLatestWeekAllStudents().size());
-        assertEquals(student, studentService.getStudentById(1));
-        assertInstanceOf(Student.class, studentService.getStudentById(1));
+        assertEquals(student, studentService.findStudentById(1));
+        assertInstanceOf(Student.class, studentService.findStudentById(1));
         assertInstanceOf(List.class, studentService.getStudents());
     }
 

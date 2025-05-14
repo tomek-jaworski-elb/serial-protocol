@@ -22,6 +22,7 @@ public class StudentMapper {
         byte[] photo = student.getPhoto() == null ? new byte[0] : student.getPhoto();
         String encoded = Base64.getEncoder().encodeToString(photo);
         studentDTO.setPhoto(encoded);
+        studentDTO.setVisible(student.isVisible());
         return studentDTO;
     }
 
@@ -38,6 +39,7 @@ public class StudentMapper {
         String photo = studentDTO.getPhoto() == null ? "" : studentDTO.getPhoto();
         Base64.Decoder decoder = Base64.getDecoder();
         student.setPhoto(decoder.decode(photo));
+        student.setVisible(studentDTO.isVisible());
         return student;
     }
 }

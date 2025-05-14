@@ -25,5 +25,6 @@ public class StudentDTO implements Serializable {
     private String mrMs;
     private String certType;
     private String photo;
+    private boolean visible;
 
 }

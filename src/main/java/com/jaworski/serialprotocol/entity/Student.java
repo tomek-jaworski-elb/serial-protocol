@@ -14,7 +14,6 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 import java.util.Date;
-import java.util.Set;
 
 @Entity
 @Table(name = Student.TABLE_NAME)
@@ -57,12 +56,6 @@ public class Student {
     @Basic(fetch = FetchType.LAZY)
     private byte[] photo;
 
-    @Column(name = TABLE_NAME + "_visible", nullable = false)
+    @Column(name = TABLE_NAME + "_visible", nullable = false, columnDefinition = "boolean default true")
     private boolean visible;
-
-    @Column(name = TABLE_NAME + "_instructors")
-    private Set<Instructor> instructors;
-
-    @Column(name = TABLE_NAME + "_staff")
-    private Set<Staff> staff;
 }
