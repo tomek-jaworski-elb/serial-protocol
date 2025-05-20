@@ -19,4 +19,7 @@ public interface StudentRepository extends JpaRepository<Student, Integer> {
     Collection<Student> findVisibleStudentsOrderByDateBegine();
 
     List<Student> findAllByVisible(boolean visible, Pageable pageable);
+
+    @Query("SELECT DISTINCT s FROM Student s LEFT JOIN FETCH s.staffs LEFT JOIN FETCH s.instructors")
+    List<Student> findAllWithRelations();
 }

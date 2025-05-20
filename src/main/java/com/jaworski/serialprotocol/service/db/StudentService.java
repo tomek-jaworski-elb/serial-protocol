@@ -6,7 +6,6 @@ import com.jaworski.serialprotocol.mappers.StudentMapper;
 import com.jaworski.serialprotocol.repository.StudentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
@@ -21,10 +20,6 @@ public class StudentService {
 
     public Student save(Student student) {
         return studentRepository.save(student);
-    }
-
-    public Collection<Student> getAll() {
-        return studentRepository.findAll();
     }
 
     public Student setStudentShow(int id) {
@@ -46,7 +41,7 @@ public class StudentService {
     }
 
     public Collection<StudentDTO> getStudents() {
-        var students = studentRepository.findAll(Sort.by(Sort.Direction.ASC, "id")).stream()
+        var students = studentRepository.findAllWithRelations().stream()
                 .map(StudentMapper::mapToDTO)
                 .toList();
         if (students.isEmpty()) {
