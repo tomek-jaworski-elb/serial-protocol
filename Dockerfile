@@ -4,8 +4,9 @@ ARG VERSION=1.7
 LABEL version=$VERSION
 WORKDIR /app
 EXPOSE 443
-EXPOSE 8081
-RUN apt update && apt install -y netcat-openbsd && apt clean
+RUN apt update &&  \
+    apt install -y --no-install-recommends netcat-openbsd &&  \
+    rm -rf /var/lib/apt/lists/*
 RUN useradd -m myuser
 USER myuser
 COPY /cert/server.p12 cert/server.p12
