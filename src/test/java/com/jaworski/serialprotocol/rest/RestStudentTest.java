@@ -1,7 +1,9 @@
 package com.jaworski.serialprotocol.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jaworski.serialprotocol.dto.InstructorDto;
 import com.jaworski.serialprotocol.dto.StudentDTO;
+import com.jaworski.serialprotocol.rest.paths.Paths;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +35,7 @@ class RestStudentTest {
     }
 
     @Test
-    void getStudent() throws Exception {
+    void saveStudent() throws Exception {
 
         int id = 1;
 
@@ -49,7 +51,7 @@ class RestStudentTest {
         List<StudentDTO> studentDTOS = List.of(studentDTO);
 
         String writeValueAsString = objectMapper.writeValueAsString(studentDTOS);
-        MvcResult mvcResult = mockMvc.perform(post("/api/v1/student").header(HttpHeaders.AUTHORIZATION, getAuthorizationHeaderValue("user", "user"))
+        MvcResult mvcResult = mockMvc.perform(post(Paths.ROOT + Paths.STUDENT).header(HttpHeaders.AUTHORIZATION, getAuthorizationHeaderValue("user", "user"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(writeValueAsString)
                         .accept(MediaType.APPLICATION_JSON))
@@ -59,5 +61,32 @@ class RestStudentTest {
         String valueAsString = objectMapper.writeValueAsString(List.of(1));
         Assertions.assertEquals(valueAsString, mvcResult.getResponse().getContentAsString());
     }
+
+    @Test
+    void saveInstructor() throws Exception {
+
+        int id = 1;
+
+        InstructorDto instructorDto = new InstructorDto();
+        instructorDto.setName("name");
+        instructorDto.setNo(id);
+        instructorDto.setSurname("lastName");
+        instructorDto.setEmail("email");
+        instructorDto.setPhone("phone");
+        instructorDto.setMobile("mobile");
+        List<InstructorDto> instructorDtos = List.of(instructorDto);
+
+        String writeValueAsString = objectMapper.writeValueAsString(instructorDtos);
+        MvcResult mvcResult = mockMvc.perform(post(Paths.ROOT + Paths.INSTRUCTOR).header(HttpHeaders.AUTHORIZATION, getAuthorizationHeaderValue("user", "user"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(writeValueAsString)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().is2xxSuccessful())
+                .andReturn();
+        Assertions.assertEquals(HttpStatus.OK.value(), mvcResult.getResponse().getStatus());
+        String valueAsString = objectMapper.writeValueAsString(List.of(1));
+        Assertions.assertEquals(valueAsString, mvcResult.getResponse().getContentAsString());
+    }
+
 
 }
