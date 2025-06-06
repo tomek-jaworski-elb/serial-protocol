@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head th:insert="~{fragment::head}"></head>
+<head>
+    <title th:text="${@environment.getProperty('spring.application.name')} + ' : Instructors'">Serial port
+        server</title>
+    <style>
+        .zoom-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .zoom-image {
+            position: absolute;
+            border: 1px solid #ccc;
+            z-index: 1000;
+            display: none;
+            width: 200px;
+            height: auto;
+            pointer-events: none;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            background: white;
+        }
+    </style>
+</head>
+<body>
+<header th:replace="~{fragment::header}"></header>
+<div class="container">
+    <table th:if="${!#lists.isEmpty(instructors)}" class="table table-striped">
+        <thead>
+        <tr>
+            <th scope="col" style="text-align: center">#</th>
+            <th scope="col" style="text-align: center">ID</th>
+            <th scope="col" style="text-align: center">Name</th>
+            <th scope="col" style="text-align: center">Surname</th>
+            <th scope="col" style="text-align: center">Nick</th>
+            <th scope="col" style="text-align: center">Photo 1</th>
+            <th scope="col" style="text-align: center">Photo 2</th>
+            <th scope="col" style="text-align: center">Photo 3</th>
+            <th scope="col" style="text-align: center">Photo 4</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="instructor : ${instructors}">
+            <th scope="row" th:text="${instructorStat.index + 1}" style="text-align: center">Index</th>
+            <td th:text="${instructor.no}" style="text-align: center">ID</td>
+            <td th:text="${instructor.name}" style="text-align: center">Name</td>
+            <td th:text="${instructor.surname}" style="text-align: center">Surname</td>
+            <td th:text="${instructor.nick}" style="text-align: center">Nick</td>
+            <td style="text-align: center">
+                <img th:src="@{'data:image/jpeg;base64,'+${instructor.photo1}}" alt="Image from DB"
+                     style="width: 20%; height: 20%;" class="img-fluid">
+            </td>
+            <td style="text-align: center">
+                <img th:src="@{'data:image/jpeg;base64,'+${instructor.photo2}}" alt="Image from DB"
+                     style="width: 20%; height: 20%;" class="img-fluid">
+            </td>
+            <td style="text-align: center">
+                <img th:src="@{'data:image/jpeg;base64,'+${instructor.photo3}}" alt="Image from DB"
+                     style="width: 20%; height: 20%;" class="img-fluid">
+            </td>
+            <td style="text-align: center">
+                <img th:src="@{'data:image/jpeg;base64,'+${instructor.photo4}}" alt="Image from DB"
+                     style="width: 20%; height: 20%;" class="img-fluid">
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+<footer th:replace="~{fragment::footer}"></footer>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const images = document.querySelectorAll("td img");
+
+        images.forEach(img => {
+            const zoomImg = document.createElement("img");
+            zoomImg.className = "zoom-image";
+            zoomImg.src = img.src;
+            document.body.appendChild(zoomImg);
+
+            img.addEventListener("mouseenter", () => {
+                zoomImg.style.display = "block";
+                zoomImg.src = img.src;
+            });
+
+            img.addEventListener("mouseleave", () => {
+                zoomImg.style.display = "none";
+            });
+
+            img.addEventListener("mousemove", (e) => {
+                zoomImg.style.left = (e.pageX + 20) + "px";
+                zoomImg.style.top = (e.pageY + 20) + "px";
+            });
+        });
+    });
+</script>
+</body>
+</html>

@@ -14,7 +14,7 @@ public class InstructorService {
 
     private final InstructorRepository instructorRepository;
 
-    public List<Instructor> findAll(String name) {
+    public List<Instructor> findAll() {
        return instructorRepository.findAll();
     }
 

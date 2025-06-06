@@ -5,6 +5,7 @@ import com.jaworski.serialprotocol.entity.Instructor;
 
 import java.time.ZoneId;
 import java.util.Base64;
+import java.util.Objects;
 
 public class InstructorMapper {
 
@@ -51,5 +52,25 @@ public class InstructorMapper {
             return new byte[0];
         }
         return Base64.getDecoder().decode(photo);
+    }
+
+    public static InstructorDto mapToDto(Instructor instructor) {
+
+        InstructorDto instructorDto = new InstructorDto();
+        if (instructor != null) {
+            instructorDto.setNo(instructor.getNo());
+            instructorDto.setName(instructor.getName());
+            instructorDto.setSurname(instructor.getSurname());
+            instructorDto.setNick(instructor.getNick());
+            instructorDto.setPhoto1(encode(instructor.getPhoto1()));
+            instructorDto.setPhoto2(encode(instructor.getPhoto2()));
+            instructorDto.setPhoto3(encode(instructor.getPhoto3()));
+            instructorDto.setPhoto4(encode(instructor.getPhoto4()));
+        }
+        return instructorDto;
+    }
+
+    private static String encode(byte[] photo) {
+        return Base64.getEncoder().encodeToString(Objects.requireNonNullElseGet(photo, () -> new byte[0]));
     }
 }

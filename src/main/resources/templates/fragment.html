@@ -49,7 +49,11 @@
                         <a th:unless="${name == 'name-service'}" class="nav-link" th:href="@{/name-service}">Names</a>
                     </li>
                     <li sec:authorize="isAuthenticated()" class="nav-item">
-                        <a th:href="@{/logout}" class="nav-link">Logout</a>
+                        <a th:if="${name == 'instructor-service'}" class="nav-link active" th:href="@{/instructor-service}">Instructors</a>
+                        <a th:unless="${name == 'instructor-service'}" class="nav-link" th:href="@{/instructor-service}">Instructors</a>
+                    </li>
+                    <li sec:authorize="isAuthenticated()" class="nav-item">
+                        <a th:href="@{/logout}" class="nav-link text-danger fw-bold">Logout</a>
                     </li>
                 </ul>
                 <!-- Left links -->

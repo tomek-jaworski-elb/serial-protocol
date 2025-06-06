@@ -4,6 +4,8 @@ import com.jaworski.serialprotocol.authorization.AuthorizationService;
 import com.jaworski.serialprotocol.dto.CheckBoxOption;
 import com.jaworski.serialprotocol.dto.LogItem;
 import com.jaworski.serialprotocol.dto.StudentDTO;
+import com.jaworski.serialprotocol.mappers.InstructorMapper;
+import com.jaworski.serialprotocol.service.db.InstructorService;
 import com.jaworski.serialprotocol.service.db.StudentService;
 import com.jaworski.serialprotocol.service.tracks.TrackService;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +35,7 @@ public class MapController {
     private final AuthorizationService authorizationService;
     private final TrackService trackService;
     private final StudentService studentService;
+    private final InstructorService instructorService;
 
     @GetMapping(path = {"/", "/index.html", "/index", "/index.htm"})
     public String index(Model model) {
@@ -88,8 +91,8 @@ public class MapController {
         model.addAttribute("checkboxForm", checkBoxOption);
         return "tracks";
     }
-    @PreAuthorize(value = "hasRole(hasRole(T(com.jaworski.serialprotocol.authorization.SecurityRoles).ROLE_USER.getRole()) or" +
-            " hasRole(T(com.jaworski.serialprotocol.authorization.SecurityRoles).ROLE_USER.getName() + '_T')")
+    @PreAuthorize("hasRole(T(com.jaworski.serialprotocol.authorization.SecurityRoles).ROLE_USER.getRole()) or " +
+            "hasRole(T(com.jaworski.serialprotocol.authorization.SecurityRoles).ROLE_USER.getName() + '_T')")
     @GetMapping("/name-service")
     public String passService(Model model) {
         model.addAttribute(ATTRIBUTE_NAME, PASS_SERVICE);
@@ -118,6 +121,18 @@ public class MapController {
     public String logout(Model model) {
         model.addAttribute(ATTRIBUTE_NAME, "logout");
         return "redirect:/";
+    }
+
+    @PreAuthorize("hasRole(T(com.jaworski.serialprotocol.authorization.SecurityRoles).ROLE_USER.getRole()) or " +
+            "hasRole(T(com.jaworski.serialprotocol.authorization.SecurityRoles).ROLE_USER.getName() + '_T')")
+    @GetMapping("/instructor-service")
+    public String instructorService(Model model) {
+        var instructors = instructorService.findAll().stream()
+                .map(InstructorMapper::mapToDto)
+                .toList();
+        model.addAttribute(ATTRIBUTE_NAME, "instructor-service");
+        model.addAttribute("instructors", instructors);
+        return "instructor-service";
     }
 }
 
