@@ -1,6 +1,7 @@
 package com.jaworski.serialprotocol.controller.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jaworski.serialprotocol.rest.paths.Paths;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -65,7 +66,17 @@ class MapControllerTest {
     void test_NameServicePostEndpoint() throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
         String json = objectMapper.writeValueAsString(Collections.emptyList());
-        this.mockMvc.perform(post("/api/v1/student").contentType(MediaType.APPLICATION_JSON).content(json)
+        this.mockMvc.perform(post(Paths.ROOT + Paths.STUDENT).contentType(MediaType.APPLICATION_JSON).content(json)
+                        .header(HttpHeaders.AUTHORIZATION, getAuthorizationHeaderValue("user", "user")))
+                .andExpect(result -> assertEquals(HttpStatus.OK.value(), result.getResponse().getStatus()))
+                .andExpect(result -> assertEquals("application/json", result.getResponse().getHeaderValue(HttpHeaders.CONTENT_TYPE)));
+    }
+
+    @Test
+    void test_InstructorsPostEndpoint() throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        String json = objectMapper.writeValueAsString(Collections.emptyList());
+        this.mockMvc.perform(post(Paths.ROOT + Paths.INSTRUCTOR).contentType(MediaType.APPLICATION_JSON).content(json)
                         .header(HttpHeaders.AUTHORIZATION, getAuthorizationHeaderValue("user", "user")))
                 .andExpect(result -> assertEquals(HttpStatus.OK.value(), result.getResponse().getStatus()))
                 .andExpect(result -> assertEquals("application/json", result.getResponse().getHeaderValue(HttpHeaders.CONTENT_TYPE)));

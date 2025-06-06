@@ -29,10 +29,10 @@ fi
 # Determine whether to run in detached mode or not based on the argument
 if [ "$1" == "-d" ]; then
     echo "Starting Docker containers in detached mode..."
-    docker compose up --build -d
+    docker compose up --build -d --force-recreate --always-recreate-deps
 else
     echo "Starting Docker containers..."
-    docker compose up --build
+    docker compose up --build --force-recreate --always-recreate-deps
 fi
 
 if [ $? -ne 0 ]; then
