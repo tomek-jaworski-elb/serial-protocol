@@ -22,7 +22,6 @@ services:
           start_period: 10s
         volumes:
             - ./logs:/app/logs
-            - server-data:/app
         devices:
             - /dev/ttyS0:/dev/ttyS0
             - /dev/ttyS2:/dev/ttyS2

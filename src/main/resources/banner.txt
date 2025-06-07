@@ -5,4 +5,5 @@
  _|    _|  _|_|_|                _|_|_|_|  _|_|_|    _|_|_|_|      _|_|_|    _|_|_|_|  _|    _|      _|      _|_|_|_|  _|    _|
 
 Application ${spring.application.name} v${application.version}
+Release: ${application.build}
 Powered by Spring Boot ${spring-boot.version}

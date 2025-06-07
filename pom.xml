@@ -5,15 +5,18 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.4.4</version>
+        <version>3.5.0</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.jaworski</groupId>
     <artifactId>serial-protocol</artifactId>
-    <version>1.7</version>
+    <version>1.8</version>
     <name>serial-protocol</name>
     <description>Simple AIS</description>
     <properties>
+        <revision>${timestamp}</revision>
+        <timestamp>${maven.build.timestamp}</timestamp>
+        <maven.build.timestamp.format>dd-MM-yyyy hh:mm</maven.build.timestamp.format>
         <java.version>17</java.version>
         <jSerialComm.version>2.11.0</jSerialComm.version>
         <junit-jupiter-api.version>5.11.4</junit-jupiter-api.version>
@@ -185,6 +188,25 @@
                     <keyalg>RSA</keyalg>
                     <keysize>2048</keysize>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.6.1</version>
+                <executions>
+                    <execution>
+                        <id>add-timestamp</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>timestamp-property</goal>
+                        </goals>
+                        <configuration>
+                            <name>timestamp</name>
+                            <pattern>dd-MM-yyyy hh:mm</pattern>
+                            <locale>pl_PL</locale>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

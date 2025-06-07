@@ -117,7 +117,7 @@ public class MapController {
         return "login";
     }
 
-    @GetMapping("/logout")
+    @PostMapping("/logout")
     public String logout(Model model) {
         model.addAttribute(ATTRIBUTE_NAME, "logout");
         return "redirect:/";
