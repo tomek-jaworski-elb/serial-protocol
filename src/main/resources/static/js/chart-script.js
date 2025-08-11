@@ -1,5 +1,4 @@
-window.onpageshow = function () {
-
+    let socket;
     let trackWarta = []; // Warta
     let trackCherryLady = []; // Cherry Lady
     let trackBlueLady = []; // Blue Lady
@@ -61,10 +60,7 @@ window.onpageshow = function () {
         new Promise(resolve => imgLedOff.onload = resolve)
     ]);
 
-    // Websocket configuration
     const path = '/json';
-// Create a WebSocket instance
-    const socket = new WebSocket(`${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.hostname}:${window.location.port}${path}`);
     // Set up the text field
     const textField = document.getElementById("textField");
 
@@ -99,8 +95,10 @@ window.onpageshow = function () {
     // trackWarta.push({x: -800, y: 300});
 
     // drawTrack(getTrackCanvasName("overlayCanvas1"), trackWarta, ModelsOfShips.getColorFromId(2));
+function createWebSocket() {
+    const ws = new WebSocket(`${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.hostname}:${window.location.port}${path}`);
 
-    socket.onmessage = function (event) {
+    ws.onmessage = function (event) {
         console.log("WebSocket message received: ", event.data);
 
         // Update the text field
@@ -130,19 +128,19 @@ window.onpageshow = function () {
                     trackWarta.push({x: positionX, y: positionY});
                     drawTrack(getTrackCanvasName(canvasName), trackWarta, ModelsOfShips.getColorFromId(modelId));
 //                                    x,y,4,angle,'blue'
-    drawTriangle("overlayCanvas1", 400, 100, 10, 90, 'red');
-    drawTriangle("overlayCanvas1", 500, 200, 10, 90, 'blue');
+                    drawTriangle("overlayCanvas1", 400, 100, 10, 90, 'red');
+                    drawTriangle("overlayCanvas1", 500, 200, 10, 90, 'blue');
 
-                  drawTriangle("overlayCanvas1", (  0    + 60+4) * mapa_x , ( 0    + 506) * mapa_x , 6,    1, 'white');         // pozycja 0 x 0             0x0
-                  drawTriangle("overlayCanvas1", ( 77.07 + 60+4) * mapa_x , (97.25 + 506) * mapa_x , 6,    1, 'orange');        // SBM    -97.25x77.07
-                  drawTriangle("overlayCanvas1", (378.3  + 60+4) * mapa_x , (191.8 + 506) * mapa_x , 6,    1, 'orange');        // FPSO   -191.8x378.3
-                  drawTriangle("overlayCanvas1", (-25  + 64) * mapa_x , (   84 + 506) * mapa_x , 6,    1, 'red');               // <- nabieznik             -84x25
-                  drawTriangle("overlayCanvas1", ( 82.8+ 64) * mapa_x , (  -69 + 506) * mapa_x , 6,    1, 'red');               // port nabieznik ->         69x82.8
-                  drawTriangle("overlayCanvas1", (  2  + 64) * mapa_x , ( -130 + 506) * mapa_x , 6,    1, 'red');               // pomost Lesniczowka        130x2
-                  drawTriangle("overlayCanvas1", ( 79  + 64) * mapa_x , ( -188 + 506) * mapa_x , 6,    1, 'red');               // Slip kolej END           188x79
-                  drawTriangle("overlayCanvas1", (570  + 64) * mapa_x , ( -362 + 506) * mapa_x , 6,    1, 'red');               // boja kompielisko         320x570
-                  drawTriangle("overlayCanvas1", (820  + 64) * mapa_x , (  610 + 506) * mapa_x , 6,    1, 'red');               // -> zatoka               -610x820
-                  drawTriangle("overlayCanvas1", (926  + 64) * mapa_x , ( 1149 + 506) * mapa_x , 6,    1, 'red');               // Wiata END jeziora      -1149x926
+                    drawTriangle("overlayCanvas1", (0 + 60 + 4) * mapa_x, (0 + 506) * mapa_x, 6, 1, 'white');         // pozycja 0 x 0             0x0
+                    drawTriangle("overlayCanvas1", (77.07 + 60 + 4) * mapa_x, (97.25 + 506) * mapa_x, 6, 1, 'orange');        // SBM    -97.25x77.07
+                    drawTriangle("overlayCanvas1", (378.3 + 60 + 4) * mapa_x, (191.8 + 506) * mapa_x, 6, 1, 'orange');        // FPSO   -191.8x378.3
+                    drawTriangle("overlayCanvas1", (-25 + 64) * mapa_x, (84 + 506) * mapa_x, 6, 1, 'red');               // <- nabieznik             -84x25
+                    drawTriangle("overlayCanvas1", (82.8 + 64) * mapa_x, (-69 + 506) * mapa_x, 6, 1, 'red');               // port nabieznik ->         69x82.8
+                    drawTriangle("overlayCanvas1", (2 + 64) * mapa_x, (-130 + 506) * mapa_x, 6, 1, 'red');               // pomost Lesniczowka        130x2
+                    drawTriangle("overlayCanvas1", (79 + 64) * mapa_x, (-188 + 506) * mapa_x, 6, 1, 'red');               // Slip kolej END           188x79
+                    drawTriangle("overlayCanvas1", (570 + 64) * mapa_x, (-362 + 506) * mapa_x, 6, 1, 'red');               // boja kompielisko         320x570
+                    drawTriangle("overlayCanvas1", (820 + 64) * mapa_x, (610 + 506) * mapa_x, 6, 1, 'red');               // -> zatoka               -610x820
+                    drawTriangle("overlayCanvas1", (926 + 64) * mapa_x, (1149 + 506) * mapa_x, 6, 1, 'red');               // Wiata END jeziora      -1149x926
 
                     console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
                     break;
@@ -215,17 +213,20 @@ window.onpageshow = function () {
         }
     };
 
-    socket.onerror = function (error) {
+    ws.onerror = function (error) {
         console.error("WebSocket error: ", error);
     };
 
-    socket.onopen = function (event) {
+    ws.onopen = function (event) {
         console.log("WebSocket connection opened.");
     };
 
-    socket.onclose = function (event) {
+    ws.onclose = function (event) {
         console.log("WebSocket connection closed.");
     };
+    return ws;
+}
+    socket = createWebSocket();
 
     function getScaledPoints(oldX, oldY) {
         const staticShift_y = 506;                                                                                      // 506
@@ -388,4 +389,15 @@ window.onpageshow = function () {
             console.error('Error loading images:', error);
         });
     }
-};
+
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+            if (socket) {
+                socket.close();
+            }
+        } else {
+            if (!socket || socket.readyState === WebSocket.CLOSED) {
+                socket = createWebSocket();
+            }
+        }
+    });

@@ -1,23 +1,42 @@
 const path = '/heartbeat';
-// Create a WebSocket instance
-const socket = new WebSocket(`${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.hostname}:${window.location.port}${path}`);
+let socket;
 
-socket.onmessage = function (event) {
-    console.log("WebSocket message received: ", event.data);
-    const messagesContainer = document.getElementById('messages');
-    const message = document.createElement('div');
-    message.textContent = event.data;
-    messagesContainer.innerHTML = event.data;
-};
+function createWebSocket() {
+    const ws = new WebSocket(`${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.hostname}:${window.location.port}${path}`);
 
-socket.onerror = function (error) {
-    console.error("WebSocket error: ", error);
-};
+    ws.onmessage = function (event) {
+        console.log("WebSocket message received: ", event.data);
+        const messagesContainer = document.getElementById('messages');
+        if (messagesContainer) {
+            messagesContainer.innerHTML = event.data;
+        }
+    };
 
-socket.onopen = function (event) {
-    console.log("WebSocket connection opened.");
-};
+    ws.onerror = function (error) {
+        console.error("WebSocket error: ", error);
+    };
 
-socket.onclose = function (event) {
-    console.log("WebSocket connection closed.");
-};
+    ws.onopen = function () {
+        console.log("WebSocket connection opened.");
+    };
+
+    ws.onclose = function () {
+        console.log("WebSocket connection closed.");
+    };
+
+    return ws;
+}
+
+socket = createWebSocket();
+
+document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+        if (socket) {
+            socket.close();
+        }
+    } else {
+        if (!socket || socket.readyState === WebSocket.CLOSED) {
+            socket = createWebSocket();
+        }
+    }
+});
