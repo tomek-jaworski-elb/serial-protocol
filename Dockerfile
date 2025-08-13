@@ -12,6 +12,6 @@ RUN apt update &&  \
     rm -rf /var/cache/apk/* &&  \
     useradd -M aisuser && \
     chown -R aisuser:aisuser /app
-USER aisuser
+#USER aisuser
 CMD ["java", "-jar", "app.jar"]
 
