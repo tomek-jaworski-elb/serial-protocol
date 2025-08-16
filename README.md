@@ -13,4 +13,4 @@ https://localhost:8081/ <br>
 
 ![img_2.png](docs/img_2.png)
 
-![img_3.png](docs/img_3.png)
+![img.png](docs/img.png)
