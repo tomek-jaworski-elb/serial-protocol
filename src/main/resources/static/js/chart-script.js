@@ -49,16 +49,26 @@
 //    drawTriangle("overlayCanvas2", (820  + 64) * mapa_x, (  610 + 506) * mapa_x , 6,    1, 'red');               // -> zatoka               -610x820
 //    drawTriangle("overlayCanvas2", (926  + 64) * mapa_x , ( 1149 + 506) * mapa_x , 6,    1, 'red');               // Wiata END jeziora      -1149x926
 
-    const imgLedOn = new Image();
-    imgLedOn.src = "/img/led_connection_green.bmp";
-    const imgLedOff = new Image();
-    imgLedOff.src = "/img/led_connection_1.bmp";
+    function preloadImage(src) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = src;
+        });
+    }
 
     // Ensure images are fully loaded before using them
     const imagesLoaded = Promise.all([
-        new Promise(resolve => imgLedOn.onload = resolve),
-        new Promise(resolve => imgLedOff.onload = resolve)
+        preloadImage("/img/led_connection_green.bmp"),
+        preloadImage("/img/led_connection_1.bmp")
     ]);
+
+    let imgLedOn, imgLedOff;
+    imagesLoaded.then(([on, off]) => {
+        imgLedOn = on;
+        imgLedOff = off;
+    }).catch(err => console.error("Błąd ładowania obrazków:", err));
 
     const path = '/json';
     // Set up the text field
@@ -375,19 +385,21 @@ function createWebSocket() {
     }
 
     function ledBlink(elementId, duration) {
-        imagesLoaded.then(() => {
-            const element = document.getElementById(elementId);
-            if (!element) {
-                console.error(`Element with ID '${elementId}' not found`);
-                return;
-            }
-            element.src = imgLedOn.src;
-            setTimeout(() => {
-                element.src = imgLedOff.src;
-            }, duration);
-        }).catch(error => {
-            console.error('Error loading images:', error);
-        });
+        if (!imgLedOn || !imgLedOff) {
+            console.warn("Obrazy jeszcze się nie załadowały");
+            return;
+        }
+
+        const element = document.getElementById(elementId);
+        if (!element) {
+            console.error(`Element z ID '${elementId}' nie istnieje`);
+            return;
+        }
+
+        element.src = imgLedOn.src;
+        setTimeout(() => {
+            element.src = imgLedOff.src;
+        }, duration);
     }
 
     document.addEventListener("visibilitychange", () => {
