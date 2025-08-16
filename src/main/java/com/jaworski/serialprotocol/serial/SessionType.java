@@ -7,7 +7,7 @@ public enum SessionType {
     RS("/rs"),
     JSON("/json"),
     HEARTBEAT("/heartbeat"),
-    OTHER("/");
+    SESSION_COUNT("/session");
 
     private final String name;
 

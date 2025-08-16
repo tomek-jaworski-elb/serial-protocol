@@ -1,10 +1,10 @@
 package com.jaworski.serialprotocol.controller.web;
 
-import com.jaworski.serialprotocol.authorization.AuthorizationService;
 import com.jaworski.serialprotocol.dto.CheckBoxOption;
 import com.jaworski.serialprotocol.dto.LogItem;
 import com.jaworski.serialprotocol.dto.StudentDTO;
 import com.jaworski.serialprotocol.mappers.InstructorMapper;
+import com.jaworski.serialprotocol.service.WebSocketPublisher;
 import com.jaworski.serialprotocol.service.db.InstructorService;
 import com.jaworski.serialprotocol.service.db.StudentService;
 import com.jaworski.serialprotocol.service.tracks.TrackService;
@@ -32,38 +32,44 @@ public class MapController {
     public static final String ATTRIBUTE_TRACK_MAP = "trackMap";
     public static final String ATTRIBUTE_NAME = "name";
     private static final String PASS_SERVICE = "pass-service";
-    private final AuthorizationService authorizationService;
+    private static final String ACTIVE_SESSION = "sessions";
     private final TrackService trackService;
     private final StudentService studentService;
     private final InstructorService instructorService;
+    private final WebSocketPublisher webSockerService;
 
     @GetMapping(path = {"/", "/index.html", "/index", "/index.htm"})
     public String index(Model model) {
         model.addAttribute(ATTRIBUTE_NAME, "home");
+        model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
         return "index";
     }
 
     @GetMapping("/terminal")
     public String terminal(Model model) {
         model.addAttribute(ATTRIBUTE_NAME, "terminal");
+        model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
         return "terminal";
     }
 
     @GetMapping("/about")
     public String about(Model model) {
         model.addAttribute(ATTRIBUTE_NAME, "about");
+        model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
         return "about";
     }
 
     @GetMapping("/greeting")
     public String greeting(@RequestParam(name = ATTRIBUTE_NAME, required = false, defaultValue = "World") String name, Model model) {
         model.addAttribute(ATTRIBUTE_NAME, name);
+        model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
         return "greetings";
     }
 
     @GetMapping("/chart")
     public String greeting(Model model) {
         model.addAttribute(ATTRIBUTE_NAME, "chart");
+        model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
         return "chart";
     }
 
@@ -71,6 +77,7 @@ public class MapController {
     public String tracks(Model model) {
         model.addAttribute(ATTRIBUTE_NAME, "track");
         model.addAttribute(ATTRIBUTE_TRACK_MAP, Collections.emptyMap());
+        model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
         return "tracks";
     }
 
@@ -89,6 +96,7 @@ public class MapController {
         }
         model.addAttribute(ATTRIBUTE_NAME, "track");
         model.addAttribute("checkboxForm", checkBoxOption);
+        model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
         return "tracks";
     }
     @PreAuthorize("hasRole(T(com.jaworski.serialprotocol.authorization.SecurityRoles).ROLE_USER.getRole()) or " +
@@ -114,12 +122,14 @@ public class MapController {
         if (error != null) {
             model.addAttribute("error", "Invalid username or password");
         }
+        model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
         return "login";
     }
 
     @PostMapping("/logout")
     public String logout(Model model) {
         model.addAttribute(ATTRIBUTE_NAME, "logout");
+        model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
         return "redirect:/";
     }
 
@@ -132,6 +142,7 @@ public class MapController {
                 .toList();
         model.addAttribute(ATTRIBUTE_NAME, "instructor-service");
         model.addAttribute("instructors", instructors);
+        model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
         return "instructor-service";
     }
 }

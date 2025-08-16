@@ -1,5 +1,6 @@
 package com.jaworski.serialprotocol.configuration;
 
+import com.jaworski.serialprotocol.serial.SessionType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,15 +20,17 @@ public class WebSocketConfiguration implements WebSocketConfigurer {
     private final JsonWebSocketHandler jsonWebSocketHandler;
     private final RSWebsocketHandler rsWebsocketHandler;
     private final HeartBeatWebSocketHandler heartBeatWebSocketHandler;
+    private final SessionCountWebSockerHandler sessionCountWebSockerHandler;
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(jsonWebSocketHandler, "/json")
+        registry.addHandler(jsonWebSocketHandler, SessionType.JSON.getName())
                 .setAllowedOrigins("*");
-        registry.addHandler(rsWebsocketHandler,"/rs")
+        registry.addHandler(rsWebsocketHandler,SessionType.RS.getName())
                 .setAllowedOrigins("*");
-        registry.addHandler(heartBeatWebSocketHandler,"/heartbeat")
+        registry.addHandler(heartBeatWebSocketHandler,SessionType.HEARTBEAT.getName())
                 .setAllowedOrigins("*");
+        registry.addHandler(sessionCountWebSockerHandler, SessionType.SESSION_COUNT.getName());
     }
 
     @Bean
