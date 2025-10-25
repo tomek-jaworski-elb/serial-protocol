@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.4</version>
+        <version>3.5.6</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.jaworski</groupId>
@@ -17,7 +17,7 @@
         <revision>${timestamp}</revision>
         <timestamp>${maven.build.timestamp}</timestamp>
         <maven.build.timestamp.format>dd-MM-yyyy hh:mm</maven.build.timestamp.format>
-        <java.version>17</java.version>
+        <java.version>21</java.version>
         <jSerialComm.version>2.11.0</jSerialComm.version>
         <junit-jupiter-api.version>5.11.4</junit-jupiter-api.version>
         <commons-lang3.version>3.17.0</commons-lang3.version>
