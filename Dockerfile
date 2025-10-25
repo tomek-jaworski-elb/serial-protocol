@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17-jre-noble
+FROM eclipse-temurin:21-jre-noble
 LABEL author="Tomek Jaworski"
 ARG VERSION=1.8
 LABEL version=$VERSION
