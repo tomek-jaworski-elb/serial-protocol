@@ -276,8 +276,17 @@
         fill: 'black'
     });
 
+    const line = new Konva.Line({
+        points: [0, 0, 300, 300, 20, 100, 150, 400], // x1, y1, x2, y2
+        stroke: 'black',
+        strokeWidth: 3,
+        lineCap: 'round',
+        lineJoin: 'round'
+    })
+
     popup.add(popupText);
     layer.add(popup);
+    layer.add(line);
     layer.draw();
 
     // event: kliknięcie w obiekt
