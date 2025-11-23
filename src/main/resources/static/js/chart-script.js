@@ -84,7 +84,19 @@
         ctx.stroke(path);
     }
 
-    // drawTrack(getTrackCanvasName("overlayCanvas1"), trackWarta, ModelsOfShips.getColorFromId(2));
+// Funkcja do aktualizacji wyświetlania modelu
+    function updateModelDisplay(config, modelId, positionX, positionY, angle, speed, blinkDuration = 250) {
+        clearCanvas(config.canvas);
+        fillFieldValues(config.headingField, angle);
+        fillFieldValues(config.speedField, speed);
+        ledBlink(config.led, blinkDuration);
+        fillFieldValues0(config.rsField, ShipCounter.incrementIntMap(modelId));
+        drawShip(config.canvas, positionX, positionY, config.scale, angle, ModelsOfShips.getColorFromId(modelId), ...config.shipParams);
+        config.track.push({ x: positionX, y: positionY });
+        drawTrack(getTrackCanvasName(config.canvas), config.track, ModelsOfShips.getColorFromId(modelId));
+        console.log(`Drawing model with ID: ${modelId} at position X: ${positionX}, Y: ${positionY}`);
+    }
+
 function createWebSocket() {
     const ws = new WebSocket(`${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.hostname}:${window.location.port}${path}`);
 
@@ -105,30 +117,10 @@ function createWebSocket() {
         positionX = newPoints.x;
         positionY = newPoints.y;
 
-        const blinkDuration = 250;
-
-        // Konfiguracja modeli
-        const modelsConfig = {
-            1: { canvas: "overlayCanvas1", headingField: "heading1", speedField: "speed1", led: "led1", rsField: "rs_model1_no", track: trackWarta, shipParams: [2, 12.21, 2, 0] },
-            2: { canvas: "overlayCanvas2", headingField: "heading2", speedField: "speed2", led: "led2", rsField: "rs_model2_no", track: trackBlueLady, shipParams: [2, 13.78, 2.38, 0] },
-            3: { canvas: "overlayCanvas3", headingField: "heading3", speedField: "speed3", led: "led3", rsField: "rs_model3_no", track: trackDorchesterLady, shipParams: [2, 11.55, 1.8, 0] },
-            4: { canvas: "overlayCanvas4", headingField: "heading4", speedField: "speed4", led: "led4", rsField: "rs_model4_no", track: trackCherryLady, shipParams: [2, 15.5, 1.79, 0] },
-            5: { canvas: "overlayCanvas5", headingField: "heading5", speedField: "speed5", led: "led5", rsField: "rs_model5_no", track: trackKolobrzeg, shipParams: [2, 10.98, 1.78, 1] },
-            6: { canvas: "overlayCanvas6", headingField: "heading6", speedField: "speed6", led: "led6", rsField: "rs_model6_no", track: trackLadyMarie, shipParams: [2, 16.43, 2.23, 0] },
-        };
-
         const config = modelsConfig[modelId];
 
         if (config) {
-            clearCanvas(config.canvas);
-            fillFieldValues(config.headingField, angle);
-            fillFieldValues(config.speedField, speed);
-            ledBlink(config.led, blinkDuration);
-            fillFieldValues0(config.rsField, ShipCounter.incrementIntMap(modelId));
-            drawShip(config.canvas, positionX, positionY, ...config.shipParams, ModelsOfShips.getColorFromId(modelId));
-            config.track.push({ x: positionX, y: positionY });
-            drawTrack(getTrackCanvasName(config.canvas), config.track, ModelsOfShips.getColorFromId(modelId));
-            console.log(`Drawing model with ID: ${modelId} at position X: ${positionX}, Y: ${positionY}`);
+            updateModelDisplay(config, modelId, positionX, positionY, angle, speed);
         } else {
             console.log(`Unknown model ID: ${modelId} at position X: ${positionX}, Y: ${positionY}`);
         }
@@ -229,7 +221,6 @@ function createWebSocket() {
         ctx.lineWidth = 1;
         ctx.stroke();
     }
-///
 
 // Function to draw a triangle
     function drawTriangle(elementId, x, y, scale, angle, fillColor) {
@@ -282,7 +273,7 @@ function createWebSocket() {
         ctx.lineWidth = 1;
         ctx.stroke();
     }
-///
+
     function fillFieldValues(elementId, value) {
         const spanElement = document.getElementById(elementId);
         if (String(elementId).includes("heading")) {
@@ -322,63 +313,26 @@ function createWebSocket() {
         console.log("Starting ship and track test...");
         
         // Test parameters
-        const testCanvas = "testCanvas";
         const centerX = 400;  // Center of the test area
         const centerY = 400;
         const radius = 200;   // Radius of the circular path
         const steps = 36;     // Number of steps for a full circle
-        const interval = 200; // Time between steps in ms
-        
-        // Create test canvas if it doesn't exist
-        if (!document.getElementById(testCanvas)) {
-            const canvas = document.createElement('canvas');
-            canvas.id = testCanvas;
-            canvas.width = imgMap.width;
-            canvas.height = imgMap.height;
-            canvas.style.position = 'absolute';
-            canvas.style.top = '0';
-            canvas.style.left = '0';
-            canvas.style.zIndex = '1000';
-            container.appendChild(canvas);
-        }
-        
-        // Create track canvas if it doesn't exist
-        const trackCanvas = testCanvas + "_track";
-        if (!document.getElementById(trackCanvas)) {
-            const canvas = document.createElement('canvas');
-            canvas.id = trackCanvas;
-            canvas.width = imgMap.width;
-            canvas.height = imgMap.height;
-            canvas.style.position = 'absolute';
-            canvas.style.top = '0';
-            canvas.style.left = '0';
-            canvas.style.zIndex = '999';
-            container.appendChild(canvas);
-        }
-        
+        const interval = 500; // Time between steps in ms
+
         let angle = 0;
         const angleStep = (2 * Math.PI) / steps;
-        const track = [];
-        
+
         // Start the test loop
         const testInterval = setInterval(() => {
             // Calculate new position
             const x = centerX + radius * Math.cos(angle);
             const y = centerY + radius * Math.sin(angle);
             const heading = (angle * 180 / Math.PI + 270) % 360; // Convert to degrees and adjust for ship orientation
-            
-            // Add point to track
-            track.push({x, y});
-            
-            // Clear and redraw
-            clearCanvas(testCanvas);
-            
-            // Draw ship
-            drawShip(testCanvas, x, y, 2, heading, '#00ff00', 15, 3, 0);
-            
-            // Draw track
-            drawTrack(trackCanvas, track, '#00ff00');
-            
+            const modelId = 2;
+            let config = modelsConfig[modelId];
+            const speed = 10;
+            updateModelDisplay(config, modelId, x, y, angle, speed);
+
             // Update angle for next step
             angle += angleStep;
             
@@ -405,6 +359,15 @@ function createWebSocket() {
         }
     });
 
+// Konfiguracja modeli
+const modelsConfig = {
+            1: { canvas: "overlayCanvas1", headingField: "heading1", speedField: "speed1", led: "led1", rsField: "rs_model1_no", track: trackWarta, scale: 2, shipParams: [12.21, 2, 0] },
+            2: { canvas: "overlayCanvas2", headingField: "heading2", speedField: "speed2", led: "led2", rsField: "rs_model2_no", track: trackBlueLady, scale: 2,  shipParams: [13.78, 2.38, 0] },
+            3: { canvas: "overlayCanvas3", headingField: "heading3", speedField: "speed3", led: "led3", rsField: "rs_model3_no", track: trackDorchesterLady, scale: 2,  shipParams: [11.55, 1.8, 0] },
+            4: { canvas: "overlayCanvas4", headingField: "heading4", speedField: "speed4", led: "led4", rsField: "rs_model4_no", track: trackCherryLady, scale: 2,  shipParams: [15.5, 1.79, 0] },
+            5: { canvas: "overlayCanvas5", headingField: "heading5", speedField: "speed5", led: "led5", rsField: "rs_model5_no", track: trackKolobrzeg, scale: 2,  shipParams: [10.98, 1.78, 1] },
+            6: { canvas: "overlayCanvas6", headingField: "heading6", speedField: "speed6", led: "led6", rsField: "rs_model6_no", track: trackLadyMarie, scale: 2,  shipParams: [16.43, 2.23, 0] },
+        };
 
 const ModelsOfShips = Object.freeze({
     WARTA: {id: 1, color: "orange", name: "Warta"},
