@@ -38,17 +38,6 @@
 
     let mapa_x = 2.407; /// było 2.4   = kalibracja mapy
 
-//    drawTriangle("overlayCanvas2", (  0    + 60+4) * mapa_x , ( 0    + 506) * mapa_x , 6,    1, 'white');         // pozycja 0 x 0             0x0
-//    drawTriangle("overlayCanvas2", ( 77.07 + 60+4) * mapa_x , (97.25 + 506) * mapa_x , 6,    1, 'orange');        // SBM    -97.25x77.07
-//    drawTriangle("overlayCanvas2", (378.3  + 60+4) * mapa_x , (191.8 + 506) * mapa_x , 6,    1, 'orange');        // FPSO   -191.8x378.3
-//    drawTriangle("overlayCanvas2", (-25  + 64) * mapa_x , (   84 + 506) * mapa_x , 6,    1, 'red');               // <- nabieznik             -84x25
-//    drawTriangle("overlayCanvas2", ( 82.8+ 64) * mapa_x , (  -69 + 506) * mapa_x , 6,    1, 'red');               // port nabieznik ->         69x82.8
-//    drawTriangle("overlayCanvas2", (  2  + 64) * mapa_x , ( -130 + 506) * mapa_x , 6,    1, 'red');               // pomost Lesniczowka        130x2
-//    drawTriangle("overlayCanvas2", ( 79  + 64) * mapa_x , ( -188 + 506) * mapa_x , 6,    1, 'red');               // Slip kolej END           188x79
-//    drawTriangle("overlayCanvas2", (570  + 64) * mapa_x , ( -362 + 506) * mapa_x , 6,    1, 'red');               // boja kompielisko         320x570
-//    drawTriangle("overlayCanvas2", (820  + 64) * mapa_x, (  610 + 506) * mapa_x , 6,    1, 'red');               // -> zatoka               -610x820
-//    drawTriangle("overlayCanvas2", (926  + 64) * mapa_x , ( 1149 + 506) * mapa_x , 6,    1, 'red');               // Wiata END jeziora      -1149x926
-
     function preloadImage(src) {
         return new Promise((resolve, reject) => {
             const img = new Image();
@@ -95,133 +84,59 @@
         ctx.stroke(path);
     }
 
-    // trackWarta.push({x: 100, y: 100});
-    // trackWarta.push({x: -200, y: 400});
-    // trackWarta.push({x: 300, y: -130});
-    // trackWarta.push({x: 400, y: 200});
-    // trackWarta.push({x: 500, y: -20});
-    // trackWarta.push({x: -600, y: -100});
-    // trackWarta.push({x: 700, y: 250});
-    // trackWarta.push({x: -800, y: 300});
-
     // drawTrack(getTrackCanvasName("overlayCanvas1"), trackWarta, ModelsOfShips.getColorFromId(2));
 function createWebSocket() {
     const ws = new WebSocket(`${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.hostname}:${window.location.port}${path}`);
 
     ws.onmessage = function (event) {
-        console.log("WebSocket message received: ", event.data);
+    console.log("WebSocket message received: ", event.data);
+    textField.textContent = event.data;
 
-        // Update the text field
-        textField.textContent = event.data;
-        try {
-            const data = JSON.parse(event.data)
-            const modelId = Number(data.modelName);
-            let positionX = parseFloat(data.positionX);
-            let positionY = parseFloat(data.positionY);
-            const angle = parseFloat(data.heading);
-            const speed = parseFloat(data.speed);
-            const newPoints = getScaledPoints(positionX, positionY);
-            positionX = newPoints.x;
-            positionY = newPoints.y;
-            const blinkDuration = 250;
-            let canvasName;
-            const no_max = 999;
-            switch (modelId) {
-                case 1:
-                    canvasName = "overlayCanvas1"
-                    clearCanvas(canvasName);
-                    fillFieldValues("heading1", angle);
-                    fillFieldValues("speed1", speed);
-                    ledBlink('led1', blinkDuration);
-                    fillFieldValues0("rs_model1_no", ShipCounter.incrementIntMap(modelId));
-                    drawShip(canvasName, positionX, positionY, 2, angle, ModelsOfShips.getColorFromId(modelId), 12.21, 2, 0);// Warta
-                    trackWarta.push({x: positionX, y: positionY});
-                    drawTrack(getTrackCanvasName(canvasName), trackWarta, ModelsOfShips.getColorFromId(modelId));
-//                                    x,y,4,angle,'blue'
-                    drawTriangle("overlayCanvas1", 400, 100, 10, 90, 'red');
-                    drawTriangle("overlayCanvas1", 500, 200, 10, 90, 'blue');
+    try {
+        const data = JSON.parse(event.data);
+        const modelId = Number(data.modelName);
+        let positionX = parseFloat(data.positionX);
+        let positionY = parseFloat(data.positionY);
+        const angle = parseFloat(data.heading);
+        const speed = parseFloat(data.speed);
 
-                    drawTriangle("overlayCanvas1", (0 + 60 + 4) * mapa_x, (0 + 506) * mapa_x, 6, 1, 'white');         // pozycja 0 x 0             0x0
-                    drawTriangle("overlayCanvas1", (77.07 + 60 + 4) * mapa_x, (97.25 + 506) * mapa_x, 6, 1, 'orange');        // SBM    -97.25x77.07
-                    drawTriangle("overlayCanvas1", (378.3 + 60 + 4) * mapa_x, (191.8 + 506) * mapa_x, 6, 1, 'orange');        // FPSO   -191.8x378.3
-                    drawTriangle("overlayCanvas1", (-25 + 64) * mapa_x, (84 + 506) * mapa_x, 6, 1, 'red');               // <- nabieznik             -84x25
-                    drawTriangle("overlayCanvas1", (82.8 + 64) * mapa_x, (-69 + 506) * mapa_x, 6, 1, 'red');               // port nabieznik ->         69x82.8
-                    drawTriangle("overlayCanvas1", (2 + 64) * mapa_x, (-130 + 506) * mapa_x, 6, 1, 'red');               // pomost Lesniczowka        130x2
-                    drawTriangle("overlayCanvas1", (79 + 64) * mapa_x, (-188 + 506) * mapa_x, 6, 1, 'red');               // Slip kolej END           188x79
-                    drawTriangle("overlayCanvas1", (570 + 64) * mapa_x, (-362 + 506) * mapa_x, 6, 1, 'red');               // boja kompielisko         320x570
-                    drawTriangle("overlayCanvas1", (820 + 64) * mapa_x, (610 + 506) * mapa_x, 6, 1, 'red');               // -> zatoka               -610x820
-                    drawTriangle("overlayCanvas1", (926 + 64) * mapa_x, (1149 + 506) * mapa_x, 6, 1, 'red');               // Wiata END jeziora      -1149x926
+        // Skalowanie punktów
+        const newPoints = getScaledPoints(positionX, positionY);
+        positionX = newPoints.x;
+        positionY = newPoints.y;
 
-                    console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
-                    break;
-                case 2:
-                    canvasName = "overlayCanvas2"
-                    clearCanvas(canvasName);
-                    fillFieldValues("heading2", angle);
-                    fillFieldValues("speed2", speed);
-                    ledBlink('led2', blinkDuration);
-                    fillFieldValues0("rs_model2_no", ShipCounter.incrementIntMap(modelId));
-                    drawShip(canvasName, positionX, positionY, 2, angle, ModelsOfShips.getColorFromId(modelId), 13.78, 2.38, 0);// B.L.
-                    trackBlueLady.push({x: positionX, y: positionY});
-                    drawTrack(getTrackCanvasName(canvasName), trackBlueLady, ModelsOfShips.getColorFromId(modelId));
-                    console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
-                    break;
-                case 3:
-                    canvasName = "overlayCanvas3"
-                    clearCanvas(canvasName);
-                    fillFieldValues("heading3", angle);
-                    fillFieldValues("speed3", speed);
-                    ledBlink('led3', blinkDuration);
-                    fillFieldValues0("rs_model3_no", ShipCounter.incrementIntMap(modelId));
-                    drawShip(canvasName, positionX, positionY, 2, angle, ModelsOfShips.getColorFromId(modelId), 11.55, 1.8, 0);// D.L.
-                    trackDorchesterLady.push({x: positionX, y: positionY});
-                    drawTrack(getTrackCanvasName(canvasName), trackDorchesterLady, ModelsOfShips.getColorFromId(modelId));
-                    console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
-                    break;
-                case 4:
-                    canvasName = "overlayCanvas4"
-                    clearCanvas(canvasName);
-                    fillFieldValues("heading4", angle);
-                    fillFieldValues("speed4", speed);
-                    ledBlink('led4', blinkDuration);
-                    fillFieldValues0("rs_model4_no", ShipCounter.incrementIntMap(modelId));
-                    drawShip(canvasName, positionX, positionY, 2, angle, ModelsOfShips.getColorFromId(modelId), 15.5, 1.79, 0);
-                    trackCherryLady.push({x: positionX, y: positionY});
-                    drawTrack(getTrackCanvasName(canvasName), trackCherryLady, ModelsOfShips.getColorFromId(modelId));
-                    console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
-                    break;
-                case 5:
-                    canvasName = "overlayCanvas5"
-                    clearCanvas(canvasName);
-                    fillFieldValues("heading5", angle);
-                    fillFieldValues("speed5", speed);
-                    ledBlink('led5', blinkDuration);
-                    fillFieldValues0("rs_model5_no", ShipCounter.incrementIntMap(modelId));
-                    drawShip(canvasName, positionX, positionY, 2, angle, ModelsOfShips.getColorFromId(modelId), 10.98, 1.78, 1);                      // PROM
-                    //                                        "Position_GPS" = Length / 2 + PositionGPS * Length / 10
-                    trackKolobrzeg.push({x: positionX, y: positionY});
-                    drawTrack(getTrackCanvasName(canvasName), trackKolobrzeg, ModelsOfShips.getColorFromId(modelId));
-                    console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
-                    break;
-                case 6:
-                    canvasName = "overlayCanvas6"
-                    clearCanvas(canvasName);
-                    fillFieldValues("heading6", angle);
-                    fillFieldValues("speed6", speed);
-                    ledBlink('led6', blinkDuration);
-                    fillFieldValues0("rs_model6_no", ShipCounter.incrementIntMap(modelId));
-                    drawShip(canvasName, positionX, positionY, 2, angle, ModelsOfShips.getColorFromId(modelId), 16.43, 2.23, 0);                       // L.M.
-                    trackLadyMarie.push({x: positionX, y: positionY});
-                    drawTrack(getTrackCanvasName(canvasName), trackLadyMarie, ModelsOfShips.getColorFromId(modelId));
-                    console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
-                    break;
-                default:
-                    console.log("Unknown model ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
-            }
-        } catch (error) {
-            console.error("Error parsing JSON data:", error);
+        const blinkDuration = 250;
+
+        // Konfiguracja modeli
+        const modelsConfig = {
+            1: { canvas: "overlayCanvas1", headingField: "heading1", speedField: "speed1", led: "led1", rsField: "rs_model1_no", track: trackWarta, shipParams: [2, 12.21, 2, 0] },
+            2: { canvas: "overlayCanvas2", headingField: "heading2", speedField: "speed2", led: "led2", rsField: "rs_model2_no", track: trackBlueLady, shipParams: [2, 13.78, 2.38, 0] },
+            3: { canvas: "overlayCanvas3", headingField: "heading3", speedField: "speed3", led: "led3", rsField: "rs_model3_no", track: trackDorchesterLady, shipParams: [2, 11.55, 1.8, 0] },
+            4: { canvas: "overlayCanvas4", headingField: "heading4", speedField: "speed4", led: "led4", rsField: "rs_model4_no", track: trackCherryLady, shipParams: [2, 15.5, 1.79, 0] },
+            5: { canvas: "overlayCanvas5", headingField: "heading5", speedField: "speed5", led: "led5", rsField: "rs_model5_no", track: trackKolobrzeg, shipParams: [2, 10.98, 1.78, 1] },
+            6: { canvas: "overlayCanvas6", headingField: "heading6", speedField: "speed6", led: "led6", rsField: "rs_model6_no", track: trackLadyMarie, shipParams: [2, 16.43, 2.23, 0] },
+        };
+
+        const config = modelsConfig[modelId];
+
+        if (config) {
+            clearCanvas(config.canvas);
+            fillFieldValues(config.headingField, angle);
+            fillFieldValues(config.speedField, speed);
+            ledBlink(config.led, blinkDuration);
+            fillFieldValues0(config.rsField, ShipCounter.incrementIntMap(modelId));
+            drawShip(config.canvas, positionX, positionY, ...config.shipParams, ModelsOfShips.getColorFromId(modelId));
+            config.track.push({ x: positionX, y: positionY });
+            drawTrack(getTrackCanvasName(config.canvas), config.track, ModelsOfShips.getColorFromId(modelId));
+            console.log(`Drawing model with ID: ${modelId} at position X: ${positionX}, Y: ${positionY}`);
+        } else {
+            console.log(`Unknown model ID: ${modelId} at position X: ${positionX}, Y: ${positionY}`);
         }
-    };
+
+    } catch (error) {
+        console.error("Error parsing JSON data:", error);
+    }
+};
 
     ws.onerror = function (error) {
         console.error("WebSocket error: ", error);
