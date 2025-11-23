@@ -402,6 +402,82 @@ function createWebSocket() {
         }, duration);
     }
 
+    // Test function to verify drawShip and drawTrack functionality
+    function runShipTest() {
+        console.log("Starting ship and track test...");
+        
+        // Test parameters
+        const testCanvas = "testCanvas";
+        const centerX = 400;  // Center of the test area
+        const centerY = 400;
+        const radius = 200;   // Radius of the circular path
+        const steps = 36;     // Number of steps for a full circle
+        const interval = 200; // Time between steps in ms
+        
+        // Create test canvas if it doesn't exist
+        if (!document.getElementById(testCanvas)) {
+            const canvas = document.createElement('canvas');
+            canvas.id = testCanvas;
+            canvas.width = imgMap.width;
+            canvas.height = imgMap.height;
+            canvas.style.position = 'absolute';
+            canvas.style.top = '0';
+            canvas.style.left = '0';
+            canvas.style.zIndex = '1000';
+            container.appendChild(canvas);
+        }
+        
+        // Create track canvas if it doesn't exist
+        const trackCanvas = testCanvas + "_track";
+        if (!document.getElementById(trackCanvas)) {
+            const canvas = document.createElement('canvas');
+            canvas.id = trackCanvas;
+            canvas.width = imgMap.width;
+            canvas.height = imgMap.height;
+            canvas.style.position = 'absolute';
+            canvas.style.top = '0';
+            canvas.style.left = '0';
+            canvas.style.zIndex = '999';
+            container.appendChild(canvas);
+        }
+        
+        let angle = 0;
+        const angleStep = (2 * Math.PI) / steps;
+        const track = [];
+        
+        // Start the test loop
+        const testInterval = setInterval(() => {
+            // Calculate new position
+            const x = centerX + radius * Math.cos(angle);
+            const y = centerY + radius * Math.sin(angle);
+            const heading = (angle * 180 / Math.PI + 270) % 360; // Convert to degrees and adjust for ship orientation
+            
+            // Add point to track
+            track.push({x, y});
+            
+            // Clear and redraw
+            clearCanvas(testCanvas);
+            
+            // Draw ship
+            drawShip(testCanvas, x, y, 2, heading, '#00ff00', 15, 3, 0);
+            
+            // Draw track
+            drawTrack(trackCanvas, track, '#00ff00');
+            
+            // Update angle for next step
+            angle += angleStep;
+            
+            // Stop after one full circle
+            if (angle >= 2 * Math.PI) {
+                clearInterval(testInterval);
+                console.log("Ship and track test completed successfully!");
+            }
+        }, interval);
+    }
+    
+    // Uncomment the line below to run the test automatically when the script loads
+     runShipTest();
+    
     document.addEventListener("visibilitychange", () => {
         if (document.hidden) {
             if (socket) {
