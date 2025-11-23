@@ -489,3 +489,52 @@ function createWebSocket() {
             }
         }
     });
+
+
+const ModelsOfShips = Object.freeze({
+    WARTA: {id: 1, color: "orange", name: "Warta"},
+    BLEUE_LADY: {id: 2, color: "blue", name: "Blue Lady"},
+    DORCHERTER_LADY: {id: 3, color: "green", name: "Dorchester Lady"},
+    CHERRY_LADY: {id: 4, color: "purple", name: "Cherry Lady"},
+    KOLOBRZEG: {id: 5, color: "lightgray", name: "Kołobrzeg"},
+    LADY_MARIE: {id: 6, color: "darkblue", name: "Lady Marie"},
+
+    getValueFromId(id) {
+        return Object.values(ModelsOfShips).find(ship => ship.id === id);
+    },
+
+    getColorFromId(id) {
+        const ship = ModelsOfShips.getValueFromId(id);
+        return ship ? ship.color.toString() : 'black'; // Return the color or black if not found
+    }
+});
+
+    const ShipCounter = (function () {
+        // Private map
+        const incrementMap = new Map([
+            [ModelsOfShips.WARTA.id, 0],
+            [ModelsOfShips.BLEUE_LADY.id, 0],
+            [ModelsOfShips.DORCHERTER_LADY.id, 0],
+            [ModelsOfShips.CHERRY_LADY.id, 0],
+            [ModelsOfShips.KOLOBRZEG.id, 0],
+            [ModelsOfShips.LADY_MARIE.id, 0]
+        ]);
+
+        // Public function to increment the map's values
+        function incrementIntMap(key) {
+            if (incrementMap.has(key)) {
+                incrementMap.set(key, incrementMap.get(key) + 1);
+                if (incrementMap.get(key) > 999) {
+                    incrementMap.set(key, 0);
+                }
+                return incrementMap.get(key);
+            } else {
+                console.error("Key " + key + " does not exist in map");
+            }
+        }
+
+        // Expose only the incrementIntMap function
+        return {
+            incrementIntMap
+        };
+    })();
