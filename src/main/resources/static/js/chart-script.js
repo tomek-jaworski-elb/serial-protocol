@@ -50,15 +50,14 @@ function initKonvaOverlay() {
     // kontener wewnątrz .canvas-container
     const konvaDiv = document.createElement('div');
     konvaDiv.id = konvaContainerId;
-    // ustawiamy style aby pokrywał obrazek mapy (absolute overlay)
     konvaDiv.style.position = 'absolute';
     konvaDiv.style.left = '0';
     konvaDiv.style.top = '0';
     konvaDiv.style.width = imgMap.width + 'px';
     konvaDiv.style.height = imgMap.height + 'px';
-    konvaDiv.style.pointerEvents = 'none'; // nie blokuje eventów na elementach poniżej
-    konvaDiv.style.zIndex = 999; // nad canvasami
-    // wstawiamy jako pierwszy element wewnątrz container - tak żeby nakładał się nad obrazkiem i canvasami
+    // WAŻNE: musimy odbierać eventy, więc pointerEvents = 'auto'
+    konvaDiv.style.pointerEvents = 'auto';
+    konvaDiv.style.zIndex = 999;
     container.appendChild(konvaDiv);
 
     // Stworzenie stage Konva
@@ -214,16 +213,17 @@ function computeShipVerticesForKonva(x, y, scale, angle, yy, xx, pp) {
 // Tworzymy obiekty Konva dla wszystkich modeli (linie tras + kształty statków)
 function createKonvaObjectsForModels() {
     if (!konvaStage || !konvaTrackLayer || !konvaShipLayer) {
-        console.error("Konva stage/warstwy nie są zainicjowane");
+        console.error("createKonvaObjectsForModels: Konva stage/warstwy nie są zainicjowane");
         return;
     }
+
     for (const idString of Object.keys(modelsConfig)) {
         const id = Number(idString);
         const cfg = modelsConfig[id];
 
         // utwórz linię trasy (pusta na start)
         const trackLine = new Konva.Line({
-            points: [], // będzie aktualizowana
+            points: [],
             stroke: ModelsOfShips.getColorFromId(id),
             strokeWidth: 2,
             lineJoin: 'round',
@@ -232,8 +232,7 @@ function createKonvaObjectsForModels() {
         });
         konvaTrackLayer.add(trackLine);
 
-        // utwórz prosty polygon statku - początkowa pozycja (0,0)
-        // używamy computeShipVerticesForKonva, z parametrami domyślnymi = 0
+        // utwórz prosty polygon statku
         const initPoints = computeShipVerticesForKonva(0,0,cfg.scale, 0, ...cfg.shipParams);
         const shipShape = new Konva.Line({
             points: initPoints,
@@ -241,17 +240,58 @@ function createKonvaObjectsForModels() {
             closed: true,
             stroke: 'black',
             strokeWidth: 1,
-            listening: false // żeby nie blokowało eventów (zgodnie z overlay pointerEvents none)
+            listening: true // od razu pozwalamy na eventy
         });
+
+        // handler kliknięcia statku
+        shipShape.on("click", (ev) => {
+            // zabezpieczenie: czy tooltip istnieje?
+            if (!tooltipText || !tooltipBg || !tooltipLayer) {
+                console.warn("Tooltip nie jest jeszcze zainicjowany");
+                return;
+            }
+
+            // zapobiegaj propagacji do stage
+            ev.cancelBubble = true;
+
+            const modelInfo = ModelsOfShips.getValueFromId(id);
+            const modelName = modelInfo ? modelInfo.name : `Model ${id}`;
+
+            // Pobieramy aktualne dane statku
+            const obj = KonvaObjects[id];
+            const lastAngle = obj?.lastAngle ?? 0;
+            const lastSpeed = document.getElementById(modelsConfig[id].speedField)?.textContent ?? "0";
+
+            // Konva.Text nie obsługuje HTML, więc użyjemy prostego formatowania per linia
+            tooltipText.text(` ${modelName}\n ${parseFloat(lastSpeed).toFixed(1)} kn\n ${parseFloat(lastAngle).toFixed(1)}°`);
+
+            const mousePos = konvaStage.getPointerPosition() || { x: 0, y: 0 };
+
+            // ustawiamy pozycję tooltipa
+            const px = mousePos.x + 10;
+            const py = mousePos.y + 10;
+            tooltipText.position({ x: px, y: py });
+
+            // dopasuj tło do tekstu (dodajemy padding)
+            const padding = tooltipText.padding() || 6;
+            tooltipBg.position({ x: px, y: py });
+            tooltipBg.width(tooltipText.width() + padding * 2);
+            tooltipBg.height(tooltipText.height() + padding * 2);
+
+            tooltipBg.visible(true);
+            tooltipText.visible(true);
+            tooltipLayer.batchDraw();
+        });
+
         konvaShipLayer.add(shipShape);
 
-        // zapamiętujemy referencje
         KonvaObjects[id] = {
             trackLine,
             shipShape,
-            // do wygody - ostatnia pozycja
             lastPos: { x: 0, y: 0 },
-            lastAngle: 0
+            lastAngle: 0,
+            lastSpeed: 0,
+            lastHeading: 0
         };
     }
     konvaTrackLayer.draw();
@@ -363,6 +403,8 @@ function updateModelDisplay(config, modelId, positionX, positionY, angle, speed,
 
     // zamiast drawShip na canvasie - aktualizujemy Konva
     if (KonvaObjects[modelId]) {
+        KonvaObjects[modelId].lastSpeed = speed;
+        KonvaObjects[modelId].lastHeading = angle;
         updateKonvaShip(modelId, positionX, positionY, angle);
     } else {
         // fallback: rysuj na canvasie
@@ -542,17 +584,80 @@ document.addEventListener("visibilitychange", () => {
     }
 });
 
+// === TOOLTIP KONVA ===
+let tooltipLayer = null;
+let tooltipText = null;
+let tooltipBg = null;
+
+function initTooltip() {
+    if (!konvaStage) {
+        console.error("initTooltip: konvaStage nie jest zainicjowane");
+        return;
+    }
+
+    // jeśli już wcześniej istniał tooltip - usuń go by nie duplikować
+    if (tooltipLayer) {
+        tooltipLayer.destroy();
+        tooltipLayer = null;
+        tooltipText = null;
+        tooltipBg = null;
+    }
+
+    tooltipLayer = new Konva.Layer();
+
+    tooltipBg = new Konva.Rect({
+        x: 0, y: 0,
+        width: 140, height: 40,
+        fill: "rgba(0,0,0,0.7)",
+        cornerRadius: 6,
+        visible: false
+    });
+
+    tooltipText = new Konva.Text({
+        x: 0, y: 0,
+        fontFamily: 'Calibri',
+        text: "",
+        fontSize: 14,
+        fill: "white",
+        padding: 6,
+        visible: false
+    });
+
+    tooltipLayer.add(tooltipBg);
+    tooltipLayer.add(tooltipText);
+    konvaStage.add(tooltipLayer);
+    tooltipLayer.draw();
+}
+
+// ukrywanie tooltipa
+function hideTooltip() {
+    if (!tooltipLayer || !tooltipText || !tooltipBg) return;
+    tooltipBg.visible(false);
+    tooltipText.visible(false);
+    tooltipLayer.batchDraw();
+}
+
+
 // ------------------------------------------------------------------
 // Inicjalizacja Konva po załadowaniu DOM (inicjujemy stage i obiekty)
 // ------------------------------------------------------------------
 (function initializeKonvaIfPossible() {
     try {
-        initKonvaOverlay();
-        createKonvaObjectsForModels();
-        // resizeKonvaOverlay()
-        // jeśli mapa kiedyś się zmieni rozmiarem - wywołaj resizeKonvaOverlay()
-        // np. w miejscu gdzie zmieniasz rozmiary canvasów
+        initKonvaOverlay();        // tworzy stage + warstwy
+        initTooltip();             // tooltip zanim podpinamy kliknięcia statków
+        createKonvaObjectsForModels(); // teraz tworzymy statki (handlery mają dostęp do tooltip)
+        // stage click => ukryj tooltip
+        if (konvaStage) {
+            konvaStage.on("click", () => {
+                hideTooltip();
+            });
+        }
     } catch (e) {
         console.error("Błąd podczas inicjalizacji Konva:", e);
     }
 })();
+
+// kliknięcie w tło (stage) ukrywa tooltip
+konvaStage.on("click", () => {
+    hideTooltip();
+});
