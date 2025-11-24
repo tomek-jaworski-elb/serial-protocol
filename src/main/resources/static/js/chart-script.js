@@ -569,7 +569,9 @@ function runShipTest(id, angleQ, center_X, center_Y, step, intervalIn) {
 runShipTest(1, 0, 400, 400, 36, 500);
 runShipTest(2, Math.PI/4, 300, 600, 63,222);
 runShipTest(3, -Math.PI/3, 600, 400, 50,333);
-runShipTest(4, -Math.PI/5, 400, 300, 70,333);
+runShipTest(4, -Math.PI/5, 540, 320, 70,333);
+runShipTest(5, -Math.PI/2.5, 400, 230, 70,333);
+runShipTest(6, -Math.PI/2, 333, 333, 70,333);
 
 // Zarządzanie widocznością dokumentu (WebSocket reconnect)
 document.addEventListener("visibilitychange", () => {
