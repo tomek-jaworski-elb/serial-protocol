@@ -525,7 +525,9 @@ function runShipTest(id, angleQ, center_X, center_Y, step, intervalIn) {
 
 // uruchamiamy test (odkomentuj/usun w produkcji)
 runShipTest(1, 0, 400, 400, 36, 500);
-runShipTest(2, 0, 300, 600, 63,222);
+runShipTest(2, Math.PI/4, 300, 600, 63,222);
+runShipTest(3, -Math.PI/3, 600, 400, 50,333);
+runShipTest(4, -Math.PI/5, 400, 300, 70,333);
 
 // Zarządzanie widocznością dokumentu (WebSocket reconnect)
 document.addEventListener("visibilitychange", () => {
@@ -547,6 +549,7 @@ document.addEventListener("visibilitychange", () => {
     try {
         initKonvaOverlay();
         createKonvaObjectsForModels();
+        // resizeKonvaOverlay()
         // jeśli mapa kiedyś się zmieni rozmiarem - wywołaj resizeKonvaOverlay()
         // np. w miejscu gdzie zmieniasz rozmiary canvasów
     } catch (e) {
