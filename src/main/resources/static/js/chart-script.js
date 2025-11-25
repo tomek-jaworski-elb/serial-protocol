@@ -573,6 +573,52 @@ runShipTest(4, -Math.PI/5, 540, 320, 70,333);
 runShipTest(5, -Math.PI/2.5, 400, 230, 70,333);
 runShipTest(6, -Math.PI/2, 333, 333, 70,333);
 
+function drawTriangle(x, y, size = 20, color = "red", label = "") {
+    if (!konvaShipLayer) {
+        console.error("drawTriangle: konvaShipLayer nie jest zainicjowana");
+        return;
+    }
+
+    const height = size * Math.sqrt(3) / 2;
+
+    // Trójkąt
+    const triangle = new Konva.Line({
+        points: [
+            x, y - height / 2,            // góra
+            x - size / 2, y + height / 2, // lewy dół
+            x + size / 2, y + height / 2  // prawy dół
+        ],
+        fill: color,
+        closed: true,
+        stroke: "black",
+        strokeWidth: 1
+    });
+
+    konvaShipLayer.add(triangle);
+
+    // Tekst pod trójkątem
+    if (label) {
+        const text = new Konva.Text({
+            text: label,
+            fontSize: 12,
+            fontFamily: 'Calibri',
+            fontStyle: 'bold',
+            padding: 2,
+            stroke: "black",
+            strokeWidth: 0.99,
+            fill: "gray"
+        });
+
+        // ustawienie pozycji tekstu centralnie pod trójkątem
+        text.x(x - text.width() / 2);
+        text.y(y + height / 2 + 5); // kilka pikseli poniżej trójkąta
+
+        konvaShipLayer.add(text);
+    }
+
+    konvaShipLayer.draw();
+}
+
 // Zarządzanie widocznością dokumentu (WebSocket reconnect)
 document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
@@ -639,7 +685,6 @@ function hideTooltip() {
     tooltipLayer.batchDraw();
 }
 
-
 // ------------------------------------------------------------------
 // Inicjalizacja Konva po załadowaniu DOM (inicjujemy stage i obiekty)
 // ------------------------------------------------------------------
@@ -654,6 +699,9 @@ function hideTooltip() {
                 hideTooltip();
             });
         }
+        drawTriangle( (0 + 60.0 + 4) * mapa_x, (0 + 506.0) * mapa_x, 10, "orange", "pozycja [0;0]");
+        drawTriangle( (77.07 + 60 + 4) * mapa_x, (97.25 + 506) * mapa_x, 10, "yellow", "SBM");
+        drawTriangle( (378.3 + 60 + 4) * mapa_x, (191.8 + 506) * mapa_x, 10, "green", "FPSO");
     } catch (e) {
         console.error("Błąd podczas inicjalizacji Konva:", e);
     }
