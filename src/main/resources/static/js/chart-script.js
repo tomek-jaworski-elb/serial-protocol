@@ -478,8 +478,8 @@ socket = createWebSocket();
 function getScaledPoints(oldX, oldY) {
     const staticShift_y = 506;
     const staticShift_x = 64;
-    scaleX = mapa_x;
-    scaleY = mapa_x;
+    const scaleX = mapa_x;
+    const scaleY = mapa_x;
     console.log("ScaleX: " + scaleX + ", ScaleY: " + scaleY);
     console.log("Old X: " + oldX + ", Old Y:  " + oldY)
     const y = (-oldX + staticShift_y) * scaleY;
@@ -539,6 +539,8 @@ function ledBlink(elementId, duration) {
 // ------------------------------------------------------------------
 // TEST funkcja runShipTest - teraz korzysta z updateModelDisplay (Konva się zaktualizuje)
 // ------------------------------------------------------------------
+const ENABLE_TEST_RUNS = false;
+
 function runShipTest(id, angleQ, center_X, center_Y, step, intervalIn) {
     console.log("Starting ship and track test...");
     const centerX = center_X;
@@ -566,12 +568,14 @@ function runShipTest(id, angleQ, center_X, center_Y, step, intervalIn) {
 }
 
 // uruchamiamy test (odkomentuj/usun w produkcji)
-runShipTest(1, 0, 400, 400, 36, 500);
-runShipTest(2, Math.PI/4, 300, 600, 63,222);
-runShipTest(3, -Math.PI/3, 600, 400, 50,333);
-runShipTest(4, -Math.PI/5, 540, 320, 70,333);
-runShipTest(5, -Math.PI/2.5, 400, 230, 70,333);
-runShipTest(6, -Math.PI/2, 333, 333, 70,333);
+if (ENABLE_TEST_RUNS) {
+    runShipTest(1, 0, 400, 400, 36, 500);
+    runShipTest(2, Math.PI/4, 300, 600, 63,222);
+    runShipTest(3, -Math.PI/3, 600, 400, 50,333);
+    runShipTest(4, -Math.PI/5, 540, 320, 70,333);
+    runShipTest(5, -Math.PI/2.5, 400, 230, 70,333);
+    runShipTest(6, -Math.PI/2, 333, 333, 70,333);
+}
 
 function drawTriangle(x, y, size = 20, color = "red", label = "") {
     if (!konvaShipLayer) {
@@ -706,8 +710,3 @@ function hideTooltip() {
         console.error("Błąd podczas inicjalizacji Konva:", e);
     }
 })();
-
-// kliknięcie w tło (stage) ukrywa tooltip
-konvaStage.on("click", () => {
-    hideTooltip();
-});
