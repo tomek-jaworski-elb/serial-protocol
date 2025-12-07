@@ -86,6 +86,18 @@ function resizeKonvaOverlay() {
     konvaStage.draw();
 }
 
+// Throttling dla resizeKonvaOverlay
+let resizeKonvaTimeout = null;
+function throttledResizeKonvaOverlay() {
+    if (resizeKonvaTimeout) clearTimeout(resizeKonvaTimeout);
+    resizeKonvaTimeout = setTimeout(() => {
+        resizeKonvaOverlay();
+        resizeKonvaTimeout = null;
+    }, 100);
+}
+// Przykład podpięcia do zdarzenia resize (jeśli nie było)
+window.addEventListener('resize', throttledResizeKonvaOverlay);
+
 // --- preload obrazków LED (bez zmian) ---
 let mapa_x = 2.407; /// było 2.4   = kalibracja mapy
 
@@ -298,6 +310,13 @@ function createKonvaObjectsForModels() {
     konvaShipLayer.draw();
 }
 
+// Liczniki do optymalizacji batchDraw
+const konvaDrawCounters = {
+    track: 0,
+    ship: 0
+};
+const KONVA_DRAW_INTERVAL = 5; // co ile aktualizacji rysować
+
 // Aktualizuje Konva-owy kształt statku (pozycja i rotacja)
 function updateKonvaShip(id, x, y, angle) {
     const obj = KonvaObjects[id];
@@ -308,8 +327,11 @@ function updateKonvaShip(id, x, y, angle) {
     const points = computeShipVerticesForKonva(x, y, cfg.scale, angle, ...cfg.shipParams);
     obj.shipShape.points(points);
 
-    // odśwież warstwę (można ograniczyć do draw() raz na kilka aktualizacji)
-    konvaShipLayer.batchDraw();
+    konvaDrawCounters.ship++;
+    if (konvaDrawCounters.ship % KONVA_DRAW_INTERVAL === 0) {
+        konvaShipLayer.batchDraw();
+        konvaDrawCounters.ship = 0;
+    }
     obj.lastPos = { x, y };
     obj.lastAngle = angle;
 }
@@ -327,7 +349,11 @@ function updateKonvaTrack(id) {
         pts.push(p.y);
     }
     obj.trackLine.points(pts);
-    konvaTrackLayer.batchDraw();
+    konvaDrawCounters.track++;
+    if (konvaDrawCounters.track % KONVA_DRAW_INTERVAL === 0) {
+        konvaTrackLayer.batchDraw();
+        konvaDrawCounters.track = 0;
+    }
 }
 
 // ------------------------------------------------------------------
@@ -411,8 +437,11 @@ function updateModelDisplay(config, modelId, positionX, positionY, angle, speed,
         drawShip(config.canvas, positionX, positionY, config.scale, angle, ModelsOfShips.getColorFromId(modelId), ...config.shipParams);
     }
 
-    // aktualizujemy lokalny track (tablica punktów) - bez zmian
+    // aktualizujemy lokalny track (tablica punktów) - dodajemy limit długości
     config.track.push({ x: positionX, y: positionY });
+    if (config.track.length > 1000) {
+        config.track.splice(0, config.track.length - 1000);
+    }
 
     // zamiast rysowania track na canvasie - aktualizujemy Konva track
     if (KonvaObjects[modelId]) {
@@ -421,7 +450,8 @@ function updateModelDisplay(config, modelId, positionX, positionY, angle, speed,
         drawTrack(getTrackCanvasName(config.canvas), config.track, ModelsOfShips.getColorFromId(modelId));
     }
 
-    console.log(`Drawing model with ID: ${modelId} at position X: ${positionX}, Y: ${positionY}`);
+    // Usunięto nadmiarowy log
+    // console.log(`Drawing model with ID: ${modelId} at position X: ${positionX}, Y: ${positionY}`);
 }
 
 // ------------------------------------------------------------------
@@ -480,56 +510,64 @@ function getScaledPoints(oldX, oldY) {
     const staticShift_x = 64;
     const scaleX = mapa_x;
     const scaleY = mapa_x;
-    console.log("ScaleX: " + scaleX + ", ScaleY: " + scaleY);
-    console.log("Old X: " + oldX + ", Old Y:  " + oldY)
+    // Usunięto logi
+    // console.log("ScaleX: " + scaleX + ", ScaleY: " + scaleY);
+    // console.log("Old X: " + oldX + ", Old Y:  " + oldY)
     const y = (-oldX + staticShift_y) * scaleY;
     const x = (oldY + staticShift_x ) * scaleX;
-    console.log("New X: " + x + ", New Y: " +  y);
+    // console.log("New X: " + x + ", New Y: " +  y);
     return {x, y};
 }
 
 // Function to clear the first canvas
 function clearCanvas(elementId) {
-    const element = document.getElementById(elementId);
+    const element = getCachedElement(elementId);
     if (!element) return;
     const context = element.getContext('2d');
     context.clearRect(0, 0, element.width, element.height);
-    console.log("Clear canvas width: " + element.width + ", height: " +  element.height);
+    // console.log("Clear canvas width: " + element.width + ", height: " +  element.height);
 }
 
 // ------------------------------------------------------------------
 // Pozostałe pomocnicze funkcje (LED, pola) - zostawione bez zmian
 // ------------------------------------------------------------------
+// Bufor na referencje do elementów DOM
+const domElementCache = {};
+function getCachedElement(id) {
+    if (!domElementCache[id]) {
+        domElementCache[id] = document.getElementById(id);
+    }
+    return domElementCache[id];
+}
+
 function fillFieldValues(elementId, value) {
-    const spanElement = document.getElementById(elementId);
+    const spanElement = getCachedElement(elementId);
     if (!spanElement) return;
     if (String(elementId).includes("heading")) {
         spanElement.innerHTML = value.toFixed(1).padStart(4, '0');
-        console.log("Heading: " + value.toFixed(1).padStart(4, '0'));
+        // console.log("Heading: " + value.toFixed(1).padStart(4, '0'));
     } else {
         spanElement.innerHTML = value.toFixed(1);
-        console.log("Speed: " + value.toFixed(1));
+        // console.log("Speed: " + value.toFixed(1));
     }
 }
 
 function fillFieldValues0(elementId, value) {
-    const spanElement = document.getElementById(elementId);
+    const spanElement = getCachedElement(elementId);
     if (!spanElement) return;
     spanElement.innerHTML = value;
 }
 
 function ledBlink(elementId, duration) {
     if (!imgLedOn || !imgLedOff) {
-        console.warn("Obrazy jeszcze się nie załadowały");
+        // console.warn("Obrazy jeszcze się nie załadowały");
         return;
     }
-
-    const element = document.getElementById(elementId);
+    const element = getCachedElement(elementId);
     if (!element) {
-        console.error(`Element z ID '${elementId}' nie istnieje`);
+        // console.error(`Element z ID '${elementId}' nie istnieje`);
         return;
     }
-
     element.src = imgLedOn.src;
     setTimeout(() => {
         element.src = imgLedOff.src;
@@ -540,6 +578,7 @@ function ledBlink(elementId, duration) {
 // TEST funkcja runShipTest - teraz korzysta z updateModelDisplay (Konva się zaktualizuje)
 // ------------------------------------------------------------------
 const ENABLE_TEST_RUNS = false;
+const ENABLE_TRIANGLE_RUNS = false;
 
 function runShipTest(id, angleQ, center_X, center_Y, step, intervalIn) {
     console.log("Starting ship and track test...");
@@ -703,10 +742,30 @@ function hideTooltip() {
                 hideTooltip();
             });
         }
-        drawTriangle( (0 + 60.0 + 4) * mapa_x, (0 + 506.0) * mapa_x, 10, "orange", "pozycja [0;0]");
-        drawTriangle( (77.07 + 60 + 4) * mapa_x, (97.25 + 506) * mapa_x, 10, "yellow", "SBM");
-        drawTriangle( (378.3 + 60 + 4) * mapa_x, (191.8 + 506) * mapa_x, 10, "green", "FPSO");
+        if (ENABLE_TRIANGLE_RUNS) {
+            drawTriangle((0 + 60.0 + 4) * mapa_x, (0 + 506.0) * mapa_x, 10, "orange", "pozycja [0;0]");
+            drawTriangle((77.07 + 60 + 4) * mapa_x, (97.25 + 506) * mapa_x, 10, "yellow", "SBM"); // SBM    -97.25x77.07
+            drawTriangle((378.3 + 60 + 4) * mapa_x, (191.8 + 506) * mapa_x, 10, "green", "FPSO"); // FPSO   -191.8x378.3
+            drawTriangle((-25 + 64) * mapa_x, (84 + 506) * mapa_x, 10, "green", "nabieznik"); //  -84x25
+            drawTriangle((82.8 + 64) * mapa_x, (-69 + 506) * mapa_x, 10, "green", "port nabieznik"); // port nabieznik ->         69x82.8
+            drawTriangle((2 + 64) * mapa_x, (-130 + 506) * mapa_x, 10, "green", "pomost Lesniczowka"); // pomost Lesniczowka        130x2
+            drawTriangle((79 + 64) * mapa_x, (-188 + 506) * mapa_x, 10, "green", "Slip kolej END"); // Slip kolej END           188x79
+            drawTriangle((926 + 64) * mapa_x, (1149 + 506) * mapa_x, 10, "green", "Wiata END jeziora");
+        }
     } catch (e) {
         console.error("Błąd podczas inicjalizacji Konva:", e);
     }
 })();
+
+/*
+drawTriangle("overlayCanvas1", (0 + 60 + 4) * mapa_x, (0 + 506) * mapa_x, 6, 1, 'white');         // pozycja 0 x 0             0x0
+drawTriangle("overlayCanvas1", (77.07 + 60 + 4) * mapa_x, (97.25 + 506) * mapa_x, 6, 1, 'orange');        // SBM    -97.25x77.07
+drawTriangle("overlayCanvas1", (378.3 + 60 + 4) * mapa_x, (191.8 + 506) * mapa_x, 6, 1, 'orange');        // FPSO   -191.8x378.3
+drawTriangle("overlayCanvas1", (-25 + 64) * mapa_x, (84 + 506) * mapa_x, 6, 1, 'red');               // <- nabieznik             -84x25
+drawTriangle("overlayCanvas1", (82.8 + 64) * mapa_x, (-69 + 506) * mapa_x, 6, 1, 'red');               // port nabieznik ->         69x82.8
+drawTriangle("overlayCanvas1", (2 + 64) * mapa_x, (-130 + 506) * mapa_x, 6, 1, 'red');               // pomost Lesniczowka        130x2
+drawTriangle("overlayCanvas1", (79 + 64) * mapa_x, (-188 + 506) * mapa_x, 6, 1, 'red');               // Slip kolej END           188x79
+drawTriangle("overlayCanvas1", (570 + 64) * mapa_x, (-362 + 506) * mapa_x, 6, 1, 'red');               // boja kompielisko         320x570
+drawTriangle("overlayCanvas1", (820 + 64) * mapa_x, (610 + 506) * mapa_x, 6, 1, 'red');               // -> zatoka               -610x820
+drawTriangle("overlayCanvas1", (926 + 64) * mapa_x, (1149 + 506) * mapa_x, 6, 1, 'red');               // Wiata END jeziora      -1149x926
+*/
