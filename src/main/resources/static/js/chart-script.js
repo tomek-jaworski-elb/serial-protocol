@@ -1,223 +1,490 @@
-    let socket;
-    let trackWarta = []; // Warta
-    let trackCherryLady = []; // Cherry Lady
-    let trackBlueLady = []; // Blue Lady
-    let trackDorchesterLady = []; // Blue Lady
-    let trackKolobrzeg = []; // Blue Lady
-    let trackLadyMarie = []; // Blue Lady
+let socket;
+let trackWarta = []; // Warta
+let trackCherryLady = []; // Cherry Lady
+let trackBlueLady = []; // Blue Lady
+let trackDorchesterLady = []; // Dorchester Lady
+let trackKolobrzeg = []; // Kołobrzeg
+let trackLadyMarie = []; // Lady Marie
 
-    if (isSamsungBrowser()) {
-        alert("Samsung browser is not supported!\nSwitch to Chrome or Safari instead.")
+if (isSamsungBrowser()) {
+    alert("Samsung browser is not supported!\nSwitch to Chrome or Safari instead.")
+}
+
+function isSamsungBrowser() {
+    return navigator.userAgent.toLocaleLowerCase().includes('samsung');
+}
+
+function getTrackCanvasName(canvasName) {
+    return canvasName + "_track";
+}
+
+const imgMap = document.getElementById("backgroundCanvas");
+const container = document.querySelector('.canvas-container');
+
+for (let elementsByTagNameElement of container.getElementsByTagName('canvas')) {
+    if (navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad') || navigator.userAgent.includes('ios')) {
+        elementsByTagNameElement.width = imgMap.width;
+        elementsByTagNameElement.height = imgMap.height;
+        elementsByTagNameElement.style.width = imgMap.width + 'px';
+        elementsByTagNameElement.style.height =imgMap.height + 'px';
+    } else {
+        elementsByTagNameElement.width = imgMap.width;
+        elementsByTagNameElement.height = imgMap.height;
+        elementsByTagNameElement.style.width = imgMap.width + 'px';
+        elementsByTagNameElement.style.height =imgMap.height + 'px';
     }
+}
 
-    function isSamsungBrowser() {
-        return navigator.userAgent.toLocaleLowerCase().includes('samsung');
+// --- tu dodajemy konvaContainer dynamicznie i stage ---
+const konvaContainerId = 'konvaContainer';
+let konvaStage = null;
+let konvaTrackLayer = null;
+let konvaShipLayer = null;
+
+// init Konva stage as overlay (absolute) and create layers
+function initKonvaOverlay() {
+    // jeśli już istnieje, usuń
+    const existing = document.getElementById(konvaContainerId);
+    if (existing) existing.remove();
+
+    // kontener wewnątrz .canvas-container
+    const konvaDiv = document.createElement('div');
+    konvaDiv.id = konvaContainerId;
+    konvaDiv.style.position = 'absolute';
+    konvaDiv.style.left = '0';
+    konvaDiv.style.top = '0';
+    konvaDiv.style.width = imgMap.width + 'px';
+    konvaDiv.style.height = imgMap.height + 'px';
+    // WAŻNE: musimy odbierać eventy, więc pointerEvents = 'auto'
+    konvaDiv.style.pointerEvents = 'auto';
+    konvaDiv.style.zIndex = 999;
+    container.appendChild(konvaDiv);
+
+    // Stworzenie stage Konva
+    konvaStage = new Konva.Stage({
+        container: konvaContainerId,
+        width: imgMap.width,
+        height: imgMap.height
+    });
+
+    // warstwa tras i warstwa statków
+    konvaTrackLayer = new Konva.Layer();
+    konvaShipLayer = new Konva.Layer();
+
+    konvaStage.add(konvaTrackLayer);
+    konvaStage.add(konvaShipLayer);
+}
+
+// resize konva gdy zmienia się rozmiar mapy
+function resizeKonvaOverlay() {
+    const konvaDiv = document.getElementById(konvaContainerId);
+    if (!konvaDiv || !konvaStage) return;
+    konvaDiv.style.width = imgMap.width + 'px';
+    konvaDiv.style.height = imgMap.height + 'px';
+    konvaStage.width(imgMap.width);
+    konvaStage.height(imgMap.height);
+    konvaStage.draw();
+}
+
+// Throttling dla resizeKonvaOverlay
+let resizeKonvaTimeout = null;
+function throttledResizeKonvaOverlay() {
+    if (resizeKonvaTimeout) clearTimeout(resizeKonvaTimeout);
+    resizeKonvaTimeout = setTimeout(() => {
+        resizeKonvaOverlay();
+        resizeKonvaTimeout = null;
+    }, 100);
+}
+// Przykład podpięcia do zdarzenia resize (jeśli nie było)
+window.addEventListener('resize', throttledResizeKonvaOverlay);
+
+// --- preload obrazków LED (bez zmian) ---
+let mapa_x = 2.407; /// było 2.4   = kalibracja mapy
+
+function preloadImage(src) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = src;
+    });
+}
+
+// Ensure images are fully loaded before using them
+const imagesLoaded = Promise.all([
+    preloadImage("/img/led_connection_green.bmp"),
+    preloadImage("/img/led_connection_1.bmp")
+]);
+
+let imgLedOn, imgLedOff;
+imagesLoaded.then(([on, off]) => {
+    imgLedOn = on;
+    imgLedOff = off;
+}).catch(err => console.error("Błąd ładowania obrazków:", err));
+
+const path = '/json';
+// Set up the text field
+const textField = document.getElementById("textField");
+
+// ------------------------------------------------------------------
+// MODELS CONFIG (używane też do przechowywania obiektów Konva)
+// ------------------------------------------------------------------
+const modelsConfig = {
+    1: { canvas: "overlayCanvas1", headingField: "heading1", speedField: "speed1", led: "led1", rsField: "rs_model1_no", track: trackWarta, scale: 2, shipParams: [12.21, 2, 0] },
+    2: { canvas: "overlayCanvas2", headingField: "heading2", speedField: "speed2", led: "led2", rsField: "rs_model2_no", track: trackBlueLady, scale: 2,  shipParams: [13.78, 2.38, 0] },
+    3: { canvas: "overlayCanvas3", headingField: "heading3", speedField: "speed3", led: "led3", rsField: "rs_model3_no", track: trackDorchesterLady, scale: 2,  shipParams: [11.55, 1.8, 0] },
+    4: { canvas: "overlayCanvas4", headingField: "heading4", speedField: "speed4", led: "led4", rsField: "rs_model4_no", track: trackCherryLady, scale: 2,  shipParams: [15.5, 1.79, 0] },
+    5: { canvas: "overlayCanvas5", headingField: "heading5", speedField: "speed5", led: "led5", rsField: "rs_model5_no", track: trackKolobrzeg, scale: 2,  shipParams: [10.98, 1.78, 1] },
+    6: { canvas: "overlayCanvas6", headingField: "heading6", speedField: "speed6", led: "led6", rsField: "rs_model6_no", track: trackLadyMarie, scale: 2,  shipParams: [16.43, 2.23, 0] },
+};
+
+// kolor i informacje o modelach
+const ModelsOfShips = Object.freeze({
+    WARTA: {id: 1, color: "orange", name: "Warta"},
+    BLEUE_LADY: {id: 2, color: "blue", name: "Blue Lady"},
+    DORCHERTER_LADY: {id: 3, color: "green", name: "Dorchester Lady"},
+    CHERRY_LADY: {id: 4, color: "purple", name: "Cherry Lady"},
+    KOLOBRZEG: {id: 5, color: "lightgray", name: "Kołobrzeg"},
+    LADY_MARIE: {id: 6, color: "darkblue", name: "Lady Marie"},
+
+    getValueFromId(id) {
+        return Object.values(ModelsOfShips).find(ship => ship.id === id);
+    },
+
+    getColorFromId(id) {
+        const ship = ModelsOfShips.getValueFromId(id);
+        return ship ? ship.color.toString() : 'black';
     }
+});
 
-    function getTrackCanvasName(canvasName) {
-        return canvasName + "_track";
-    }
-
-    const imgMap = document.getElementById("backgroundCanvas");
-
-    const container = document.querySelector('.canvas-container');
-
-    for (let elementsByTagNameElement of container.getElementsByTagName('canvas')) {
-       if (navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad') || navigator.userAgent.includes('ios')) {
-          elementsByTagNameElement.width = imgMap.width;
-          elementsByTagNameElement.height = imgMap.height;
-          elementsByTagNameElement.style.width = imgMap.width + 'px';                                                    /// gdy zablokowane win=ok(ale zoom okna to zmiana pozycji modeli) andr-pozycja modeli ifonbai - modele cienkie po lewej stronie mapyi
-          elementsByTagNameElement.style.height =imgMap.height + 'px';                                                   /// gdy odblokowane win =ok android  z-win=ok z-lin przsuniete   ifonbasia  ok
-       } else {
-          elementsByTagNameElement.width = imgMap.width;
-          elementsByTagNameElement.height = imgMap.height;
-          elementsByTagNameElement.style.width = imgMap.width + 'px';
-          elementsByTagNameElement.style.height =imgMap.height + 'px';
-       }
-    }
-
-    let mapa_x = 2.407; /// było 2.4   = kalibracja mapy
-
-//    drawTriangle("overlayCanvas2", (  0    + 60+4) * mapa_x , ( 0    + 506) * mapa_x , 6,    1, 'white');         // pozycja 0 x 0             0x0
-//    drawTriangle("overlayCanvas2", ( 77.07 + 60+4) * mapa_x , (97.25 + 506) * mapa_x , 6,    1, 'orange');        // SBM    -97.25x77.07
-//    drawTriangle("overlayCanvas2", (378.3  + 60+4) * mapa_x , (191.8 + 506) * mapa_x , 6,    1, 'orange');        // FPSO   -191.8x378.3
-//    drawTriangle("overlayCanvas2", (-25  + 64) * mapa_x , (   84 + 506) * mapa_x , 6,    1, 'red');               // <- nabieznik             -84x25
-//    drawTriangle("overlayCanvas2", ( 82.8+ 64) * mapa_x , (  -69 + 506) * mapa_x , 6,    1, 'red');               // port nabieznik ->         69x82.8
-//    drawTriangle("overlayCanvas2", (  2  + 64) * mapa_x , ( -130 + 506) * mapa_x , 6,    1, 'red');               // pomost Lesniczowka        130x2
-//    drawTriangle("overlayCanvas2", ( 79  + 64) * mapa_x , ( -188 + 506) * mapa_x , 6,    1, 'red');               // Slip kolej END           188x79
-//    drawTriangle("overlayCanvas2", (570  + 64) * mapa_x , ( -362 + 506) * mapa_x , 6,    1, 'red');               // boja kompielisko         320x570
-//    drawTriangle("overlayCanvas2", (820  + 64) * mapa_x, (  610 + 506) * mapa_x , 6,    1, 'red');               // -> zatoka               -610x820
-//    drawTriangle("overlayCanvas2", (926  + 64) * mapa_x , ( 1149 + 506) * mapa_x , 6,    1, 'red');               // Wiata END jeziora      -1149x926
-
-    function preloadImage(src) {
-        return new Promise((resolve, reject) => {
-            const img = new Image();
-            img.onload = () => resolve(img);
-            img.onerror = reject;
-            img.src = src;
-        });
-    }
-
-    // Ensure images are fully loaded before using them
-    const imagesLoaded = Promise.all([
-        preloadImage("/img/led_connection_green.bmp"),
-        preloadImage("/img/led_connection_1.bmp")
+// ShipCounter (bez zmian)
+const ShipCounter = (function () {
+    const incrementMap = new Map([
+        [ModelsOfShips.WARTA.id, 0],
+        [ModelsOfShips.BLEUE_LADY.id, 0],
+        [ModelsOfShips.DORCHERTER_LADY.id, 0],
+        [ModelsOfShips.CHERRY_LADY.id, 0],
+        [ModelsOfShips.KOLOBRZEG.id, 0],
+        [ModelsOfShips.LADY_MARIE.id, 0]
     ]);
 
-    let imgLedOn, imgLedOff;
-    imagesLoaded.then(([on, off]) => {
-        imgLedOn = on;
-        imgLedOff = off;
-    }).catch(err => console.error("Błąd ładowania obrazków:", err));
-
-    const path = '/json';
-    // Set up the text field
-    const textField = document.getElementById("textField");
-
-    function drawTrack(overlayCanvas1Track, track, color) {
-        clearCanvas(overlayCanvas1Track);
-        const element = document.getElementById(overlayCanvas1Track);
-        const ctx = element.getContext('2d');
-        if (track.length < 2) return; // No need to draw if less than 2 points
-
-        ctx.beginPath(); // Ensures the path is started
-        ctx.moveTo(track[0].x, track[0].y);
-
-        // Use Path2D for potentially better performance
-        const path = new Path2D();
-        // requestAnimationFrame(drawTrack);
-        path.moveTo(track[0].x, track[0].y);
-        for (let i = 1; i < track.length; i++) {
-            path.lineTo(track[i].x, track[i].y);
+    function incrementIntMap(key) {
+        if (incrementMap.has(key)) {
+            incrementMap.set(key, incrementMap.get(key) + 1);
+            if (incrementMap.get(key) > 999) {
+                incrementMap.set(key, 0);
+            }
+            return incrementMap.get(key);
+        } else {
+            console.error("Key " + key + " does not exist in map");
         }
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 1;
-        ctx.stroke(path);
+    }
+    return {
+        incrementIntMap
+    };
+})();
+
+// ------------------------------------------------------------------
+// Konva - funkcje pomocnicze do rysowania statku i trasy
+// ------------------------------------------------------------------
+const ANGLE_CORRECTION = 9; // zgodnie z Twoim oryginalnym kodem
+
+// obiekt przechowujący instancje Konva dla każdego modelu
+const KonvaObjects = {};
+
+// funkcja obliczająca wierzchołki statku (używana dla Konva)
+function computeShipVerticesForKonva(x, y, scale, angle, yy, xx, pp) {
+    // Twój oryginalny zbiór wierzchołków (bez kopiowania ctx)
+    let vertices = [
+        {x:       0, y: -0.5*yy + pp*(yy/10)},
+        {x:  0.5*xx, y: -0.4*yy + pp*(yy/10)},
+        {x:  0.5*xx, y:  0.5*yy + pp*(yy/10)},
+        {x: -0.5*xx, y:  0.5*yy + pp*(yy/10)},
+        {x: -0.5*xx, y: -0.4*yy + pp*(yy/10)}
+    ];
+
+    // Scale
+    vertices = vertices.map(vertex => ({ x: vertex.x * scale * 1.1, y: vertex.y * scale }));
+
+    // Rotate
+    const radians = (angle + ANGLE_CORRECTION) * Math.PI / 180;
+    vertices = vertices.map(vertex => ({
+        x: vertex.x * Math.cos(radians) - vertex.y * Math.sin(radians),
+        y: vertex.x * Math.sin(radians) + vertex.y * Math.cos(radians)
+    }));
+
+    // Translate
+    vertices = vertices.map(vertex => ({ x: vertex.x + x, y: vertex.y + y }));
+
+    // Konva chce płaską tablicę [x1,y1,x2,y2,...]
+    const flat = [];
+    vertices.forEach(v => { flat.push(v.x); flat.push(v.y); });
+    return flat;
+}
+
+// Tworzymy obiekty Konva dla wszystkich modeli (linie tras + kształty statków)
+function createKonvaObjectsForModels() {
+    if (!konvaStage || !konvaTrackLayer || !konvaShipLayer) {
+        console.error("createKonvaObjectsForModels: Konva stage/warstwy nie są zainicjowane");
+        return;
     }
 
-    // trackWarta.push({x: 100, y: 100});
-    // trackWarta.push({x: -200, y: 400});
-    // trackWarta.push({x: 300, y: -130});
-    // trackWarta.push({x: 400, y: 200});
-    // trackWarta.push({x: 500, y: -20});
-    // trackWarta.push({x: -600, y: -100});
-    // trackWarta.push({x: 700, y: 250});
-    // trackWarta.push({x: -800, y: 300});
+    for (const idString of Object.keys(modelsConfig)) {
+        const id = Number(idString);
+        const cfg = modelsConfig[id];
 
-    // drawTrack(getTrackCanvasName("overlayCanvas1"), trackWarta, ModelsOfShips.getColorFromId(2));
+        // utwórz linię trasy (pusta na start)
+        const trackLine = new Konva.Line({
+            points: [],
+            stroke: ModelsOfShips.getColorFromId(id),
+            strokeWidth: 2,
+            lineJoin: 'round',
+            lineCap: 'round',
+            listening: false
+        });
+        konvaTrackLayer.add(trackLine);
+
+        // utwórz prosty polygon statku
+        const initPoints = computeShipVerticesForKonva(0,0,cfg.scale, 0, ...cfg.shipParams);
+        const shipShape = new Konva.Line({
+            points: initPoints,
+            fill: ModelsOfShips.getColorFromId(id),
+            closed: true,
+            stroke: 'black',
+            strokeWidth: 1,
+            listening: true // od razu pozwalamy na eventy
+        });
+
+        // handler kliknięcia statku
+        shipShape.on("click", (ev) => {
+            // zabezpieczenie: czy tooltip istnieje?
+            if (!tooltipText || !tooltipBg || !tooltipLayer) {
+                console.warn("Tooltip nie jest jeszcze zainicjowany");
+                return;
+            }
+
+            // zapobiegaj propagacji do stage
+            ev.cancelBubble = true;
+
+            const modelInfo = ModelsOfShips.getValueFromId(id);
+            const modelName = modelInfo ? modelInfo.name : `Model ${id}`;
+
+            // Pobieramy aktualne dane statku
+            const obj = KonvaObjects[id];
+            const lastAngle = obj?.lastAngle ?? 0;
+            const lastSpeed = document.getElementById(modelsConfig[id].speedField)?.textContent ?? "0";
+
+            // Konva.Text nie obsługuje HTML, więc użyjemy prostego formatowania per linia
+            tooltipText.text(` ${modelName}\n ${parseFloat(lastSpeed).toFixed(1)} kn\n ${parseFloat(lastAngle).toFixed(1)}°`);
+
+            const mousePos = konvaStage.getPointerPosition() || { x: 0, y: 0 };
+
+            // ustawiamy pozycję tooltipa
+            const px = mousePos.x + 10;
+            const py = mousePos.y + 10;
+            tooltipText.position({ x: px, y: py });
+
+            // dopasuj tło do tekstu (dodajemy padding)
+            const padding = tooltipText.padding() || 6;
+            tooltipBg.position({ x: px, y: py });
+            tooltipBg.width(tooltipText.width() + padding * 2);
+            tooltipBg.height(tooltipText.height() + padding * 2);
+
+            tooltipBg.visible(true);
+            tooltipText.visible(true);
+            tooltipLayer.batchDraw();
+        });
+
+        konvaShipLayer.add(shipShape);
+
+        KonvaObjects[id] = {
+            trackLine,
+            shipShape,
+            lastPos: { x: 0, y: 0 },
+            lastAngle: 0,
+            lastSpeed: 0,
+            lastHeading: 0
+        };
+    }
+    konvaTrackLayer.draw();
+    konvaShipLayer.draw();
+}
+
+// Liczniki do optymalizacji batchDraw
+const konvaDrawCounters = {
+    track: 0,
+    ship: 0
+};
+const KONVA_DRAW_INTERVAL = 5; // co ile aktualizacji rysować
+
+// Aktualizuje Konva-owy kształt statku (pozycja i rotacja)
+function updateKonvaShip(id, x, y, angle) {
+    const obj = KonvaObjects[id];
+    const cfg = modelsConfig[id];
+    if (!obj || !cfg) return;
+
+    // Zaktualizujemy punkty statku bazując na nowych x,y,angle
+    const points = computeShipVerticesForKonva(x, y, cfg.scale, angle, ...cfg.shipParams);
+    obj.shipShape.points(points);
+
+    konvaDrawCounters.ship++;
+    if (konvaDrawCounters.ship % KONVA_DRAW_INTERVAL === 0) {
+        konvaShipLayer.batchDraw();
+        konvaDrawCounters.ship = 0;
+    }
+    obj.lastPos = { x, y };
+    obj.lastAngle = angle;
+}
+
+// Aktualizuje Konva-ową linię trasy na podstawie tablicy punktów cfg.track
+function updateKonvaTrack(id) {
+    const obj = KonvaObjects[id];
+    const cfg = modelsConfig[id];
+    if (!obj || !cfg) return;
+
+    // Konva oczekuje płaskiej tablicy punktów
+    const pts = [];
+    for (let p of cfg.track) {
+        pts.push(p.x);
+        pts.push(p.y);
+    }
+    obj.trackLine.points(pts);
+    konvaDrawCounters.track++;
+    if (konvaDrawCounters.track % KONVA_DRAW_INTERVAL === 0) {
+        konvaTrackLayer.batchDraw();
+        konvaDrawCounters.track = 0;
+    }
+}
+
+// ------------------------------------------------------------------
+// Zamiennik funkcji drawTrack / drawShip: teraz Konva będzie rysował statek i trasę.
+// (Zostawiam też oryginalne drawTrack/drawShip na wypadek, jeśli gdzieś indziej się odwołujesz.)
+// ------------------------------------------------------------------
+
+// ORYGINALNE funkcje zostają (ale nie używane dla statku/trasy w wariancie B)
+function drawTrack(overlayCanvas1Track, track, color) {
+    // elastyczny fallback - rysowanie na zwykłym canvasie
+    clearCanvas(overlayCanvas1Track);
+    const element = document.getElementById(overlayCanvas1Track);
+    const ctx = element.getContext('2d');
+    if (track.length < 2) return;
+    ctx.beginPath();
+    ctx.moveTo(track[0].x, track[0].y);
+    const path = new Path2D();
+    path.moveTo(track[0].x, track[0].y);
+    for (let i = 1; i < track.length; i++) {
+        path.lineTo(track[i].x, track[i].y);
+    }
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1;
+    ctx.stroke(path);
+}
+
+function drawShip(elementId, x, y, scale, angle, fillColor, yy, xx, pp) {
+    // pozostawiam oryginalną implementację jako fallback (nie powinna być wywoływana dla Konva)
+    const ANGLE_CORRECTION_LOCAL = 9;
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    const ctx = element.getContext('2d');
+    let vertices = [
+        {x:       0, y: -0.5*yy + pp*(yy/10)},
+        {x:  0.5*xx, y: -0.4*yy + pp*(yy/10)},
+        {x:  0.5*xx, y:  0.5*yy + pp*(yy/10)},
+        {x: -0.5*xx, y:  0.5*yy + pp*(yy/10)},
+        {x: -0.5*xx, y: -0.4*yy + pp*(yy/10)}
+    ];
+    vertices = vertices.map(vertex => ({ x: vertex.x * scale * 1.1, y: vertex.y * scale }));
+    const radians = (angle + ANGLE_CORRECTION_LOCAL) * Math.PI / 180;
+    vertices = vertices.map(vertex => ({
+        x: vertex.x * Math.cos(radians) - vertex.y * Math.sin(radians),
+        y: vertex.x * Math.sin(radians) + vertex.y * Math.cos(radians)
+    }));
+    vertices = vertices.map(vertex => ({ x: vertex.x + x, y: vertex.y + y }));
+    ctx.beginPath();
+    ctx.moveTo(vertices[0].x, vertices[0].y);
+    for (let i = 1; i < vertices.length; i++) ctx.lineTo(vertices[i].x, vertices[i].y);
+    ctx.closePath();
+    ctx.fillStyle = fillColor;
+    ctx.fill();
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+}
+
+// ------------------------------------------------------------------
+// Funkcja do aktualizacji wyświetlania modelu - zmieniona by aktualizować Konva
+// ------------------------------------------------------------------
+function updateModelDisplay(config, modelId, positionX, positionY, angle, speed, blinkDuration = 250) {
+    // nadal czyścimy canvas przypisany do modelu (jeśli tam jest coś rysowane)
+    try {
+        clearCanvas(config.canvas);
+    } catch (e) {
+        console.warn("clearCanvas error:", e);
+    }
+
+    fillFieldValues(config.headingField, angle);
+    fillFieldValues(config.speedField, speed);
+    ledBlink(config.led, blinkDuration);
+    fillFieldValues0(config.rsField, ShipCounter.incrementIntMap(modelId));
+
+    // zamiast drawShip na canvasie - aktualizujemy Konva
+    if (KonvaObjects[modelId]) {
+        KonvaObjects[modelId].lastSpeed = speed;
+        KonvaObjects[modelId].lastHeading = angle;
+        updateKonvaShip(modelId, positionX, positionY, angle);
+    } else {
+        // fallback: rysuj na canvasie
+        drawShip(config.canvas, positionX, positionY, config.scale, angle, ModelsOfShips.getColorFromId(modelId), ...config.shipParams);
+    }
+
+    // aktualizujemy lokalny track (tablica punktów) - dodajemy limit długości
+    config.track.push({ x: positionX, y: positionY });
+    if (config.track.length > 1000) {
+        config.track.splice(0, config.track.length - 1000);
+    }
+
+    // zamiast rysowania track na canvasie - aktualizujemy Konva track
+    if (KonvaObjects[modelId]) {
+        updateKonvaTrack(modelId);
+    } else {
+        drawTrack(getTrackCanvasName(config.canvas), config.track, ModelsOfShips.getColorFromId(modelId));
+    }
+
+    // Usunięto nadmiarowy log
+    // console.log(`Drawing model with ID: ${modelId} at position X: ${positionX}, Y: ${positionY}`);
+}
+
+// ------------------------------------------------------------------
+// WebSocket, skalowanie i reszta logiki - zgodnie z oryginałem (z małą poprawką aby resize Konva działał)
+// ------------------------------------------------------------------
 function createWebSocket() {
     const ws = new WebSocket(`${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.hostname}:${window.location.port}${path}`);
 
     ws.onmessage = function (event) {
         console.log("WebSocket message received: ", event.data);
-
-        // Update the text field
         textField.textContent = event.data;
+
         try {
-            const data = JSON.parse(event.data)
+            const data = JSON.parse(event.data);
             const modelId = Number(data.modelName);
             let positionX = parseFloat(data.positionX);
             let positionY = parseFloat(data.positionY);
             const angle = parseFloat(data.heading);
             const speed = parseFloat(data.speed);
+
+            // Skalowanie punktów
             const newPoints = getScaledPoints(positionX, positionY);
             positionX = newPoints.x;
             positionY = newPoints.y;
-            const blinkDuration = 250;
-            let canvasName;
-            const no_max = 999;
-            switch (modelId) {
-                case 1:
-                    canvasName = "overlayCanvas1"
-                    clearCanvas(canvasName);
-                    fillFieldValues("heading1", angle);
-                    fillFieldValues("speed1", speed);
-                    ledBlink('led1', blinkDuration);
-                    fillFieldValues0("rs_model1_no", ShipCounter.incrementIntMap(modelId));
-                    drawShip(canvasName, positionX, positionY, 2, angle, ModelsOfShips.getColorFromId(modelId), 12.21, 2, 0);// Warta
-                    trackWarta.push({x: positionX, y: positionY});
-                    drawTrack(getTrackCanvasName(canvasName), trackWarta, ModelsOfShips.getColorFromId(modelId));
-//                                    x,y,4,angle,'blue'
-                    drawTriangle("overlayCanvas1", 400, 100, 10, 90, 'red');
-                    drawTriangle("overlayCanvas1", 500, 200, 10, 90, 'blue');
 
-                    drawTriangle("overlayCanvas1", (0 + 60 + 4) * mapa_x, (0 + 506) * mapa_x, 6, 1, 'white');         // pozycja 0 x 0             0x0
-                    drawTriangle("overlayCanvas1", (77.07 + 60 + 4) * mapa_x, (97.25 + 506) * mapa_x, 6, 1, 'orange');        // SBM    -97.25x77.07
-                    drawTriangle("overlayCanvas1", (378.3 + 60 + 4) * mapa_x, (191.8 + 506) * mapa_x, 6, 1, 'orange');        // FPSO   -191.8x378.3
-                    drawTriangle("overlayCanvas1", (-25 + 64) * mapa_x, (84 + 506) * mapa_x, 6, 1, 'red');               // <- nabieznik             -84x25
-                    drawTriangle("overlayCanvas1", (82.8 + 64) * mapa_x, (-69 + 506) * mapa_x, 6, 1, 'red');               // port nabieznik ->         69x82.8
-                    drawTriangle("overlayCanvas1", (2 + 64) * mapa_x, (-130 + 506) * mapa_x, 6, 1, 'red');               // pomost Lesniczowka        130x2
-                    drawTriangle("overlayCanvas1", (79 + 64) * mapa_x, (-188 + 506) * mapa_x, 6, 1, 'red');               // Slip kolej END           188x79
-                    drawTriangle("overlayCanvas1", (570 + 64) * mapa_x, (-362 + 506) * mapa_x, 6, 1, 'red');               // boja kompielisko         320x570
-                    drawTriangle("overlayCanvas1", (820 + 64) * mapa_x, (610 + 506) * mapa_x, 6, 1, 'red');               // -> zatoka               -610x820
-                    drawTriangle("overlayCanvas1", (926 + 64) * mapa_x, (1149 + 506) * mapa_x, 6, 1, 'red');               // Wiata END jeziora      -1149x926
+            const config = modelsConfig[modelId];
 
-                    console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
-                    break;
-                case 2:
-                    canvasName = "overlayCanvas2"
-                    clearCanvas(canvasName);
-                    fillFieldValues("heading2", angle);
-                    fillFieldValues("speed2", speed);
-                    ledBlink('led2', blinkDuration);
-                    fillFieldValues0("rs_model2_no", ShipCounter.incrementIntMap(modelId));
-                    drawShip(canvasName, positionX, positionY, 2, angle, ModelsOfShips.getColorFromId(modelId), 13.78, 2.38, 0);// B.L.
-                    trackBlueLady.push({x: positionX, y: positionY});
-                    drawTrack(getTrackCanvasName(canvasName), trackBlueLady, ModelsOfShips.getColorFromId(modelId));
-                    console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
-                    break;
-                case 3:
-                    canvasName = "overlayCanvas3"
-                    clearCanvas(canvasName);
-                    fillFieldValues("heading3", angle);
-                    fillFieldValues("speed3", speed);
-                    ledBlink('led3', blinkDuration);
-                    fillFieldValues0("rs_model3_no", ShipCounter.incrementIntMap(modelId));
-                    drawShip(canvasName, positionX, positionY, 2, angle, ModelsOfShips.getColorFromId(modelId), 11.55, 1.8, 0);// D.L.
-                    trackDorchesterLady.push({x: positionX, y: positionY});
-                    drawTrack(getTrackCanvasName(canvasName), trackDorchesterLady, ModelsOfShips.getColorFromId(modelId));
-                    console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
-                    break;
-                case 4:
-                    canvasName = "overlayCanvas4"
-                    clearCanvas(canvasName);
-                    fillFieldValues("heading4", angle);
-                    fillFieldValues("speed4", speed);
-                    ledBlink('led4', blinkDuration);
-                    fillFieldValues0("rs_model4_no", ShipCounter.incrementIntMap(modelId));
-                    drawShip(canvasName, positionX, positionY, 2, angle, ModelsOfShips.getColorFromId(modelId), 15.5, 1.79, 0);
-                    trackCherryLady.push({x: positionX, y: positionY});
-                    drawTrack(getTrackCanvasName(canvasName), trackCherryLady, ModelsOfShips.getColorFromId(modelId));
-                    console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
-                    break;
-                case 5:
-                    canvasName = "overlayCanvas5"
-                    clearCanvas(canvasName);
-                    fillFieldValues("heading5", angle);
-                    fillFieldValues("speed5", speed);
-                    ledBlink('led5', blinkDuration);
-                    fillFieldValues0("rs_model5_no", ShipCounter.incrementIntMap(modelId));
-                    drawShip(canvasName, positionX, positionY, 2, angle, ModelsOfShips.getColorFromId(modelId), 10.98, 1.78, 1);                      // PROM
-                    //                                        "Position_GPS" = Length / 2 + PositionGPS * Length / 10
-                    trackKolobrzeg.push({x: positionX, y: positionY});
-                    drawTrack(getTrackCanvasName(canvasName), trackKolobrzeg, ModelsOfShips.getColorFromId(modelId));
-                    console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
-                    break;
-                case 6:
-                    canvasName = "overlayCanvas6"
-                    clearCanvas(canvasName);
-                    fillFieldValues("heading6", angle);
-                    fillFieldValues("speed6", speed);
-                    ledBlink('led6', blinkDuration);
-                    fillFieldValues0("rs_model6_no", ShipCounter.incrementIntMap(modelId));
-                    drawShip(canvasName, positionX, positionY, 2, angle, ModelsOfShips.getColorFromId(modelId), 16.43, 2.23, 0);                       // L.M.
-                    trackLadyMarie.push({x: positionX, y: positionY});
-                    drawTrack(getTrackCanvasName(canvasName), trackLadyMarie, ModelsOfShips.getColorFromId(modelId));
-                    console.log("Drawing model with ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
-                    break;
-                default:
-                    console.log("Unknown model ID: " + modelId + " at position X: " + positionX + ", Y: " + positionY);
+            if (config) {
+                updateModelDisplay(config, modelId, positionX, positionY, angle, speed);
+            } else {
+                console.log(`Unknown model ID: ${modelId} at position X: ${positionX}, Y: ${positionY}`);
             }
+
         } catch (error) {
             console.error("Error parsing JSON data:", error);
         }
@@ -236,180 +503,269 @@ function createWebSocket() {
     };
     return ws;
 }
-    socket = createWebSocket();
+socket = createWebSocket();
 
-    function getScaledPoints(oldX, oldY) {
-        const staticShift_y = 506;                                                                                      // 506
-        const staticShift_x = 64;                                                                                       //  64
-        scaleX = mapa_x; /// 2.4; // 3.61 / 1.5 ; /// 1;// 3.61;                   // 2.407                                                                               //   3.61
-        scaleY = mapa_x; /// 2.4; // 3.61 / 1.5 ; /// 1;// 3.61;                                                                                                  //   3.61
-        console.log("ScaleX: " + scaleX + ", ScaleY: " + scaleY);
-        console.log("Old X: " + oldX + ", Old Y:  " + oldY)
-        // Changed coordinate system x->y , y->x
-        const y = (-oldX + staticShift_y) * scaleY;
-        const x = (oldY + staticShift_x ) * scaleX;
-        console.log("New X: " + x + ", New Y: " +  y);
-        return {x, y};
+function getScaledPoints(oldX, oldY) {
+    const staticShift_y = 506;
+    const staticShift_x = 64;
+    const scaleX = mapa_x;
+    const scaleY = mapa_x;
+    // Usunięto logi
+    // console.log("ScaleX: " + scaleX + ", ScaleY: " + scaleY);
+    // console.log("Old X: " + oldX + ", Old Y:  " + oldY)
+    const y = (-oldX + staticShift_y) * scaleY;
+    const x = (oldY + staticShift_x ) * scaleX;
+    // console.log("New X: " + x + ", New Y: " +  y);
+    return {x, y};
+}
+
+// Function to clear the first canvas
+function clearCanvas(elementId) {
+    const element = getCachedElement(elementId);
+    if (!element) return;
+    const context = element.getContext('2d');
+    context.clearRect(0, 0, element.width, element.height);
+    // console.log("Clear canvas width: " + element.width + ", height: " +  element.height);
+}
+
+// ------------------------------------------------------------------
+// Pozostałe pomocnicze funkcje (LED, pola) - zostawione bez zmian
+// ------------------------------------------------------------------
+// Bufor na referencje do elementów DOM
+const domElementCache = {};
+function getCachedElement(id) {
+    if (!domElementCache[id]) {
+        domElementCache[id] = document.getElementById(id);
     }
+    return domElementCache[id];
+}
 
-    // Function to clear the first canvas
-    function clearCanvas(elementId) {
-        const element = document.getElementById(elementId);
-        const context = element.getContext('2d');
-        context.clearRect(0, 0, element.width, element.height);
-        console.log("Clear canvas width: " + element.width + ", height: " +  element.height);
+function fillFieldValues(elementId, value) {
+    const spanElement = getCachedElement(elementId);
+    if (!spanElement) return;
+    if (String(elementId).includes("heading")) {
+        spanElement.innerHTML = value.toFixed(1).padStart(4, '0');
+        // console.log("Heading: " + value.toFixed(1).padStart(4, '0'));
+    } else {
+        spanElement.innerHTML = value.toFixed(1);
+        // console.log("Speed: " + value.toFixed(1));
     }
+}
 
-// Function to draw a Ship
-    function drawShip(elementId, x, y, scale, angle, fillColor, yy, xx, pp) {
-        const ANGLE_CORRECTION = 9; // Add 9 degrees to the angle for correct display of the ship
-        const element = document.getElementById(elementId);
-        const ctx = element.getContext('2d');
-        // Define the outline of the ship (ship with the bow at the beginning)
-        let vertices = [
-            {x:       0, y: -0.5*yy + pp*(yy/10)},                                                                      // nr1    //      1      |
-            {x:  0.5*xx, y: -0.4*yy + pp*(yy/10)},                                                                      // nr2    //   2     5
-            {x:  0.5*xx, y:  0.5*yy + pp*(yy/10)},                                                                      // nr3    //      o      y
-            {x: -0.5*xx, y:  0.5*yy + pp*(yy/10)},                                                                      // nr4    //
-            {x: -0.5*xx, y: -0.4*yy + pp*(yy/10)}                                                                       // nr5    //   3     4   |
-        ];                                                                                                              //             -  x  -
+function fillFieldValues0(elementId, value) {
+    const spanElement = getCachedElement(elementId);
+    if (!spanElement) return;
+    spanElement.innerHTML = value;
+}
 
-        // Scale the vertices
-        vertices = vertices.map(vertex => {
-            return {
-                x: vertex.x * scale * 1.1 ,                                                                             //  * 1.1
-                y: vertex.y * scale
-            };
-        });
+function ledBlink(elementId, duration) {
+    if (!imgLedOn || !imgLedOff) {
+        // console.warn("Obrazy jeszcze się nie załadowały");
+        return;
+    }
+    const element = getCachedElement(elementId);
+    if (!element) {
+        // console.error(`Element z ID '${elementId}' nie istnieje`);
+        return;
+    }
+    element.src = imgLedOn.src;
+    setTimeout(() => {
+        element.src = imgLedOff.src;
+    }, duration);
+}
 
-        // Rotate the vertices
-        const radians = (angle + ANGLE_CORRECTION) * Math.PI / 180;
-        vertices = vertices.map(vertex => {
-            return {
-                x: vertex.x * Math.cos(radians) - vertex.y * Math.sin(radians),
-                y: vertex.x * Math.sin(radians) + vertex.y * Math.cos(radians)
-            };
-        });
+// ------------------------------------------------------------------
+// TEST funkcja runShipTest - teraz korzysta z updateModelDisplay (Konva się zaktualizuje)
+// ------------------------------------------------------------------
+const ENABLE_TEST_RUNS = false;
+const ENABLE_TRIANGLE_RUNS = false;
 
-        // Translate the vertices to the (x, y) position
-        vertices = vertices.map(vertex => {
-            return {
-                x: vertex.x + x,
-                y: vertex.y + y
-            };
-        });
+function runShipTest(id, angleQ, center_X, center_Y, step, intervalIn) {
+    console.log("Starting ship and track test...");
+    const centerX = center_X;
+    const centerY = center_Y;
+    const radius = 200;
+    const steps = step;
+    const interval = intervalIn;
+    let angle = angleQ;
+    const angleStep = (2 * Math.PI) / steps;
+    const testInterval = setInterval(() => {
+        const x = centerX + radius * Math.cos(angle);
+        const y = centerY + radius * Math.sin(angle);
+        const heading = (angle * 180 / Math.PI + 270) % 360;
+        const modelId = id;
+        let config = modelsConfig[modelId];
+        const speed = 10;
+        updateModelDisplay(config, modelId, x, y, heading, speed);
 
-        // Draw the ship
-        ctx.beginPath();
-        ctx.moveTo(vertices[0].x, vertices[0].y);
-        for (let i = 1; i < vertices.length; i++) {
-            ctx.lineTo(vertices[i].x, vertices[i].y);
+        angle += angleStep;
+        if (angle >= 2 * Math.PI) {
+            clearInterval(testInterval);
+            console.log("Ship and track test completed successfully!");
         }
-        ctx.closePath();
+    }, interval);
+}
 
-        // Fill and stroke
-        ctx.fillStyle = fillColor;
-        ctx.fill();
-        ctx.strokeStyle = 'black';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-    }
-///
+// uruchamiamy test (odkomentuj/usun w produkcji)
+if (ENABLE_TEST_RUNS) {
+    runShipTest(1, 0, 400, 400, 36, 500);
+    runShipTest(2, Math.PI/4, 300, 600, 63,222);
+    runShipTest(3, -Math.PI/3, 600, 400, 50,333);
+    runShipTest(4, -Math.PI/5, 540, 320, 70,333);
+    runShipTest(5, -Math.PI/2.5, 400, 230, 70,333);
+    runShipTest(6, -Math.PI/2, 333, 333, 70,333);
+}
 
-// Function to draw a triangle
-    function drawTriangle(elementId, x, y, scale, angle, fillColor) {
-        const element = document.getElementById(elementId);
-        const ctx = element.getContext('2d');
-        // Define the vertices of the triangle (equilateral triangle centered at origin)
-        let vertices = [
-            {x: 0, y: -1},
-            {x: 0.866, y: 0.5},
-            {x: -0.866, y: 0.5}
-        ];
-
-        // Scale the vertices
-        vertices = vertices.map(vertex => {
-            return {
-                x: vertex.x * scale,
-                y: vertex.y * scale
-            };
-        });
-
-        // Rotate the vertices
-        const radians = angle * Math.PI / 180;
-        vertices = vertices.map(vertex => {
-            return {
-                x: vertex.x * Math.cos(radians) - vertex.y * Math.sin(radians),
-                y: vertex.x * Math.sin(radians) + vertex.y * Math.cos(radians)
-            };
-        });
-
-        // Translate the vertices to the (x, y) position
-        vertices = vertices.map(vertex => {
-            return {
-                x: vertex.x + x,
-                y: vertex.y + y
-            };
-        });
-
-        // Draw the triangle
-        ctx.beginPath();
-        ctx.moveTo(vertices[0].x, vertices[0].y);
-        for (let i = 1; i < vertices.length; i++) {
-            ctx.lineTo(vertices[i].x, vertices[i].y);
-        }
-        ctx.closePath();
-
-        // Fill and stroke
-        ctx.fillStyle = fillColor;
-        ctx.fill();
-        ctx.strokeStyle = 'black';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-    }
-///
-    function fillFieldValues(elementId, value) {
-        const spanElement = document.getElementById(elementId);
-        if (String(elementId).includes("heading")) {
-            spanElement.innerHTML = value.toFixed(1).padStart(4, '0');
-            console.log("Heading: " + value.toFixed(1).padStart(4, '0'));
-        } else {
-            spanElement.innerHTML = value.toFixed(1);
-            console.log("Speed: " + value.toFixed(1));
-        }
+function drawTriangle(x, y, size = 20, color = "red", label = "") {
+    if (!konvaShipLayer) {
+        console.error("drawTriangle: konvaShipLayer nie jest zainicjowana");
+        return;
     }
 
-    function fillFieldValues0(elementId, value) {
-        const spanElement = document.getElementById(elementId);
-        spanElement.innerHTML = value;
-    }
+    const height = size * Math.sqrt(3) / 2;
 
-    function ledBlink(elementId, duration) {
-        if (!imgLedOn || !imgLedOff) {
-            console.warn("Obrazy jeszcze się nie załadowały");
-            return;
-        }
-
-        const element = document.getElementById(elementId);
-        if (!element) {
-            console.error(`Element z ID '${elementId}' nie istnieje`);
-            return;
-        }
-
-        element.src = imgLedOn.src;
-        setTimeout(() => {
-            element.src = imgLedOff.src;
-        }, duration);
-    }
-
-    document.addEventListener("visibilitychange", () => {
-        if (document.hidden) {
-            if (socket) {
-                socket.close();
-            }
-        } else {
-            if (!socket || socket.readyState === WebSocket.CLOSED) {
-                socket = createWebSocket();
-            }
-        }
+    // Trójkąt
+    const triangle = new Konva.Line({
+        points: [
+            x, y - height / 2,            // góra
+            x - size / 2, y + height / 2, // lewy dół
+            x + size / 2, y + height / 2  // prawy dół
+        ],
+        fill: color,
+        closed: true,
+        stroke: "black",
+        strokeWidth: 1
     });
+
+    konvaShipLayer.add(triangle);
+
+    // Tekst pod trójkątem
+    if (label) {
+        const text = new Konva.Text({
+            text: label,
+            fontSize: 12,
+            fontFamily: 'Calibri',
+            fontStyle: 'bold',
+            padding: 2,
+            stroke: "black",
+            strokeWidth: 0.99,
+            fill: "gray"
+        });
+
+        // ustawienie pozycji tekstu centralnie pod trójkątem
+        text.x(x - text.width() / 2);
+        text.y(y + height / 2 + 5); // kilka pikseli poniżej trójkąta
+
+        konvaShipLayer.add(text);
+    }
+
+    konvaShipLayer.draw();
+}
+
+// Zarządzanie widocznością dokumentu (WebSocket reconnect)
+document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+        if (socket) {
+            socket.close();
+        }
+    } else {
+        if (!socket || socket.readyState === WebSocket.CLOSED) {
+            socket = createWebSocket();
+        }
+    }
+});
+
+// === TOOLTIP KONVA ===
+let tooltipLayer = null;
+let tooltipText = null;
+let tooltipBg = null;
+
+function initTooltip() {
+    if (!konvaStage) {
+        console.error("initTooltip: konvaStage nie jest zainicjowane");
+        return;
+    }
+
+    // jeśli już wcześniej istniał tooltip - usuń go by nie duplikować
+    if (tooltipLayer) {
+        tooltipLayer.destroy();
+        tooltipLayer = null;
+        tooltipText = null;
+        tooltipBg = null;
+    }
+
+    tooltipLayer = new Konva.Layer();
+
+    tooltipBg = new Konva.Rect({
+        x: 0, y: 0,
+        width: 140, height: 40,
+        fill: "rgba(0,0,0,0.7)",
+        cornerRadius: 6,
+        visible: false
+    });
+
+    tooltipText = new Konva.Text({
+        x: 0, y: 0,
+        fontFamily: 'Calibri',
+        text: "",
+        fontSize: 14,
+        fill: "white",
+        padding: 6,
+        visible: false
+    });
+
+    tooltipLayer.add(tooltipBg);
+    tooltipLayer.add(tooltipText);
+    konvaStage.add(tooltipLayer);
+    tooltipLayer.draw();
+}
+
+// ukrywanie tooltipa
+function hideTooltip() {
+    if (!tooltipLayer || !tooltipText || !tooltipBg) return;
+    tooltipBg.visible(false);
+    tooltipText.visible(false);
+    tooltipLayer.batchDraw();
+}
+
+// ------------------------------------------------------------------
+// Inicjalizacja Konva po załadowaniu DOM (inicjujemy stage i obiekty)
+// ------------------------------------------------------------------
+(function initializeKonvaIfPossible() {
+    try {
+        initKonvaOverlay();        // tworzy stage + warstwy
+        initTooltip();             // tooltip zanim podpinamy kliknięcia statków
+        createKonvaObjectsForModels(); // teraz tworzymy statki (handlery mają dostęp do tooltip)
+        // stage click => ukryj tooltip
+        if (konvaStage) {
+            konvaStage.on("click", () => {
+                hideTooltip();
+            });
+        }
+        if (ENABLE_TRIANGLE_RUNS) {
+            drawTriangle((0 + 60.0 + 4) * mapa_x, (0 + 506.0) * mapa_x, 10, "orange", "pozycja [0;0]");
+            drawTriangle((77.07 + 60 + 4) * mapa_x, (97.25 + 506) * mapa_x, 10, "yellow", "SBM"); // SBM    -97.25x77.07
+            drawTriangle((378.3 + 60 + 4) * mapa_x, (191.8 + 506) * mapa_x, 10, "green", "FPSO"); // FPSO   -191.8x378.3
+            drawTriangle((-25 + 64) * mapa_x, (84 + 506) * mapa_x, 10, "green", "nabieznik"); //  -84x25
+            drawTriangle((82.8 + 64) * mapa_x, (-69 + 506) * mapa_x, 10, "green", "port nabieznik"); // port nabieznik ->         69x82.8
+            drawTriangle((2 + 64) * mapa_x, (-130 + 506) * mapa_x, 10, "green", "pomost Lesniczowka"); // pomost Lesniczowka        130x2
+            drawTriangle((79 + 64) * mapa_x, (-188 + 506) * mapa_x, 10, "green", "Slip kolej END"); // Slip kolej END           188x79
+            drawTriangle((926 + 64) * mapa_x, (1149 + 506) * mapa_x, 10, "green", "Wiata END jeziora");
+        }
+    } catch (e) {
+        console.error("Błąd podczas inicjalizacji Konva:", e);
+    }
+})();
+
+/*
+drawTriangle("overlayCanvas1", (0 + 60 + 4) * mapa_x, (0 + 506) * mapa_x, 6, 1, 'white');         // pozycja 0 x 0             0x0
+drawTriangle("overlayCanvas1", (77.07 + 60 + 4) * mapa_x, (97.25 + 506) * mapa_x, 6, 1, 'orange');        // SBM    -97.25x77.07
+drawTriangle("overlayCanvas1", (378.3 + 60 + 4) * mapa_x, (191.8 + 506) * mapa_x, 6, 1, 'orange');        // FPSO   -191.8x378.3
+drawTriangle("overlayCanvas1", (-25 + 64) * mapa_x, (84 + 506) * mapa_x, 6, 1, 'red');               // <- nabieznik             -84x25
+drawTriangle("overlayCanvas1", (82.8 + 64) * mapa_x, (-69 + 506) * mapa_x, 6, 1, 'red');               // port nabieznik ->         69x82.8
+drawTriangle("overlayCanvas1", (2 + 64) * mapa_x, (-130 + 506) * mapa_x, 6, 1, 'red');               // pomost Lesniczowka        130x2
+drawTriangle("overlayCanvas1", (79 + 64) * mapa_x, (-188 + 506) * mapa_x, 6, 1, 'red');               // Slip kolej END           188x79
+drawTriangle("overlayCanvas1", (570 + 64) * mapa_x, (-362 + 506) * mapa_x, 6, 1, 'red');               // boja kompielisko         320x570
+drawTriangle("overlayCanvas1", (820 + 64) * mapa_x, (610 + 506) * mapa_x, 6, 1, 'red');               // -> zatoka               -610x820
+drawTriangle("overlayCanvas1", (926 + 64) * mapa_x, (1149 + 506) * mapa_x, 6, 1, 'red');               // Wiata END jeziora      -1149x926
+*/
