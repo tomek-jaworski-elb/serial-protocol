@@ -9,20 +9,24 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
 public class HeartBeat {
 
     private static final Logger LOG = LoggerFactory.getLogger(HeartBeat.class);
+    private static final DateTimeFormatter FORMATTER =
+            DateTimeFormatter.ofPattern("dd MMMM, yyyy HH:mm:ss", Locale.ROOT);
+
     private final WebSocketPublisher webSocketPublisher;
 
-    @Scheduled(fixedDelayString = "${ws.heartbeat.interval}") // 1000 milliseconds = 1 second
+    @Scheduled(fixedDelayString = "${ws.heartbeat.interval}")
     public void beat() {
         if (webSocketPublisher.sessionsCount(SessionType.HEARTBEAT) > 0) {
-            LOG.info("Timestamp {}", System.currentTimeMillis());
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMMM, yyyy HH:mm:ss");
-            webSocketPublisher.publishForAllClients(LocalDateTime.now().format(formatter), SessionType.HEARTBEAT);
+            String timestamp = LocalDateTime.now().format(FORMATTER);
+            LOG.debug("Heartbeat: {}", timestamp);
+            webSocketPublisher.publishForAllClients(timestamp, SessionType.HEARTBEAT);
         }
     }
 }
