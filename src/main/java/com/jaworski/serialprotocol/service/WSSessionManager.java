@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -23,30 +24,44 @@ public class WSSessionManager {
     private final ConcurrentHashMap<String ,WebSocketSession> webSocketSessions = new ConcurrentHashMap<>();
     private final WSSessionCountService countService;
 
-    public void addSession(WebSocketSession session) {
+    /**
+     * Dodaje sesję i zwraca aktualną liczbę sesji.
+     * @param session sesja WebSocket
+     * @return aktualna liczba sesji
+     */
+    public int addSession(WebSocketSession session) {
       WebSocketSession webSocketSession = webSocketSessions.put(session.getId(), session);
+      int size = webSocketSessions.size();
       if (webSocketSession == null) {
         String agent = Optional.ofNullable(session.getHandshakeHeaders().get("user-agent"))
                 .filter(strings -> !strings.isEmpty())
-                .map(string -> string.get(0))
+                .map(List::getFirst)
                 .orElse("");
-        LOG.info("Session added. Session count: {}.Remote IP: {}. User-Agent: {}",
-                webSocketSessions.size(),
+        LOG.info("Session added. Session count: {}. Remote IP: {}. User-Agent: {}",
+                size,
                 session.getRemoteAddress(),
                 agent);
-        countService.setCounter(webSocketSessions.size());
+        countService.setCounter(size);
       } else {
-        LOG.warn("Session already exists. Session count: {}", webSocketSessions.size());
+        LOG.warn("Session already exists. Session count: {}", size);
       }
+      return size;
     }
 
-    public void removeSession(WebSocketSession session) {
+    /**
+     * Usuwa sesję i zwraca aktualną liczbę sesji.
+     * @param session sesja WebSocket
+     * @return aktualna liczba sesji
+     */
+    public int removeSession(WebSocketSession session) {
       WebSocketSession removed = webSocketSessions.remove(session.getId());
+      int size = webSocketSessions.size();
       if (removed != null) {
-        LOG.info("Session removed. Session count: {}", webSocketSessions.size());
-        countService.setCounter(webSocketSessions.size());
+        LOG.info("Session removed. Session count: {}", size);
+        countService.setCounter(size);
       } else {
-        LOG.warn("Session not found. Session count: {}", webSocketSessions.size());
+        LOG.warn("Session not found. Session count: {}", size);
       }
+      return size;
     }
 }

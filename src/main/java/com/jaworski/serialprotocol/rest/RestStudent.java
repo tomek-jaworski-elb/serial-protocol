@@ -12,11 +12,14 @@ import com.jaworski.serialprotocol.service.db.StudentService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
@@ -67,5 +70,14 @@ public class RestStudent {
                     }
                 });
         return result;
+    }
+
+    @GetMapping(path = Paths.INSTRUCTOR, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Page<InstructorDto> getInstructors(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size) {
+        LOG.info("Getting instructors page {} with size {}", page, size);
+        return instructorService.findAllPaginated(page, size)
+                .map(InstructorMapper::mapToDto);
     }
 }
