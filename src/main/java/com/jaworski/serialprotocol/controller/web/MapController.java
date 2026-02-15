@@ -1,6 +1,7 @@
 package com.jaworski.serialprotocol.controller.web;
 
 import com.jaworski.serialprotocol.dto.CheckBoxOption;
+import com.jaworski.serialprotocol.dto.InstructorDto;
 import com.jaworski.serialprotocol.dto.LogItem;
 import com.jaworski.serialprotocol.dto.StudentDTO;
 import com.jaworski.serialprotocol.mappers.InstructorMapper;
@@ -11,6 +12,7 @@ import com.jaworski.serialprotocol.service.tracks.TrackService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -102,16 +104,22 @@ public class MapController {
     @PreAuthorize("hasRole(T(com.jaworski.serialprotocol.authorization.SecurityRoles).ROLE_USER.getRole()) or " +
             "hasRole(T(com.jaworski.serialprotocol.authorization.SecurityRoles).ROLE_USER.getName() + '_T')")
     @GetMapping("/name-service")
-    public String passService(Model model) {
+    public String passService(Model model,
+                              @RequestParam(name = "page", defaultValue = "0") int page,
+                              @RequestParam(name = "size", defaultValue = "20") int size) {
         model.addAttribute(ATTRIBUTE_NAME, PASS_SERVICE);
-        return getNameModel(model);
+        return getNameModel(model, page, size);
     }
 
-    private String getNameModel(Model model) {
-        Collection<StudentDTO> names = studentService.getStudents();
+    private String getNameModel(Model model, int page, int size) {
+        Page<StudentDTO> namesPage = studentService.getStudentsPaginated(page, size);
         Collection<StudentDTO> namesLatest = studentService.getLatestWeekAllStudents();
-        model.addAttribute("names", names);
+        model.addAttribute("names", namesPage.getContent());
         model.addAttribute("namesLatest", namesLatest);
+        model.addAttribute("currentPage", page);
+        model.addAttribute("totalPages", namesPage.getTotalPages());
+        model.addAttribute("totalElements", namesPage.getTotalElements());
+        model.addAttribute("pageSize", size);
         model.addAttribute(ATTRIBUTE_NAME, "name-service");
         return "name-service";
     }
@@ -136,12 +144,17 @@ public class MapController {
     @PreAuthorize("hasRole(T(com.jaworski.serialprotocol.authorization.SecurityRoles).ROLE_USER.getRole()) or " +
             "hasRole(T(com.jaworski.serialprotocol.authorization.SecurityRoles).ROLE_USER.getName() + '_T')")
     @GetMapping("/instructor-service")
-    public String instructorService(Model model) {
-        var instructors = instructorService.findAll().stream()
-                .map(InstructorMapper::mapToDto)
-                .toList();
+    public String instructorService(Model model,
+                                    @RequestParam(name = "page", defaultValue = "0") int page,
+                                    @RequestParam(name = "size", defaultValue = "20") int size) {
+        Page<InstructorDto> instructorsPage = instructorService.findAllPaginated(page, size)
+                .map(InstructorMapper::mapToDto);
         model.addAttribute(ATTRIBUTE_NAME, "instructor-service");
-        model.addAttribute("instructors", instructors);
+        model.addAttribute("instructors", instructorsPage.getContent());
+        model.addAttribute("currentPage", page);
+        model.addAttribute("totalPages", instructorsPage.getTotalPages());
+        model.addAttribute("totalElements", instructorsPage.getTotalElements());
+        model.addAttribute("pageSize", size);
         model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
         return "instructor-service";
     }

@@ -90,6 +90,76 @@ class MapControllerTest {
                 .andExpect(result -> assertEquals("text/html;charset=UTF-8", result.getResponse().getHeaderValue(HttpHeaders.CONTENT_TYPE)));
     }
 
+    @Test
+    void test_NameServiceGetEndpoint_withPagination() throws Exception {
+        this.mockMvc.perform(get("/name-service")
+                        .param("page", "0")
+                        .param("size", "10")
+                        .header(HttpHeaders.AUTHORIZATION, getAuthorizationHeaderValue("user", "user")))
+                .andExpect(result -> assertEquals(HttpStatus.OK.value(), result.getResponse().getStatus()))
+                .andExpect(result -> assertEquals("text/html;charset=UTF-8", result.getResponse().getHeaderValue(HttpHeaders.CONTENT_TYPE)));
+    }
+
+    @Test
+    void test_NameServiceGetEndpoint_withCustomPageSize() throws Exception {
+        this.mockMvc.perform(get("/name-service")
+                        .param("page", "0")
+                        .param("size", "50")
+                        .header(HttpHeaders.AUTHORIZATION, getAuthorizationHeaderValue("user", "user")))
+                .andExpect(result -> assertEquals(HttpStatus.OK.value(), result.getResponse().getStatus()))
+                .andExpect(result -> assertEquals("text/html;charset=UTF-8", result.getResponse().getHeaderValue(HttpHeaders.CONTENT_TYPE)));
+    }
+
+    @Test
+    void test_InstructorServiceGetEndpoint() throws Exception {
+        this.mockMvc.perform(get("/instructor-service")
+                        .header(HttpHeaders.AUTHORIZATION, getAuthorizationHeaderValue("user", "user")))
+                .andExpect(result -> assertEquals(HttpStatus.OK.value(), result.getResponse().getStatus()))
+                .andExpect(result -> assertEquals("text/html;charset=UTF-8", result.getResponse().getHeaderValue(HttpHeaders.CONTENT_TYPE)));
+    }
+
+    @Test
+    void test_InstructorServiceGetEndpoint_withPagination() throws Exception {
+        this.mockMvc.perform(get("/instructor-service")
+                        .param("page", "0")
+                        .param("size", "10")
+                        .header(HttpHeaders.AUTHORIZATION, getAuthorizationHeaderValue("user", "user")))
+                .andExpect(result -> assertEquals(HttpStatus.OK.value(), result.getResponse().getStatus()))
+                .andExpect(result -> assertEquals("text/html;charset=UTF-8", result.getResponse().getHeaderValue(HttpHeaders.CONTENT_TYPE)));
+    }
+
+    @Test
+    void test_InstructorServiceGetEndpoint_withCustomPageSize() throws Exception {
+        this.mockMvc.perform(get("/instructor-service")
+                        .param("page", "0")
+                        .param("size", "100")
+                        .header(HttpHeaders.AUTHORIZATION, getAuthorizationHeaderValue("user", "user")))
+                .andExpect(result -> assertEquals(HttpStatus.OK.value(), result.getResponse().getStatus()))
+                .andExpect(result -> assertEquals("text/html;charset=UTF-8", result.getResponse().getHeaderValue(HttpHeaders.CONTENT_TYPE)));
+    }
+
+    @Test
+    void test_InstructorServiceGetEndpoint_withSecondPage() throws Exception {
+        this.mockMvc.perform(get("/instructor-service")
+                        .param("page", "1")
+                        .param("size", "20")
+                        .header(HttpHeaders.AUTHORIZATION, getAuthorizationHeaderValue("user", "user")))
+                .andExpect(result -> assertEquals(HttpStatus.OK.value(), result.getResponse().getStatus()))
+                .andExpect(result -> assertEquals("text/html;charset=UTF-8", result.getResponse().getHeaderValue(HttpHeaders.CONTENT_TYPE)));
+    }
+
+    @Test
+    void test_InstructorServiceGetEndpoint_unauthorized() throws Exception {
+        this.mockMvc.perform(get("/instructor-service"))
+                .andExpect(result -> assertEquals(HttpStatus.UNAUTHORIZED.value(), result.getResponse().getStatus()));
+    }
+
+    @Test
+    void test_NameServiceGetEndpoint_unauthorized() throws Exception {
+        this.mockMvc.perform(get("/name-service"))
+                .andExpect(result -> assertEquals(HttpStatus.UNAUTHORIZED.value(), result.getResponse().getStatus()));
+    }
+
     private String getAuthorizationHeaderValue(String username, String password) {
         return "Basic " + Base64.getEncoder().encodeToString((username + ":" + password).getBytes());
     }
