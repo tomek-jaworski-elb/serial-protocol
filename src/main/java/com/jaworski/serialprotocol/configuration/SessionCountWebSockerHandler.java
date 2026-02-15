@@ -3,7 +3,6 @@ package com.jaworski.serialprotocol.configuration;
 import com.jaworski.serialprotocol.serial.SessionType;
 import com.jaworski.serialprotocol.service.WSSessionManager;
 import com.jaworski.serialprotocol.service.WebSocketPublisher;
-import com.jaworski.serialprotocol.service.impl.WSSessionCountService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +18,6 @@ public class SessionCountWebSockerHandler extends TextWebSocketHandler {
   private static final Logger LOG = LoggerFactory.getLogger(SessionCountWebSockerHandler.class);
   private final WSSessionManager wsSessionManager;
   private final WebSocketPublisher webSocketPublisher;
-  private final WSSessionCountService wsSessionCountService;
 
   @Override
   protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
@@ -29,16 +27,16 @@ public class SessionCountWebSockerHandler extends TextWebSocketHandler {
   @Override
   public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
     LOG.info("Connection closed: {} with status {}", session.getId(), status);
-    wsSessionManager.removeSession(session);
-    webSocketPublisher.publishForAllClients(String.valueOf(wsSessionCountService.getCounter()), SessionType.SESSION_COUNT);
+    int sessionCount = wsSessionManager.removeSession(session);
+    webSocketPublisher.publishForAllClients(String.valueOf(sessionCount), SessionType.SESSION_COUNT);
     super.afterConnectionClosed(session, status);
   }
 
   @Override
   public void afterConnectionEstablished(WebSocketSession session) throws Exception {
     LOG.info("Connection established: {}", session.getId());
-    wsSessionManager.addSession(session);
-    webSocketPublisher.publishForAllClients(String.valueOf(wsSessionCountService.getCounter()), SessionType.SESSION_COUNT);
+    int sessionCount = wsSessionManager.addSession(session);
+    webSocketPublisher.publishForAllClients(String.valueOf(sessionCount), SessionType.SESSION_COUNT);
     super.afterConnectionEstablished(session);
   }
 }
