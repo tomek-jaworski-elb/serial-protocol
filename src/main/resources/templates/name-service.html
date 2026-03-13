@@ -6,7 +6,7 @@
 </head>
 <body>
 <header th:replace="~{fragment::header}"></header>
-<div class="container">
+<div class="container mb-4">
     <!-- Pagination info -->
     <div class="d-flex justify-content-between align-items-center mb-3" th:if="${!#lists.isEmpty(names)}">
         <div>
@@ -87,22 +87,28 @@
                     <th scope="col" style="text-align: center">Start Date</th>
                     <th scope="col" style="text-align: center">End Date</th>
                     <th scope="col" style="text-align: center">Certificate Type</th>
-                    <th scope="col" style="text-align: center">Photo</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr th:each="name, nameStat : ${names}">
                     <th scope="row" th:text="${currentPage * pageSize + nameStat.index + 1}" style="text-align: center">Index</th>
                     <td th:text="${name.id}" style="text-align: center">ID</td>
-                    <td th:text="${name.name + ' ' + name.lastName}" style="text-align: center">Name</td>
+                    <td style="text-align: center">
+                        <span th:if="${name.getPhoto() != null and !name.getPhoto().isEmpty()}"
+                              class="name-with-photo"
+                              style="cursor: pointer; text-decoration: underline dotted; color: #0d6efd;"
+                              data-bs-toggle="popover"
+                              data-bs-trigger="hover focus"
+                              data-bs-html="true"
+                              th:data-bs-content="|&lt;img src='data:image/jpeg;base64,${name.getPhoto()}' alt='Photo' style='max-width: 200px; max-height: 200px; border-radius: 8px;'/&gt;|"
+                              th:text="${name.name + ' ' + name.lastName}">Name</span>
+                        <span th:unless="${name.getPhoto() != null and !name.getPhoto().isEmpty()}"
+                              th:text="${name.name + ' ' + name.lastName}">Name</span>
+                    </td>
                     <td th:text="${name.courseNo}" style="text-align: center">Course No</td>
                     <td th:text="${#dates.format(name.dateBegine, 'dd-MM-yyyy')}" style="text-align: center">Start</td>
                     <td th:text="${#dates.format(name.dateEnd, 'dd-MM-yyyy')}" style="text-align: center">End</td>
                     <td th:text="${name.certType}" style="text-align: center">Cert type</td>
-                    <td style="text-align: center">
-                        <img th:src="@{'data:image/jpeg;base64,'+${name.getPhoto()}}" alt="Image from DB"
-                             style="width: 20%; height: 20%;">
-                    </td>
                 </tr>
                 </tbody>
             </table>
@@ -158,22 +164,28 @@
                     <th scope="col">Start Date</th>
                     <th scope="col">End Date</th>
                     <th scope="col">Certificate Type</th>
-                    <th scope="col">Photo</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr th:each="name, nameStat : ${namesLatest}">
                     <th scope="row" th:text="${nameStat.index + 1}" style="text-align: center">Index</th>
                     <td th:text="${name.id}" style="text-align: center">ID</td>
-                    <td th:text="${name.name + ' ' + name.lastName}" style="text-align: center">Name</td>
+                    <td style="text-align: center">
+                        <span th:if="${name.getPhoto() != null and !name.getPhoto().isEmpty()}"
+                              class="name-with-photo"
+                              style="cursor: pointer; text-decoration: underline dotted; color: #0d6efd;"
+                              data-bs-toggle="popover"
+                              data-bs-trigger="hover focus"
+                              data-bs-html="true"
+                              th:data-bs-content="|&lt;img src='data:image/jpeg;base64,${name.getPhoto()}' alt='Photo' style='max-width: 200px; max-height: 200px; border-radius: 8px;'/&gt;|"
+                              th:text="${name.name + ' ' + name.lastName}">Name</span>
+                        <span th:unless="${name.getPhoto() != null and !name.getPhoto().isEmpty()}"
+                              th:text="${name.name + ' ' + name.lastName}">Name</span>
+                    </td>
                     <td th:text="${name.courseNo}" style="text-align: center">Course No</td>
                     <td th:text="${#dates.format(name.dateBegine, 'dd-MM-yyyy')}" style="text-align: center">Start</td>
                     <td th:text="${#dates.format(name.dateEnd, 'dd-MM-yyyy')}" style="text-align: center">End</td>
                     <td th:text="${name.certType}" style="text-align: center">Cert type</td>
-                    <td style="text-align: center">
-                        <img th:src="@{'data:image/jpeg;base64,'+${name.getPhoto()}}" alt="Image from DB"
-                             style="width: 20%; height: 20%;">
-                    </td>
                 </tr>
                 </tbody>
             </table>
@@ -191,6 +203,19 @@
 </div>
 <footer th:replace="~{fragment::footer}"></footer>
 <script th:inline="javascript">
+    // Initialize Bootstrap popovers for photos
+    document.addEventListener('DOMContentLoaded', function () {
+        var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
+        popoverTriggerList.forEach(function (popoverTriggerEl) {
+            new bootstrap.Popover(popoverTriggerEl, {
+                container: 'body',
+                placement: 'auto',
+                html: true,
+                sanitize: false
+            });
+        });
+    });
+
     function changePageSize(size) {
         window.location.href = '/name-service?page=0&size=' + size;
     }

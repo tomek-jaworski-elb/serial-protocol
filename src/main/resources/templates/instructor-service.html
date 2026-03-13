@@ -5,27 +5,28 @@
     <title th:text="${@environment.getProperty('spring.application.name')} + ' : Instructors'">Serial port
         server</title>
     <style>
-        .zoom-container {
-            position: relative;
+        .photo-wrapper {
+            width: 50px;
+            height: 50px;
             display: inline-block;
+            position: relative;
+            background-color: #e9ecef;
+            border-radius: 4px;
         }
-
-        .zoom-image {
+        .photo-wrapper img {
             position: absolute;
-            border: 1px solid #ccc;
-            z-index: 1000;
-            display: none;
-            width: 200px;
-            height: auto;
-            pointer-events: none;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-            background: white;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 4px;
         }
     </style>
 </head>
 <body>
 <header th:replace="~{fragment::header}"></header>
-<div class="container">
+<div class="container mb-4">
     <!-- Pagination info -->
     <div class="d-flex justify-content-between align-items-center mb-3" th:if="${!#lists.isEmpty(instructors)}">
         <div>
@@ -86,42 +87,74 @@
         </ul>
     </nav>
 
-    <table th:if="${!#lists.isEmpty(instructors)}" class="table table-striped">
+    <table th:if="${!#lists.isEmpty(instructors)}" class="table table-striped align-middle text-center">
         <thead>
         <tr>
-            <th scope="col" style="text-align: center">#</th>
-            <th scope="col" style="text-align: center">ID</th>
-            <th scope="col" style="text-align: center">Name</th>
-            <th scope="col" style="text-align: center">Surname</th>
-            <th scope="col" style="text-align: center">Nick</th>
-            <th scope="col" style="text-align: center">Photo 1</th>
-            <th scope="col" style="text-align: center">Photo 2</th>
-            <th scope="col" style="text-align: center">Photo 3</th>
-            <th scope="col" style="text-align: center">Photo 4</th>
+            <th scope="col" style="width: 50px;">#</th>
+            <th scope="col" style="width: 60px;">ID</th>
+            <th scope="col">Name</th>
+            <th scope="col">Surname</th>
+            <th scope="col" style="width: 100px;">Nick</th>
+            <th scope="col" style="width: 70px;">Photo 1</th>
+            <th scope="col" style="width: 70px;">Photo 2</th>
+            <th scope="col" style="width: 70px;">Photo 3</th>
+            <th scope="col" style="width: 70px;">Photo 4</th>
         </tr>
         </thead>
         <tbody>
         <tr th:each="instructor, instructorStat : ${instructors}">
-            <th scope="row" th:text="${currentPage * pageSize + instructorStat.index + 1}" style="text-align: center">Index</th>
-            <td th:text="${instructor.no}" style="text-align: center">ID</td>
-            <td th:text="${instructor.name}" style="text-align: center">Name</td>
-            <td th:text="${instructor.surname}" style="text-align: center">Surname</td>
-            <td th:text="${instructor.nick}" style="text-align: center">Nick</td>
-            <td style="text-align: center">
-                <img th:src="@{'data:image/jpeg;base64,'+${instructor.photo1}}" alt="Image from DB"
-                     style="width: 20%; height: 20%;" class="img-fluid">
+            <th scope="row" th:text="${currentPage * pageSize + instructorStat.index + 1}">Index</th>
+            <td th:text="${instructor.no}">ID</td>
+            <td th:text="${instructor.name}">Name</td>
+            <td th:text="${instructor.surname}">Surname</td>
+            <td th:text="${instructor.nick}">Nick</td>
+            <td>
+                <div class="photo-wrapper">
+                    <img th:if="${instructor.photo1 != null and !instructor.photo1.isEmpty()}"
+                         th:src="@{'data:image/jpeg;base64,'+${instructor.photo1}}"
+                         alt="Photo 1"
+                         class="img-thumbnail photo-popover"
+                         data-bs-toggle="popover"
+                         data-bs-trigger="hover focus"
+                         data-bs-html="true"
+                         th:data-bs-content="|&lt;img src='data:image/jpeg;base64,${instructor.photo1}' alt='Photo' style='max-width: 250px; max-height: 250px; border-radius: 8px;'/&gt;|">
+                </div>
             </td>
-            <td style="text-align: center">
-                <img th:src="@{'data:image/jpeg;base64,'+${instructor.photo2}}" alt="Image from DB"
-                     style="width: 20%; height: 20%;" class="img-fluid">
+            <td>
+                <div class="photo-wrapper">
+                    <img th:if="${instructor.photo2 != null and !instructor.photo2.isEmpty()}"
+                         th:src="@{'data:image/jpeg;base64,'+${instructor.photo2}}"
+                         alt="Photo 2"
+                         class="img-thumbnail photo-popover"
+                         data-bs-toggle="popover"
+                         data-bs-trigger="hover focus"
+                         data-bs-html="true"
+                         th:data-bs-content="|&lt;img src='data:image/jpeg;base64,${instructor.photo2}' alt='Photo' style='max-width: 250px; max-height: 250px; border-radius: 8px;'/&gt;|">
+                </div>
             </td>
-            <td style="text-align: center">
-                <img th:src="@{'data:image/jpeg;base64,'+${instructor.photo3}}" alt="Image from DB"
-                     style="width: 20%; height: 20%;" class="img-fluid">
+            <td>
+                <div class="photo-wrapper">
+                    <img th:if="${instructor.photo3 != null and !instructor.photo3.isEmpty()}"
+                         th:src="@{'data:image/jpeg;base64,'+${instructor.photo3}}"
+                         alt="Photo 3"
+                         class="img-thumbnail photo-popover"
+                         data-bs-toggle="popover"
+                         data-bs-trigger="hover focus"
+                         data-bs-html="true"
+                         th:data-bs-content="|&lt;img src='data:image/jpeg;base64,${instructor.photo3}' alt='Photo' style='max-width: 250px; max-height: 250px; border-radius: 8px;'/&gt;|">
+                </div>
             </td>
-            <td style="text-align: center">
-                <img th:src="@{'data:image/jpeg;base64,'+${instructor.photo4}}" alt="Image from DB"
-                     style="width: 20%; height: 20%;" class="img-fluid">
+            <td>
+                <div class="photo-wrapper">
+                    <img th:if="${instructor.photo4 != null and !instructor.photo4.isEmpty()}"
+                         th:src="@{'data:image/jpeg;base64,'+${instructor.photo4}}"
+                         alt="Photo 4"
+                         class="img-thumbnail photo-popover"
+                         data-bs-toggle="popover"
+                         data-bs-trigger="hover focus"
+                         data-bs-html="true"
+                         th:data-bs-content="|&lt;img src='data:image/jpeg;base64,${instructor.photo4}' alt='Photo' style='max-width: 250px; max-height: 250px; border-radius: 8px;'/&gt;|">
+                </div>
             </td>
         </tr>
         </tbody>
@@ -175,34 +208,22 @@
 </div>
 <footer th:replace="~{fragment::footer}"></footer>
 <script th:inline="javascript">
-    function changePageSize(size) {
-        window.location.href = '/instructor-service?page=0&size=' + size;
-    }
-
-    document.addEventListener("DOMContentLoaded", function () {
-        const images = document.querySelectorAll("td img");
-
-        images.forEach(img => {
-            const zoomImg = document.createElement("img");
-            zoomImg.className = "zoom-image";
-            zoomImg.src = img.src;
-            document.body.appendChild(zoomImg);
-
-            img.addEventListener("mouseenter", () => {
-                zoomImg.style.display = "block";
-                zoomImg.src = img.src;
-            });
-
-            img.addEventListener("mouseleave", () => {
-                zoomImg.style.display = "none";
-            });
-
-            img.addEventListener("mousemove", (e) => {
-                zoomImg.style.left = (e.pageX + 20) + "px";
-                zoomImg.style.top = (e.pageY + 20) + "px";
+    // Initialize Bootstrap popovers for photos
+    document.addEventListener('DOMContentLoaded', function () {
+        var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
+        popoverTriggerList.forEach(function (popoverTriggerEl) {
+            new bootstrap.Popover(popoverTriggerEl, {
+                container: 'body',
+                placement: 'auto',
+                html: true,
+                sanitize: false
             });
         });
     });
+
+    function changePageSize(size) {
+        window.location.href = '/instructor-service?page=0&size=' + size;
+    }
 </script>
 </body>
 </html>
