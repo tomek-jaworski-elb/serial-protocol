@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.6</version>
+        <version>3.5.11</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.jaworski</groupId>
@@ -19,7 +19,6 @@
         <maven.build.timestamp.format>dd-MM-yyyy hh:mm</maven.build.timestamp.format>
         <java.version>21</java.version>
         <jSerialComm.version>2.11.0</jSerialComm.version>
-        <junit-jupiter-api.version>5.11.4</junit-jupiter-api.version>
         <commons-lang3.version>3.17.0</commons-lang3.version>
         <commons-collections4.version>4.4</commons-collections4.version>
         <spotbugs-annotations.version>4.9.3</spotbugs-annotations.version>
@@ -98,7 +97,6 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
-            <version>${junit-jupiter-api.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -128,7 +126,6 @@
         <dependency>
             <groupId>org.hibernate.orm</groupId>
             <artifactId>hibernate-core</artifactId>
-            <version>6.6.13.Final</version>
         </dependency>
         <dependency>
             <groupId>org.mariadb.jdbc</groupId>
@@ -143,7 +140,6 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
-            <version>${junit-jupiter-api.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
