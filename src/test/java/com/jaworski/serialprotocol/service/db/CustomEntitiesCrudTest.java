@@ -143,11 +143,7 @@ class CustomEntitiesCrudTest {
   }
 
   private CourseType createCourseType(String code, String description, String longDescription) {
-    CourseType courseType = new CourseType();
-    courseType.setCode(code);
-    courseType.setDescription(description);
-    courseType.setLongDescription(longDescription);
-    return courseType;
+    return new CourseType(code, description, longDescription);
   }
 
   private Courses createCourse(Long id, Participant participant, CourseType courseType) {

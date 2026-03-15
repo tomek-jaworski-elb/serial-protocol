@@ -1,0 +1,97 @@
+package com.jaworski.serialprotocol.service.db.custom;
+
+import com.jaworski.serialprotocol.dto.custom.CourseTypeDTO;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.context.annotation.Import;
+
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+@DataJpaTest
+@Import({CourseTypeService.class})
+class CourseTypeServiceTest {
+
+  @Autowired
+  private CourseTypeService courseTypeService;
+
+  @Test
+  void shouldSaveCourseType() {
+    CourseTypeDTO courseType = createCourseType("C-A", "Basic", "Basic navigation course");
+
+    CourseTypeDTO saved = courseTypeService.save(courseType);
+
+    assertNotNull(saved.getId());
+    assertEquals("C-A", saved.getCode());
+    assertEquals("Basic", saved.getDescription());
+    assertEquals("Basic navigation course", saved.getLongDescription());
+  }
+
+  @Test
+  void shouldFindAllCourseTypes() {
+    assertTrue(courseTypeService.findAll().isEmpty());
+
+    courseTypeService.save(createCourseType("C-A", "Basic", "Basic navigation course"));
+    courseTypeService.save(createCourseType("C-B", "Advanced", "Advanced navigation course"));
+
+    List<CourseTypeDTO> result = courseTypeService.findAll();
+
+    assertEquals(2, result.size());
+  }
+
+  @Test
+  void shouldFindByIdWhenCourseTypeExists() {
+    CourseTypeDTO saved = courseTypeService.save(createCourseType("C-A", "Basic", "Basic navigation course"));
+
+    CourseTypeDTO found = courseTypeService.findById(saved.getId());
+
+    assertNotNull(found);
+    assertEquals(saved.getId(), found.getId());
+    assertEquals("C-A", found.getCode());
+  }
+
+  @Test
+  void shouldThrowWhenCourseTypeNotFoundById() {
+    IllegalArgumentException exception = assertThrows(
+        IllegalArgumentException.class,
+        () -> courseTypeService.findById(9999L)
+    );
+
+    assertEquals("Course type with id 9999 not found", exception.getMessage());
+  }
+
+  @Test
+  void shouldDeleteCourseTypeById() {
+    CourseTypeDTO saved = courseTypeService.save(createCourseType("C-A", "Basic", "Basic navigation course"));
+
+    courseTypeService.deleteById(saved.getId());
+
+    assertTrue(courseTypeService.findAll().isEmpty());
+  }
+
+  @Test
+  void shouldUpdateCourseType() {
+    CourseTypeDTO saved = courseTypeService.save(createCourseType("C-A", "Basic", "Basic navigation course"));
+
+    saved.setCode("C-B");
+    saved.setDescription("Advanced");
+    saved.setLongDescription("Advanced navigation course");
+
+    CourseTypeDTO updated = courseTypeService.update(saved);
+
+    assertEquals(saved.getId(), updated.getId());
+    assertEquals("C-B", updated.getCode());
+    assertEquals("Advanced", updated.getDescription());
+    assertEquals("Advanced navigation course", updated.getLongDescription());
+  }
+
+  private CourseTypeDTO createCourseType(String code, String description, String longDescription) {
+    CourseTypeDTO courseType = new CourseTypeDTO();
+    courseType.setCode(code);
+    courseType.setDescription(description);
+    courseType.setLongDescription(longDescription);
+    return courseType;
+  }
+}

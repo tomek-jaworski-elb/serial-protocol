@@ -9,22 +9,31 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Entity
 @Data
-@NoArgsConstructor
 @Table(name = CourseType.TABLE_NAME)
 public class CourseType {
 
   protected static final String TABLE_NAME = "course_type";
+
+  public CourseType() {
+  //  JPA requires a no-args constructor
+  }
+
+
+  public CourseType(String code, String description, String longDescription) {
+    this.code = code;
+    this.description = description;
+    this.longDescription = longDescription;
+  }
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = CourseType.TABLE_NAME + "_id", nullable = false, updatable = false)
   private Long id;
 
-  @Column(name = CourseType.TABLE_NAME + "_code", nullable = false, unique = true, length = 32)
+  @Column(name = CourseType.TABLE_NAME + "_code", nullable = false, length = 32)
   @NotBlank
   @Size(max = 32)
   private String code;
