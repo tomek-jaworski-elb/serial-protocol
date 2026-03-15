@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
+<head th:insert="~{fragment::head}"></head>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${@environment.getProperty('spring.application.name')} + ' : Chart'">Chart</title>
-    <link th:href="@{/bootstrap-5-3-3/css/bootstrap.css}" rel="stylesheet">
     <style>
         .canvas-container {
             position: relative;
@@ -195,7 +195,6 @@
     <p id="textField" class="form-control" style="white-space: normal; word-wrap: break-word;">Text</p>
 </div>
 <footer th:replace="~{fragment::footer}"></footer>
-<script th:src="@{/bootstrap-5-3-3/js/bootstrap.js}"></script>
 <script th:src="@{/js/chart-script.js}"></script>
 <script type="text/javascript" th:src="@{/js/common/enums.js}"></script>
 <script type="text/javascript" th:src="@{/js/common/counter.js}"></script>
