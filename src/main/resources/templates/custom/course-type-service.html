@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head th:insert="~{fragment::head}"></head>
+<head>
+    <title th:text="${@environment.getProperty('spring.application.name')} + ' : Course Type'">Serial port server</title>
+</head>
+<body>
+<header th:replace="~{fragment::header}"></header>
+<div class="container mb-4">
+    <div class="d-flex justify-content-between align-items-center my-3">
+        <h4 class="mb-0">Course Type</h4>
+        <span class="badge bg-secondary" th:text="${#lists.size(courseTypes)}" th:if="${!#lists.isEmpty(courseTypes)}">0</span>
+    </div>
+
+    <div class="table-responsive" th:if="${!#lists.isEmpty(courseTypes)}">
+        <table class="table table-striped table-hover align-middle text-center">
+            <thead class="table-light">
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">ID</th>
+                <th scope="col">Code</th>
+                <th scope="col">Description</th>
+                <th scope="col">Long Description</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="courseType, courseTypeStat : ${courseTypes}">
+                <th scope="row" th:text="${courseTypeStat.index + 1}">1</th>
+                <td th:text="${courseType.id}">1</td>
+                <td th:text="${courseType.code}">A1</td>
+                <td th:text="${courseType.description}">Description</td>
+                <td class="text-start" th:text="${courseType.longDescription}">Long description</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="alert alert-info text-center" th:if="${#lists.isEmpty(courseTypes)}">
+        No course types found.
+    </div>
+</div>
+<footer th:replace="~{fragment::footer}"></footer>
+</body>
+</html>
+

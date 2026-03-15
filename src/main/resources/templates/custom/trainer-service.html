@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head th:insert="~{fragment::head}"></head>
+<head>
+    <title th:text="${@environment.getProperty('spring.application.name')} + ' : Trainer'">Serial port server</title>
+</head>
+<body>
+<header th:replace="~{fragment::header}"></header>
+<div class="container mb-4">
+    <div class="d-flex justify-content-between align-items-center my-3">
+        <h4 class="mb-0">Trainer</h4>
+        <span class="badge bg-secondary" th:text="${#lists.size(trainers)}" th:if="${!#lists.isEmpty(trainers)}">0</span>
+    </div>
+
+    <div class="table-responsive" th:if="${!#lists.isEmpty(trainers)}">
+        <table class="table table-striped table-hover align-middle text-center">
+            <thead class="table-light">
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">ID</th>
+                <th scope="col">Name</th>
+                <th scope="col">Surname</th>
+                <th scope="col">Email</th>
+                <th scope="col">Photo</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="trainer, trainerStat : ${trainers}">
+                <th scope="row" th:text="${trainerStat.index + 1}">1</th>
+                <td th:text="${trainer.id}">1</td>
+                <td th:text="${trainer.name}">John</td>
+                <td th:text="${trainer.surname}">Doe</td>
+                <td th:text="${trainer.email}">john@example.com</td>
+                <td>
+                    <span class="badge text-bg-success" th:if="${trainer.photo != null}">Available</span>
+                    <span class="badge text-bg-secondary" th:unless="${trainer.photo != null}">No photo</span>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="alert alert-info text-center" th:if="${#lists.isEmpty(trainers)}">
+        No trainers found.
+    </div>
+</div>
+<footer th:replace="~{fragment::footer}"></footer>
+</body>
+</html>
+
