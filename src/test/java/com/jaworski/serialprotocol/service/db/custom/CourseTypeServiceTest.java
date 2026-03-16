@@ -87,6 +87,31 @@ class CourseTypeServiceTest {
     assertEquals("Advanced navigation course", updated.getLongDescription());
   }
 
+  @Test
+  void shouldThrowWhenUpdatingCourseTypeWithoutId() {
+    CourseTypeDTO withoutId = createCourseType("C-A", "Basic", "Basic navigation course");
+
+    IllegalArgumentException exception = assertThrows(
+        IllegalArgumentException.class,
+        () -> courseTypeService.update(withoutId)
+    );
+
+    assertEquals("Course type id is required for update", exception.getMessage());
+  }
+
+  @Test
+  void shouldThrowWhenUpdatingNonExistingCourseType() {
+    CourseTypeDTO nonExisting = createCourseType("C-A", "Basic", "Basic navigation course");
+    nonExisting.setId(9999L);
+
+    IllegalArgumentException exception = assertThrows(
+        IllegalArgumentException.class,
+        () -> courseTypeService.update(nonExisting)
+    );
+
+    assertEquals("Course type with id 9999 not found", exception.getMessage());
+  }
+
   private CourseTypeDTO createCourseType(String code, String description, String longDescription) {
     CourseTypeDTO courseType = new CourseTypeDTO();
     courseType.setCode(code);

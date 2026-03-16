@@ -7,9 +7,84 @@
 <body>
 <header th:replace="~{fragment::header}"></header>
 <div class="container mb-4">
+    <div id="successAlert" class="alert alert-success alert-dismissible fade show" role="alert" th:if="${successMessage}">
+        <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert" th:if="${errorMessage}">
+        <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
     <div class="d-flex justify-content-between align-items-center my-3">
         <h4 class="mb-0">Trainer</h4>
-        <span class="badge bg-secondary" th:text="${#lists.size(trainers)}" th:if="${!#lists.isEmpty(trainers)}">0</span>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-secondary" th:text="${#lists.size(trainers)}" th:if="${!#lists.isEmpty(trainers)}">0</span>
+            <button id="showAddFormBtn" type="button" class="btn btn-primary btn-sm">Add</button>
+        </div>
+    </div>
+
+    <div id="addTrainerFormContainer" class="card mb-3 d-none">
+        <div class="card-body">
+            <h5 class="card-title">Add trainer</h5>
+            <form method="post" enctype="multipart/form-data" th:action="@{/trainer-service/add}">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="trainerName" class="form-label">Name</label>
+                        <input id="trainerName" name="name" type="text" class="form-control" maxlength="100" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="trainerSurname" class="form-label">Surname</label>
+                        <input id="trainerSurname" name="surname" type="text" class="form-control" maxlength="100" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="trainerEmail" class="form-label">Email</label>
+                        <input id="trainerEmail" name="email" type="email" class="form-control" maxlength="100" required>
+                    </div>
+                    <div class="col-12">
+                        <label for="trainerPhoto" class="form-label">Photo</label>
+                        <input id="trainerPhoto" name="photoFile" type="file" class="form-control" accept="image/*">
+                        <div class="form-text">Optional. Supported by browser and backend as binary upload.</div>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-success btn-sm">Save</button>
+                    <button id="hideAddFormBtn" type="button" class="btn btn-outline-secondary btn-sm">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="updateTrainerFormContainer" class="card mb-3 d-none">
+        <div class="card-body">
+            <h5 class="card-title">Update trainer</h5>
+            <form method="post" enctype="multipart/form-data" th:action="@{/trainer-service/update}">
+                <input id="updateTrainerId" name="id" type="hidden" required>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="updateTrainerName" class="form-label">Name</label>
+                        <input id="updateTrainerName" name="name" type="text" class="form-control" maxlength="100" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="updateTrainerSurname" class="form-label">Surname</label>
+                        <input id="updateTrainerSurname" name="surname" type="text" class="form-control" maxlength="100" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="updateTrainerEmail" class="form-label">Email</label>
+                        <input id="updateTrainerEmail" name="email" type="email" class="form-control" maxlength="100" required>
+                    </div>
+                    <div class="col-12">
+                        <label for="updateTrainerPhoto" class="form-label">Photo</label>
+                        <input id="updateTrainerPhoto" name="photoFile" type="file" class="form-control" accept="image/*">
+                        <div class="form-text">Leave empty to keep the current photo.</div>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-warning btn-sm">Update</button>
+                    <button id="hideUpdateFormBtn" type="button" class="btn btn-outline-secondary btn-sm">Cancel</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <div class="table-responsive" th:if="${!#lists.isEmpty(trainers)}">
@@ -17,23 +92,44 @@
             <thead class="table-light">
             <tr>
                 <th scope="col">#</th>
-                <th scope="col">ID</th>
                 <th scope="col">Name</th>
                 <th scope="col">Surname</th>
                 <th scope="col">Email</th>
                 <th scope="col">Photo</th>
+                <th scope="col">Actions</th>
             </tr>
             </thead>
             <tbody>
             <tr th:each="trainer, trainerStat : ${trainers}">
                 <th scope="row" th:text="${trainerStat.index + 1}">1</th>
-                <td th:text="${trainer.id}">1</td>
                 <td th:text="${trainer.name}">John</td>
                 <td th:text="${trainer.surname}">Doe</td>
                 <td th:text="${trainer.email}">john@example.com</td>
                 <td>
                     <span class="badge text-bg-success" th:if="${trainer.photo != null}">Available</span>
                     <span class="badge text-bg-secondary" th:unless="${trainer.photo != null}">No photo</span>
+                </td>
+                <td>
+                    <div class="d-flex justify-content-center gap-2">
+                        <button
+                                type="button"
+                                class="btn btn-outline-info btn-sm details-trainer-btn"
+                                th:attr="data-id=${trainer.id},data-name=${trainer.name},data-surname=${trainer.surname},data-email=${trainer.email},data-photo=${trainer.photoBase64}">
+                            Details
+                        </button>
+                        <button
+                                type="button"
+                                class="btn btn-outline-warning btn-sm update-trainer-btn"
+                                th:attr="data-id=${trainer.id},data-name=${trainer.name},data-surname=${trainer.surname},data-email=${trainer.email}">
+                            Update
+                        </button>
+                        <form method="post" th:action="@{/trainer-service/delete/{id}(id=${trainer.id})}">
+                            <button type="submit" class="btn btn-outline-danger btn-sm"
+                                    onclick="return confirm('Are you sure you want to delete this item?');">
+                                Delete
+                            </button>
+                        </form>
+                    </div>
                 </td>
             </tr>
             </tbody>
@@ -44,7 +140,133 @@
         No trainers found.
     </div>
 </div>
+
+<div class="modal fade" id="trainerDetailsModal" tabindex="-1" aria-labelledby="trainerDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="trainerDetailsModalLabel">Trainer details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-7">
+                        <p class="mb-2"><strong>ID:</strong> <span id="detailsTrainerId">-</span></p>
+                        <p class="mb-2"><strong>Name:</strong> <span id="detailsTrainerName">-</span></p>
+                        <p class="mb-2"><strong>Surname:</strong> <span id="detailsTrainerSurname">-</span></p>
+                        <p class="mb-0"><strong>Email:</strong> <span id="detailsTrainerEmail">-</span></p>
+                    </div>
+                    <div class="col-md-5 text-center">
+                        <img id="detailsTrainerPhoto" src="data:," class="img-fluid rounded border d-none" alt="Trainer photo" style="max-height: 280px; object-fit: contain;">
+                        <div id="detailsNoPhoto" class="text-muted">No photo available.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <footer th:replace="~{fragment::footer}"></footer>
+<script>
+    const showAddFormBtn = document.getElementById('showAddFormBtn');
+    const hideAddFormBtn = document.getElementById('hideAddFormBtn');
+    const addTrainerFormContainer = document.getElementById('addTrainerFormContainer');
+    const updateTrainerFormContainer = document.getElementById('updateTrainerFormContainer');
+    const hideUpdateFormBtn = document.getElementById('hideUpdateFormBtn');
+    const updateButtons = document.querySelectorAll('.update-trainer-btn');
+    const updateTrainerId = document.getElementById('updateTrainerId');
+    const updateTrainerName = document.getElementById('updateTrainerName');
+    const updateTrainerSurname = document.getElementById('updateTrainerSurname');
+    const updateTrainerEmail = document.getElementById('updateTrainerEmail');
+    const detailsButtons = document.querySelectorAll('.details-trainer-btn');
+    const trainerDetailsModal = document.getElementById('trainerDetailsModal');
+    const detailsTrainerId = document.getElementById('detailsTrainerId');
+    const detailsTrainerName = document.getElementById('detailsTrainerName');
+    const detailsTrainerSurname = document.getElementById('detailsTrainerSurname');
+    const detailsTrainerEmail = document.getElementById('detailsTrainerEmail');
+    const detailsTrainerPhoto = document.getElementById('detailsTrainerPhoto');
+    const detailsNoPhoto = document.getElementById('detailsNoPhoto');
+    const successAlert = document.getElementById('successAlert');
+
+    const trainerDetailsModalInstance =
+        trainerDetailsModal && window.bootstrap && window.bootstrap.Modal
+            ? window.bootstrap.Modal.getOrCreateInstance(trainerDetailsModal)
+            : null;
+
+    if (successAlert) {
+        setTimeout(() => {
+            if (window.bootstrap && window.bootstrap.Alert) {
+                const alertInstance = window.bootstrap.Alert.getOrCreateInstance(successAlert);
+                alertInstance.close();
+            } else {
+                successAlert.classList.remove('show');
+                successAlert.remove();
+            }
+        }, 10000);
+    }
+
+    if (showAddFormBtn && hideAddFormBtn && addTrainerFormContainer) {
+        showAddFormBtn.addEventListener('click', () => {
+            addTrainerFormContainer.classList.remove('d-none');
+            if (updateTrainerFormContainer) {
+                updateTrainerFormContainer.classList.add('d-none');
+            }
+        });
+
+        hideAddFormBtn.addEventListener('click', () => {
+            addTrainerFormContainer.classList.add('d-none');
+        });
+    }
+
+    if (hideUpdateFormBtn && updateTrainerFormContainer) {
+        hideUpdateFormBtn.addEventListener('click', () => {
+            updateTrainerFormContainer.classList.add('d-none');
+        });
+    }
+
+    if (updateButtons.length > 0 && updateTrainerFormContainer) {
+        updateButtons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                updateTrainerId.value = btn.dataset.id || '';
+                updateTrainerName.value = btn.dataset.name || '';
+                updateTrainerSurname.value = btn.dataset.surname || '';
+                updateTrainerEmail.value = btn.dataset.email || '';
+                updateTrainerFormContainer.classList.remove('d-none');
+                if (addTrainerFormContainer) {
+                    addTrainerFormContainer.classList.add('d-none');
+                }
+                updateTrainerFormContainer.scrollIntoView({behavior: 'smooth', block: 'start'});
+            });
+        });
+    }
+
+    if (detailsButtons.length > 0 && trainerDetailsModalInstance) {
+        detailsButtons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                detailsTrainerId.textContent = btn.dataset.id || '-';
+                detailsTrainerName.textContent = btn.dataset.name || '-';
+                detailsTrainerSurname.textContent = btn.dataset.surname || '-';
+                detailsTrainerEmail.textContent = btn.dataset.email || '-';
+
+                const photoBase64 = btn.dataset.photo || '';
+                if (photoBase64) {
+                    detailsTrainerPhoto.src = `data:image/*;base64,${photoBase64}`;
+                    detailsTrainerPhoto.classList.remove('d-none');
+                    detailsNoPhoto.classList.add('d-none');
+                } else {
+                    detailsTrainerPhoto.src = 'data:,';
+                    detailsTrainerPhoto.classList.add('d-none');
+                    detailsNoPhoto.classList.remove('d-none');
+                }
+
+                trainerDetailsModalInstance.show();
+            });
+        });
+    }
+</script>
 </body>
 </html>
 

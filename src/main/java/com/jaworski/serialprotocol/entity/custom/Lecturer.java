@@ -25,7 +25,7 @@ public class Lecturer {
   protected static final String TABLE_NAME = "lecturer";
 
   @Id
-  @GeneratedValue(strategy = GenerationType.AUTO)
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = TABLE_NAME + "_id", nullable = false, updatable = false)
   private long lecturerId;
 

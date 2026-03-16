@@ -26,7 +26,7 @@ public class Trainer {
   protected static final String TABLE_NAME = "trainer";
 
   @Id
-  @GeneratedValue(strategy = GenerationType.AUTO)
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = TABLE_NAME + "_id", nullable = false, updatable = false)
   private long id;
 
@@ -48,7 +48,7 @@ public class Trainer {
 
   @Lob
   @Basic(fetch = FetchType.LAZY)
-  @Column(name = Trainer.TABLE_NAME + "_photo", columnDefinition = "LONGBLOB")
+  @Column(name = Trainer.TABLE_NAME + "_photo", columnDefinition = "LONGBLOB", nullable = true)
   @Size(max = 10_000_000)
   @ToString.Exclude
   @EqualsAndHashCode.Exclude
