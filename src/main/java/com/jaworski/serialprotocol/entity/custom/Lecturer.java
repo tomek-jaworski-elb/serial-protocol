@@ -27,7 +27,7 @@ public class Lecturer {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = TABLE_NAME + "_id", nullable = false, updatable = false)
-  private long lecturerId;
+  private Long lecturerId;
 
   @Column(name = TABLE_NAME + "_name", nullable = false, length = 100)
   @NotBlank
