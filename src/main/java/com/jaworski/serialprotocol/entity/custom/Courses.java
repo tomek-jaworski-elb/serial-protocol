@@ -40,7 +40,7 @@ public class Courses {
   private Long id;
 
   @ManyToOne(optional = false)
-  @JoinColumn(name = TABLE_NAME + "_participant_uuid", nullable = false)
+  @JoinColumn(name = TABLE_NAME + "_participant_id", nullable = false)
   @NotNull
   private Participant participant;
 

@@ -7,9 +7,99 @@
 <body>
 <header th:replace="~{fragment::header}"></header>
 <div class="container mb-4">
+    <div id="successAlert" class="alert alert-success alert-dismissible fade show" role="alert" th:if="${successMessage}">
+        <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert" th:if="${errorMessage}">
+        <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
     <div class="d-flex justify-content-between align-items-center my-3">
         <h4 class="mb-0">Participant</h4>
-        <span class="badge bg-secondary" th:text="${#lists.size(participants)}" th:if="${!#lists.isEmpty(participants)}">0</span>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-secondary" th:text="${#lists.size(participants)}" th:if="${!#lists.isEmpty(participants)}">0</span>
+            <button id="showAddFormBtn" type="button" class="btn btn-primary btn-sm">Add</button>
+        </div>
+    </div>
+
+    <!-- Add form -->
+    <div id="addParticipantFormContainer" class="card mb-3 d-none">
+        <div class="card-body">
+            <h5 class="card-title">Add participant</h5>
+            <form method="post" enctype="multipart/form-data" th:action="@{/participant-service/add}">
+                <div class="row g-3">
+                    <div class="col-md-2">
+                        <label for="addParticipantId" class="form-label">ID <span class="text-muted small">(unique)</span></label>
+                        <input id="addParticipantId" name="id" type="number" min="1" class="form-control"
+                               th:value="${nextId}" required>
+                        <div class="form-text">Auto-suggested. You may change it.</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="addParticipantName" class="form-label">Name</label>
+                        <input id="addParticipantName" name="name" type="text" class="form-control" maxlength="100" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="addParticipantSurname" class="form-label">Surname</label>
+                        <input id="addParticipantSurname" name="surname" type="text" class="form-control" maxlength="100" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="addParticipantBirthDate" class="form-label">Birth Date</label>
+                        <input id="addParticipantBirthDate" name="birthDate" type="date" class="form-control" required>
+                        <div class="form-text">Must be a past date.</div>
+                    </div>
+                    <div class="col-12">
+                        <label for="addParticipantPhoto" class="form-label">Photo</label>
+                        <input id="addParticipantPhoto" name="photoFile" type="file" class="form-control" accept="image/*">
+                        <div class="form-text">Optional.</div>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-success btn-sm">Save</button>
+                    <button id="hideAddFormBtn" type="button" class="btn btn-outline-secondary btn-sm">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Update form -->
+    <div id="updateParticipantFormContainer" class="card mb-3 d-none">
+        <div class="card-body">
+            <h5 class="card-title">Update participant</h5>
+            <form method="post" enctype="multipart/form-data" th:action="@{/participant-service/update}">
+                <input id="updateParticipantUuid" name="uuid" type="hidden">
+                <div class="row g-3">
+                    <div class="col-md-2">
+                        <label for="updateParticipantId" class="form-label">ID <span class="text-muted small">(unique)</span></label>
+                        <input id="updateParticipantId" name="id" type="number" min="1" class="form-control" required>
+                        <div class="form-text">Must be unique among all participants.</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="updateParticipantName" class="form-label">Name</label>
+                        <input id="updateParticipantName" name="name" type="text" class="form-control" maxlength="100" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="updateParticipantSurname" class="form-label">Surname</label>
+                        <input id="updateParticipantSurname" name="surname" type="text" class="form-control" maxlength="100" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="updateParticipantBirthDate" class="form-label">Birth Date</label>
+                        <input id="updateParticipantBirthDate" name="birthDate" type="date" class="form-control" required>
+                        <div class="form-text">Must be a past date.</div>
+                    </div>
+                    <div class="col-12">
+                        <label for="updateParticipantPhoto" class="form-label">Photo</label>
+                        <input id="updateParticipantPhoto" name="photoFile" type="file" class="form-control" accept="image/*">
+                        <div class="form-text">Leave empty to keep the current photo.</div>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-warning btn-sm">Update</button>
+                    <button id="hideUpdateFormBtn" type="button" class="btn btn-outline-secondary btn-sm">Cancel</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <div class="table-responsive" th:if="${!#lists.isEmpty(participants)}">
@@ -17,25 +107,40 @@
             <thead class="table-light">
             <tr>
                 <th scope="col">#</th>
-                <th scope="col">UUID</th>
                 <th scope="col">ID</th>
                 <th scope="col">Name</th>
                 <th scope="col">Surname</th>
                 <th scope="col">Birth Date</th>
                 <th scope="col">Photo</th>
+                <th scope="col">Actions</th>
             </tr>
             </thead>
             <tbody>
             <tr th:each="participant, participantStat : ${participants}">
                 <th scope="row" th:text="${participantStat.index + 1}">1</th>
-                <td th:text="${participant.uuid}">uuid</td>
                 <td th:text="${participant.id}">1</td>
                 <td th:text="${participant.name}">John</td>
                 <td th:text="${participant.surname}">Doe</td>
                 <td th:text="${participant.birthDate != null ? #temporals.format(participant.birthDate, 'yyyy-MM-dd') : '-'}">2026-03-15</td>
                 <td>
-                    <span class="badge text-bg-success" th:if="${participant.photo != null}">Available</span>
-                    <span class="badge text-bg-secondary" th:unless="${participant.photo != null}">No photo</span>
+                    <span class="badge text-bg-success" th:if="${participant.photo != null && participant.photo.length > 0}">Available</span>
+                    <span class="badge text-bg-secondary" th:unless="${participant.photo != null && participant.photo.length > 0}">No photo</span>
+                </td>
+                <td>
+                    <div class="d-flex justify-content-center gap-2">
+                        <button
+                                type="button"
+                                class="btn btn-outline-warning btn-sm update-participant-btn"
+                                th:attr="data-uuid=${participant.uuid},data-id=${participant.id},data-name=${participant.name},data-surname=${participant.surname},data-birthdate=${participant.birthDate}">
+                            Update
+                        </button>
+                        <form method="post" th:action="@{/participant-service/delete/{uuid}(uuid=${participant.uuid})}">
+                            <button type="submit" class="btn btn-outline-danger btn-sm"
+                                    onclick="return confirm('Are you sure you want to delete this participant?');">
+                                Delete
+                            </button>
+                        </form>
+                    </div>
                 </td>
             </tr>
             </tbody>
@@ -47,6 +152,71 @@
     </div>
 </div>
 <footer th:replace="~{fragment::footer}"></footer>
+<script>
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const maxDate = yesterday.toISOString().split('T')[0];
+    document.querySelectorAll('input[type="date"]').forEach(el => el.max = maxDate);
+
+    const showAddFormBtn = document.getElementById('showAddFormBtn');
+    const hideAddFormBtn = document.getElementById('hideAddFormBtn');
+    const addParticipantFormContainer = document.getElementById('addParticipantFormContainer');
+    const updateParticipantFormContainer = document.getElementById('updateParticipantFormContainer');
+    const hideUpdateFormBtn = document.getElementById('hideUpdateFormBtn');
+    const updateButtons = document.querySelectorAll('.update-participant-btn');
+    const updateParticipantUuid = document.getElementById('updateParticipantUuid');
+    const updateParticipantId = document.getElementById('updateParticipantId');
+    const updateParticipantName = document.getElementById('updateParticipantName');
+    const updateParticipantSurname = document.getElementById('updateParticipantSurname');
+    const updateParticipantBirthDate = document.getElementById('updateParticipantBirthDate');
+    const successAlert = document.getElementById('successAlert');
+
+    if (successAlert) {
+        setTimeout(() => {
+            if (window.bootstrap && window.bootstrap.Alert) {
+                window.bootstrap.Alert.getOrCreateInstance(successAlert).close();
+            } else {
+                successAlert.remove();
+            }
+        }, 10000);
+    }
+
+    if (showAddFormBtn && hideAddFormBtn && addParticipantFormContainer) {
+        showAddFormBtn.addEventListener('click', () => {
+            addParticipantFormContainer.classList.remove('d-none');
+            if (updateParticipantFormContainer) {
+                updateParticipantFormContainer.classList.add('d-none');
+            }
+            addParticipantFormContainer.scrollIntoView({behavior: 'smooth', block: 'start'});
+        });
+        hideAddFormBtn.addEventListener('click', () => {
+            addParticipantFormContainer.classList.add('d-none');
+        });
+    }
+
+    if (hideUpdateFormBtn && updateParticipantFormContainer) {
+        hideUpdateFormBtn.addEventListener('click', () => {
+            updateParticipantFormContainer.classList.add('d-none');
+        });
+    }
+
+    if (updateButtons.length > 0 && updateParticipantFormContainer) {
+        updateButtons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                updateParticipantUuid.value = btn.dataset.uuid || '';
+                updateParticipantId.value = btn.dataset.id || '';
+                updateParticipantName.value = btn.dataset.name || '';
+                updateParticipantSurname.value = btn.dataset.surname || '';
+                updateParticipantBirthDate.value = btn.dataset.birthdate || '';
+                updateParticipantFormContainer.classList.remove('d-none');
+                if (addParticipantFormContainer) {
+                    addParticipantFormContainer.classList.add('d-none');
+                }
+                updateParticipantFormContainer.scrollIntoView({behavior: 'smooth', block: 'start'});
+            });
+        });
+    }
+</script>
 </body>
 </html>
 

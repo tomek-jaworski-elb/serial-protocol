@@ -2,10 +2,13 @@ package com.jaworski.serialprotocol.controller.web;
 
 import com.jaworski.serialprotocol.dto.custom.CourseTypeDTO;
 import com.jaworski.serialprotocol.dto.custom.LecturerDTO;
+import com.jaworski.serialprotocol.dto.custom.ParticipantDTO;
 import com.jaworski.serialprotocol.dto.custom.TrainerDTO;
 import com.jaworski.serialprotocol.service.db.custom.CourseTypeService;
 import com.jaworski.serialprotocol.service.db.custom.LecturerService;
+import com.jaworski.serialprotocol.service.db.custom.ParticipantService;
 import com.jaworski.serialprotocol.service.db.custom.TrainerService;
+import jakarta.validation.ConstraintViolationException;
 import com.jaworski.serialprotocol.service.WebSocketPublisher;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -21,7 +24,8 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 
 @RequiredArgsConstructor
 @Controller
@@ -34,11 +38,12 @@ public class CustomDBController {
   private final CourseTypeService courseTypeService;
   private final TrainerService trainerService;
   private final LecturerService lecturerService;
+  private final ParticipantService participantService;
 
   @GetMapping("/courses-service")
   public String coursesService(Model model) {
     model.addAttribute(ATTRIBUTE_NAME, "courses-service");
-    model.addAttribute("courses", Collections.emptyList());
+    model.addAttribute("courses", List.of());
     model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
     return "custom/courses-service";
   }
@@ -223,9 +228,84 @@ public class CustomDBController {
   @GetMapping("/participant-service")
   public String participantService(Model model) {
     model.addAttribute(ATTRIBUTE_NAME, "participant-service");
-    model.addAttribute("participants", Collections.emptyList());
+    model.addAttribute("participants", participantService.findAll());
+    model.addAttribute("nextId", participantService.nextId());
     model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
     return "custom/participant-service";
+  }
+
+  @PostMapping("/participant-service/add")
+  public String addParticipant(@ModelAttribute ParticipantDTO participantDTO,
+                               @RequestParam(value = "photoFile", required = false) MultipartFile photoFile,
+                               RedirectAttributes redirectAttributes) {
+    try {
+      participantDTO.setUuid(null);
+      participantDTO.setPhoto(extractPhotoBytes(photoFile));
+      participantService.save(participantDTO);
+      redirectAttributes.addFlashAttribute("successMessage", "Participant added successfully.");
+    } catch (IllegalArgumentException e) {
+      LOG.error("Cannot add participant. payload={}", participantDTO, e);
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+    } catch (ConstraintViolationException e) {
+      String violations = e.getConstraintViolations().stream()
+              .map(v -> v.getPropertyPath() + ": " + v.getMessage())
+              .reduce((a, b) -> a + "; " + b)
+              .orElse(e.getMessage());
+      LOG.warn("Validation error adding participant. payload={}: {}", participantDTO, violations);
+      redirectAttributes.addFlashAttribute("errorMessage", "Validation error: " + violations);
+    } catch (RuntimeException e) {
+      LOG.error("Cannot add participant. payload={}", participantDTO, e);
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to add participant: " + e.getMessage());
+    }
+    return "redirect:/participant-service";
+  }
+
+  @PostMapping("/participant-service/update")
+  public String updateParticipant(@ModelAttribute ParticipantDTO participantDTO,
+                                  @RequestParam(value = "photoFile", required = false) MultipartFile photoFile,
+                                  RedirectAttributes redirectAttributes) {
+    try {
+      if (participantDTO.getUuid() == null) {
+        throw new IllegalArgumentException("UUID is required for update");
+      }
+      byte[] uploadedPhoto = extractPhotoBytes(photoFile);
+      if (uploadedPhoto == null || uploadedPhoto.length == 0) {
+        ParticipantDTO current = participantService.findByUuid(participantDTO.getUuid());
+        if (current != null) {
+          participantDTO.setPhoto(current.getPhoto());
+        }
+      } else {
+        participantDTO.setPhoto(uploadedPhoto);
+      }
+      participantService.updateByUuid(participantDTO);
+      redirectAttributes.addFlashAttribute("successMessage", "Participant updated successfully.");
+    } catch (IllegalArgumentException e) {
+      LOG.error("Cannot update participant. payload={}", participantDTO, e);
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+    } catch (ConstraintViolationException e) {
+      String violations = e.getConstraintViolations().stream()
+              .map(v -> v.getPropertyPath() + ": " + v.getMessage())
+              .reduce((a, b) -> a + "; " + b)
+              .orElse(e.getMessage());
+      LOG.warn("Validation error updating participant. payload={}: {}", participantDTO, violations);
+      redirectAttributes.addFlashAttribute("errorMessage", "Validation error: " + violations);
+    } catch (RuntimeException e) {
+      LOG.error("Cannot update participant. payload={}", participantDTO, e);
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to update participant: " + e.getMessage());
+    }
+    return "redirect:/participant-service";
+  }
+
+  @PostMapping("/participant-service/delete/{uuid}")
+  public String deleteParticipant(@PathVariable UUID uuid, RedirectAttributes redirectAttributes) {
+    try {
+      participantService.deleteByUuid(uuid);
+      redirectAttributes.addFlashAttribute("successMessage", "Participant deleted successfully.");
+    } catch (RuntimeException e) {
+      LOG.error("Cannot delete participant. uuid={}", uuid, e);
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete participant: " + e.getMessage());
+    }
+    return "redirect:/participant-service";
   }
 
   private byte[] extractPhotoBytes(MultipartFile photoFile) {
