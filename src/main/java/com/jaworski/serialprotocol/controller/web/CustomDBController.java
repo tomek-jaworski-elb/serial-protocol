@@ -1,10 +1,12 @@
 package com.jaworski.serialprotocol.controller.web;
 
 import com.jaworski.serialprotocol.dto.custom.CourseTypeDTO;
+import com.jaworski.serialprotocol.dto.custom.CoursesDTO;
 import com.jaworski.serialprotocol.dto.custom.LecturerDTO;
 import com.jaworski.serialprotocol.dto.custom.ParticipantDTO;
 import com.jaworski.serialprotocol.dto.custom.TrainerDTO;
 import com.jaworski.serialprotocol.service.db.custom.CourseTypeService;
+import com.jaworski.serialprotocol.service.db.custom.CoursesService;
 import com.jaworski.serialprotocol.service.db.custom.LecturerService;
 import com.jaworski.serialprotocol.service.db.custom.ParticipantService;
 import com.jaworski.serialprotocol.service.db.custom.TrainerService;
@@ -24,8 +26,11 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Controller
@@ -36,6 +41,7 @@ public class CustomDBController {
   private static final String ACTIVE_SESSION = "sessions";
   private final WebSocketPublisher webSockerService;
   private final CourseTypeService courseTypeService;
+  private final CoursesService coursesService;
   private final TrainerService trainerService;
   private final LecturerService lecturerService;
   private final ParticipantService participantService;
@@ -43,9 +49,79 @@ public class CustomDBController {
   @GetMapping("/courses-service")
   public String coursesService(Model model) {
     model.addAttribute(ATTRIBUTE_NAME, "courses-service");
-    model.addAttribute("courses", List.of());
+    model.addAttribute("courses", coursesService.findAll());
+    model.addAttribute("participants", participantService.findAll());
+    List<CourseTypeDTO> courseTypes = courseTypeService.findAll();
+    model.addAttribute("courseTypes", courseTypes);
+    Map<Long, CourseTypeDTO> courseTypeMap = courseTypes.stream()
+        .collect(Collectors.toMap(CourseTypeDTO::getId, ct -> ct));
+    model.addAttribute("courseTypeMap", courseTypeMap);
+    model.addAttribute("trainers", trainerService.findAll());
+    model.addAttribute("lecturers", lecturerService.findAll());
     model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
     return "custom/courses-service";
+  }
+
+  @PostMapping("/courses-service/add")
+  public String addCourse(@ModelAttribute CoursesDTO coursesDTO, RedirectAttributes redirectAttributes) {
+    try {
+      coursesDTO.setUuid(null);
+      coursesService.save(coursesDTO);
+      redirectAttributes.addFlashAttribute("successMessage", "Course added successfully.");
+    } catch (IllegalArgumentException e) {
+      LOG.error("Cannot add course. payload={}", coursesDTO, e);
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+    } catch (RuntimeException e) {
+      LOG.error("Cannot add course. payload={}", coursesDTO, e);
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to add course: " + e.getMessage());
+    }
+    return "redirect:/courses-service";
+  }
+
+  @PostMapping("/courses-service/update")
+  public String updateCourse(@ModelAttribute CoursesDTO coursesDTO, RedirectAttributes redirectAttributes) {
+    try {
+      if (coursesDTO.getUuid() == null) {
+        throw new IllegalArgumentException("UUID is required for update");
+      }
+      coursesService.update(coursesDTO);
+      redirectAttributes.addFlashAttribute("successMessage", "Course updated successfully.");
+    } catch (IllegalArgumentException e) {
+      LOG.error("Cannot update course. payload={}", coursesDTO, e);
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+    } catch (RuntimeException e) {
+      LOG.error("Cannot update course. payload={}", coursesDTO, e);
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to update course: " + e.getMessage());
+    }
+    return "redirect:/courses-service";
+  }
+
+  @PostMapping("/courses-service/delete/{uuid}")
+  public String deleteCourse(@PathVariable UUID uuid, RedirectAttributes redirectAttributes) {
+    try {
+      coursesService.deleteByUuid(uuid);
+      redirectAttributes.addFlashAttribute("successMessage", "Course deleted successfully.");
+    } catch (RuntimeException e) {
+      LOG.error("Cannot delete course. uuid={}", uuid, e);
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete course: " + e.getMessage());
+    }
+    return "redirect:/courses-service";
+  }
+
+  @PostMapping("/courses-service/add-participant")
+  public String addParticipantToCourse(@ModelAttribute CoursesDTO coursesDTO, RedirectAttributes redirectAttributes) {
+    try {
+      coursesDTO.setUuid(null);
+      coursesService.save(coursesDTO);
+      redirectAttributes.addFlashAttribute("successMessage", "Participant assigned to course successfully.");
+    } catch (IllegalArgumentException e) {
+      LOG.error("Cannot assign participant to course. payload={}", coursesDTO, e);
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+    } catch (RuntimeException e) {
+      LOG.error("Cannot assign participant to course. payload={}", coursesDTO, e);
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to assign participant to course: " + e.getMessage());
+    }
+    return "redirect:/participant-service";
   }
 
   @GetMapping("/trainer-service")
@@ -228,8 +304,13 @@ public class CustomDBController {
   @GetMapping("/participant-service")
   public String participantService(Model model) {
     model.addAttribute(ATTRIBUTE_NAME, "participant-service");
-    model.addAttribute("participants", participantService.findAll());
+    List<ParticipantDTO> participants = participantService.findAll();
+    model.addAttribute("participants", participants);
     model.addAttribute("nextId", participantService.nextId());
+    model.addAttribute("courseTypes", courseTypeService.findAll());
+    Map<UUID, List<CoursesDTO>> coursesByParticipant = new HashMap<>();
+    participants.forEach(p -> coursesByParticipant.put(p.getUuid(), coursesService.findByParticipantUuid(p.getUuid())));
+    model.addAttribute("coursesByParticipant", coursesByParticipant);
     model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
     return "custom/participant-service";
   }

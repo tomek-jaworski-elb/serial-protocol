@@ -18,7 +18,7 @@ public class ParticipantDTO {
   private Long id;
   private String name;
   private String surname;
-  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+  @DateTimeFormat(pattern = "dd/MM/yyyy")
   private LocalDate birthDate;
   private byte[] photo;
 

@@ -46,7 +46,8 @@
                     </div>
                     <div class="col-md-2">
                         <label for="addParticipantBirthDate" class="form-label">Birth Date</label>
-                        <input id="addParticipantBirthDate" name="birthDate" type="date" class="form-control" required>
+                        <input id="addParticipantBirthDate" name="birthDate" type="date" class="form-control"
+                               placeholder="dd/MM/yyyy" pattern="\d{2}/\d{2}/\d{4}" title="Format: dd/MM/yyyy" required>
                         <div class="form-text">Must be a past date.</div>
                     </div>
                     <div class="col-12">
@@ -85,7 +86,8 @@
                     </div>
                     <div class="col-md-2">
                         <label for="updateParticipantBirthDate" class="form-label">Birth Date</label>
-                        <input id="updateParticipantBirthDate" name="birthDate" type="date" class="form-control" required>
+                        <input id="updateParticipantBirthDate" name="birthDate" type="text" class="form-control"
+                               placeholder="dd/MM/yyyy" pattern="\d{2}/\d{2}/\d{4}" title="Format: dd/MM/yyyy" required>
                         <div class="form-text">Must be a past date.</div>
                     </div>
                     <div class="col-12">
@@ -102,6 +104,46 @@
         </div>
     </div>
 
+    <!-- Add to Course form -->
+    <div id="addToCourseFormContainer" class="card mb-3 d-none border-info">
+        <div class="card-body">
+            <h5 class="card-title">Assign participant to course</h5>
+            <form method="post" th:action="@{/courses-service/add-participant}">
+                <input id="addToCourseParticipantUuid" name="participantUuid" type="hidden">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Participant</label>
+                        <input id="addToCourseParticipantName" type="text" class="form-control" disabled>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="addToCourseTypeId" class="form-label">Course Type</label>
+                        <select id="addToCourseTypeId" name="courseTypeId" class="form-select" required>
+                            <option value="" disabled selected>Select course type</option>
+                            <option th:each="ct : ${courseTypes}"
+                                    th:value="${ct.id}"
+                                    th:text="${ct.code + ' - ' + ct.description}">Course Type</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="addToCourseStartDate" class="form-label">Start Date</label>
+                        <input id="addToCourseStartDate" name="startDate" type="text" class="form-control"
+                               placeholder="dd/MM/yyyy" pattern="\d{2}/\d{2}/\d{4}" title="Format: dd/MM/yyyy" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="addToCourseEndDate" class="form-label">End Date</label>
+                        <input id="addToCourseEndDate" name="endDate" type="text" class="form-control"
+                               placeholder="dd/MM/yyyy" pattern="\d{2}/\d{2}/\d{4}" title="Format: dd/MM/yyyy" required>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-info btn-sm">Assign</button>
+                    <button id="hideAddToCourseFormBtn" type="button" class="btn btn-outline-secondary btn-sm">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
     <div class="table-responsive" th:if="${!#lists.isEmpty(participants)}">
         <table class="table table-striped table-hover align-middle text-center">
             <thead class="table-light">
@@ -112,6 +154,7 @@
                 <th scope="col">Surname</th>
                 <th scope="col">Birth Date</th>
                 <th scope="col">Photo</th>
+                <th scope="col">Courses</th>
                 <th scope="col">Actions</th>
             </tr>
             </thead>
@@ -121,18 +164,34 @@
                 <td th:text="${participant.id}">1</td>
                 <td th:text="${participant.name}">John</td>
                 <td th:text="${participant.surname}">Doe</td>
-                <td th:text="${participant.birthDate != null ? #temporals.format(participant.birthDate, 'yyyy-MM-dd') : '-'}">2026-03-15</td>
+                <td th:text="${participant.birthDate != null ? #temporals.format(participant.birthDate, 'dd/MM/yyyy') : '-'}">2026-03-15</td>
                 <td>
                     <span class="badge text-bg-success" th:if="${participant.photo != null && participant.photo.length > 0}">Available</span>
                     <span class="badge text-bg-secondary" th:unless="${participant.photo != null && participant.photo.length > 0}">No photo</span>
                 </td>
                 <td>
-                    <div class="d-flex justify-content-center gap-2">
+                    <th:block th:if="${coursesByParticipant[participant.uuid] != null && !coursesByParticipant[participant.uuid].isEmpty()}">
+                        <th:block th:each="course : ${coursesByParticipant[participant.uuid]}">
+                            <span th:each="ct : ${courseTypes}" th:if="${ct.id == course.courseTypeId}"
+                                  class="badge text-bg-primary me-1" th:text="${ct.code}">Course</span>
+                        </th:block>
+                    </th:block>
+                    <span th:if="${coursesByParticipant[participant.uuid] == null || coursesByParticipant[participant.uuid].isEmpty()}"
+                          class="text-muted small">—</span>
+                </td>
+                <td>
+                    <div class="d-flex justify-content-center gap-2 flex-wrap">
                         <button
                                 type="button"
                                 class="btn btn-outline-warning btn-sm update-participant-btn"
                                 th:attr="data-uuid=${participant.uuid},data-id=${participant.id},data-name=${participant.name},data-surname=${participant.surname},data-birthdate=${participant.birthDate}">
                             Update
+                        </button>
+                        <button
+                                type="button"
+                                class="btn btn-outline-info btn-sm add-to-course-btn"
+                                th:attr="data-uuid=${participant.uuid},data-name=${participant.name + ' ' + participant.surname}">
+                            Add to Course
                         </button>
                         <form method="post" th:action="@{/participant-service/delete/{uuid}(uuid=${participant.uuid})}">
                             <button type="submit" class="btn btn-outline-danger btn-sm"
@@ -153,10 +212,12 @@
 </div>
 <footer th:replace="~{fragment::footer}"></footer>
 <script>
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const maxDate = yesterday.toISOString().split('T')[0];
-    document.querySelectorAll('input[type="date"]').forEach(el => el.max = maxDate);
+    function isoToEu(dateStr) {
+        if (!dateStr) return '';
+        const parts = dateStr.split('-');
+        if (parts.length !== 3) return dateStr;
+        return parts[2] + '/' + parts[1] + '/' + parts[0];
+    }
 
     const showAddFormBtn = document.getElementById('showAddFormBtn');
     const hideAddFormBtn = document.getElementById('hideAddFormBtn');
@@ -207,7 +268,7 @@
                 updateParticipantId.value = btn.dataset.id || '';
                 updateParticipantName.value = btn.dataset.name || '';
                 updateParticipantSurname.value = btn.dataset.surname || '';
-                updateParticipantBirthDate.value = btn.dataset.birthdate || '';
+                updateParticipantBirthDate.value = isoToEu(btn.dataset.birthdate) || '';
                 updateParticipantFormContainer.classList.remove('d-none');
                 if (addParticipantFormContainer) {
                     addParticipantFormContainer.classList.add('d-none');
@@ -215,6 +276,29 @@
                 updateParticipantFormContainer.scrollIntoView({behavior: 'smooth', block: 'start'});
             });
         });
+    }
+
+    const addToCourseFormContainer = document.getElementById('addToCourseFormContainer');
+    const hideAddToCourseFormBtn = document.getElementById('hideAddToCourseFormBtn');
+    const addToCourseParticipantUuid = document.getElementById('addToCourseParticipantUuid');
+    const addToCourseParticipantName = document.getElementById('addToCourseParticipantName');
+    const addToCourseButtons = document.querySelectorAll('.add-to-course-btn');
+
+    if (addToCourseButtons.length > 0 && addToCourseFormContainer) {
+        addToCourseButtons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                addToCourseParticipantUuid.value = btn.dataset.uuid || '';
+                addToCourseParticipantName.value = btn.dataset.name || '';
+                addToCourseFormContainer.classList.remove('d-none');
+                if (addParticipantFormContainer) addParticipantFormContainer.classList.add('d-none');
+                if (updateParticipantFormContainer) updateParticipantFormContainer.classList.add('d-none');
+                addToCourseFormContainer.scrollIntoView({behavior: 'smooth', block: 'start'});
+            });
+        });
+    }
+
+    if (hideAddToCourseFormBtn && addToCourseFormContainer) {
+        hideAddToCourseFormBtn.addEventListener('click', () => addToCourseFormContainer.classList.add('d-none'));
     }
 </script>
 </body>
