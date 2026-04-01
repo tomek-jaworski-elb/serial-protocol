@@ -5,6 +5,8 @@ import com.jaworski.serialprotocol.dto.custom.CoursesDTO;
 import com.jaworski.serialprotocol.dto.custom.LecturerDTO;
 import com.jaworski.serialprotocol.dto.custom.ParticipantDTO;
 import com.jaworski.serialprotocol.dto.custom.TrainerDTO;
+import com.jaworski.serialprotocol.entity.custom.Image;
+import com.jaworski.serialprotocol.repository.custom.ImageRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -14,6 +16,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -31,6 +34,8 @@ class CoursesServiceTest {
   private TrainerService trainerService;
   @Autowired
   private LecturerService lecturerService;
+  @Autowired
+  private ImageRepository imageRepository;
 
   // --- findAll ---
 
@@ -355,11 +360,19 @@ class CoursesServiceTest {
     return dto;
   }
 
+  private UUID getImage() {
+    Image image = new Image();
+    image.setData(new byte[]{7, 7, 7, 7});
+    image.setContentType("participant-context");
+    return imageRepository.save(image).getId();
+  }
+
   private ParticipantDTO savedParticipant(String name, String surname) {
     ParticipantDTO dto = new ParticipantDTO();
     dto.setName(name);
     dto.setSurname(surname);
     dto.setBirthDate(LocalDate.of(1990, 1, 1));
+    dto.setImage(getImage());
     return participantService.save(dto);
   }
 
@@ -376,6 +389,7 @@ class CoursesServiceTest {
     dto.setName(name);
     dto.setSurname(surname);
     dto.setEmail(name.toLowerCase() + "." + surname.toLowerCase() + "@example.com");
+    dto.setImagesUuid(createImages());
     return trainerService.save(dto);
   }
 
@@ -383,6 +397,21 @@ class CoursesServiceTest {
     LecturerDTO dto = new LecturerDTO();
     dto.setName(name);
     dto.setSurname(surname);
+    dto.setEmail(name.toLowerCase() + "." + surname.toLowerCase() + "@example.com");
+    dto.setNickname(name.toLowerCase() + surname.toLowerCase());
+    dto.setImagesUuid(createImages());
     return lecturerService.save(dto);
+  }
+
+  private Set<UUID> createImages() {
+    var img1 = new Image();
+    img1.setData(new byte[]{1, 2, 3, 4, 55, 54, 3, 1});
+    img1.setContentType("content");
+    var img2 = new Image();
+    img2.setData(new byte[]{1, 2, 3, 4, 55, 54, 3, 10, 0, 0, 0, 0, 0});
+    img2.setContentType("text content");
+    return imageRepository.saveAll(List.of(img1, img2)).stream()
+        .map(Image::getId)
+        .collect(Collectors.toSet());
   }
 }

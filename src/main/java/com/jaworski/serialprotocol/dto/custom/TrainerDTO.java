@@ -2,9 +2,13 @@ package com.jaworski.serialprotocol.dto.custom;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
-import java.util.Base64;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -15,14 +19,10 @@ public class TrainerDTO {
   private String name;
   private String surname;
   private String email;
-  private byte[] photo;
 
-  public String getPhotoBase64() {
-    if (photo == null || photo.length == 0) {
-      return "";
-    }
-    return Base64.getEncoder().encodeToString(photo);
-  }
+  @ToString.Exclude
+  @EqualsAndHashCode.Exclude
+  private Set<UUID> imagesUuid = new HashSet<>();
 
 }
 

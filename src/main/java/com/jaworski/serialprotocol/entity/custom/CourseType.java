@@ -9,18 +9,15 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Data
 @Table(name = CourseType.TABLE_NAME)
+@NoArgsConstructor
 public class CourseType {
 
-  protected static final String TABLE_NAME = "course_type";
-
-  public CourseType() {
-  //  JPA requires a no-args constructor
-  }
-
+  public static final String TABLE_NAME = "course_type";
 
   public CourseType(String code, String description, String longDescription) {
     this.code = code;

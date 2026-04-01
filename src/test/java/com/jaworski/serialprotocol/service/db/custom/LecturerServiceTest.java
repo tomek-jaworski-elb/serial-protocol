@@ -1,21 +1,35 @@
 package com.jaworski.serialprotocol.service.db.custom;
 
 import com.jaworski.serialprotocol.dto.custom.LecturerDTO;
+import com.jaworski.serialprotocol.entity.custom.Image;
+import com.jaworski.serialprotocol.repository.custom.ImageRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DataJpaTest
-@Import({LecturerService.class})
+@Import({LecturerService.class, ImageService.class})
 class LecturerServiceTest {
 
     @Autowired
     private LecturerService lecturerService;
+
+    @Autowired
+    private ImageService imageService;
+
+    @Autowired
+    private ImageRepository imageRepository;
 
     // --- findAll ---
 
@@ -71,15 +85,17 @@ class LecturerServiceTest {
     }
 
     @Test
-    void save_shouldPersistLecturerWithPhoto() {
+    void save_shouldPersistLecturerWithImages() {
         LecturerDTO dto = createLecturer("Piotr", "Zając");
-        byte[] photo = {1, 2, 3, 4};
-        dto.setPhoto(photo);
+        Set<UUID> images = createImages();
+        dto.setImagesUuid(images);
 
         LecturerDTO saved = lecturerService.save(dto);
 
         assertNotNull(saved);
-        assertArrayEquals(photo, saved.getPhoto());
+        assertNotNull(saved.getImagesUuid());
+        assertEquals(2, saved.getImagesUuid().size());
+        assertTrue(saved.getImagesUuid().containsAll(images));
     }
 
     @Test
@@ -98,8 +114,10 @@ class LecturerServiceTest {
         LecturerDTO saved = lecturerService.save(createLecturer("Jan", "Kowalski"));
 
         lecturerService.deleteById(saved.getLecturerId());
-
+        Set<UUID> images = saved.getImagesUuid();
         assertNull(lecturerService.findById(saved.getLecturerId()));
+        Image imageById = imageService.getImageById(images.stream().findFirst().orElseThrow());
+        assertNull(imageById);
     }
 
     @Test
@@ -132,14 +150,35 @@ class LecturerServiceTest {
     }
 
     @Test
-    void updateById_shouldUpdatePhoto() {
-        LecturerDTO saved = lecturerService.save(createLecturer("Jan", "Kowalski"));
-        byte[] newPhoto = {5, 6, 7, 8};
-        saved.setPhoto(newPhoto);
+  void updateById_shouldUpdateImages() {
+    LecturerDTO saved = lecturerService.save(createLecturer("Jan", "Kowalski"));
+    Set<UUID> newImages = createImages();
+    saved.setImagesUuid(newImages);
 
-        LecturerDTO updated = lecturerService.updateById(saved);
+    LecturerDTO updated = lecturerService.updateById(saved);
 
-        assertArrayEquals(newPhoto, updated.getPhoto());
+    assertEquals(newImages.size(), updated.getImagesUuid().size());
+    assertTrue(updated.getImagesUuid().containsAll(newImages));
+  }
+
+    @Test
+    void updateById_shouldUpdateEmail() {
+      LecturerDTO saved = lecturerService.save(createLecturer("Jan", "Kowalski"));
+      String newEmail = "newEmail";
+      saved.setEmail(newEmail);
+      LecturerDTO updated = lecturerService.updateById(saved);
+      assertNotNull(updated);
+      assertEquals(newEmail, updated.getEmail());
+    }
+
+    @Test
+    void updateById_shouldUpdateNickname() {
+      LecturerDTO saved = lecturerService.save(createLecturer("Jan", "Kowalski"));
+      String newNickname = "newNickname";
+      saved.setNickname(newNickname);
+      LecturerDTO updated = lecturerService.updateById(saved);
+      assertNotNull(updated);
+      assertEquals(newNickname, updated.getNickname());
     }
 
     @Test
@@ -158,6 +197,22 @@ class LecturerServiceTest {
         LecturerDTO dto = new LecturerDTO();
         dto.setName(name);
         dto.setSurname(surname);
+        dto.setEmail(name.toLowerCase() + "." + surname.toLowerCase() + "@example.com");
+        dto.setNickname(name.toLowerCase() + surname.toLowerCase());
+        dto.setImagesUuid(createImages());
         return dto;
+    }
+
+    private Set<UUID> createImages() {
+        Image image1 = new Image();
+        image1.setData(new byte[]{4, 5, 6});
+        image1.setContentType("content");
+        Image image2 = new Image();
+        image2.setData(new byte[]{1, 2, 0, 3, 4, 4, 5, 6});
+        image2.setContentType("xyz");
+        List<Image> saved = imageRepository.saveAll(List.of(image1, image2));
+        Set<UUID> ids = new HashSet<>();
+        saved.forEach(image -> ids.add(image.getId()));
+        return ids;
     }
 }

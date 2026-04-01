@@ -2,11 +2,12 @@ package com.jaworski.serialprotocol.dto.custom;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
-import java.util.Base64;
 import java.util.UUID;
 
 @Data
@@ -20,14 +21,10 @@ public class ParticipantDTO {
   private String surname;
   @DateTimeFormat(pattern = "dd/MM/yyyy")
   private LocalDate birthDate;
-  private byte[] photo;
 
-  public String getPhotoBase64() {
-    if (photo == null || photo.length == 0) {
-      return "";
-    }
-    return Base64.getEncoder().encodeToString(photo);
-  }
+  @ToString.Exclude
+  @EqualsAndHashCode.Exclude
+  private UUID image;
 
 }
 

@@ -28,7 +28,7 @@ import java.util.UUID;
 @NoArgsConstructor
 public class Courses {
 
-  protected static final String TABLE_NAME = "courses";
+  public static final String TABLE_NAME = "courses";
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
   @Column(name = TABLE_NAME + "_uuid", nullable = false, updatable = false)

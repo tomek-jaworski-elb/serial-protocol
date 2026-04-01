@@ -1,7 +1,11 @@
 package com.jaworski.serialprotocol.mappers.custom;
 
 import com.jaworski.serialprotocol.dto.custom.TrainerDTO;
+import com.jaworski.serialprotocol.entity.custom.Image;
 import com.jaworski.serialprotocol.entity.custom.Trainer;
+
+import java.util.HashSet;
+import java.util.stream.Collectors;
 
 public class TrainerMapper {
 
@@ -17,7 +21,9 @@ public class TrainerMapper {
     dto.setName(trainer.getName());
     dto.setSurname(trainer.getSurname());
     dto.setEmail(trainer.getEmail());
-    dto.setPhoto(trainer.getPhoto());
+    dto.setImagesUuid(trainer.getImages() == null
+            ? new HashSet<>()
+            : trainer.getImages().stream().map(Image::getId).collect(Collectors.toSet()));
     return dto;
   }
 
@@ -32,7 +38,13 @@ public class TrainerMapper {
     trainer.setName(dto.getName());
     trainer.setSurname(dto.getSurname());
     trainer.setEmail(dto.getEmail());
-    trainer.setPhoto(dto.getPhoto());
+    trainer.setImages(dto.getImagesUuid() == null
+            ? new HashSet<>()
+            : dto.getImagesUuid().stream().map(id -> {
+              Image image = new Image();
+              image.setId(id);
+              return image;
+            }).collect(Collectors.toSet()));
     return trainer;
   }
 }

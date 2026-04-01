@@ -1,6 +1,8 @@
 package com.jaworski.serialprotocol.service.db.custom;
 
 import com.jaworski.serialprotocol.dto.custom.ParticipantDTO;
+import com.jaworski.serialprotocol.entity.custom.Image;
+import com.jaworski.serialprotocol.repository.custom.ImageRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -18,6 +20,8 @@ class ParticipantServiceTest {
 
     @Autowired
     private ParticipantService participantService;
+    @Autowired
+    private ImageRepository imageRepository;
 
     // --- findAll ---
 
@@ -106,12 +110,12 @@ class ParticipantServiceTest {
     @Test
     void save_shouldPersistWithPhoto() {
         ParticipantDTO dto = createParticipant("Piotr", "Zając");
-        byte[] photo = {1, 2, 3, 4};
-        dto.setPhoto(photo);
+        UUID imageId = createAndSaveImageId();
+        dto.setImage(imageId);
 
         ParticipantDTO saved = participantService.save(dto);
 
-        assertArrayEquals(photo, saved.getPhoto());
+        assertEquals(imageId, saved.getImage());
     }
 
     @Test
@@ -193,13 +197,23 @@ class ParticipantServiceTest {
     @Test
     void updateByUuid_shouldUpdatePhoto() {
         ParticipantDTO saved = participantService.save(createParticipant("Jan", "Kowalski"));
-        byte[] newPhoto = {5, 6, 7, 8};
-        saved.setPhoto(newPhoto);
+        UUID newImageId = createAndSaveImageId();
+        saved.setImage(newImageId);
 
         ParticipantDTO updated = participantService.updateByUuid(saved);
 
-        assertArrayEquals(newPhoto, updated.getPhoto());
+        assertEquals(newImageId, updated.getImage());
     }
+
+  @Test
+  void updateByUuid_shouldUpdateImage() {
+    ParticipantDTO saved = participantService.save(createParticipant("Jan", "Kowalski"));
+    UUID newImage = createAndSaveImageId();
+    saved.setImage(newImage);
+    ParticipantDTO updated = participantService.updateByUuid(saved);
+
+    assertEquals(newImage, updated.getImage());
+  }
 
     @Test
     void updateByUuid_shouldNotChangeRecordCount() {
@@ -241,6 +255,7 @@ class ParticipantServiceTest {
         dto.setName(name);
         dto.setSurname(surname);
         dto.setBirthDate(LocalDate.of(1990, 1, 1));
+        dto.setImage(getImage());
         return dto;
     }
 
@@ -248,5 +263,16 @@ class ParticipantServiceTest {
         ParticipantDTO dto = createParticipant(name, surname);
         dto.setId(id);
         return dto;
+    }
+
+    private UUID getImage() {
+      return createAndSaveImageId();
+    }
+
+    private UUID createAndSaveImageId() {
+      Image image = new Image();
+      image.setData(new byte[]{1, 2, 3, 4});
+      image.setContentType("context");
+      return imageRepository.save(image).getId();
     }
 }

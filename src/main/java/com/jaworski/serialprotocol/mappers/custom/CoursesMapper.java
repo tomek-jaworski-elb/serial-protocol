@@ -57,7 +57,6 @@ public class CoursesMapper {
             .map(LecturerDTO::getLecturerId)
             .collect(Collectors.toSet());
     dto.setLecturerIds(lecturerIds);
-
     return dto;
   }
 

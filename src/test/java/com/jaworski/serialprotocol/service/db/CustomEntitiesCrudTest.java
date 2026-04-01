@@ -12,6 +12,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 import java.time.LocalDate;
 import java.util.HashSet;
+import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -105,7 +106,7 @@ class CustomEntitiesCrudTest {
     assertEquals(1, loaded.getLecturers().size());
 
     loaded.getTrainers().add(entityManager.find(Trainer.class, trainer2.getId()));
-    loaded.getLecturers().removeIf(l -> l.getLecturerId() == lecturer1.getLecturerId());
+    loaded.getLecturers().removeIf(l -> Objects.equals(l.getLecturerId(), lecturer1.getLecturerId()));
     entityManager.flush();
     entityManager.clear();
 
@@ -121,7 +122,6 @@ class CustomEntitiesCrudTest {
     participant.setName(name);
     participant.setSurname(surname);
     participant.setBirthDate(LocalDate.of(1995, 1, 1));
-    participant.setPhoto(new byte[0]);
     return participant;
   }
 
@@ -130,7 +130,6 @@ class CustomEntitiesCrudTest {
     trainer.setName(name);
     trainer.setSurname(surname);
     trainer.setEmail(email);
-    trainer.setPhoto(new byte[0]);
     return trainer;
   }
 
@@ -138,7 +137,8 @@ class CustomEntitiesCrudTest {
     Lecturer lecturer = new Lecturer();
     lecturer.setName(name);
     lecturer.setSurname(surname);
-    lecturer.setPhoto(new byte[0]);
+    lecturer.setEmail(name.toLowerCase() + "." + surname.toLowerCase() + "@test.com");
+    lecturer.setNickname(name.toLowerCase() +"_"+ surname.toLowerCase());
     return lecturer;
   }
 

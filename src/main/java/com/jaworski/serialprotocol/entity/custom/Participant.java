@@ -2,12 +2,11 @@ package com.jaworski.serialprotocol.entity.custom;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Basic;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -28,7 +27,7 @@ import java.util.UUID;
 @NoArgsConstructor
 public class Participant {
 
-  protected static final String TABLE_NAME = "participants";
+  public static final String TABLE_NAME = "participants";
 
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
@@ -55,12 +54,10 @@ public class Participant {
   @Column(name = Participant.TABLE_NAME + "_birth_date", nullable = false)
   private LocalDate birthDate;
 
-  @Lob
-  @Basic(fetch = FetchType.LAZY)
-  @Column(name = Participant.TABLE_NAME + "_photo", columnDefinition = "LONGBLOB")
-  @Size(max = 10_000_000)
-  @ToString.Exclude
+  @OneToOne
+  @JoinColumn(name = "image_uuid")
   @EqualsAndHashCode.Exclude
-  private byte[] photo;
+  @ToString.Exclude
+  private Image image;
 
 }

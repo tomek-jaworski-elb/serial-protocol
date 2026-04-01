@@ -1,13 +1,13 @@
 package com.jaworski.serialprotocol.entity.custom;
 
-import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -17,18 +17,21 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Entity
 @Data
 @NoArgsConstructor
 @Table(name = Trainer.TABLE_NAME)
 public class Trainer {
 
-  protected static final String TABLE_NAME = "trainer";
+  public static final String TABLE_NAME = "trainer";
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = TABLE_NAME + "_id", nullable = false, updatable = false)
-  private long id;
+  private Long id;
 
   @Column(name = TABLE_NAME + "_name", nullable = false, length = 100)
   @NotBlank
@@ -46,12 +49,14 @@ public class Trainer {
   @Size(max = 100)
   private String email;
 
-  @Lob
-  @Basic(fetch = FetchType.LAZY)
-  @Column(name = Trainer.TABLE_NAME + "_photo", columnDefinition = "LONGBLOB", nullable = true)
-  @Size(max = 10_000_000)
+  @ManyToMany()
+  @JoinTable(
+          name = TABLE_NAME +"_image",
+          joinColumns = @JoinColumn(name = TABLE_NAME + "_uuid"),
+          inverseJoinColumns = @JoinColumn(name = "image_uuid")
+  )
   @ToString.Exclude
   @EqualsAndHashCode.Exclude
-  private byte[] photo;
+  private Set<Image> images = new HashSet<>();
 
 }

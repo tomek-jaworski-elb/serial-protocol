@@ -25,7 +25,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -138,7 +137,6 @@ public class CustomDBController {
                            RedirectAttributes redirectAttributes) {
     try {
       trainerDTO.setId(null);
-      trainerDTO.setPhoto(extractPhotoBytes(photoFile));
       trainerService.save(trainerDTO);
       redirectAttributes.addFlashAttribute("successMessage", "Trainer added successfully.");
     } catch (RuntimeException e) {
@@ -156,17 +154,6 @@ public class CustomDBController {
       if (trainerDTO.getId() == null) {
         throw new IllegalArgumentException("Trainer id is required for update");
       }
-
-      byte[] uploadedPhoto = extractPhotoBytes(photoFile);
-      if (uploadedPhoto == null || uploadedPhoto.length == 0) {
-        TrainerDTO currentTrainer = trainerService.findById(trainerDTO.getId());
-        if (currentTrainer != null) {
-          trainerDTO.setPhoto(currentTrainer.getPhoto());
-        }
-      } else {
-        trainerDTO.setPhoto(uploadedPhoto);
-      }
-
       trainerService.update(trainerDTO);
       redirectAttributes.addFlashAttribute("successMessage", "Trainer updated successfully.");
     } catch (RuntimeException e) {
@@ -202,7 +189,6 @@ public class CustomDBController {
                             RedirectAttributes redirectAttributes) {
     try {
       lecturerDTO.setLecturerId(null);
-      lecturerDTO.setPhoto(extractPhotoBytes(photoFile));
       lecturerService.save(lecturerDTO);
       redirectAttributes.addFlashAttribute("successMessage", "Lecturer added successfully.");
     } catch (RuntimeException e) {
@@ -220,17 +206,6 @@ public class CustomDBController {
       if (lecturerDTO.getLecturerId() == null) {
         throw new IllegalArgumentException("Lecturer id is required for update");
       }
-
-      byte[] uploadedPhoto = extractPhotoBytes(photoFile);
-      if (uploadedPhoto == null || uploadedPhoto.length == 0) {
-        LecturerDTO current = lecturerService.findById(lecturerDTO.getLecturerId());
-        if (current != null) {
-          lecturerDTO.setPhoto(current.getPhoto());
-        }
-      } else {
-        lecturerDTO.setPhoto(uploadedPhoto);
-      }
-
       lecturerService.updateById(lecturerDTO);
       redirectAttributes.addFlashAttribute("successMessage", "Lecturer updated successfully.");
     } catch (RuntimeException e) {
@@ -321,7 +296,6 @@ public class CustomDBController {
                                RedirectAttributes redirectAttributes) {
     try {
       participantDTO.setUuid(null);
-      participantDTO.setPhoto(extractPhotoBytes(photoFile));
       participantService.save(participantDTO);
       redirectAttributes.addFlashAttribute("successMessage", "Participant added successfully.");
     } catch (IllegalArgumentException e) {
@@ -348,15 +322,6 @@ public class CustomDBController {
     try {
       if (participantDTO.getUuid() == null) {
         throw new IllegalArgumentException("UUID is required for update");
-      }
-      byte[] uploadedPhoto = extractPhotoBytes(photoFile);
-      if (uploadedPhoto == null || uploadedPhoto.length == 0) {
-        ParticipantDTO current = participantService.findByUuid(participantDTO.getUuid());
-        if (current != null) {
-          participantDTO.setPhoto(current.getPhoto());
-        }
-      } else {
-        participantDTO.setPhoto(uploadedPhoto);
       }
       participantService.updateByUuid(participantDTO);
       redirectAttributes.addFlashAttribute("successMessage", "Participant updated successfully.");
@@ -387,17 +352,6 @@ public class CustomDBController {
       redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete participant: " + e.getMessage());
     }
     return "redirect:/participant-service";
-  }
-
-  private byte[] extractPhotoBytes(MultipartFile photoFile) {
-    if (photoFile == null || photoFile.isEmpty()) {
-      return null;
-    }
-    try {
-      return photoFile.getBytes();
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Failed to read uploaded photo", e);
-    }
   }
 
 }
