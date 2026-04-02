@@ -3,6 +3,7 @@ package com.jaworski.serialprotocol.service.db.custom;
 import com.jaworski.serialprotocol.dto.custom.CourseTypeDTO;
 import com.jaworski.serialprotocol.mappers.custom.CourseTypeMapper;
 import com.jaworski.serialprotocol.repository.custom.CourseTypeRepository;
+import com.jaworski.serialprotocol.repository.custom.CoursesRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +14,7 @@ import java.util.List;
 public class CourseTypeService {
 
   private final CourseTypeRepository courseTypeRepository;
+  private final CoursesRepository coursesRepository;
 
   public CourseTypeDTO save(CourseTypeDTO courseTypeDTO) {
     var entity = CourseTypeMapper.mapToEntity(courseTypeDTO);
@@ -32,6 +34,9 @@ public class CourseTypeService {
   }
 
   public void deleteById(Long id) {
+    if (coursesRepository.existsByCourseType_Id(id)) {
+      throw new IllegalStateException("Cannot delete course type with id " + id + " because it is referenced by existing courses.");
+    }
     courseTypeRepository.deleteById(id);
   }
 

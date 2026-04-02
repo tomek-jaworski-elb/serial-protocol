@@ -4,6 +4,7 @@ import com.jaworski.serialprotocol.dto.custom.TrainerDTO;
 import com.jaworski.serialprotocol.entity.custom.Image;
 import com.jaworski.serialprotocol.entity.custom.Trainer;
 import com.jaworski.serialprotocol.mappers.custom.TrainerMapper;
+import com.jaworski.serialprotocol.repository.custom.CoursesRepository;
 import com.jaworski.serialprotocol.repository.custom.ImageRepository;
 import com.jaworski.serialprotocol.repository.custom.TrainerRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ public class TrainerService {
 
   private final ImageRepository imageRepository;
   private final TrainerRepository trainerRepository;
+  private final CoursesRepository coursesRepository;
   private final static Logger LOGGER = LoggerFactory.getLogger(TrainerService.class);
 
   public List<TrainerDTO> findAll() {
@@ -32,7 +34,7 @@ public class TrainerService {
             .toList();
   }
 
-  public TrainerDTO findById(Long id) {
+  public TrainerDTO findById(UUID id) {
     return trainerRepository.findById(id)
             .map(TrainerMapper::mapToDTO)
             .orElse(null);
@@ -45,7 +47,10 @@ public class TrainerService {
     return TrainerMapper.mapToDTO(trainer);
   }
 
-  public void deleteById(Long id) {
+  public void deleteById(UUID id) {
+    if (coursesRepository.existsByTrainers_Uuid(id)) {
+      throw new IllegalStateException("Cannot delete trainer with id " + id + " because it is referenced by existing courses.");
+    }
     trainerRepository.deleteById(id);
   }
 

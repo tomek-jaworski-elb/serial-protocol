@@ -13,6 +13,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Objects;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -44,7 +45,7 @@ class CustomEntitiesCrudTest {
 
     entityManager.persist(trainer);
     entityManager.flush();
-    Long trainerId = trainer.getId();
+    UUID trainerId = trainer.getUuid();
     entityManager.clear();
 
     Trainer managed = entityManager.find(Trainer.class, trainerId);
@@ -64,7 +65,7 @@ class CustomEntitiesCrudTest {
 
     entityManager.persist(lecturer);
     entityManager.flush();
-    Long lecturerId = lecturer.getLecturerId();
+    UUID lecturerId = lecturer.getUuid();
 
     Lecturer managed = entityManager.find(Lecturer.class, lecturerId);
     assertNotNull(managed);
@@ -105,8 +106,8 @@ class CustomEntitiesCrudTest {
     assertEquals(1, loaded.getTrainers().size());
     assertEquals(1, loaded.getLecturers().size());
 
-    loaded.getTrainers().add(entityManager.find(Trainer.class, trainer2.getId()));
-    loaded.getLecturers().removeIf(l -> Objects.equals(l.getLecturerId(), lecturer1.getLecturerId()));
+    loaded.getTrainers().add(entityManager.find(Trainer.class, trainer2.getUuid()));
+    loaded.getLecturers().removeIf(l -> Objects.equals(l.getUuid(), lecturer1.getUuid()));
     entityManager.flush();
     entityManager.clear();
 

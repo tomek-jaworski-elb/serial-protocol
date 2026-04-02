@@ -22,8 +22,8 @@ public class CoursesDTO {
   private LocalDate startDate;
   @DateTimeFormat(pattern = "dd/MM/yyyy")
   private LocalDate endDate;
-  private Set<Long> trainerIds = new HashSet<>();
-  private Set<Long> lecturerIds = new HashSet<>();
+  private Set<UUID> trainerIds = new HashSet<>();
+  private Set<UUID> lecturerIds = new HashSet<>();
 
   public String getTrainerIdsString() {
     return trainerIds == null ? "" : trainerIds.stream().map(String::valueOf).collect(Collectors.joining(","));
@@ -33,4 +33,3 @@ public class CoursesDTO {
     return lecturerIds == null ? "" : lecturerIds.stream().map(String::valueOf).collect(Collectors.joining(","));
   }
 }
-

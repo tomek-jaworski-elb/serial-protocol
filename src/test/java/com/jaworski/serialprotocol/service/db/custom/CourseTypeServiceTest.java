@@ -1,21 +1,28 @@
 package com.jaworski.serialprotocol.service.db.custom;
 
 import com.jaworski.serialprotocol.dto.custom.CourseTypeDTO;
+import com.jaworski.serialprotocol.dto.custom.CoursesDTO;
+import com.jaworski.serialprotocol.dto.custom.ParticipantDTO;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
-@Import({CourseTypeService.class})
+@Import({CourseTypeService.class, CoursesService.class, ParticipantService.class, TrainerService.class, LecturerService.class})
 class CourseTypeServiceTest {
 
   @Autowired
   private CourseTypeService courseTypeService;
+  @Autowired
+  private CoursesService coursesService;
+  @Autowired
+  private ParticipantService participantService;
 
   @Test
   void shouldSaveCourseType() {
@@ -110,6 +117,32 @@ class CourseTypeServiceTest {
     );
 
     assertEquals("Course type with id 9999 not found", exception.getMessage());
+  }
+
+  @Test
+  void shouldThrowWhenDeletingCourseTypeReferencedByCourse() {
+    CourseTypeDTO courseType = courseTypeService.save(createCourseType("C-REF", "Referenced", "Referenced course type"));
+
+    ParticipantDTO participant = new ParticipantDTO();
+    participant.setId(1L);
+    participant.setName("Test");
+    participant.setSurname("User");
+    participant.setBirthDate(java.time.LocalDate.of(1990, 1, 1));
+    participant = participantService.save(participant);
+
+    CoursesDTO course = new CoursesDTO();
+    course.setParticipantUuid(participant.getUuid());
+    course.setCourseTypeId(courseType.getId());
+    course.setStartDate(LocalDate.of(2025, 1, 1));
+    course.setEndDate(LocalDate.of(2025, 1, 31));
+    coursesService.save(course);
+
+    Long id = courseType.getId();
+    IllegalStateException exception = assertThrows(
+        IllegalStateException.class,
+        () -> courseTypeService.deleteById(id)
+    );
+    assertTrue(exception.getMessage().contains("referenced by existing courses"));
   }
 
   private CourseTypeDTO createCourseType(String code, String description, String longDescription) {

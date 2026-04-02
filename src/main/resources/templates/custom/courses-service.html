@@ -188,7 +188,7 @@
                         <button
                                 type="button"
                                 class="btn btn-outline-info btn-sm details-course-btn"
-                                th:with="ct=${courseTypeMap[course.courseTypeId]}"
+                                th:with="ct=${course.courseTypeId != null ? courseTypeMap[course.courseTypeId] : null}"
                                 th:attr="data-uuid=${course.uuid},data-id=${course.id},data-start-date=${course.startDate},data-end-date=${course.endDate},data-course-type-desc=${ct != null ? ct.description : ''},data-course-type-long-desc=${ct != null ? ct.longDescription : ''}">
                             Details
                         </button>

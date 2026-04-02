@@ -4,6 +4,7 @@ import com.jaworski.serialprotocol.dto.custom.ParticipantDTO;
 import com.jaworski.serialprotocol.entity.custom.Image;
 import com.jaworski.serialprotocol.entity.custom.Participant;
 import com.jaworski.serialprotocol.mappers.custom.ParticipantMapper;
+import com.jaworski.serialprotocol.repository.custom.CoursesRepository;
 import com.jaworski.serialprotocol.repository.custom.ImageRepository;
 import com.jaworski.serialprotocol.repository.custom.ParticipantRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ public class ParticipantService {
   private static final Logger LOGGER = LoggerFactory.getLogger(ParticipantService.class);
   private final ParticipantRepository participantRepository;
   private final ImageRepository imageRepository;
+  private final CoursesRepository coursesRepository;
 
   public List<ParticipantDTO> findAll() {
     return participantRepository.findAll(Sort.by(Sort.Direction.DESC, "id")).stream()
@@ -63,6 +65,9 @@ public class ParticipantService {
   }
 
   public void deleteByUuid(UUID uuid) {
+    if (coursesRepository.existsByParticipant_Uuid(uuid)) {
+      throw new IllegalStateException("Cannot delete participant with uuid " + uuid + " because they are referenced by existing courses.");
+    }
     participantRepository.deleteById(uuid);
   }
 
@@ -73,10 +78,10 @@ public class ParticipantService {
     if (dto.getId() != null && isIdTakenByOther(dto.getId(), dto.getUuid())) {
       throw new IllegalArgumentException("Participant id " + dto.getId() + " is already used by another participant");
     }
-    Participant reference = participantRepository.getReferenceById(dto.getUuid());
+    var reference = participantRepository.findById(dto.getUuid());
     Image requestedImage = resolveImage(dto.getImage());
-    if (reference.getImage() != null && !reference.getImage().getId().equals(requestedImage.getId())) {
-      imageRepository.delete(reference.getImage());
+    if (reference.isPresent() && reference.get().getImage() != null && !reference.get().getImage().getId().equals(requestedImage.getId())) {
+      imageRepository.delete(reference.get().getImage());
     }
     Participant participant = ParticipantMapper.mapToEntity(dto);
     participant.setImage(requestedImage);
@@ -86,7 +91,7 @@ public class ParticipantService {
 
   private Image resolveImage(UUID imageId) {
     if (imageId == null) {
-      throw new IllegalArgumentException("Image id is required");
+      return null;
     }
     return imageRepository.findById(imageId)
             .orElseThrow(() -> new IllegalArgumentException("Image with id " + imageId + " not found"));

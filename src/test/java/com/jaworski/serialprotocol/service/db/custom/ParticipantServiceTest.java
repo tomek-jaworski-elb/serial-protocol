@@ -1,5 +1,7 @@
 package com.jaworski.serialprotocol.service.db.custom;
 
+import com.jaworski.serialprotocol.dto.custom.CourseTypeDTO;
+import com.jaworski.serialprotocol.dto.custom.CoursesDTO;
 import com.jaworski.serialprotocol.dto.custom.ParticipantDTO;
 import com.jaworski.serialprotocol.entity.custom.Image;
 import com.jaworski.serialprotocol.repository.custom.ImageRepository;
@@ -15,11 +17,15 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
-@Import({ParticipantService.class})
+@Import({ParticipantService.class, CoursesService.class, CourseTypeService.class, TrainerService.class, LecturerService.class})
 class ParticipantServiceTest {
 
     @Autowired
     private ParticipantService participantService;
+    @Autowired
+    private CoursesService coursesService;
+    @Autowired
+    private CourseTypeService courseTypeService;
     @Autowired
     private ImageRepository imageRepository;
 
@@ -144,6 +150,31 @@ class ParticipantServiceTest {
     }
 
     // --- deleteByUuid ---
+
+    @Test
+    void deleteByUuid_shouldThrowWhenParticipantReferencedByCourse() {
+        ParticipantDTO participant = participantService.save(createParticipant("Jan", "Kowalski"));
+
+        CourseTypeDTO courseType = new CourseTypeDTO();
+        courseType.setCode("P-1");
+        courseType.setDescription("Test");
+        courseType.setLongDescription("Test course");
+        courseType = courseTypeService.save(courseType);
+
+        CoursesDTO course = new CoursesDTO();
+        course.setParticipantUuid(participant.getUuid());
+        course.setCourseTypeId(courseType.getId());
+        course.setStartDate(LocalDate.of(2025, 1, 1));
+        course.setEndDate(LocalDate.of(2025, 1, 31));
+        coursesService.save(course);
+
+        UUID participantUuid = participant.getUuid();
+        IllegalStateException exception = assertThrows(
+            IllegalStateException.class,
+            () -> participantService.deleteByUuid(participantUuid)
+        );
+        assertTrue(exception.getMessage().contains("referenced by existing courses"));
+    }
 
     @Test
     void deleteByUuid_shouldRemoveParticipant() {

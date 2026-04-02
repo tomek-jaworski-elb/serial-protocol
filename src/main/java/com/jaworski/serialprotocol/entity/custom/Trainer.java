@@ -19,6 +19,7 @@ import lombok.ToString;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 @Entity
 @Data
@@ -29,9 +30,10 @@ public class Trainer {
   public static final String TABLE_NAME = "trainer";
 
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Column(name = TABLE_NAME + "_id", nullable = false, updatable = false)
-  private Long id;
+  @GeneratedValue(strategy = GenerationType.UUID)
+  @Column(name = TABLE_NAME + "_uuid", unique = true)
+  private UUID uuid;
+
 
   @Column(name = TABLE_NAME + "_name", nullable = false, length = 100)
   @NotBlank
@@ -51,8 +53,8 @@ public class Trainer {
 
   @ManyToMany()
   @JoinTable(
-          name = TABLE_NAME +"_image",
-          joinColumns = @JoinColumn(name = TABLE_NAME + "_uuid"),
+          name = TABLE_NAME + "_image",
+          joinColumns = @JoinColumn(name = TABLE_NAME + "_uuid", referencedColumnName = TABLE_NAME + "_uuid"),
           inverseJoinColumns = @JoinColumn(name = "image_uuid")
   )
   @ToString.Exclude

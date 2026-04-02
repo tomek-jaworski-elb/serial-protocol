@@ -1,5 +1,8 @@
 package com.jaworski.serialprotocol.service.db.custom;
 
+import com.jaworski.serialprotocol.dto.custom.CourseTypeDTO;
+import com.jaworski.serialprotocol.dto.custom.CoursesDTO;
+import com.jaworski.serialprotocol.dto.custom.ParticipantDTO;
 import com.jaworski.serialprotocol.dto.custom.TrainerDTO;
 import com.jaworski.serialprotocol.entity.custom.Image;
 import com.jaworski.serialprotocol.repository.custom.ImageRepository;
@@ -8,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -19,11 +23,17 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DataJpaTest
-@Import({TrainerService.class})
+@Import({TrainerService.class, CoursesService.class, ParticipantService.class, CourseTypeService.class, LecturerService.class})
 class TrainerServiceTest {
 
   @Autowired
   private TrainerService trainerService;
+  @Autowired
+  private CoursesService coursesService;
+  @Autowired
+  private ParticipantService participantService;
+  @Autowired
+  private CourseTypeService courseTypeService;
   @Autowired
   private ImageRepository imageRepository;
 
@@ -102,15 +112,56 @@ class TrainerServiceTest {
 
   @Test
   void shouldThrowWhenUpdatingNonExistingTrainer() {
+    UUID nonExistingUuid = UUID.fromString("00000000-0000-0000-0000-000000000000");
     TrainerDTO nonExisting = createTrainer("Jan", "Kowalski", "jan.kowalski@test.pl");
-    nonExisting.setId(9999L);
+    nonExisting.setId(nonExistingUuid);
 
     IllegalArgumentException exception = assertThrows(
         IllegalArgumentException.class,
         () -> trainerService.update(nonExisting)
     );
 
-    assertEquals("Trainer with id 9999 not found", exception.getMessage());
+    assertEquals("Trainer with id " + nonExistingUuid + " not found", exception.getMessage());
+  }
+
+  @Test
+  void shouldThrowWhenDeletingTrainerReferencedByCourse() {
+    ParticipantDTO participant = new ParticipantDTO();
+    participant.setName("Test");
+    participant.setSurname("User");
+    participant.setBirthDate(LocalDate.of(1990, 1, 1));
+    participant = participantService.save(participant);
+
+    CourseTypeDTO courseType = new CourseTypeDTO();
+    courseType.setCode("T-1");
+    courseType.setDescription("Test");
+    courseType.setLongDescription("Test course");
+    courseType = courseTypeService.save(courseType);
+
+    TrainerDTO trainer = trainerService.save(createTrainer("Jan", "Kowalski", "jan.kowalski@test.pl"));
+
+    CoursesDTO course = new CoursesDTO();
+    course.setParticipantUuid(participant.getUuid());
+    course.setCourseTypeId(courseType.getId());
+    course.setStartDate(LocalDate.of(2025, 1, 1));
+    course.setEndDate(LocalDate.of(2025, 1, 31));
+    course.setTrainerIds(Set.of(trainer.getId()));
+    coursesService.save(course);
+
+    UUID trainerId = trainer.getId();
+    IllegalStateException exception = assertThrows(
+        IllegalStateException.class,
+        () -> trainerService.deleteById(trainerId)
+    );
+    assertTrue(exception.getMessage().contains("referenced by existing courses"));
+  }
+
+  @Test
+  void shouldDeleteTrainerWhenNotReferencedByCourse() {
+    TrainerDTO saved = trainerService.save(createTrainer("Jan", "Kowalski", "jan.kowalski@test.pl"));
+    UUID id = saved.getId();
+    trainerService.deleteById(id);
+    assertTrue(trainerService.findAll().isEmpty());
   }
 
   private TrainerDTO createTrainer(String name, String surname, String email) {

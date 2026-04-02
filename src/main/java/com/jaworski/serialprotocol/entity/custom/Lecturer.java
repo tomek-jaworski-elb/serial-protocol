@@ -19,6 +19,7 @@ import lombok.ToString;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 @Entity
 @Data
@@ -29,9 +30,9 @@ public class Lecturer {
   public static final String TABLE_NAME = "lecturer";
 
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Column(name = TABLE_NAME + "_id", nullable = false, updatable = false)
-  private Long lecturerId;
+  @GeneratedValue(strategy = GenerationType.UUID)
+  @Column(name = TABLE_NAME + "_uuid", nullable = false, updatable = false)
+  private UUID uuid;
 
   @Column(name = TABLE_NAME + "_name", nullable = false, length = 100)
   @NotBlank

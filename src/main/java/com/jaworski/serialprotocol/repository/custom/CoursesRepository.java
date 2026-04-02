@@ -13,6 +13,16 @@ public interface CoursesRepository extends JpaRepository<Courses, UUID> {
 
   List<Courses> findByParticipant_Uuid(UUID participantUuid);
 
+  boolean existsByCourseType_Id(Long courseTypeId);
+
+  boolean existsByParticipant_Uuid(UUID participantUuid);
+
+  boolean existsByTrainers_Uuid(UUID trainerUuid);
+
+  boolean existsByLecturers_Uuid(UUID lecturerUuid);
+
   @Query("SELECT COALESCE(MAX(c.id), 0) FROM Courses c")
   Long findMaxCoursesId();
+
+  void deleteCoursesByUuid(UUID uuid);
 }

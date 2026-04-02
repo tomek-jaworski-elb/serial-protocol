@@ -61,7 +61,7 @@ public class Courses {
   @JoinTable(
       name = TABLE_NAME + "_trainers",
       joinColumns = @JoinColumn(name = TABLE_NAME + "_uuid"),
-      inverseJoinColumns = @JoinColumn(name = Trainer.TABLE_NAME + "_id")
+      inverseJoinColumns = @JoinColumn(name = Trainer.TABLE_NAME + "_uuid")
   )
   @NotNull
   private Set<Trainer> trainers = new HashSet<>();
@@ -70,7 +70,7 @@ public class Courses {
   @JoinTable(
       name = TABLE_NAME + "_lecturers",
       joinColumns = @JoinColumn(name = TABLE_NAME + "_uuid"),
-      inverseJoinColumns = @JoinColumn(name = Lecturer.TABLE_NAME + "_id")
+      inverseJoinColumns = @JoinColumn(name = Lecturer.TABLE_NAME + "_uuid")
   )
   @NotNull
   private Set<Lecturer> lecturers  = new HashSet<>();

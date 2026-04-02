@@ -17,7 +17,7 @@ public class TrainerMapper {
       return null;
     }
     TrainerDTO dto = new TrainerDTO();
-    dto.setId(trainer.getId());
+    dto.setId(trainer.getUuid());
     dto.setName(trainer.getName());
     dto.setSurname(trainer.getSurname());
     dto.setEmail(trainer.getEmail());
@@ -33,7 +33,7 @@ public class TrainerMapper {
     }
     Trainer trainer = new Trainer();
     if (dto.getId() != null) {
-      trainer.setId(dto.getId());
+      trainer.setUuid(dto.getId());
     }
     trainer.setName(dto.getName());
     trainer.setSurname(dto.getSurname());

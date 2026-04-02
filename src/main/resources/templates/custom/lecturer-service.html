@@ -29,18 +29,26 @@
             <h5 class="card-title">Add lecturer</h5>
             <form method="post" enctype="multipart/form-data" th:action="@{/lecturer-service/add}">
                 <div class="row g-3">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label for="lecturerName" class="form-label">Name</label>
                         <input id="lecturerName" name="name" type="text" class="form-control" maxlength="100" required>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label for="lecturerSurname" class="form-label">Surname</label>
                         <input id="lecturerSurname" name="surname" type="text" class="form-control" maxlength="100" required>
                     </div>
-                    <div class="col-12">
-                        <label for="lecturerPhoto" class="form-label">Photo</label>
-                        <input id="lecturerPhoto" name="photoFile" type="file" class="form-control" accept="image/*">
-                        <div class="form-text">Optional. Supported by browser and backend as binary upload.</div>
+                    <div class="col-md-4">
+                        <label for="lecturerNickname" class="form-label">Nickname</label>
+                        <input id="lecturerNickname" name="nickname" type="text" class="form-control" maxlength="100" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="lecturerEmail" class="form-label">Email</label>
+                        <input id="lecturerEmail" name="email" type="email" class="form-control" maxlength="100" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="lecturerImages" class="form-label">Images</label>
+                        <input id="lecturerImages" name="imageFiles" type="file" class="form-control" accept="image/*" multiple>
+                        <div class="form-text">Optional. You can upload up to 6 images.</div>
                     </div>
                 </div>
                 <div class="d-flex gap-2 mt-3">
@@ -57,18 +65,26 @@
             <form method="post" enctype="multipart/form-data" th:action="@{/lecturer-service/update}">
                 <input id="updateLecturerId" name="lecturerId" type="hidden" required>
                 <div class="row g-3">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label for="updateLecturerName" class="form-label">Name</label>
                         <input id="updateLecturerName" name="name" type="text" class="form-control" maxlength="100" required>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label for="updateLecturerSurname" class="form-label">Surname</label>
                         <input id="updateLecturerSurname" name="surname" type="text" class="form-control" maxlength="100" required>
                     </div>
-                    <div class="col-12">
-                        <label for="updateLecturerPhoto" class="form-label">Photo</label>
-                        <input id="updateLecturerPhoto" name="photoFile" type="file" class="form-control" accept="image/*">
-                        <div class="form-text">Leave empty to keep the current photo.</div>
+                    <div class="col-md-4">
+                        <label for="updateLecturerNickname" class="form-label">Nickname</label>
+                        <input id="updateLecturerNickname" name="nickname" type="text" class="form-control" maxlength="100" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="updateLecturerEmail" class="form-label">Email</label>
+                        <input id="updateLecturerEmail" name="email" type="email" class="form-control" maxlength="100" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="updateLecturerImages" class="form-label">Images</label>
+                        <input id="updateLecturerImages" name="imageFiles" type="file" class="form-control" accept="image/*" multiple>
+                        <div class="form-text">Optional. Upload new images (max 6) to replace current set.</div>
                     </div>
                 </div>
                 <div class="d-flex gap-2 mt-3">
@@ -86,7 +102,9 @@
                 <th scope="col">#</th>
                 <th scope="col">Name</th>
                 <th scope="col">Surname</th>
-                <th scope="col">Photo</th>
+                <th scope="col">Email</th>
+                <th scope="col">Nickname</th>
+                <th scope="col">Images</th>
                 <th scope="col">Actions</th>
             </tr>
             </thead>
@@ -95,22 +113,24 @@
                 <th scope="row" th:text="${lecturerStat.index + 1}">1</th>
                 <td th:text="${lecturer.name}">Jane</td>
                 <td th:text="${lecturer.surname}">Doe</td>
+                <td th:text="${lecturer.email}">jane@example.com</td>
+                <td th:text="${lecturer.nickname}">janedoe</td>
                 <td>
-                    <span class="badge text-bg-success" th:if="${lecturer.photo != null}">Available</span>
-                    <span class="badge text-bg-secondary" th:unless="${lecturer.photo != null}">No photo</span>
+                    <span class="badge text-bg-success" th:if="${lecturer.imagesUuid != null && !lecturer.imagesUuid.isEmpty()}" th:text="${lecturer.imagesUuid.size() + ' assigned'}">1 assigned</span>
+                    <span class="badge text-bg-secondary" th:unless="${lecturer.imagesUuid != null && !lecturer.imagesUuid.isEmpty()}">Missing</span>
                 </td>
                 <td>
                     <div class="d-flex justify-content-center gap-2">
                         <button
                                 type="button"
                                 class="btn btn-outline-info btn-sm details-lecturer-btn"
-                                th:attr="data-id=${lecturer.lecturerId},data-name=${lecturer.name},data-surname=${lecturer.surname},data-photo=${lecturer.photoBase64}">
+                                th:attr="data-id=${lecturer.lecturerId},data-name=${lecturer.name},data-surname=${lecturer.surname},data-email=${lecturer.email},data-nickname=${lecturer.nickname},data-images=${lecturer.imagesUuid}">
                             Details
                         </button>
                         <button
                                 type="button"
                                 class="btn btn-outline-warning btn-sm update-lecturer-btn"
-                                th:attr="data-id=${lecturer.lecturerId},data-name=${lecturer.name},data-surname=${lecturer.surname}">
+                                th:attr="data-id=${lecturer.lecturerId},data-name=${lecturer.name},data-surname=${lecturer.surname},data-email=${lecturer.email},data-nickname=${lecturer.nickname},data-images=${lecturer.imagesUuid}">
                             Update
                         </button>
                         <form method="post" th:action="@{/lecturer-service/delete/{id}(id=${lecturer.lecturerId})}">
@@ -143,11 +163,14 @@
                     <div class="col-md-7">
                         <p class="mb-2"><strong>ID:</strong> <span id="detailsLecturerId">-</span></p>
                         <p class="mb-2"><strong>Name:</strong> <span id="detailsLecturerName">-</span></p>
-                        <p class="mb-0"><strong>Surname:</strong> <span id="detailsLecturerSurname">-</span></p>
+                        <p class="mb-2"><strong>Surname:</strong> <span id="detailsLecturerSurname">-</span></p>
+                        <p class="mb-2"><strong>Email:</strong> <span id="detailsLecturerEmail">-</span></p>
+                        <p class="mb-0"><strong>Nickname:</strong> <span id="detailsLecturerNickname">-</span></p>
                     </div>
-                    <div class="col-md-5 text-center">
-                        <img id="detailsLecturerPhoto" src="data:," class="img-fluid rounded border d-none" alt="Lecturer photo" style="max-height: 280px; object-fit: contain;">
-                        <div id="detailsNoPhoto" class="text-muted">No photo available.</div>
+                    <div class="col-md-5">
+                        <p class="mb-1"><strong>Images:</strong></p>
+                        <div id="detailsLecturerImages" class="d-flex flex-wrap gap-2"></div>
+                        <div id="detailsLecturerNoImages" class="small text-muted">No images assigned.</div>
                     </div>
                 </div>
             </div>
@@ -169,19 +192,31 @@
     const updateLecturerId = document.getElementById('updateLecturerId');
     const updateLecturerName = document.getElementById('updateLecturerName');
     const updateLecturerSurname = document.getElementById('updateLecturerSurname');
+    const updateLecturerEmail = document.getElementById('updateLecturerEmail');
+    const updateLecturerNickname = document.getElementById('updateLecturerNickname');
     const detailsButtons = document.querySelectorAll('.details-lecturer-btn');
     const lecturerDetailsModal = document.getElementById('lecturerDetailsModal');
     const detailsLecturerId = document.getElementById('detailsLecturerId');
     const detailsLecturerName = document.getElementById('detailsLecturerName');
     const detailsLecturerSurname = document.getElementById('detailsLecturerSurname');
-    const detailsLecturerPhoto = document.getElementById('detailsLecturerPhoto');
-    const detailsNoPhoto = document.getElementById('detailsNoPhoto');
+    const detailsLecturerEmail = document.getElementById('detailsLecturerEmail');
+    const detailsLecturerNickname = document.getElementById('detailsLecturerNickname');
+    const detailsLecturerImages = document.getElementById('detailsLecturerImages');
+    const detailsLecturerNoImages = document.getElementById('detailsLecturerNoImages');
     const successAlert = document.getElementById('successAlert');
 
     const lecturerDetailsModalInstance =
         lecturerDetailsModal && window.bootstrap && window.bootstrap.Modal
             ? window.bootstrap.Modal.getOrCreateInstance(lecturerDetailsModal)
             : null;
+
+    const parseUuidList = (value) =>
+        (value || '')
+            .replace(/^\[/, '')
+            .replace(/\]$/, '')
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean);
 
     if (successAlert) {
         setTimeout(() => {
@@ -220,6 +255,8 @@
                 updateLecturerId.value = btn.dataset.id || '';
                 updateLecturerName.value = btn.dataset.name || '';
                 updateLecturerSurname.value = btn.dataset.surname || '';
+                updateLecturerEmail.value = btn.dataset.email || '';
+                updateLecturerNickname.value = btn.dataset.nickname || '';
                 updateLecturerFormContainer.classList.remove('d-none');
                 if (addLecturerFormContainer) {
                     addLecturerFormContainer.classList.add('d-none');
@@ -235,16 +272,24 @@
                 detailsLecturerId.textContent = btn.dataset.id || '-';
                 detailsLecturerName.textContent = btn.dataset.name || '-';
                 detailsLecturerSurname.textContent = btn.dataset.surname || '-';
-
-                const photoBase64 = btn.dataset.photo || '';
-                if (photoBase64) {
-                    detailsLecturerPhoto.src = `data:image/*;base64,${photoBase64}`;
-                    detailsLecturerPhoto.classList.remove('d-none');
-                    detailsNoPhoto.classList.add('d-none');
+                detailsLecturerEmail.textContent = btn.dataset.email || '-';
+                detailsLecturerNickname.textContent = btn.dataset.nickname || '-';
+                detailsLecturerImages.innerHTML = '';
+                const imageUuids = parseUuidList(btn.dataset.images);
+                if (imageUuids.length > 0) {
+                    detailsLecturerNoImages.classList.add('d-none');
+                    imageUuids.forEach((uuid) => {
+                        const img = document.createElement('img');
+                        img.src = `/custom/image/${uuid}`;
+                        img.alt = 'Lecturer image';
+                        img.className = 'img-thumbnail';
+                        img.style.maxWidth = '110px';
+                        img.style.maxHeight = '110px';
+                        img.style.objectFit = 'cover';
+                        detailsLecturerImages.appendChild(img);
+                    });
                 } else {
-                    detailsLecturerPhoto.src = 'data:,';
-                    detailsLecturerPhoto.classList.add('d-none');
-                    detailsNoPhoto.classList.remove('d-none');
+                    detailsLecturerNoImages.classList.remove('d-none');
                 }
 
                 lecturerDetailsModalInstance.show();
@@ -254,4 +299,3 @@
 </script>
 </body>
 </html>
-

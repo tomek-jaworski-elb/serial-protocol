@@ -13,7 +13,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class LecturerDTO {
 
-  private Long lecturerId;
+  private UUID lecturerId;
   private String name;
   private String surname;
   private String email;

@@ -42,9 +42,9 @@
                         <input id="trainerEmail" name="email" type="email" class="form-control" maxlength="100" required>
                     </div>
                     <div class="col-12">
-                        <label for="trainerPhoto" class="form-label">Photo</label>
-                        <input id="trainerPhoto" name="photoFile" type="file" class="form-control" accept="image/*">
-                        <div class="form-text">Optional. Supported by browser and backend as binary upload.</div>
+                        <label for="trainerImages" class="form-label">Images</label>
+                        <input id="trainerImages" name="imageFiles" type="file" class="form-control" accept="image/*" multiple>
+                        <div class="form-text">Optional. You can upload up to 6 images.</div>
                     </div>
                 </div>
                 <div class="d-flex gap-2 mt-3">
@@ -74,9 +74,9 @@
                         <input id="updateTrainerEmail" name="email" type="email" class="form-control" maxlength="100" required>
                     </div>
                     <div class="col-12">
-                        <label for="updateTrainerPhoto" class="form-label">Photo</label>
-                        <input id="updateTrainerPhoto" name="photoFile" type="file" class="form-control" accept="image/*">
-                        <div class="form-text">Leave empty to keep the current photo.</div>
+                        <label for="updateTrainerImages" class="form-label">Images</label>
+                        <input id="updateTrainerImages" name="imageFiles" type="file" class="form-control" accept="image/*" multiple>
+                        <div class="form-text">Optional. Upload new images (max 6) to replace current set.</div>
                     </div>
                 </div>
                 <div class="d-flex gap-2 mt-3">
@@ -95,7 +95,7 @@
                 <th scope="col">Name</th>
                 <th scope="col">Surname</th>
                 <th scope="col">Email</th>
-                <th scope="col">Photo</th>
+                <th scope="col">Images</th>
                 <th scope="col">Actions</th>
             </tr>
             </thead>
@@ -106,15 +106,15 @@
                 <td th:text="${trainer.surname}">Doe</td>
                 <td th:text="${trainer.email}">john@example.com</td>
                 <td>
-                    <span class="badge text-bg-success" th:if="${trainer.photo != null}">Available</span>
-                    <span class="badge text-bg-secondary" th:unless="${trainer.photo != null}">No photo</span>
+                    <span class="badge text-bg-success" th:if="${trainer.imagesUuid != null && !trainer.imagesUuid.isEmpty()}" th:text="${trainer.imagesUuid.size() + ' assigned'}">1 assigned</span>
+                    <span class="badge text-bg-secondary" th:unless="${trainer.imagesUuid != null && !trainer.imagesUuid.isEmpty()}">Missing</span>
                 </td>
                 <td>
                     <div class="d-flex justify-content-center gap-2">
                         <button
                                 type="button"
                                 class="btn btn-outline-info btn-sm details-trainer-btn"
-                                th:attr="data-id=${trainer.id},data-name=${trainer.name},data-surname=${trainer.surname},data-email=${trainer.email},data-photo=${trainer.photoBase64}">
+                                th:attr="data-id=${trainer.id},data-name=${trainer.name},data-surname=${trainer.surname},data-email=${trainer.email},data-images=${trainer.imagesUuid}">
                             Details
                         </button>
                         <button
@@ -156,9 +156,10 @@
                         <p class="mb-2"><strong>Surname:</strong> <span id="detailsTrainerSurname">-</span></p>
                         <p class="mb-0"><strong>Email:</strong> <span id="detailsTrainerEmail">-</span></p>
                     </div>
-                    <div class="col-md-5 text-center">
-                        <img id="detailsTrainerPhoto" src="data:," class="img-fluid rounded border d-none" alt="Trainer photo" style="max-height: 280px; object-fit: contain;">
-                        <div id="detailsNoPhoto" class="text-muted">No photo available.</div>
+                    <div class="col-md-5">
+                        <p class="mb-1"><strong>Images:</strong></p>
+                        <div id="detailsTrainerImages" class="d-flex flex-wrap gap-2"></div>
+                        <div id="detailsTrainerNoImages" class="small text-muted">No images assigned.</div>
                     </div>
                 </div>
             </div>
@@ -187,14 +188,22 @@
     const detailsTrainerName = document.getElementById('detailsTrainerName');
     const detailsTrainerSurname = document.getElementById('detailsTrainerSurname');
     const detailsTrainerEmail = document.getElementById('detailsTrainerEmail');
-    const detailsTrainerPhoto = document.getElementById('detailsTrainerPhoto');
-    const detailsNoPhoto = document.getElementById('detailsNoPhoto');
+    const detailsTrainerImages = document.getElementById('detailsTrainerImages');
+    const detailsTrainerNoImages = document.getElementById('detailsTrainerNoImages');
     const successAlert = document.getElementById('successAlert');
 
     const trainerDetailsModalInstance =
         trainerDetailsModal && window.bootstrap && window.bootstrap.Modal
             ? window.bootstrap.Modal.getOrCreateInstance(trainerDetailsModal)
             : null;
+
+    const parseUuidList = (value) =>
+        (value || '')
+            .replace(/^\[/, '')
+            .replace(/\]$/, '')
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean);
 
     if (successAlert) {
         setTimeout(() => {
@@ -251,15 +260,22 @@
                 detailsTrainerSurname.textContent = btn.dataset.surname || '-';
                 detailsTrainerEmail.textContent = btn.dataset.email || '-';
 
-                const photoBase64 = btn.dataset.photo || '';
-                if (photoBase64) {
-                    detailsTrainerPhoto.src = `data:image/*;base64,${photoBase64}`;
-                    detailsTrainerPhoto.classList.remove('d-none');
-                    detailsNoPhoto.classList.add('d-none');
+                detailsTrainerImages.innerHTML = '';
+                const imageUuids = parseUuidList(btn.dataset.images);
+                if (imageUuids.length > 0) {
+                    detailsTrainerNoImages.classList.add('d-none');
+                    imageUuids.forEach((uuid) => {
+                        const img = document.createElement('img');
+                        img.src = `/custom/image/${uuid}`;
+                        img.alt = 'Trainer image';
+                        img.className = 'img-thumbnail';
+                        img.style.maxWidth = '110px';
+                        img.style.maxHeight = '110px';
+                        img.style.objectFit = 'cover';
+                        detailsTrainerImages.appendChild(img);
+                    });
                 } else {
-                    detailsTrainerPhoto.src = 'data:,';
-                    detailsTrainerPhoto.classList.add('d-none');
-                    detailsNoPhoto.classList.remove('d-none');
+                    detailsTrainerNoImages.classList.remove('d-none');
                 }
 
                 trainerDetailsModalInstance.show();
@@ -269,4 +285,3 @@
 </script>
 </body>
 </html>
-

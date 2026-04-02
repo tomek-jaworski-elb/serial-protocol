@@ -5,8 +5,10 @@ import com.jaworski.serialprotocol.dto.custom.CoursesDTO;
 import com.jaworski.serialprotocol.dto.custom.LecturerDTO;
 import com.jaworski.serialprotocol.dto.custom.ParticipantDTO;
 import com.jaworski.serialprotocol.dto.custom.TrainerDTO;
+import com.jaworski.serialprotocol.entity.custom.Image;
 import com.jaworski.serialprotocol.service.db.custom.CourseTypeService;
 import com.jaworski.serialprotocol.service.db.custom.CoursesService;
+import com.jaworski.serialprotocol.service.db.custom.ImageService;
 import com.jaworski.serialprotocol.service.db.custom.LecturerService;
 import com.jaworski.serialprotocol.service.db.custom.ParticipantService;
 import com.jaworski.serialprotocol.service.db.custom.TrainerService;
@@ -24,10 +26,20 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -44,6 +56,8 @@ public class CustomDBController {
   private final TrainerService trainerService;
   private final LecturerService lecturerService;
   private final ParticipantService participantService;
+  private final ImageService imageService;
+  private static final int MAX_UPLOAD_IMAGES = 6;
 
   @GetMapping("/courses-service")
   public String coursesService(Model model) {
@@ -133,10 +147,12 @@ public class CustomDBController {
 
   @PostMapping("/trainer-service/add")
   public String addTrainer(@ModelAttribute TrainerDTO trainerDTO,
-                           @RequestParam(value = "photoFile", required = false) MultipartFile photoFile,
+                           @RequestParam(value = "imageFiles", required = false) MultipartFile[] imageFiles,
                            RedirectAttributes redirectAttributes) {
     try {
       trainerDTO.setId(null);
+      Set<UUID> uploadedImages = uploadImages(imageFiles, MAX_UPLOAD_IMAGES);
+      trainerDTO.setImagesUuid(uploadedImages);
       trainerService.save(trainerDTO);
       redirectAttributes.addFlashAttribute("successMessage", "Trainer added successfully.");
     } catch (RuntimeException e) {
@@ -148,11 +164,20 @@ public class CustomDBController {
 
   @PostMapping("/trainer-service/update")
   public String updateTrainer(@ModelAttribute TrainerDTO trainerDTO,
-                              @RequestParam(value = "photoFile", required = false) MultipartFile photoFile,
+                              @RequestParam(value = "imageFiles", required = false) MultipartFile[] imageFiles,
                               RedirectAttributes redirectAttributes) {
     try {
       if (trainerDTO.getId() == null) {
         throw new IllegalArgumentException("Trainer id is required for update");
+      }
+      Set<UUID> uploadedImages = uploadImages(imageFiles, MAX_UPLOAD_IMAGES);
+      if (uploadedImages.isEmpty()) {
+        TrainerDTO existingTrainer = trainerService.findById(trainerDTO.getId());
+        if (existingTrainer != null) {
+          trainerDTO.setImagesUuid(existingTrainer.getImagesUuid());
+        }
+      } else {
+        trainerDTO.setImagesUuid(uploadedImages);
       }
       trainerService.update(trainerDTO);
       redirectAttributes.addFlashAttribute("successMessage", "Trainer updated successfully.");
@@ -164,7 +189,7 @@ public class CustomDBController {
   }
 
   @PostMapping("/trainer-service/delete/{id}")
-  public String deleteTrainer(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+  public String deleteTrainer(@PathVariable UUID id, RedirectAttributes redirectAttributes) {
     try {
       trainerService.deleteById(id);
       redirectAttributes.addFlashAttribute("successMessage", "Trainer deleted successfully.");
@@ -185,10 +210,12 @@ public class CustomDBController {
 
   @PostMapping("/lecturer-service/add")
   public String addLecturer(@ModelAttribute LecturerDTO lecturerDTO,
-                            @RequestParam(value = "photoFile", required = false) MultipartFile photoFile,
+                            @RequestParam(value = "imageFiles", required = false) MultipartFile[] imageFiles,
                             RedirectAttributes redirectAttributes) {
     try {
       lecturerDTO.setLecturerId(null);
+      Set<UUID> uploadedImages = uploadImages(imageFiles, MAX_UPLOAD_IMAGES);
+      lecturerDTO.setImagesUuid(uploadedImages);
       lecturerService.save(lecturerDTO);
       redirectAttributes.addFlashAttribute("successMessage", "Lecturer added successfully.");
     } catch (RuntimeException e) {
@@ -200,11 +227,20 @@ public class CustomDBController {
 
   @PostMapping("/lecturer-service/update")
   public String updateLecturer(@ModelAttribute LecturerDTO lecturerDTO,
-                               @RequestParam(value = "photoFile", required = false) MultipartFile photoFile,
+                               @RequestParam(value = "imageFiles", required = false) MultipartFile[] imageFiles,
                                RedirectAttributes redirectAttributes) {
     try {
       if (lecturerDTO.getLecturerId() == null) {
         throw new IllegalArgumentException("Lecturer id is required for update");
+      }
+      Set<UUID> uploadedImages = uploadImages(imageFiles, MAX_UPLOAD_IMAGES);
+      if (uploadedImages.isEmpty()) {
+        LecturerDTO existingLecturer = lecturerService.findById(lecturerDTO.getLecturerId());
+        if (existingLecturer != null) {
+          lecturerDTO.setImagesUuid(existingLecturer.getImagesUuid());
+        }
+      } else {
+        lecturerDTO.setImagesUuid(uploadedImages);
       }
       lecturerService.updateById(lecturerDTO);
       redirectAttributes.addFlashAttribute("successMessage", "Lecturer updated successfully.");
@@ -216,7 +252,7 @@ public class CustomDBController {
   }
 
   @PostMapping("/lecturer-service/delete/{id}")
-  public String deleteLecturer(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+  public String deleteLecturer(@PathVariable UUID id, RedirectAttributes redirectAttributes) {
     try {
       lecturerService.deleteById(id);
       redirectAttributes.addFlashAttribute("successMessage", "Lecturer deleted successfully.");
@@ -292,10 +328,12 @@ public class CustomDBController {
 
   @PostMapping("/participant-service/add")
   public String addParticipant(@ModelAttribute ParticipantDTO participantDTO,
-                               @RequestParam(value = "photoFile", required = false) MultipartFile photoFile,
+                               @RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
                                RedirectAttributes redirectAttributes) {
     try {
       participantDTO.setUuid(null);
+      UUID uploadedImage = uploadSingleImage(imageFile);
+      participantDTO.setImage(uploadedImage);
       participantService.save(participantDTO);
       redirectAttributes.addFlashAttribute("successMessage", "Participant added successfully.");
     } catch (IllegalArgumentException e) {
@@ -317,11 +355,20 @@ public class CustomDBController {
 
   @PostMapping("/participant-service/update")
   public String updateParticipant(@ModelAttribute ParticipantDTO participantDTO,
-                                  @RequestParam(value = "photoFile", required = false) MultipartFile photoFile,
+                                  @RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
                                   RedirectAttributes redirectAttributes) {
     try {
       if (participantDTO.getUuid() == null) {
         throw new IllegalArgumentException("UUID is required for update");
+      }
+      UUID uploadedImage = uploadSingleImage(imageFile);
+      if (uploadedImage == null) {
+        ParticipantDTO existingParticipant = participantService.findByUuid(participantDTO.getUuid());
+        if (existingParticipant != null) {
+          participantDTO.setImage(existingParticipant.getImage());
+        }
+      } else {
+        participantDTO.setImage(uploadedImage);
       }
       participantService.updateByUuid(participantDTO);
       redirectAttributes.addFlashAttribute("successMessage", "Participant updated successfully.");
@@ -352,6 +399,65 @@ public class CustomDBController {
       redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete participant: " + e.getMessage());
     }
     return "redirect:/participant-service";
+  }
+
+  @GetMapping("/custom/image/{uuid}")
+  public ResponseEntity<byte[]> imageByUuid(@PathVariable UUID uuid) {
+    Image image = imageService.getImageById(uuid);
+    if (image == null || image.getData() == null || image.getData().length == 0) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Image not found");
+    }
+
+    MediaType mediaType = MediaType.APPLICATION_OCTET_STREAM;
+    if (image.getContentType() != null && !image.getContentType().isBlank()) {
+      mediaType = MediaType.parseMediaType(image.getContentType());
+    }
+
+    return ResponseEntity.ok()
+        .contentType(mediaType)
+        .header(HttpHeaders.CACHE_CONTROL, "no-store")
+        .body(image.getData());
+  }
+
+  private Set<UUID> uploadImages(MultipartFile[] files, int maxFiles) {
+    if (files == null || files.length == 0) {
+      return new HashSet<>();
+    }
+    List<MultipartFile> nonEmpty = java.util.Arrays.stream(files)
+        .filter(Objects::nonNull)
+        .filter(f -> !f.isEmpty())
+        .toList();
+
+    if (nonEmpty.size() > maxFiles) {
+      throw new IllegalArgumentException("Maximum " + maxFiles + " images allowed");
+    }
+
+    List<Image> images = nonEmpty.stream().map(file -> {
+      try {
+        Image image = new Image();
+        image.setData(file.getBytes());
+        image.setContentType(file.getContentType() == null ? "application/octet-stream" : file.getContentType());
+        return image;
+      } catch (IOException e) {
+        throw new UncheckedIOException("Failed to read uploaded photo", e);
+      }
+    }).toList();
+    return imageService.saveAllImages(images);
+  }
+
+  private UUID uploadSingleImage(MultipartFile file) {
+    if (file == null || file.isEmpty()) {
+      return null;
+    }
+    try {
+      Image image = imageService.saveImage(
+          file.getBytes(),
+          file.getContentType() == null ? "application/octet-stream" : file.getContentType()
+      );
+      return image.getId();
+    } catch (IOException e) {
+      throw new UncheckedIOException("Failed to read uploaded photo", e);
+    }
   }
 
 }

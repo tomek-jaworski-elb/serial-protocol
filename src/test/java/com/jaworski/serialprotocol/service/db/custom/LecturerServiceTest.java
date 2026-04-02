@@ -1,6 +1,9 @@
 package com.jaworski.serialprotocol.service.db.custom;
 
+import com.jaworski.serialprotocol.dto.custom.CourseTypeDTO;
+import com.jaworski.serialprotocol.dto.custom.CoursesDTO;
 import com.jaworski.serialprotocol.dto.custom.LecturerDTO;
+import com.jaworski.serialprotocol.dto.custom.ParticipantDTO;
 import com.jaworski.serialprotocol.entity.custom.Image;
 import com.jaworski.serialprotocol.repository.custom.ImageRepository;
 import org.junit.jupiter.api.Test;
@@ -8,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -16,15 +20,21 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DataJpaTest
-@Import({LecturerService.class, ImageService.class})
+@Import({LecturerService.class, ImageService.class, CoursesService.class, ParticipantService.class, CourseTypeService.class, TrainerService.class})
 class LecturerServiceTest {
 
     @Autowired
     private LecturerService lecturerService;
-
+    @Autowired
+    private CoursesService coursesService;
+    @Autowired
+    private ParticipantService participantService;
+    @Autowired
+    private CourseTypeService courseTypeService;
     @Autowired
     private ImageService imageService;
 
@@ -66,7 +76,7 @@ class LecturerServiceTest {
 
     @Test
     void findById_shouldReturnNull_whenLecturerDoesNotExist() {
-        LecturerDTO result = lecturerService.findById(9999L);
+        LecturerDTO result = lecturerService.findById(UUID.fromString("00000000-0000-0000-0000-000000000000"));
         assertNull(result);
     }
 
@@ -108,6 +118,38 @@ class LecturerServiceTest {
     }
 
     // --- deleteById ---
+
+    @Test
+    void deleteById_shouldThrowWhenLecturerReferencedByCourse() {
+        ParticipantDTO participant = new ParticipantDTO();
+        participant.setName("Test");
+        participant.setSurname("User");
+        participant.setBirthDate(LocalDate.of(1990, 1, 1));
+        participant = participantService.save(participant);
+
+        CourseTypeDTO courseType = new CourseTypeDTO();
+        courseType.setCode("L-1");
+        courseType.setDescription("Test");
+        courseType.setLongDescription("Test course");
+        courseType = courseTypeService.save(courseType);
+
+        LecturerDTO lecturer = lecturerService.save(createLecturer("Jan", "Kowalski"));
+
+        CoursesDTO course = new CoursesDTO();
+        course.setParticipantUuid(participant.getUuid());
+        course.setCourseTypeId(courseType.getId());
+        course.setStartDate(LocalDate.of(2025, 1, 1));
+        course.setEndDate(LocalDate.of(2025, 1, 31));
+        course.setLecturerIds(Set.of(lecturer.getLecturerId()));
+        coursesService.save(course);
+
+        UUID lecturerId = lecturer.getLecturerId();
+        IllegalStateException exception = assertThrows(
+            IllegalStateException.class,
+            () -> lecturerService.deleteById(lecturerId)
+        );
+        assertTrue(exception.getMessage().contains("referenced by existing courses"));
+    }
 
     @Test
     void deleteById_shouldRemoveLecturer() {

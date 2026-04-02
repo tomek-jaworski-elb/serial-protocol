@@ -51,9 +51,8 @@
                         <div class="form-text">Must be a past date.</div>
                     </div>
                     <div class="col-12">
-                        <label for="addParticipantPhoto" class="form-label">Photo</label>
-                        <input id="addParticipantPhoto" name="photoFile" type="file" class="form-control" accept="image/*">
-                        <div class="form-text">Optional.</div>
+                        <label for="addParticipantImageFile" class="form-label">Image</label>
+                        <input id="addParticipantImageFile" name="imageFile" type="file" class="form-control" accept="image/*">
                     </div>
                 </div>
                 <div class="d-flex gap-2 mt-3">
@@ -91,9 +90,9 @@
                         <div class="form-text">Must be a past date.</div>
                     </div>
                     <div class="col-12">
-                        <label for="updateParticipantPhoto" class="form-label">Photo</label>
-                        <input id="updateParticipantPhoto" name="photoFile" type="file" class="form-control" accept="image/*">
-                        <div class="form-text">Leave empty to keep the current photo.</div>
+                        <label for="updateParticipantImageFile" class="form-label">Image</label>
+                        <input id="updateParticipantImageFile" name="imageFile" type="file" class="form-control" accept="image/*">
+                        <div class="form-text">Optional. Upload a new image to replace current one.</div>
                     </div>
                 </div>
                 <div class="d-flex gap-2 mt-3">
@@ -153,7 +152,7 @@
                 <th scope="col">Name</th>
                 <th scope="col">Surname</th>
                 <th scope="col">Birth Date</th>
-                <th scope="col">Photo</th>
+                <th scope="col">Image</th>
                 <th scope="col">Courses</th>
                 <th scope="col">Actions</th>
             </tr>
@@ -166,8 +165,8 @@
                 <td th:text="${participant.surname}">Doe</td>
                 <td th:text="${participant.birthDate != null ? #temporals.format(participant.birthDate, 'dd/MM/yyyy') : '-'}">2026-03-15</td>
                 <td>
-                    <span class="badge text-bg-success" th:if="${participant.photo != null && participant.photo.length > 0}">Available</span>
-                    <span class="badge text-bg-secondary" th:unless="${participant.photo != null && participant.photo.length > 0}">No photo</span>
+                    <span class="badge text-bg-success" th:if="${participant.image != null}">Assigned</span>
+                    <span class="badge text-bg-secondary" th:unless="${participant.image != null}">Missing</span>
                 </td>
                 <td>
                     <th:block th:if="${coursesByParticipant[participant.uuid] != null && !coursesByParticipant[participant.uuid].isEmpty()}">
@@ -181,6 +180,12 @@
                 </td>
                 <td>
                     <div class="d-flex justify-content-center gap-2 flex-wrap">
+                        <button
+                                type="button"
+                                class="btn btn-outline-info btn-sm details-participant-btn"
+                                th:attr="data-uuid=${participant.uuid},data-id=${participant.id},data-name=${participant.name},data-surname=${participant.surname},data-birthdate=${participant.birthDate},data-image=${participant.image}">
+                            Details
+                        </button>
                         <button
                                 type="button"
                                 class="btn btn-outline-warning btn-sm update-participant-btn"
@@ -211,6 +216,35 @@
     </div>
 </div>
 <footer th:replace="~{fragment::footer}"></footer>
+
+<div class="modal fade" id="participantDetailsModal" tabindex="-1" aria-labelledby="participantDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="participantDetailsModalLabel">Participant details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-7">
+                        <p class="mb-2"><strong>ID:</strong> <span id="detailsParticipantId">-</span></p>
+                        <p class="mb-2"><strong>Name:</strong> <span id="detailsParticipantName">-</span></p>
+                        <p class="mb-2"><strong>Surname:</strong> <span id="detailsParticipantSurname">-</span></p>
+                        <p class="mb-0"><strong>Birth Date:</strong> <span id="detailsParticipantBirthDate">-</span></p>
+                    </div>
+                    <div class="col-md-5">
+                        <p class="mb-1"><strong>Image:</strong></p>
+                        <div id="detailsParticipantImage"></div>
+                        <div id="detailsParticipantNoImage" class="small text-muted">No image assigned.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 <script>
     function isoToEu(dateStr) {
         if (!dateStr) return '';
@@ -230,7 +264,20 @@
     const updateParticipantName = document.getElementById('updateParticipantName');
     const updateParticipantSurname = document.getElementById('updateParticipantSurname');
     const updateParticipantBirthDate = document.getElementById('updateParticipantBirthDate');
+    const detailsButtons = document.querySelectorAll('.details-participant-btn');
+    const participantDetailsModal = document.getElementById('participantDetailsModal');
+    const detailsParticipantId = document.getElementById('detailsParticipantId');
+    const detailsParticipantName = document.getElementById('detailsParticipantName');
+    const detailsParticipantSurname = document.getElementById('detailsParticipantSurname');
+    const detailsParticipantBirthDate = document.getElementById('detailsParticipantBirthDate');
+    const detailsParticipantImage = document.getElementById('detailsParticipantImage');
+    const detailsParticipantNoImage = document.getElementById('detailsParticipantNoImage');
     const successAlert = document.getElementById('successAlert');
+
+    const participantDetailsModalInstance =
+        participantDetailsModal && window.bootstrap && window.bootstrap.Modal
+            ? window.bootstrap.Modal.getOrCreateInstance(participantDetailsModal)
+            : null;
 
     if (successAlert) {
         setTimeout(() => {
@@ -300,7 +347,35 @@
     if (hideAddToCourseFormBtn && addToCourseFormContainer) {
         hideAddToCourseFormBtn.addEventListener('click', () => addToCourseFormContainer.classList.add('d-none'));
     }
+
+    if (detailsButtons.length > 0 && participantDetailsModalInstance) {
+        detailsButtons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                detailsParticipantId.textContent = btn.dataset.id || '-';
+                detailsParticipantName.textContent = btn.dataset.name || '-';
+                detailsParticipantSurname.textContent = btn.dataset.surname || '-';
+                detailsParticipantBirthDate.textContent = isoToEu(btn.dataset.birthdate) || '-';
+
+                detailsParticipantImage.innerHTML = '';
+                const imageUuid = btn.dataset.image;
+                if (imageUuid && imageUuid !== 'null' && imageUuid.trim() !== '') {
+                    detailsParticipantNoImage.classList.add('d-none');
+                    const img = document.createElement('img');
+                    img.src = `/custom/image/${imageUuid}`;
+                    img.alt = 'Participant image';
+                    img.className = 'img-thumbnail';
+                    img.style.maxWidth = '150px';
+                    img.style.maxHeight = '150px';
+                    img.style.objectFit = 'cover';
+                    detailsParticipantImage.appendChild(img);
+                } else {
+                    detailsParticipantNoImage.classList.remove('d-none');
+                }
+
+                participantDetailsModalInstance.show();
+            });
+        });
+    }
 </script>
 </body>
 </html>
-

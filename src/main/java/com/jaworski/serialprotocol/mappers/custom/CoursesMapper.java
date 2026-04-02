@@ -13,6 +13,7 @@ import com.jaworski.serialprotocol.entity.custom.Trainer;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class CoursesMapper {
@@ -40,7 +41,7 @@ public class CoursesMapper {
     dto.setStartDate(courses.getStartDate());
     dto.setEndDate(courses.getEndDate());
 
-    Set<Long> trainerIds = courses.getTrainers() == null
+    Set<UUID> trainerIds = courses.getTrainers() == null
             ? new HashSet<>()
             : courses.getTrainers().stream()
             .map(TrainerMapper::mapToDTO)
@@ -49,7 +50,7 @@ public class CoursesMapper {
             .collect(Collectors.toSet());
     dto.setTrainerIds(trainerIds);
 
-    Set<Long> lecturerIds = courses.getLecturers() == null
+    Set<UUID> lecturerIds = courses.getLecturers() == null
             ? new HashSet<>()
             : courses.getLecturers().stream()
             .map(LecturerMapper::mapToDTO)
