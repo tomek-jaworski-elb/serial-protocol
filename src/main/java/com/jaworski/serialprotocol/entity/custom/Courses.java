@@ -75,6 +75,10 @@ public class Courses {
   @NotNull
   private Set<Lecturer> lecturers  = new HashSet<>();
 
+  @ManyToOne()
+  @JoinColumn(name = CourseCounter.TABLE_NAME + "_uuid")
+  private CourseCounter courseCounter;
+
   @AssertTrue(message = "endDate must be the same as or after startDate")
   private boolean isDateRangeValid() {
     if (startDate == null || endDate == null) {

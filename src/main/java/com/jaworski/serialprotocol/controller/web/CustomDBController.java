@@ -2,11 +2,13 @@ package com.jaworski.serialprotocol.controller.web;
 
 import com.jaworski.serialprotocol.dto.custom.CourseTypeDTO;
 import com.jaworski.serialprotocol.dto.custom.CoursesDTO;
+import com.jaworski.serialprotocol.dto.custom.CourseCounterDTO;
 import com.jaworski.serialprotocol.dto.custom.LecturerDTO;
 import com.jaworski.serialprotocol.dto.custom.ParticipantDTO;
 import com.jaworski.serialprotocol.dto.custom.TrainerDTO;
 import com.jaworski.serialprotocol.entity.custom.Image;
 import com.jaworski.serialprotocol.service.db.custom.CourseTypeService;
+import com.jaworski.serialprotocol.service.db.custom.CourseCounterService;
 import com.jaworski.serialprotocol.service.db.custom.CoursesService;
 import com.jaworski.serialprotocol.service.db.custom.ImageService;
 import com.jaworski.serialprotocol.service.db.custom.LecturerService;
@@ -52,6 +54,7 @@ public class CustomDBController {
   private static final String ACTIVE_SESSION = "sessions";
   private final WebSocketPublisher webSockerService;
   private final CourseTypeService courseTypeService;
+  private final CourseCounterService courseCounterService;
   private final CoursesService coursesService;
   private final TrainerService trainerService;
   private final LecturerService lecturerService;
@@ -71,6 +74,7 @@ public class CustomDBController {
     model.addAttribute("courseTypeMap", courseTypeMap);
     model.addAttribute("trainers", trainerService.findAll());
     model.addAttribute("lecturers", lecturerService.findAll());
+    model.addAttribute("courseCounters", courseCounterService.findAll());
     model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
     return "custom/courses-service";
   }
@@ -399,6 +403,75 @@ public class CustomDBController {
       redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete participant: " + e.getMessage());
     }
     return "redirect:/participant-service";
+  }
+
+  @GetMapping("/course-counter-service")
+  public String courseCounterService(Model model) {
+    model.addAttribute(ATTRIBUTE_NAME, "course-counter-service");
+    model.addAttribute("courseCounters", courseCounterService.findAll());
+    model.addAttribute("nextCounter", courseCounterService.nextCounter());
+    model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
+    return "custom/course-counter-service";
+  }
+
+  @PostMapping("/course-counter-service/add")
+  public String addCourseCounter(@ModelAttribute CourseCounterDTO courseCounterDTO,
+                                 @RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
+                                 RedirectAttributes redirectAttributes) {
+    try {
+      UUID uploadedImage = uploadSingleImage(imageFile);
+      CourseCounterDTO toSave = new CourseCounterDTO(null, courseCounterDTO.counter(), uploadedImage);
+      courseCounterService.save(toSave);
+      redirectAttributes.addFlashAttribute("successMessage", "Course counter added successfully.");
+    } catch (IllegalArgumentException e) {
+      LOG.error("Cannot add course counter. payload={}", courseCounterDTO, e);
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+    } catch (RuntimeException e) {
+      LOG.error("Cannot add course counter. payload={}", courseCounterDTO, e);
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to add course counter: " + e.getMessage());
+    }
+    return "redirect:/course-counter-service";
+  }
+
+  @PostMapping("/course-counter-service/update")
+  public String updateCourseCounter(@ModelAttribute CourseCounterDTO courseCounterDTO,
+                                    @RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
+                                    RedirectAttributes redirectAttributes) {
+    try {
+      if (courseCounterDTO.uuid() == null) {
+        throw new IllegalArgumentException("UUID is required for update");
+      }
+      UUID uploadedImage = uploadSingleImage(imageFile);
+      UUID imageUuid = uploadedImage;
+      if (uploadedImage == null) {
+        CourseCounterDTO existing = courseCounterService.getByUuid(courseCounterDTO.uuid())
+                .orElseThrow(() -> new IllegalArgumentException("CourseCounter with id " + courseCounterDTO.uuid() + " not found"));
+        imageUuid = existing.imageUuid();
+      }
+
+      CourseCounterDTO toUpdate = new CourseCounterDTO(courseCounterDTO.uuid(), courseCounterDTO.counter(), imageUuid);
+      courseCounterService.update(toUpdate);
+      redirectAttributes.addFlashAttribute("successMessage", "Course counter updated successfully.");
+    } catch (IllegalArgumentException e) {
+      LOG.error("Cannot update course counter. payload={}", courseCounterDTO, e);
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+    } catch (RuntimeException e) {
+      LOG.error("Cannot update course counter. payload={}", courseCounterDTO, e);
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to update course counter: " + e.getMessage());
+    }
+    return "redirect:/course-counter-service";
+  }
+
+  @PostMapping("/course-counter-service/delete/{uuid}")
+  public String deleteCourseCounter(@PathVariable UUID uuid, RedirectAttributes redirectAttributes) {
+    try {
+      courseCounterService.delete(uuid);
+      redirectAttributes.addFlashAttribute("successMessage", "Course counter deleted successfully.");
+    } catch (RuntimeException e) {
+      LOG.error("Cannot delete course counter. uuid={}", uuid, e);
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete course counter: " + e.getMessage());
+    }
+    return "redirect:/course-counter-service";
   }
 
   @GetMapping("/custom/image/{uuid}")

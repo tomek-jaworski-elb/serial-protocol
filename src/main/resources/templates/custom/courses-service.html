@@ -30,7 +30,7 @@
             <h5 class="card-title">Add course</h5>
             <form method="post" th:action="@{/courses-service/add}">
                 <div class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label for="addParticipantUuid" class="form-label">Participant</label>
                         <select id="addParticipantUuid" name="participantUuid" class="form-select" required>
                             <option value="" disabled selected>Select participant</option>
@@ -39,13 +39,22 @@
                                     th:text="${p.name + ' ' + p.surname + ' (ID: ' + p.id + ')'}">Participant</option>
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label for="addCourseTypeId" class="form-label">Course Type</label>
                         <select id="addCourseTypeId" name="courseTypeId" class="form-select" required>
                             <option value="" disabled selected>Select course type</option>
                             <option th:each="ct : ${courseTypes}"
                                     th:value="${ct.id}"
                                     th:text="${ct.code + ' - ' + ct.description}">Course Type</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="addCounter" class="form-label">Course Counter</label>
+                        <select id="addCounter" name="counter" class="form-select">
+                            <option value="" disabled selected>Select counter</option>
+                            <option th:each="cc : ${courseCounters}"
+                                    th:value="${cc.counter}"
+                                    th:text="${cc.counter}">Counter</option>
                         </select>
                     </div>
                     <div class="col-md-2">
@@ -91,7 +100,7 @@
                 <input id="updateCourseUuid" name="uuid" type="hidden">
                 <input id="updateCourseId" name="id" type="hidden">
                 <div class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label for="updateParticipantUuid" class="form-label">Participant</label>
                         <select id="updateParticipantUuid" name="participantUuid" class="form-select" required>
                             <option value="" disabled>Select participant</option>
@@ -100,13 +109,22 @@
                                     th:text="${p.name + ' ' + p.surname + ' (ID: ' + p.id + ')'}">Participant</option>
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label for="updateCourseTypeId" class="form-label">Course Type</label>
                         <select id="updateCourseTypeId" name="courseTypeId" class="form-select" required>
                             <option value="" disabled>Select course type</option>
                             <option th:each="ct : ${courseTypes}"
                                     th:value="${ct.id}"
                                     th:text="${ct.code + ' - ' + ct.description}">Course Type</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="updateCounter" class="form-label">Course Counter</label>
+                        <select id="updateCounter" name="counter" class="form-select">
+                            <option value="" disabled selected>Select counter</option>
+                            <option th:each="cc : ${courseCounters}"
+                                    th:value="${cc.counter}"
+                                    th:text="${cc.counter}">Counter</option>
                         </select>
                     </div>
                     <div class="col-md-2">
@@ -189,13 +207,13 @@
                                 type="button"
                                 class="btn btn-outline-info btn-sm details-course-btn"
                                 th:with="ct=${course.courseTypeId != null ? courseTypeMap[course.courseTypeId] : null}"
-                                th:attr="data-uuid=${course.uuid},data-id=${course.id},data-start-date=${course.startDate},data-end-date=${course.endDate},data-course-type-desc=${ct != null ? ct.description : ''},data-course-type-long-desc=${ct != null ? ct.longDescription : ''}">
+                                th:attr="data-uuid=${course.uuid},data-id=${course.id},data-start-date=${course.startDate},data-end-date=${course.endDate},data-course-type-desc=${ct != null ? ct.description : ''},data-course-type-long-desc=${ct != null ? ct.longDescription : ''},data-counter=${course.counter}">
                             Details
                         </button>
                         <button
                                 type="button"
                                 class="btn btn-outline-warning btn-sm update-course-btn"
-                                th:attr="data-uuid=${course.uuid},data-id=${course.id},data-participant-uuid=${course.participantUuid},data-course-type-id=${course.courseTypeId},data-start-date=${course.startDate},data-end-date=${course.endDate}"
+                                th:attr="data-uuid=${course.uuid},data-id=${course.id},data-participant-uuid=${course.participantUuid},data-course-type-id=${course.courseTypeId},data-start-date=${course.startDate},data-end-date=${course.endDate},data-counter=${course.counter}"
                                 th:data-trainer-ids="${course.trainerIdsString}"
                                 th:data-lecturer-ids="${course.lecturerIdsString}">
                             Update
@@ -314,8 +332,10 @@
 
                 const participantSelect = document.getElementById('updateParticipantUuid');
                 const courseTypeSelect = document.getElementById('updateCourseTypeId');
+                const counterInput = document.getElementById('updateCounter');
                 for (let opt of participantSelect.options) opt.selected = opt.value === btn.dataset.participantUuid;
                 for (let opt of courseTypeSelect.options) opt.selected = opt.value === btn.dataset.courseTypeId;
+                if (counterInput) counterInput.value = btn.dataset.counter || '';
 
                 document.getElementById('updateStartDate').value = isoToEu(btn.dataset.startDate) || '';
                 document.getElementById('updateEndDate').value = isoToEu(btn.dataset.endDate) || '';
@@ -359,4 +379,3 @@
 </script>
 </body>
 </html>
-

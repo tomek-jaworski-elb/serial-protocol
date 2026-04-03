@@ -5,6 +5,7 @@ import com.jaworski.serialprotocol.dto.custom.CoursesDTO;
 import com.jaworski.serialprotocol.dto.custom.LecturerDTO;
 import com.jaworski.serialprotocol.dto.custom.ParticipantDTO;
 import com.jaworski.serialprotocol.dto.custom.TrainerDTO;
+import com.jaworski.serialprotocol.entity.custom.CourseCounter;
 import com.jaworski.serialprotocol.entity.custom.CourseType;
 import com.jaworski.serialprotocol.entity.custom.Courses;
 import com.jaworski.serialprotocol.entity.custom.Lecturer;
@@ -38,6 +39,9 @@ public class CoursesMapper {
     dto.setCourseTypeId(courseTypeDTO == null
             ? null
             : courseTypeDTO.getId());
+    CourseCounter courseCounter = courses.getCourseCounter();
+    dto.setCourseCounterUuid(courseCounter == null ? null : courseCounter.getUuid());
+    dto.setCounter(courseCounter == null ? null : courseCounter.getCounter());
     dto.setStartDate(courses.getStartDate());
     dto.setEndDate(courses.getEndDate());
 
@@ -103,8 +107,15 @@ public class CoursesMapper {
               LecturerDTO lecturerDTO = new LecturerDTO();
               lecturerDTO.setLecturerId(id);
               return LecturerMapper.mapToEntity(lecturerDTO);
-            }).collect(Collectors.toSet());
+             }).collect(Collectors.toSet());
     courses.setLecturers(lecturers);
+
+    if (dto.getCourseCounterUuid() != null || dto.getCounter() != null) {
+      CourseCounter courseCounter = new CourseCounter();
+      courseCounter.setUuid(dto.getCourseCounterUuid());
+      courseCounter.setCounter(dto.getCounter());
+      courses.setCourseCounter(courseCounter);
+    }
 
     return courses;
   }

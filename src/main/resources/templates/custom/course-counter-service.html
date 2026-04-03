@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head th:insert="~{fragment::head}"></head>
+<head>
+    <title th:text="${@environment.getProperty('spring.application.name')} + ' : Course Counter'">Serial port server</title>
+</head>
+<body>
+<header th:replace="~{fragment::header}"></header>
+<div class="container mb-4">
+    <div id="successAlert" class="alert alert-success alert-dismissible fade show" role="alert" th:if="${successMessage}">
+        <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert" th:if="${errorMessage}">
+        <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center my-3">
+        <h4 class="mb-0">Course Counter</h4>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-secondary" th:text="${#lists.size(courseCounters)}" th:if="${!#lists.isEmpty(courseCounters)}">0</span>
+            <button id="showAddFormBtn" type="button" class="btn btn-primary btn-sm">Add</button>
+        </div>
+    </div>
+
+    <div id="addCourseCounterFormContainer" class="card mb-3 d-none">
+        <div class="card-body">
+            <h5 class="card-title">Add course counter</h5>
+            <form method="post" enctype="multipart/form-data" th:action="@{/course-counter-service/add}">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="addCounter" class="form-label">ID</label>
+                        <input id="addCounter" name="counter" type="number" min="1" class="form-control" th:value="${nextCounter}" required>
+                    </div>
+                    <div class="col-md-8">
+                        <label for="addImageFile" class="form-label">Image</label>
+                        <input id="addImageFile" name="imageFile" type="file" class="form-control" accept="image/*">
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-success btn-sm">Save</button>
+                    <button id="hideAddFormBtn" type="button" class="btn btn-outline-secondary btn-sm">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="updateCourseCounterFormContainer" class="card mb-3 d-none">
+        <div class="card-body">
+            <h5 class="card-title">Update course counter</h5>
+            <form method="post" enctype="multipart/form-data" th:action="@{/course-counter-service/update}">
+                <input id="updateUuid" name="uuid" type="hidden" required>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="updateCounter" class="form-label">ID</label>
+                        <input id="updateCounter" name="counter" type="number" min="1" class="form-control" required>
+                    </div>
+                    <div class="col-md-8">
+                        <label for="updateImageFile" class="form-label">Image</label>
+                        <input id="updateImageFile" name="imageFile" type="file" class="form-control" accept="image/*">
+                        <div class="form-text">Optional. Upload a new image to replace the current one.</div>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-warning btn-sm">Update</button>
+                    <button id="hideUpdateFormBtn" type="button" class="btn btn-outline-secondary btn-sm">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="table-responsive" th:if="${!#lists.isEmpty(courseCounters)}">
+        <table class="table table-striped table-hover align-middle text-center">
+            <thead class="table-light">
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">ID</th>
+                <th scope="col">Image</th>
+                <th scope="col">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="courseCounter, courseCounterStat : ${courseCounters}">
+                <th scope="row" th:text="${courseCounterStat.index + 1}">1</th>
+                <td th:text="${courseCounter.counter}">1</td>
+                <td>
+                    <th:block th:if="${courseCounter.imageUuid != null}">
+                        <img th:src="@{/custom/image/{uuid}(uuid=${courseCounter.imageUuid})}" alt="Course counter image"
+                             class="img-thumbnail" style="max-width: 56px; max-height: 56px; object-fit: cover;">
+                    </th:block>
+                    <span class="badge text-bg-secondary" th:if="${courseCounter.imageUuid == null}">Missing</span>
+                </td>
+                <td>
+                    <div class="d-flex justify-content-center gap-2 flex-wrap">
+                        <button
+                                type="button"
+                                class="btn btn-outline-info btn-sm details-course-counter-btn"
+                                th:attr="data-uuid=${courseCounter.uuid},data-counter=${courseCounter.counter},data-image=${courseCounter.imageUuid}">
+                            Details
+                        </button>
+                        <button
+                                type="button"
+                                class="btn btn-outline-warning btn-sm update-course-counter-btn"
+                                th:attr="data-uuid=${courseCounter.uuid},data-counter=${courseCounter.counter}">
+                            Update
+                        </button>
+                        <form method="post" th:action="@{/course-counter-service/delete/{uuid}(uuid=${courseCounter.uuid})}">
+                            <button type="submit" class="btn btn-outline-danger btn-sm"
+                                    onclick="return confirm('Are you sure you want to delete this item?');">
+                                Delete
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="alert alert-info text-center" th:if="${#lists.isEmpty(courseCounters)}">
+        No course counters found.
+    </div>
+</div>
+<footer th:replace="~{fragment::footer}"></footer>
+
+<div class="modal fade" id="courseCounterDetailsModal" tabindex="-1" aria-labelledby="courseCounterDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="courseCounterDetailsModalLabel">Course counter details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-2"><strong>ID:</strong> <span id="detailsCounter">-</span></p>
+                <p class="mb-1"><strong>Image:</strong></p>
+                <div id="detailsImage"></div>
+                <div id="detailsNoImage" class="small text-muted">No image assigned.</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const showAddFormBtn = document.getElementById('showAddFormBtn');
+    const hideAddFormBtn = document.getElementById('hideAddFormBtn');
+    const addCourseCounterFormContainer = document.getElementById('addCourseCounterFormContainer');
+    const updateCourseCounterFormContainer = document.getElementById('updateCourseCounterFormContainer');
+    const hideUpdateFormBtn = document.getElementById('hideUpdateFormBtn');
+    const updateButtons = document.querySelectorAll('.update-course-counter-btn');
+    const detailsButtons = document.querySelectorAll('.details-course-counter-btn');
+    const updateUuid = document.getElementById('updateUuid');
+    const updateCounter = document.getElementById('updateCounter');
+    const detailsCounter = document.getElementById('detailsCounter');
+    const detailsImage = document.getElementById('detailsImage');
+    const detailsNoImage = document.getElementById('detailsNoImage');
+    const successAlert = document.getElementById('successAlert');
+    const courseCounterDetailsModal = document.getElementById('courseCounterDetailsModal');
+    const courseCounterDetailsModalInstance =
+        courseCounterDetailsModal && window.bootstrap && window.bootstrap.Modal
+            ? window.bootstrap.Modal.getOrCreateInstance(courseCounterDetailsModal)
+            : null;
+
+    if (successAlert) {
+        setTimeout(() => {
+            if (window.bootstrap && window.bootstrap.Alert) {
+                window.bootstrap.Alert.getOrCreateInstance(successAlert).close();
+            } else {
+                successAlert.remove();
+            }
+        }, 10000);
+    }
+
+    if (showAddFormBtn && hideAddFormBtn && addCourseCounterFormContainer) {
+        showAddFormBtn.addEventListener('click', () => {
+            addCourseCounterFormContainer.classList.remove('d-none');
+            if (updateCourseCounterFormContainer) {
+                updateCourseCounterFormContainer.classList.add('d-none');
+            }
+            addCourseCounterFormContainer.scrollIntoView({behavior: 'smooth', block: 'start'});
+        });
+
+        hideAddFormBtn.addEventListener('click', () => {
+            addCourseCounterFormContainer.classList.add('d-none');
+        });
+    }
+
+    if (hideUpdateFormBtn && updateCourseCounterFormContainer) {
+        hideUpdateFormBtn.addEventListener('click', () => {
+            updateCourseCounterFormContainer.classList.add('d-none');
+        });
+    }
+
+    if (updateButtons.length > 0 && updateCourseCounterFormContainer) {
+        updateButtons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                updateUuid.value = btn.dataset.uuid || '';
+                updateCounter.value = btn.dataset.counter || '';
+                updateCourseCounterFormContainer.classList.remove('d-none');
+                if (addCourseCounterFormContainer) {
+                    addCourseCounterFormContainer.classList.add('d-none');
+                }
+                updateCourseCounterFormContainer.scrollIntoView({behavior: 'smooth', block: 'start'});
+            });
+        });
+    }
+
+    if (detailsButtons.length > 0 && courseCounterDetailsModalInstance) {
+        detailsButtons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                detailsCounter.textContent = btn.dataset.counter || '-';
+                detailsImage.innerHTML = '';
+                const imageUuid = btn.dataset.image;
+                if (imageUuid && imageUuid !== 'null' && imageUuid.trim() !== '') {
+                    detailsNoImage.classList.add('d-none');
+                    const img = document.createElement('img');
+                    img.src = `/custom/image/${imageUuid}`;
+                    img.alt = 'Course counter image';
+                    img.className = 'img-thumbnail';
+                    img.style.maxWidth = '180px';
+                    img.style.maxHeight = '180px';
+                    img.style.objectFit = 'cover';
+                    detailsImage.appendChild(img);
+                } else {
+                    detailsNoImage.classList.remove('d-none');
+                }
+                courseCounterDetailsModalInstance.show();
+            });
+        });
+    }
+</script>
+</body>
+</html>

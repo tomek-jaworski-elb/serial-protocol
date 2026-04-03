@@ -35,4 +35,11 @@ public class ImageService {
         .collect(Collectors.toSet());
   }
 
+  public int getAllImages() {
+    return imageRepository.findAll().size();
+  }
+
+  public void delete(UUID id) {
+    imageRepository.deleteById(id);
+  }
 }

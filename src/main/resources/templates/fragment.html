@@ -78,6 +78,10 @@
                         <a th:if="${name == 'participant-service'}" class="nav-link active" th:href="@{/participant-service}">Participant</a>
                         <a th:unless="${name == 'participant-service'}" class="nav-link" th:href="@{/participant-service}">Participant</a>
                     </li>
+                    <li th:if="${@environment.getProperty('web.ui.extened') == 'true'}" class="nav-item">
+                        <a th:if="${name == 'course-counter-service'}" class="nav-link active" th:href="@{/course-counter-service}">Course Counter</a>
+                        <a th:unless="${name == 'course-counter-service'}" class="nav-link" th:href="@{/course-counter-service}">Course Counter</a>
+                    </li>
                     <li sec:authorize="isAuthenticated()" class="nav-item">
                         <a th:href="@{/logout}" class="nav-link text-danger fw-bold">Logout</a>
                     </li>

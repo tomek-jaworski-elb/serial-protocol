@@ -1,11 +1,13 @@
 package com.jaworski.serialprotocol.service.db.custom;
 
 import com.jaworski.serialprotocol.dto.custom.CoursesDTO;
+import com.jaworski.serialprotocol.entity.custom.CourseCounter;
 import com.jaworski.serialprotocol.entity.custom.Courses;
 import com.jaworski.serialprotocol.entity.custom.CourseType;
 import com.jaworski.serialprotocol.entity.custom.Lecturer;
 import com.jaworski.serialprotocol.entity.custom.Participant;
 import com.jaworski.serialprotocol.entity.custom.Trainer;
+import com.jaworski.serialprotocol.repository.custom.CourseCounterRepository;
 import com.jaworski.serialprotocol.mappers.custom.CoursesMapper;
 import com.jaworski.serialprotocol.repository.custom.CoursesRepository;
 import com.jaworski.serialprotocol.repository.custom.CourseTypeRepository;
@@ -34,6 +36,7 @@ public class CoursesService {
   private final CoursesRepository coursesRepository;
   private final ParticipantRepository participantRepository;
   private final CourseTypeRepository courseTypeRepository;
+  private final CourseCounterRepository courseCounterRepository;
   private final TrainerRepository trainerRepository;
   private final LecturerRepository lecturerRepository;
 
@@ -120,16 +123,30 @@ public class CoursesService {
         .map(lecturerRepository::getReferenceById)
         .collect(Collectors.toSet());
 
+    CourseCounter courseCounter = resolveCourseCounter(dto);
+
     Courses courses = new Courses();
     courses.setUuid(dto.getUuid());
     courses.setId(dto.getId());
     courses.setParticipant(participant);
     courses.setCourseType(courseType);
+    courses.setCourseCounter(courseCounter);
     courses.setStartDate(dto.getStartDate());
     courses.setEndDate(dto.getEndDate());
     courses.setTrainers(trainers);
     courses.setLecturers(lecturers);
     return courses;
+  }
+
+  private CourseCounter resolveCourseCounter(CoursesDTO dto) {
+    if (dto.getCourseCounterUuid() != null) {
+      return courseCounterRepository.getReferenceById(dto.getCourseCounterUuid());
+    }
+    if (dto.getCounter() != null) {
+      return courseCounterRepository.findByCounter(dto.getCounter())
+          .orElseThrow(() -> new IllegalArgumentException("CourseCounter with counter " + dto.getCounter() + " not found"));
+    }
+    return null;
   }
 
   private void validateDates(CoursesDTO dto) {
