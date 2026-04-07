@@ -75,6 +75,15 @@ public class Courses {
   @NotNull
   private Set<Lecturer> lecturers  = new HashSet<>();
 
+  @ManyToMany
+  @JoinTable(
+          name = TABLE_NAME + "_technicians",
+          joinColumns = @JoinColumn(name = TABLE_NAME + "_uuid"),
+          inverseJoinColumns = @JoinColumn(name = Technician.TABLE_NAME + "_uuid")
+  )
+  @NotNull
+  private Set<Technician> technicians  = new HashSet<>();
+
   @ManyToOne()
   @JoinColumn(name = CourseCounter.TABLE_NAME + "_uuid")
   private CourseCounter courseCounter;

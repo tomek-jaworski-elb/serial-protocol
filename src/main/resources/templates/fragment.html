@@ -71,6 +71,10 @@
                         <a th:unless="${name == 'lecturer-service'}" class="nav-link" th:href="@{/lecturer-service}">Lecturer</a>
                     </li>
                     <li th:if="${@environment.getProperty('web.ui.extened') == 'true'}" class="nav-item">
+                        <a th:if="${name == 'technician-service'}" class="nav-link active" th:href="@{/technician-service}">Technician</a>
+                        <a th:unless="${name == 'technician-service'}" class="nav-link" th:href="@{/technician-service}">Technician</a>
+                    </li>
+                    <li th:if="${@environment.getProperty('web.ui.extened') == 'true'}" class="nav-item">
                         <a th:if="${name == 'course-type-service'}" class="nav-link active" th:href="@{/course-type-service}">Course Type</a>
                         <a th:unless="${name == 'course-type-service'}" class="nav-link" th:href="@{/course-type-service}">Course Type</a>
                     </li>

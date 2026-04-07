@@ -5,6 +5,7 @@ import com.jaworski.serialprotocol.dto.custom.CoursesDTO;
 import com.jaworski.serialprotocol.dto.custom.CourseCounterDTO;
 import com.jaworski.serialprotocol.dto.custom.LecturerDTO;
 import com.jaworski.serialprotocol.dto.custom.ParticipantDTO;
+import com.jaworski.serialprotocol.dto.custom.TechnicianDTO;
 import com.jaworski.serialprotocol.dto.custom.TrainerDTO;
 import com.jaworski.serialprotocol.entity.custom.Image;
 import com.jaworski.serialprotocol.service.db.custom.CourseTypeService;
@@ -13,6 +14,7 @@ import com.jaworski.serialprotocol.service.db.custom.CoursesService;
 import com.jaworski.serialprotocol.service.db.custom.ImageService;
 import com.jaworski.serialprotocol.service.db.custom.LecturerService;
 import com.jaworski.serialprotocol.service.db.custom.ParticipantService;
+import com.jaworski.serialprotocol.service.db.custom.TechnicianService;
 import com.jaworski.serialprotocol.service.db.custom.TrainerService;
 import jakarta.validation.ConstraintViolationException;
 import com.jaworski.serialprotocol.service.WebSocketPublisher;
@@ -58,6 +60,7 @@ public class CustomDBController {
   private final CoursesService coursesService;
   private final TrainerService trainerService;
   private final LecturerService lecturerService;
+  private final TechnicianService technicianService;
   private final ParticipantService participantService;
   private final ImageService imageService;
   private static final int MAX_UPLOAD_IMAGES = 6;
@@ -74,6 +77,7 @@ public class CustomDBController {
     model.addAttribute("courseTypeMap", courseTypeMap);
     model.addAttribute("trainers", trainerService.findAll());
     model.addAttribute("lecturers", lecturerService.findAll());
+    model.addAttribute("technicians", technicianService.findAll());
     model.addAttribute("courseCounters", courseCounterService.findAll());
     model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
     return "custom/courses-service";
@@ -265,6 +269,69 @@ public class CustomDBController {
       redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete lecturer: " + e.getMessage());
     }
     return "redirect:/lecturer-service";
+  }
+
+  @GetMapping("/technician-service")
+  public String technicianService(Model model) {
+    model.addAttribute(ATTRIBUTE_NAME, "technician-service");
+    model.addAttribute("technicians", technicianService.findAll());
+    model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
+    return "custom/technician-service";
+  }
+
+  @PostMapping("/technician-service/add")
+  public String addTechnician(@ModelAttribute TechnicianDTO technicianDTO,
+                              @RequestParam(value = "imageFiles", required = false) MultipartFile[] imageFiles,
+                              RedirectAttributes redirectAttributes) {
+    try {
+      technicianDTO.setTechnicianId(null);
+      Set<UUID> uploadedImages = uploadImages(imageFiles, MAX_UPLOAD_IMAGES);
+      technicianDTO.setImagesUuid(uploadedImages);
+      technicianService.save(technicianDTO);
+      redirectAttributes.addFlashAttribute("successMessage", "Technician added successfully.");
+    } catch (RuntimeException e) {
+      LOG.error("Cannot add technician. payload={}", technicianDTO, e);
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to add technician: " + e.getMessage());
+    }
+    return "redirect:/technician-service";
+  }
+
+  @PostMapping("/technician-service/update")
+  public String updateTechnician(@ModelAttribute TechnicianDTO technicianDTO,
+                                 @RequestParam(value = "imageFiles", required = false) MultipartFile[] imageFiles,
+                                 RedirectAttributes redirectAttributes) {
+    try {
+      if (technicianDTO.getTechnicianId() == null) {
+        throw new IllegalArgumentException("Technician id is required for update");
+      }
+      Set<UUID> uploadedImages = uploadImages(imageFiles, MAX_UPLOAD_IMAGES);
+      if (uploadedImages.isEmpty()) {
+        TechnicianDTO existing = technicianService.findById(technicianDTO.getTechnicianId());
+        if (existing != null) {
+          technicianDTO.setImagesUuid(existing.getImagesUuid());
+        }
+      } else {
+        technicianDTO.setImagesUuid(uploadedImages);
+      }
+      technicianService.updateById(technicianDTO);
+      redirectAttributes.addFlashAttribute("successMessage", "Technician updated successfully.");
+    } catch (RuntimeException e) {
+      LOG.error("Cannot update technician. payload={}", technicianDTO, e);
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to update technician: " + e.getMessage());
+    }
+    return "redirect:/technician-service";
+  }
+
+  @PostMapping("/technician-service/delete/{id}")
+  public String deleteTechnician(@PathVariable UUID id, RedirectAttributes redirectAttributes) {
+    try {
+      technicianService.deleteById(id);
+      redirectAttributes.addFlashAttribute("successMessage", "Technician deleted successfully.");
+    } catch (RuntimeException e) {
+      LOG.error("Cannot delete technician. id={}", id, e);
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete technician: " + e.getMessage());
+    }
+    return "redirect:/technician-service";
   }
 
   @GetMapping("/course-type-service")

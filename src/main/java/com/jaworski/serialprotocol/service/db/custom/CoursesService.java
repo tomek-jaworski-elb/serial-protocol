@@ -6,6 +6,7 @@ import com.jaworski.serialprotocol.entity.custom.Courses;
 import com.jaworski.serialprotocol.entity.custom.CourseType;
 import com.jaworski.serialprotocol.entity.custom.Lecturer;
 import com.jaworski.serialprotocol.entity.custom.Participant;
+import com.jaworski.serialprotocol.entity.custom.Technician;
 import com.jaworski.serialprotocol.entity.custom.Trainer;
 import com.jaworski.serialprotocol.repository.custom.CourseCounterRepository;
 import com.jaworski.serialprotocol.mappers.custom.CoursesMapper;
@@ -13,6 +14,7 @@ import com.jaworski.serialprotocol.repository.custom.CoursesRepository;
 import com.jaworski.serialprotocol.repository.custom.CourseTypeRepository;
 import com.jaworski.serialprotocol.repository.custom.LecturerRepository;
 import com.jaworski.serialprotocol.repository.custom.ParticipantRepository;
+import com.jaworski.serialprotocol.repository.custom.TechnicianRepository;
 import com.jaworski.serialprotocol.repository.custom.TrainerRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -39,6 +41,7 @@ public class CoursesService {
   private final CourseCounterRepository courseCounterRepository;
   private final TrainerRepository trainerRepository;
   private final LecturerRepository lecturerRepository;
+  private final TechnicianRepository technicianRepository;
 
   @Transactional(readOnly = true)
   public List<CoursesDTO> findAll() {
@@ -123,6 +126,12 @@ public class CoursesService {
         .map(lecturerRepository::getReferenceById)
         .collect(Collectors.toSet());
 
+    Set<Technician> technicians = dto.getTechnicianIds() == null
+        ? new HashSet<>()
+        : dto.getTechnicianIds().stream()
+        .map(technicianRepository::getReferenceById)
+        .collect(Collectors.toSet());
+
     CourseCounter courseCounter = resolveCourseCounter(dto);
 
     Courses courses = new Courses();
@@ -135,6 +144,7 @@ public class CoursesService {
     courses.setEndDate(dto.getEndDate());
     courses.setTrainers(trainers);
     courses.setLecturers(lecturers);
+    courses.setTechnicians(technicians);
     return courses;
   }
 

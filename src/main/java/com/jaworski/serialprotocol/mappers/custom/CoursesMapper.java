@@ -4,11 +4,13 @@ import com.jaworski.serialprotocol.dto.custom.CourseTypeDTO;
 import com.jaworski.serialprotocol.dto.custom.CoursesDTO;
 import com.jaworski.serialprotocol.dto.custom.LecturerDTO;
 import com.jaworski.serialprotocol.dto.custom.ParticipantDTO;
+import com.jaworski.serialprotocol.dto.custom.TechnicianDTO;
 import com.jaworski.serialprotocol.dto.custom.TrainerDTO;
 import com.jaworski.serialprotocol.entity.custom.CourseCounter;
 import com.jaworski.serialprotocol.entity.custom.CourseType;
 import com.jaworski.serialprotocol.entity.custom.Courses;
 import com.jaworski.serialprotocol.entity.custom.Lecturer;
+import com.jaworski.serialprotocol.entity.custom.Technician;
 import com.jaworski.serialprotocol.entity.custom.Trainer;
 
 import java.util.HashSet;
@@ -62,6 +64,15 @@ public class CoursesMapper {
             .map(LecturerDTO::getLecturerId)
             .collect(Collectors.toSet());
     dto.setLecturerIds(lecturerIds);
+
+    Set<UUID> technicianIds = courses.getTechnicians() == null
+            ? new HashSet<>()
+            : courses.getTechnicians().stream()
+            .map(TechnicianMapper::mapToDTO)
+            .filter(Objects::nonNull)
+            .map(TechnicianDTO::getTechnicianId)
+            .collect(Collectors.toSet());
+    dto.setTechnicianIds(technicianIds);
     return dto;
   }
 
@@ -109,6 +120,16 @@ public class CoursesMapper {
               return LecturerMapper.mapToEntity(lecturerDTO);
              }).collect(Collectors.toSet());
     courses.setLecturers(lecturers);
+
+    Set<Technician> technicians = dto.getTechnicianIds() == null
+            ? new HashSet<>()
+            : dto.getTechnicianIds().stream()
+            .map(id -> {
+              TechnicianDTO technicianDTO = new TechnicianDTO();
+              technicianDTO.setTechnicianId(id);
+              return TechnicianMapper.mapToEntity(technicianDTO);
+             }).collect(Collectors.toSet());
+    courses.setTechnicians(technicians);
 
     if (dto.getCourseCounterUuid() != null || dto.getCounter() != null) {
       CourseCounter courseCounter = new CourseCounter();

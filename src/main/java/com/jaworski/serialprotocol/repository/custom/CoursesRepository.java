@@ -21,6 +21,8 @@ public interface CoursesRepository extends JpaRepository<Courses, UUID> {
 
   boolean existsByLecturers_Uuid(UUID lecturerUuid);
 
+  boolean existsByTechnicians_Uuid(UUID technicianUuid);
+
   @Query("SELECT COALESCE(MAX(c.id), 0) FROM Courses c")
   Long findMaxCoursesId();
 

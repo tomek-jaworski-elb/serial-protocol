@@ -83,6 +83,14 @@
                                     th:text="${l.name + ' ' + l.surname}">Lecturer</option>
                         </select>
                     </div>
+                    <div class="col-md-6" th:if="${!#lists.isEmpty(technicians)}">
+                        <label for="addTechnicianIds" class="form-label">Technicians <span class="text-muted small">(optional, Ctrl+click for multiple)</span></label>
+                        <select id="addTechnicianIds" name="technicianIds" class="form-select" multiple size="4">
+                            <option th:each="tech : ${technicians}"
+                                    th:value="${tech.technicianId}"
+                                    th:text="${tech.name + ' ' + tech.surname}">Technician</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="d-flex gap-2 mt-3">
                     <button type="submit" class="btn btn-success btn-sm">Save</button>
@@ -153,6 +161,14 @@
                                     th:text="${l.name + ' ' + l.surname}">Lecturer</option>
                         </select>
                     </div>
+                    <div class="col-md-6" th:if="${!#lists.isEmpty(technicians)}">
+                        <label for="updateTechnicianIds" class="form-label">Technicians <span class="text-muted small">(optional, Ctrl+click for multiple)</span></label>
+                        <select id="updateTechnicianIds" name="technicianIds" class="form-select" multiple size="4">
+                            <option th:each="tech : ${technicians}"
+                                    th:value="${tech.technicianId}"
+                                    th:text="${tech.name + ' ' + tech.surname}">Technician</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="d-flex gap-2 mt-3">
                     <button type="submit" class="btn btn-warning btn-sm">Update</button>
@@ -174,6 +190,7 @@
                 <th scope="col">End Date</th>
                 <th scope="col">Trainers</th>
                 <th scope="col">Lecturers</th>
+                <th scope="col">Technicians</th>
                 <th scope="col">Actions</th>
             </tr>
             </thead>
@@ -202,6 +219,11 @@
                     <span th:if="${course.lecturerIds.isEmpty()}" class="text-muted small">-</span>
                 </td>
                 <td>
+                    <span th:each="tech : ${technicians}" th:if="${course.technicianIds.contains(tech.technicianId)}"
+                          class="badge text-bg-secondary me-1" th:text="${tech.name + ' ' + tech.surname}">Technician</span>
+                    <span th:if="${course.technicianIds.isEmpty()}" class="text-muted small">-</span>
+                </td>
+                <td>
                     <div class="d-flex justify-content-center gap-2 flex-wrap">
                         <button
                                 type="button"
@@ -215,7 +237,8 @@
                                 class="btn btn-outline-warning btn-sm update-course-btn"
                                 th:attr="data-uuid=${course.uuid},data-id=${course.id},data-participant-uuid=${course.participantUuid},data-course-type-id=${course.courseTypeId},data-start-date=${course.startDate},data-end-date=${course.endDate},data-counter=${course.counter}"
                                 th:data-trainer-ids="${course.trainerIdsString}"
-                                th:data-lecturer-ids="${course.lecturerIdsString}">
+                                th:data-lecturer-ids="${course.lecturerIdsString}"
+                                th:data-technician-ids="${course.technicianIdsString}">
                             Update
                         </button>
                         <form method="post" th:action="@{/courses-service/delete/{uuid}(uuid=${course.uuid})}">
@@ -275,6 +298,9 @@
 
                     <dt class="col-sm-4">Lecturers</dt>
                     <dd class="col-sm-8" id="detailLecturers">—</dd>
+
+                    <dt class="col-sm-4">Technicians</dt>
+                    <dd class="col-sm-8" id="detailTechnicians">—</dd>
                 </dl>
             </div>
             <div class="modal-footer">
@@ -342,10 +368,13 @@
 
                 const trainerSelect = document.getElementById('updateTrainerIds');
                 const lecturerSelect = document.getElementById('updateLecturerIds');
+                const technicianSelect = document.getElementById('updateTechnicianIds');
                 const trainerIds = (btn.dataset.trainerIds || '').split(',').filter(Boolean);
                 const lecturerIds = (btn.dataset.lecturerIds || '').split(',').filter(Boolean);
+                const technicianIds = (btn.dataset.technicianIds || '').split(',').filter(Boolean);
                 if (trainerSelect) for (let opt of trainerSelect.options) opt.selected = trainerIds.includes(opt.value);
                 if (lecturerSelect) for (let opt of lecturerSelect.options) opt.selected = lecturerIds.includes(opt.value);
+                if (technicianSelect) for (let opt of technicianSelect.options) opt.selected = technicianIds.includes(opt.value);
 
                 updateCourseFormContainer.classList.remove('d-none');
                 if (addCourseFormContainer) addCourseFormContainer.classList.add('d-none');
@@ -362,7 +391,7 @@
         btn.addEventListener('click', () => {
             const row = btn.closest('tr');
             const cells = row.querySelectorAll('td');
-            // cells: [0]=ID, [1]=Participant, [2]=CourseType, [3]=StartDate, [4]=EndDate, [5]=Trainers, [6]=Lecturers
+            // cells: [0]=ID, [1]=Participant, [2]=CourseType, [3]=StartDate, [4]=EndDate, [5]=Trainers, [6]=Lecturers, [7]=Technicians
             document.getElementById('detailId').textContent        = cells[0].textContent.trim();
             document.getElementById('detailUuid').textContent      = btn.dataset.uuid || '—';
             document.getElementById('detailParticipant').textContent  = cells[1].textContent.trim() || '—';
@@ -373,6 +402,7 @@
             document.getElementById('detailEndDate').textContent   = cells[4].textContent.trim() || '—';
             document.getElementById('detailTrainers').textContent  = cells[5].textContent.trim() || '—';
             document.getElementById('detailLecturers').textContent = cells[6].textContent.trim() || '—';
+            document.getElementById('detailTechnicians').textContent = cells[7].textContent.trim() || '—';
             if (detailsModal) detailsModal.show();
         });
     });

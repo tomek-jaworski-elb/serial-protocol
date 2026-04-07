@@ -4,6 +4,7 @@ import com.jaworski.serialprotocol.dto.custom.CourseTypeDTO;
 import com.jaworski.serialprotocol.dto.custom.CoursesDTO;
 import com.jaworski.serialprotocol.dto.custom.LecturerDTO;
 import com.jaworski.serialprotocol.dto.custom.ParticipantDTO;
+import com.jaworski.serialprotocol.dto.custom.TechnicianDTO;
 import com.jaworski.serialprotocol.dto.custom.TrainerDTO;
 import com.jaworski.serialprotocol.entity.custom.Image;
 import com.jaworski.serialprotocol.repository.custom.ImageRepository;
@@ -21,7 +22,7 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
-@Import({CoursesService.class, ParticipantService.class, CourseTypeService.class, TrainerService.class, LecturerService.class})
+@Import({CoursesService.class, ParticipantService.class, CourseTypeService.class, TrainerService.class, LecturerService.class, TechnicianService.class, ImageService.class})
 class CoursesServiceTest {
 
   @Autowired
@@ -34,6 +35,8 @@ class CoursesServiceTest {
   private TrainerService trainerService;
   @Autowired
   private LecturerService lecturerService;
+  @Autowired
+  private TechnicianService technicianService;
   @Autowired
   private ImageRepository imageRepository;
 
@@ -211,6 +214,21 @@ class CoursesServiceTest {
 
     assertEquals(1, saved.getLecturerIds().size());
     assertTrue(saved.getLecturerIds().contains(lecturer.getLecturerId()));
+  }
+
+  @Test
+  void save_shouldPersistWithTechnicians() {
+    ParticipantDTO participant = savedParticipant("Jan", "Kowalski");
+    CourseTypeDTO courseType = savedCourseType("NAV-TECH");
+    TechnicianDTO technician = savedTechnician("Marek", "Technik");
+
+    CoursesDTO dto = createCourse(participant.getUuid(), courseType.getId());
+    dto.setTechnicianIds(Set.of(technician.getTechnicianId()));
+
+    CoursesDTO saved = coursesService.save(dto);
+
+    assertEquals(1, saved.getTechnicianIds().size());
+    assertTrue(saved.getTechnicianIds().contains(technician.getTechnicianId()));
   }
 
   // --- deleteByUuid ---
@@ -401,6 +419,16 @@ class CoursesServiceTest {
     dto.setNickname(name.toLowerCase() + surname.toLowerCase());
     dto.setImagesUuid(createImages());
     return lecturerService.save(dto);
+  }
+
+  private TechnicianDTO savedTechnician(String name, String surname) {
+    TechnicianDTO dto = new TechnicianDTO();
+    dto.setName(name);
+    dto.setSurname(surname);
+    dto.setEmail(name.toLowerCase() + "." + surname.toLowerCase() + "@example.com");
+    dto.setNickname(name.toLowerCase() + surname.toLowerCase());
+    dto.setImagesUuid(createImages());
+    return technicianService.save(dto);
   }
 
   private Set<UUID> createImages() {

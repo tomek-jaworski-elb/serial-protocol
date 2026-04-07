@@ -26,6 +26,7 @@ public class CoursesDTO {
   private LocalDate endDate;
   private Set<UUID> trainerIds = new HashSet<>();
   private Set<UUID> lecturerIds = new HashSet<>();
+  private Set<UUID> technicianIds = new HashSet<>();
 
   public String getTrainerIdsString() {
     return trainerIds == null ? "" : trainerIds.stream().map(String::valueOf).collect(Collectors.joining(","));
@@ -33,5 +34,9 @@ public class CoursesDTO {
 
   public String getLecturerIdsString() {
     return lecturerIds == null ? "" : lecturerIds.stream().map(String::valueOf).collect(Collectors.joining(","));
+  }
+
+  public String getTechnicianIdsString() {
+    return technicianIds == null ? "" : technicianIds.stream().map(String::valueOf).collect(Collectors.joining(","));
   }
 }

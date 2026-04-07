@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head th:insert="~{fragment::head}"></head>
+<head>
+    <title th:text="${@environment.getProperty('spring.application.name')} + ' : Technician'">Serial port server</title>
+</head>
+<body>
+<header th:replace="~{fragment::header}"></header>
+<div class="container mb-4">
+    <div id="successAlert" class="alert alert-success alert-dismissible fade show" role="alert" th:if="${successMessage}">
+        <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert" th:if="${errorMessage}">
+        <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center my-3">
+        <h4 class="mb-0">Technician</h4>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-secondary" th:text="${#lists.size(technicians)}" th:if="${!#lists.isEmpty(technicians)}">0</span>
+            <button id="showAddFormBtn" type="button" class="btn btn-primary btn-sm">Add</button>
+        </div>
+    </div>
+
+    <div id="addTechnicianFormContainer" class="card mb-3 d-none">
+        <div class="card-body">
+            <h5 class="card-title">Add technician</h5>
+            <form method="post" enctype="multipart/form-data" th:action="@{/technician-service/add}">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="technicianName" class="form-label">Name</label>
+                        <input id="technicianName" name="name" type="text" class="form-control" maxlength="100" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="technicianSurname" class="form-label">Surname</label>
+                        <input id="technicianSurname" name="surname" type="text" class="form-control" maxlength="100" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="technicianNickname" class="form-label">Nickname</label>
+                        <input id="technicianNickname" name="nickname" type="text" class="form-control" maxlength="100" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="technicianEmail" class="form-label">Email</label>
+                        <input id="technicianEmail" name="email" type="email" class="form-control" maxlength="100" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="technicianImages" class="form-label">Images</label>
+                        <input id="technicianImages" name="imageFiles" type="file" class="form-control" accept="image/*" multiple>
+                        <div class="form-text">Optional. You can upload up to 6 images.</div>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-success btn-sm">Save</button>
+                    <button id="hideAddFormBtn" type="button" class="btn btn-outline-secondary btn-sm">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="updateTechnicianFormContainer" class="card mb-3 d-none">
+        <div class="card-body">
+            <h5 class="card-title">Update technician</h5>
+            <form method="post" enctype="multipart/form-data" th:action="@{/technician-service/update}">
+                <input id="updateTechnicianId" name="technicianId" type="hidden" required>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="updateTechnicianName" class="form-label">Name</label>
+                        <input id="updateTechnicianName" name="name" type="text" class="form-control" maxlength="100" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="updateTechnicianSurname" class="form-label">Surname</label>
+                        <input id="updateTechnicianSurname" name="surname" type="text" class="form-control" maxlength="100" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="updateTechnicianNickname" class="form-label">Nickname</label>
+                        <input id="updateTechnicianNickname" name="nickname" type="text" class="form-control" maxlength="100" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="updateTechnicianEmail" class="form-label">Email</label>
+                        <input id="updateTechnicianEmail" name="email" type="email" class="form-control" maxlength="100" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="updateTechnicianImages" class="form-label">Images</label>
+                        <input id="updateTechnicianImages" name="imageFiles" type="file" class="form-control" accept="image/*" multiple>
+                        <div class="form-text">Optional. Upload new images (max 6) to replace current set.</div>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-warning btn-sm">Update</button>
+                    <button id="hideUpdateFormBtn" type="button" class="btn btn-outline-secondary btn-sm">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="table-responsive" th:if="${!#lists.isEmpty(technicians)}">
+        <table class="table table-striped table-hover align-middle text-center">
+            <thead class="table-light">
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Name</th>
+                <th scope="col">Surname</th>
+                <th scope="col">Email</th>
+                <th scope="col">Nickname</th>
+                <th scope="col">Images</th>
+                <th scope="col">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="technician, technicianStat : ${technicians}">
+                <th scope="row" th:text="${technicianStat.index + 1}">1</th>
+                <td th:text="${technician.name}">Jane</td>
+                <td th:text="${technician.surname}">Doe</td>
+                <td th:text="${technician.email}">jane@example.com</td>
+                <td th:text="${technician.nickname}">janedoe</td>
+                <td>
+                    <span class="badge text-bg-success" th:if="${technician.imagesUuid != null && !technician.imagesUuid.isEmpty()}" th:text="${technician.imagesUuid.size() + ' assigned'}">1 assigned</span>
+                    <span class="badge text-bg-secondary" th:unless="${technician.imagesUuid != null && !technician.imagesUuid.isEmpty()}">Missing</span>
+                </td>
+                <td>
+                    <div class="d-flex justify-content-center gap-2">
+                        <button
+                                type="button"
+                                class="btn btn-outline-info btn-sm details-technician-btn"
+                                th:attr="data-id=${technician.technicianId},data-name=${technician.name},data-surname=${technician.surname},data-email=${technician.email},data-nickname=${technician.nickname},data-images=${technician.imagesUuid}">
+                            Details
+                        </button>
+                        <button
+                                type="button"
+                                class="btn btn-outline-warning btn-sm update-technician-btn"
+                                th:attr="data-id=${technician.technicianId},data-name=${technician.name},data-surname=${technician.surname},data-email=${technician.email},data-nickname=${technician.nickname},data-images=${technician.imagesUuid}">
+                            Update
+                        </button>
+                        <form method="post" th:action="@{/technician-service/delete/{id}(id=${technician.technicianId})}">
+                            <button type="submit" class="btn btn-outline-danger btn-sm"
+                                    onclick="return confirm('Are you sure you want to delete this item?');">
+                                Delete
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="alert alert-info text-center" th:if="${#lists.isEmpty(technicians)}">
+        No technicians found.
+    </div>
+</div>
+
+<div class="modal fade" id="technicianDetailsModal" tabindex="-1" aria-labelledby="technicianDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="technicianDetailsModalLabel">Technician details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-7">
+                        <p class="mb-2"><strong>ID:</strong> <span id="detailsTechnicianId">-</span></p>
+                        <p class="mb-2"><strong>Name:</strong> <span id="detailsTechnicianName">-</span></p>
+                        <p class="mb-2"><strong>Surname:</strong> <span id="detailsTechnicianSurname">-</span></p>
+                        <p class="mb-2"><strong>Email:</strong> <span id="detailsTechnicianEmail">-</span></p>
+                        <p class="mb-0"><strong>Nickname:</strong> <span id="detailsTechnicianNickname">-</span></p>
+                    </div>
+                    <div class="col-md-5">
+                        <p class="mb-1"><strong>Images:</strong></p>
+                        <div id="detailsTechnicianImages" class="d-flex flex-wrap gap-2"></div>
+                        <div id="detailsTechnicianNoImages" class="small text-muted">No images assigned.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer th:replace="~{fragment::footer}"></footer>
+<script>
+    const showAddFormBtn = document.getElementById('showAddFormBtn');
+    const hideAddFormBtn = document.getElementById('hideAddFormBtn');
+    const addTechnicianFormContainer = document.getElementById('addTechnicianFormContainer');
+    const updateTechnicianFormContainer = document.getElementById('updateTechnicianFormContainer');
+    const hideUpdateFormBtn = document.getElementById('hideUpdateFormBtn');
+    const updateButtons = document.querySelectorAll('.update-technician-btn');
+    const updateTechnicianId = document.getElementById('updateTechnicianId');
+    const updateTechnicianName = document.getElementById('updateTechnicianName');
+    const updateTechnicianSurname = document.getElementById('updateTechnicianSurname');
+    const updateTechnicianEmail = document.getElementById('updateTechnicianEmail');
+    const updateTechnicianNickname = document.getElementById('updateTechnicianNickname');
+    const detailsButtons = document.querySelectorAll('.details-technician-btn');
+    const technicianDetailsModal = document.getElementById('technicianDetailsModal');
+    const detailsTechnicianId = document.getElementById('detailsTechnicianId');
+    const detailsTechnicianName = document.getElementById('detailsTechnicianName');
+    const detailsTechnicianSurname = document.getElementById('detailsTechnicianSurname');
+    const detailsTechnicianEmail = document.getElementById('detailsTechnicianEmail');
+    const detailsTechnicianNickname = document.getElementById('detailsTechnicianNickname');
+    const detailsTechnicianImages = document.getElementById('detailsTechnicianImages');
+    const detailsTechnicianNoImages = document.getElementById('detailsTechnicianNoImages');
+    const successAlert = document.getElementById('successAlert');
+
+    const technicianDetailsModalInstance =
+        technicianDetailsModal && window.bootstrap && window.bootstrap.Modal
+            ? window.bootstrap.Modal.getOrCreateInstance(technicianDetailsModal)
+            : null;
+
+    const parseUuidList = (value) =>
+        (value || '')
+            .replace(/^\[/, '')
+            .replace(/\]$/, '')
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean);
+
+    if (successAlert) {
+        setTimeout(() => {
+            if (window.bootstrap && window.bootstrap.Alert) {
+                const alertInstance = window.bootstrap.Alert.getOrCreateInstance(successAlert);
+                alertInstance.close();
+            } else {
+                successAlert.classList.remove('show');
+                successAlert.remove();
+            }
+        }, 10000);
+    }
+
+    if (showAddFormBtn && hideAddFormBtn && addTechnicianFormContainer) {
+        showAddFormBtn.addEventListener('click', () => {
+            addTechnicianFormContainer.classList.remove('d-none');
+            if (updateTechnicianFormContainer) {
+                updateTechnicianFormContainer.classList.add('d-none');
+            }
+        });
+
+        hideAddFormBtn.addEventListener('click', () => {
+            addTechnicianFormContainer.classList.add('d-none');
+        });
+    }
+
+    if (hideUpdateFormBtn && updateTechnicianFormContainer) {
+        hideUpdateFormBtn.addEventListener('click', () => {
+            updateTechnicianFormContainer.classList.add('d-none');
+        });
+    }
+
+    if (updateButtons.length > 0 && updateTechnicianFormContainer) {
+        updateButtons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                updateTechnicianId.value = btn.dataset.id || '';
+                updateTechnicianName.value = btn.dataset.name || '';
+                updateTechnicianSurname.value = btn.dataset.surname || '';
+                updateTechnicianEmail.value = btn.dataset.email || '';
+                updateTechnicianNickname.value = btn.dataset.nickname || '';
+                updateTechnicianFormContainer.classList.remove('d-none');
+                if (addTechnicianFormContainer) {
+                    addTechnicianFormContainer.classList.add('d-none');
+                }
+                updateTechnicianFormContainer.scrollIntoView({behavior: 'smooth', block: 'start'});
+            });
+        });
+    }
+
+    if (detailsButtons.length > 0 && technicianDetailsModalInstance) {
+        detailsButtons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                detailsTechnicianId.textContent = btn.dataset.id || '-';
+                detailsTechnicianName.textContent = btn.dataset.name || '-';
+                detailsTechnicianSurname.textContent = btn.dataset.surname || '-';
+                detailsTechnicianEmail.textContent = btn.dataset.email || '-';
+                detailsTechnicianNickname.textContent = btn.dataset.nickname || '-';
+                detailsTechnicianImages.innerHTML = '';
+                const imageUuids = parseUuidList(btn.dataset.images);
+                if (imageUuids.length > 0) {
+                    detailsTechnicianNoImages.classList.add('d-none');
+                    imageUuids.forEach((uuid) => {
+                        const img = document.createElement('img');
+                        img.src = `/custom/image/${uuid}`;
+                        img.alt = 'Technician image';
+                        img.className = 'img-thumbnail';
+                        img.style.maxWidth = '110px';
+                        img.style.maxHeight = '110px';
+                        img.style.objectFit = 'cover';
+                        detailsTechnicianImages.appendChild(img);
+                    });
+                } else {
+                    detailsTechnicianNoImages.classList.remove('d-none');
+                }
+
+                technicianDetailsModalInstance.show();
+            });
+        });
+    }
+</script>
+</body>
+</html>
+
