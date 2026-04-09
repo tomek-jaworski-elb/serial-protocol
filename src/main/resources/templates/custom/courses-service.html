@@ -17,7 +17,7 @@
     </div>
 
     <div class="d-flex justify-content-between align-items-center my-3">
-        <h4 class="mb-0">Courses</h4>
+        <h4 class="mb-0">Certificates</h4>
         <div class="d-flex align-items-center gap-2">
             <span class="badge bg-secondary" th:text="${#lists.size(courses)}" th:if="${!#lists.isEmpty(courses)}">0</span>
             <button id="showAddFormBtn" type="button" class="btn btn-primary btn-sm">Add</button>
@@ -27,7 +27,7 @@
     <!-- Add form -->
     <div id="addCourseFormContainer" class="card mb-3 d-none">
         <div class="card-body">
-            <h5 class="card-title">Add course</h5>
+            <h5 class="card-title">Add certificate</h5>
             <form method="post" th:action="@{/courses-service/add}">
                 <div class="row g-3">
                     <div class="col-md-3">
@@ -255,7 +255,7 @@
     </div>
 
     <div class="alert alert-info text-center" th:if="${#lists.isEmpty(courses)}">
-        No courses found.
+        No certificates found.
     </div>
 </div>
 

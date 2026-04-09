@@ -59,8 +59,8 @@
                         <a th:unless="${name == 'instructor-service'}" class="nav-link" th:href="@{/instructor-service}">Instructors</a>
                     </li>
                     <li th:if="${@environment.getProperty('web.ui.extened') == 'true'}" class="nav-item">
-                        <a th:if="${name == 'courses-service'}" class="nav-link active" th:href="@{/courses-service}">Courses</a>
-                        <a th:unless="${name == 'courses-service'}" class="nav-link" th:href="@{/courses-service}">Courses</a>
+                        <a th:if="${name == 'courses-service'}" class="nav-link active" th:href="@{/courses-service}">Certificates</a>
+                        <a th:unless="${name == 'courses-service'}" class="nav-link" th:href="@{/courses-service}">Certificates</a>
                     </li>
                     <li th:if="${@environment.getProperty('web.ui.extened') == 'true'}" class="nav-item">
                         <a th:if="${name == 'trainer-service'}" class="nav-link active" th:href="@{/trainer-service}">Trainer</a>
