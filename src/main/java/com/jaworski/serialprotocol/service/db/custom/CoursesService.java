@@ -64,6 +64,13 @@ public class CoursesService {
         .toList();
   }
 
+  @Transactional(readOnly = true)
+  public List<CoursesDTO> findByCourseCounterUuid(UUID courseCounterUuid) {
+    return coursesRepository.findByCourseCounter_Uuid(courseCounterUuid).stream()
+        .map(CoursesMapper::mapToDTO)
+        .toList();
+  }
+
   public Long nextId() {
     return coursesRepository.findMaxCoursesId() + 1;
   }

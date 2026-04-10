@@ -13,6 +13,8 @@ public interface CoursesRepository extends JpaRepository<Courses, UUID> {
 
   List<Courses> findByParticipant_Uuid(UUID participantUuid);
 
+  List<Courses> findByCourseCounter_Uuid(UUID courseCounterUuid);
+
   boolean existsByCourseType_Id(Long courseTypeId);
 
   boolean existsByParticipant_Uuid(UUID participantUuid);

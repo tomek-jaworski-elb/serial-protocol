@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -71,6 +72,7 @@ public class ParticipantService {
     participantRepository.deleteById(uuid);
   }
 
+  @Transactional
   public ParticipantDTO updateByUuid(ParticipantDTO dto) {
     if (dto.getUuid() == null) {
       throw new IllegalArgumentException("UUID is required for update");
@@ -78,14 +80,25 @@ public class ParticipantService {
     if (dto.getId() != null && isIdTakenByOther(dto.getId(), dto.getUuid())) {
       throw new IllegalArgumentException("Participant id " + dto.getId() + " is already used by another participant");
     }
-    var reference = participantRepository.findById(dto.getUuid());
+
+    // Remember old image UUID before any changes
+    UUID oldImageId = participantRepository.findById(dto.getUuid())
+            .map(p -> p.getImage() != null ? p.getImage().getId() : null)
+            .orElse(null);
+
     Image requestedImage = resolveImage(dto.getImage());
-    if (reference.isPresent() && reference.get().getImage() != null && !reference.get().getImage().getId().equals(requestedImage.getId())) {
-      imageRepository.delete(reference.get().getImage());
-    }
+
+    // First: save participant with new image to update the FK
     Participant participant = ParticipantMapper.mapToEntity(dto);
     participant.setImage(requestedImage);
-    Participant updated = participantRepository.save(participant);
+    Participant updated = participantRepository.saveAndFlush(participant);
+
+    // Then: delete old image if it was replaced
+    UUID newImageId = requestedImage != null ? requestedImage.getId() : null;
+    if (oldImageId != null && !oldImageId.equals(newImageId)) {
+      imageRepository.deleteById(oldImageId);
+    }
+
     return ParticipantMapper.mapToDTO(updated);
   }
 

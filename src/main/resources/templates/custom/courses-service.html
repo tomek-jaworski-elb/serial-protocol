@@ -188,6 +188,7 @@
                 <th scope="col">Course Type</th>
                 <th scope="col">Start Date</th>
                 <th scope="col">End Date</th>
+                <th scope="col">Course Counter</th>
                 <th scope="col">Trainers</th>
                 <th scope="col">Lecturers</th>
                 <th scope="col">Technicians</th>
@@ -208,6 +209,10 @@
                 </td>
                 <td th:text="${course.startDate != null ? #temporals.format(course.startDate, 'dd/MM/yyyy') : '-'}">2026-03-15</td>
                 <td th:text="${course.endDate != null ? #temporals.format(course.endDate, 'dd/MM/yyyy') : '-'}">2026-03-22</td>
+                <td>
+                    <span th:if="${course.counter != null}" class="badge text-bg-dark" th:text="${course.counter}">0</span>
+                    <span th:if="${course.counter == null}" class="text-muted small">-</span>
+                </td>
                 <td>
                     <span th:each="t : ${trainers}" th:if="${course.trainerIds.contains(t.id)}"
                           class="badge text-bg-secondary me-1" th:text="${t.name + ' ' + t.surname}">Trainer</span>
@@ -292,6 +297,9 @@
 
                     <dt class="col-sm-4">End Date</dt>
                     <dd class="col-sm-8" id="detailEndDate">—</dd>
+
+                    <dt class="col-sm-4">Course Counter</dt>
+                    <dd class="col-sm-8" id="detailCourseCounter">—</dd>
 
                     <dt class="col-sm-4">Trainers</dt>
                     <dd class="col-sm-8" id="detailTrainers">—</dd>
@@ -391,7 +399,7 @@
         btn.addEventListener('click', () => {
             const row = btn.closest('tr');
             const cells = row.querySelectorAll('td');
-            // cells: [0]=ID, [1]=Participant, [2]=CourseType, [3]=StartDate, [4]=EndDate, [5]=Trainers, [6]=Lecturers, [7]=Technicians
+            // cells: [0]=ID, [1]=Participant, [2]=CourseType, [3]=StartDate, [4]=EndDate, [5]=CourseCounter, [6]=Trainers, [7]=Lecturers, [8]=Technicians
             document.getElementById('detailId').textContent        = cells[0].textContent.trim();
             document.getElementById('detailUuid').textContent      = btn.dataset.uuid || '—';
             document.getElementById('detailParticipant').textContent  = cells[1].textContent.trim() || '—';
@@ -400,9 +408,10 @@
             document.getElementById('detailCourseTypeLongDesc').textContent = btn.dataset.courseTypeLongDesc || '—';
             document.getElementById('detailStartDate').textContent = cells[3].textContent.trim() || '—';
             document.getElementById('detailEndDate').textContent   = cells[4].textContent.trim() || '—';
-            document.getElementById('detailTrainers').textContent  = cells[5].textContent.trim() || '—';
-            document.getElementById('detailLecturers').textContent = cells[6].textContent.trim() || '—';
-            document.getElementById('detailTechnicians').textContent = cells[7].textContent.trim() || '—';
+            document.getElementById('detailCourseCounter').textContent = cells[5].textContent.trim() || '—';
+            document.getElementById('detailTrainers').textContent  = cells[6].textContent.trim() || '—';
+            document.getElementById('detailLecturers').textContent = cells[7].textContent.trim() || '—';
+            document.getElementById('detailTechnicians').textContent = cells[8].textContent.trim() || '—';
             if (detailsModal) detailsModal.show();
         });
     });

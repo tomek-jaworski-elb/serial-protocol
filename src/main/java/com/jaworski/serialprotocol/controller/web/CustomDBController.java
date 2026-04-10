@@ -475,8 +475,12 @@ public class CustomDBController {
   @GetMapping("/course-counter-service")
   public String courseCounterService(Model model) {
     model.addAttribute(ATTRIBUTE_NAME, "course-counter-service");
-    model.addAttribute("courseCounters", courseCounterService.findAll());
+    List<CourseCounterDTO> counters = courseCounterService.findAll();
+    model.addAttribute("courseCounters", counters);
     model.addAttribute("nextCounter", courseCounterService.nextCounter());
+    Map<UUID, List<CoursesDTO>> coursesByCourseCounter = new HashMap<>();
+    counters.forEach(cc -> coursesByCourseCounter.put(cc.uuid(), coursesService.findByCourseCounterUuid(cc.uuid())));
+    model.addAttribute("coursesByCourseCounter", coursesByCourseCounter);
     model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
     return "custom/course-counter-service";
   }

@@ -77,6 +77,7 @@
                 <th scope="col">#</th>
                 <th scope="col">ID</th>
                 <th scope="col">Image</th>
+                <th scope="col">Certificates</th>
                 <th scope="col">Actions</th>
             </tr>
             </thead>
@@ -90,6 +91,16 @@
                              class="img-thumbnail" style="max-width: 56px; max-height: 56px; object-fit: cover;">
                     </th:block>
                     <span class="badge text-bg-secondary" th:if="${courseCounter.imageUuid == null}">Missing</span>
+                </td>
+                <td>
+                    <th:block th:with="certs=${coursesByCourseCounter[courseCounter.uuid]}">
+                        <th:block th:if="${certs != null and !#lists.isEmpty(certs)}">
+                            <span th:each="cert : ${certs}"
+                                  class="badge text-bg-info me-1"
+                                  th:text="${cert.id}">ID</span>
+                        </th:block>
+                        <span th:if="${certs == null or #lists.isEmpty(certs)}" class="text-muted small">-</span>
+                    </th:block>
                 </td>
                 <td>
                     <div class="d-flex justify-content-center gap-2 flex-wrap">
@@ -136,6 +147,10 @@
                 <p class="mb-1"><strong>Image:</strong></p>
                 <div id="detailsImage"></div>
                 <div id="detailsNoImage" class="small text-muted">No image assigned.</div>
+                <hr>
+                <p class="mb-1"><strong>Certificates:</strong></p>
+                <div id="detailsCertificates"></div>
+                <div id="detailsNoCertificates" class="small text-muted">No certificates assigned.</div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
@@ -157,6 +172,8 @@
     const detailsCounter = document.getElementById('detailsCounter');
     const detailsImage = document.getElementById('detailsImage');
     const detailsNoImage = document.getElementById('detailsNoImage');
+    const detailsCertificates = document.getElementById('detailsCertificates');
+    const detailsNoCertificates = document.getElementById('detailsNoCertificates');
     const successAlert = document.getElementById('successAlert');
     const courseCounterDetailsModal = document.getElementById('courseCounterDetailsModal');
     const courseCounterDetailsModalInstance =
@@ -211,6 +228,10 @@
     if (detailsButtons.length > 0 && courseCounterDetailsModalInstance) {
         detailsButtons.forEach((btn) => {
             btn.addEventListener('click', () => {
+                const row = btn.closest('tr');
+                const cells = row.querySelectorAll('td');
+                // cells: [0]=ID, [1]=Image, [2]=Certificates, [3]=Actions
+
                 detailsCounter.textContent = btn.dataset.counter || '-';
                 detailsImage.innerHTML = '';
                 const imageUuid = btn.dataset.image;
@@ -227,6 +248,27 @@
                 } else {
                     detailsNoImage.classList.remove('d-none');
                 }
+
+                // Certificates – read from table cell
+                detailsCertificates.innerHTML = '';
+                const certsText = cells[2] ? cells[2].textContent.trim() : '';
+                if (certsText && certsText !== '-') {
+                    detailsNoCertificates.classList.add('d-none');
+                    const certBadges = cells[2].querySelectorAll('.badge');
+                    if (certBadges.length > 0) {
+                        certBadges.forEach(b => {
+                            const badge = document.createElement('span');
+                            badge.className = 'badge text-bg-info me-1';
+                            badge.textContent = b.textContent.trim();
+                            detailsCertificates.appendChild(badge);
+                        });
+                    } else {
+                        detailsCertificates.textContent = certsText;
+                    }
+                } else {
+                    detailsNoCertificates.classList.remove('d-none');
+                }
+
                 courseCounterDetailsModalInstance.show();
             });
         });
