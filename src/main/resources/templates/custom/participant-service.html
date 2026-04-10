@@ -147,7 +147,6 @@
         <table class="table table-striped table-hover align-middle text-center">
             <thead class="table-light">
             <tr>
-                <th scope="col">#</th>
                 <th scope="col">ID</th>
                 <th scope="col">Name</th>
                 <th scope="col">Surname</th>
@@ -159,7 +158,6 @@
             </thead>
             <tbody>
             <tr th:each="participant, participantStat : ${participants}">
-                <th scope="row" th:text="${participantStat.index + 1}">1</th>
                 <td th:text="${participant.id}">1</td>
                 <td th:text="${participant.name}">John</td>
                 <td th:text="${participant.surname}">Doe</td>
