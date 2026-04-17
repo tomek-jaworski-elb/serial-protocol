@@ -74,15 +74,15 @@ public class ParticipantService {
 
   @Transactional
   public ParticipantDTO updateByUuid(ParticipantDTO dto) {
-    if (dto.getUuid() == null) {
+    if (dto.getParticipantUuid() == null) {
       throw new IllegalArgumentException("UUID is required for update");
     }
-    if (dto.getId() != null && isIdTakenByOther(dto.getId(), dto.getUuid())) {
+    if (dto.getId() != null && isIdTakenByOther(dto.getId(), dto.getParticipantUuid())) {
       throw new IllegalArgumentException("Participant id " + dto.getId() + " is already used by another participant");
     }
 
     // Remember old image UUID before any changes
-    UUID oldImageId = participantRepository.findById(dto.getUuid())
+    UUID oldImageId = participantRepository.findById(dto.getParticipantUuid())
             .map(p -> p.getImage() != null ? p.getImage().getId() : null)
             .orElse(null);
 

@@ -63,7 +63,7 @@
         <div class="card-body">
             <h5 class="card-title">Update technician</h5>
             <form method="post" enctype="multipart/form-data" th:action="@{/technician-service/update}">
-                <input id="updateTechnicianId" name="technicianId" type="hidden" required>
+                <input id="updateTechnicianId" name="id" type="hidden" required>
                 <div class="row g-3">
                     <div class="col-md-4">
                         <label for="updateTechnicianName" class="form-label">Name</label>
@@ -124,16 +124,16 @@
                         <button
                                 type="button"
                                 class="btn btn-outline-info btn-sm details-technician-btn"
-                                th:attr="data-id=${technician.technicianId},data-name=${technician.name},data-surname=${technician.surname},data-email=${technician.email},data-nickname=${technician.nickname},data-images=${technician.imagesUuid}">
+                                th:attr="data-id=${technician.id},data-name=${technician.name},data-surname=${technician.surname},data-email=${technician.email},data-nickname=${technician.nickname},data-images=${technician.imagesUuid}">
                             Details
                         </button>
                         <button
                                 type="button"
                                 class="btn btn-outline-warning btn-sm update-technician-btn"
-                                th:attr="data-id=${technician.technicianId},data-name=${technician.name},data-surname=${technician.surname},data-email=${technician.email},data-nickname=${technician.nickname},data-images=${technician.imagesUuid}">
+                                th:attr="data-id=${technician.id},data-name=${technician.name},data-surname=${technician.surname},data-email=${technician.email},data-nickname=${technician.nickname},data-images=${technician.imagesUuid}">
                             Update
                         </button>
-                        <form method="post" th:action="@{/technician-service/delete/{id}(id=${technician.technicianId})}">
+                        <form method="post" th:action="@{/technician-service/delete/{id}(id=${technician.id})}">
                             <button type="submit" class="btn btn-outline-danger btn-sm"
                                     onclick="return confirm('Are you sure you want to delete this item?');">
                                 Delete

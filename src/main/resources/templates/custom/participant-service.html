@@ -167,13 +167,13 @@
                     <span class="badge text-bg-secondary" th:unless="${participant.image != null}">Missing</span>
                 </td>
                 <td>
-                    <th:block th:if="${coursesByParticipant[participant.uuid] != null && !coursesByParticipant[participant.uuid].isEmpty()}">
-                        <th:block th:each="course : ${coursesByParticipant[participant.uuid]}">
+                    <th:block th:if="${coursesByParticipant[participant.participantUuid] != null && !coursesByParticipant[participant.participantUuid].isEmpty()}">
+                        <th:block th:each="course : ${coursesByParticipant[participant.participantUuid]}">
                             <span th:each="ct : ${courseTypes}" th:if="${ct.id == course.courseTypeId}"
                                   class="badge text-bg-primary me-1" th:text="${ct.code}">Course</span>
                         </th:block>
                     </th:block>
-                    <span th:if="${coursesByParticipant[participant.uuid] == null || coursesByParticipant[participant.uuid].isEmpty()}"
+                    <span th:if="${coursesByParticipant[participant.participantUuid] == null || coursesByParticipant[participant.participantUuid].isEmpty()}"
                           class="text-muted small">—</span>
                 </td>
                 <td>
@@ -181,22 +181,22 @@
                         <button
                                 type="button"
                                 class="btn btn-outline-info btn-sm details-participant-btn"
-                                th:attr="data-uuid=${participant.uuid},data-id=${participant.id},data-name=${participant.name},data-surname=${participant.surname},data-birthdate=${participant.birthDate},data-image=${participant.image}">
+                                th:attr="data-uuid=${participant.participantUuid},data-id=${participant.id},data-name=${participant.name},data-surname=${participant.surname},data-birthdate=${participant.birthDate},data-image=${participant.image}">
                             Details
                         </button>
                         <button
                                 type="button"
                                 class="btn btn-outline-warning btn-sm update-participant-btn"
-                                th:attr="data-uuid=${participant.uuid},data-id=${participant.id},data-name=${participant.name},data-surname=${participant.surname},data-birthdate=${participant.birthDate}">
+                                th:attr="data-uuid=${participant.participantUuid},data-id=${participant.id},data-name=${participant.name},data-surname=${participant.surname},data-birthdate=${participant.birthDate}">
                             Update
                         </button>
                         <button
                                 type="button"
                                 class="btn btn-outline-info btn-sm add-to-course-btn"
-                                th:attr="data-uuid=${participant.uuid},data-name=${participant.name + ' ' + participant.surname}">
+                                th:attr="data-uuid=${participant.participantUuid},data-name=${participant.name + ' ' + participant.surname}">
                             Add to Course
                         </button>
-                        <form method="post" th:action="@{/participant-service/delete/{uuid}(uuid=${participant.uuid})}">
+                        <form method="post" th:action="@{/participant-service/delete/{uuid}(uuid=${participant.participantUuid})}">
                             <button type="submit" class="btn btn-outline-danger btn-sm"
                                     onclick="return confirm('Are you sure you want to delete this participant?');">
                                 Delete

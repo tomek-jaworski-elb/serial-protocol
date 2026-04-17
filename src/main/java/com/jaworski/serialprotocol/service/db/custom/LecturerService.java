@@ -61,11 +61,11 @@ public class LecturerService {
   }
 
   public LecturerDTO updateById(LecturerDTO dto) {
-    if (dto.getLecturerId() == null) {
+    if (dto.getId() == null) {
       throw new IllegalArgumentException("Lecturer id is required for update");
     }
-    Lecturer existingLecturer = lecturerRepository.findById(dto.getLecturerId())
-        .orElseThrow(() -> new IllegalArgumentException("Lecturer with id " + dto.getLecturerId() + " not found"));
+    Lecturer existingLecturer = lecturerRepository.findById(dto.getId())
+        .orElseThrow(() -> new IllegalArgumentException("Lecturer with id " + dto.getId() + " not found"));
 
     Set<Image> previousImages = new HashSet<>(existingLecturer.getImages());
     Set<Image> requestedImages = resolveImages(dto.getImagesUuid());

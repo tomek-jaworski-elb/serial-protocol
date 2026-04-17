@@ -55,6 +55,7 @@ public class SecurityConfig {
                                 .requestMatchers("/instructor-service").hasRole(SecurityRoles.ROLE_USER.getName())
                                 .requestMatchers("/api/**").hasRole(SecurityRoles.ROLE_USER.getName())
                                 .requestMatchers("/admin/**").hasRole(SecurityRoles.ROLE_ADMIN.getName())
+                                .requestMatchers("/db-utils/**").hasRole(SecurityRoles.ROLE_ADMIN.getName())
                                 .anyRequest().permitAll()
                 )
                 .httpBasic(withDefaults())

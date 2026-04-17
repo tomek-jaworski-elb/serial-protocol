@@ -86,6 +86,10 @@
                         <a th:if="${name == 'course-counter-service'}" class="nav-link active" th:href="@{/course-counter-service}">Course Counter</a>
                         <a th:unless="${name == 'course-counter-service'}" class="nav-link" th:href="@{/course-counter-service}">Course Counter</a>
                     </li>
+                    <li sec:authorize="hasRole('ADMIN')" class="nav-item">
+                        <a th:if="${name == 'db-utils'}" class="nav-link active" th:href="@{/db-utils}">DB Utils</a>
+                        <a th:unless="${name == 'db-utils'}" class="nav-link" th:href="@{/db-utils}">DB Utils</a>
+                    </li>
                     <li sec:authorize="isAuthenticated()" class="nav-item">
                         <a th:href="@{/logout}" class="nav-link text-danger fw-bold">Logout</a>
                     </li>

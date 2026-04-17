@@ -61,11 +61,11 @@ public class TechnicianService {
   }
 
   public TechnicianDTO updateById(TechnicianDTO dto) {
-    if (dto.getTechnicianId() == null) {
+    if (dto.getId() == null) {
       throw new IllegalArgumentException("Technician id is required for update");
     }
-    Technician existing = technicianRepository.findById(dto.getTechnicianId())
-        .orElseThrow(() -> new IllegalArgumentException("Technician with id " + dto.getTechnicianId() + " not found"));
+    Technician existing = technicianRepository.findById(dto.getId())
+        .orElseThrow(() -> new IllegalArgumentException("Technician with id " + dto.getId() + " not found"));
 
     Set<Image> previousImages = new HashSet<>(existing.getImages());
     Set<Image> requestedImages = resolveImages(dto.getImagesUuid());

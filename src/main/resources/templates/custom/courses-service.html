@@ -35,7 +35,7 @@
                         <select id="addParticipantUuid" name="participantUuid" class="form-select" required>
                             <option value="" disabled selected>Select participant</option>
                             <option th:each="p : ${participants}"
-                                    th:value="${p.uuid}"
+                                    th:value="${p.participantUuid}"
                                     th:text="${p.name + ' ' + p.surname + ' (ID: ' + p.id + ')'}">Participant</option>
                         </select>
                     </div>
@@ -79,7 +79,7 @@
                         <label for="addLecturerIds" class="form-label">Lecturers <span class="text-muted small">(optional, Ctrl+click for multiple)</span></label>
                         <select id="addLecturerIds" name="lecturerIds" class="form-select" multiple size="4">
                             <option th:each="l : ${lecturers}"
-                                    th:value="${l.lecturerId}"
+                                    th:value="${l.id}"
                                     th:text="${l.name + ' ' + l.surname}">Lecturer</option>
                         </select>
                     </div>
@@ -87,7 +87,7 @@
                         <label for="addTechnicianIds" class="form-label">Technicians <span class="text-muted small">(optional, Ctrl+click for multiple)</span></label>
                         <select id="addTechnicianIds" name="technicianIds" class="form-select" multiple size="4">
                             <option th:each="tech : ${technicians}"
-                                    th:value="${tech.technicianId}"
+                                    th:value="${tech.id}"
                                     th:text="${tech.name + ' ' + tech.surname}">Technician</option>
                         </select>
                     </div>
@@ -113,7 +113,7 @@
                         <select id="updateParticipantUuid" name="participantUuid" class="form-select" required>
                             <option value="" disabled>Select participant</option>
                             <option th:each="p : ${participants}"
-                                    th:value="${p.uuid}"
+                                    th:value="${p.participantUuid}"
                                     th:text="${p.name + ' ' + p.surname + ' (ID: ' + p.id + ')'}">Participant</option>
                         </select>
                     </div>
@@ -157,7 +157,7 @@
                         <label for="updateLecturerIds" class="form-label">Lecturers <span class="text-muted small">(optional, Ctrl+click for multiple)</span></label>
                         <select id="updateLecturerIds" name="lecturerIds" class="form-select" multiple size="4">
                             <option th:each="l : ${lecturers}"
-                                    th:value="${l.lecturerId}"
+                                    th:value="${l.id}"
                                     th:text="${l.name + ' ' + l.surname}">Lecturer</option>
                         </select>
                     </div>
@@ -165,7 +165,7 @@
                         <label for="updateTechnicianIds" class="form-label">Technicians <span class="text-muted small">(optional, Ctrl+click for multiple)</span></label>
                         <select id="updateTechnicianIds" name="technicianIds" class="form-select" multiple size="4">
                             <option th:each="tech : ${technicians}"
-                                    th:value="${tech.technicianId}"
+                                    th:value="${tech.id}"
                                     th:text="${tech.name + ' ' + tech.surname}">Technician</option>
                         </select>
                     </div>
@@ -198,7 +198,7 @@
             <tr th:each="course, courseStat : ${courses}">
                 <td th:text="${course.id}">1</td>
                 <td>
-                    <span th:each="p : ${participants}" th:if="${p.uuid == course.participantUuid}"
+                    <span th:each="p : ${participants}" th:if="${p.participantUuid == course.participantUuid}"
                           th:text="${p.name + ' ' + p.surname}">Participant</span>
                 </td>
                 <td>
@@ -217,12 +217,12 @@
                     <span th:if="${course.trainerIds.isEmpty()}" class="text-muted small">-</span>
                 </td>
                 <td>
-                    <span th:each="l : ${lecturers}" th:if="${course.lecturerIds.contains(l.lecturerId)}"
+                    <span th:each="l : ${lecturers}" th:if="${course.lecturerIds.contains(l.id)}"
                           class="badge text-bg-secondary me-1" th:text="${l.name + ' ' + l.surname}">Lecturer</span>
                     <span th:if="${course.lecturerIds.isEmpty()}" class="text-muted small">-</span>
                 </td>
                 <td>
-                    <span th:each="tech : ${technicians}" th:if="${course.technicianIds.contains(tech.technicianId)}"
+                    <span th:each="tech : ${technicians}" th:if="${course.technicianIds.contains(tech.id)}"
                           class="badge text-bg-secondary me-1" th:text="${tech.name + ' ' + tech.surname}">Technician</span>
                     <span th:if="${course.technicianIds.isEmpty()}" class="text-muted small">-</span>
                 </td>

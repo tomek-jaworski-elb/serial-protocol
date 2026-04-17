@@ -66,10 +66,10 @@ class LecturerServiceTest {
     void findById_shouldReturnDTO_whenLecturerExists() {
         LecturerDTO saved = lecturerService.save(createLecturer("Jan", "Kowalski"));
 
-        LecturerDTO result = lecturerService.findById(saved.getLecturerId());
+        LecturerDTO result = lecturerService.findById(saved.getId());
 
         assertNotNull(result);
-        assertEquals(saved.getLecturerId(), result.getLecturerId());
+        assertEquals(saved.getId(), result.getId());
         assertEquals("Jan", result.getName());
         assertEquals("Kowalski", result.getSurname());
     }
@@ -89,7 +89,7 @@ class LecturerServiceTest {
         LecturerDTO saved = lecturerService.save(dto);
 
         assertNotNull(saved);
-        assertNotNull(saved.getLecturerId());
+        assertNotNull(saved.getId());
         assertEquals("Maria", saved.getName());
         assertEquals("Wiśniewska", saved.getSurname());
     }
@@ -136,14 +136,14 @@ class LecturerServiceTest {
         LecturerDTO lecturer = lecturerService.save(createLecturer("Jan", "Kowalski"));
 
         CoursesDTO course = new CoursesDTO();
-        course.setParticipantUuid(participant.getUuid());
+        course.setParticipantUuid(participant.getParticipantUuid());
         course.setCourseTypeId(courseType.getId());
         course.setStartDate(LocalDate.of(2025, 1, 1));
         course.setEndDate(LocalDate.of(2025, 1, 31));
-        course.setLecturerIds(Set.of(lecturer.getLecturerId()));
+        course.setLecturerIds(Set.of(lecturer.getId()));
         coursesService.save(course);
 
-        UUID lecturerId = lecturer.getLecturerId();
+        UUID lecturerId = lecturer.getId();
         IllegalStateException exception = assertThrows(
             IllegalStateException.class,
             () -> lecturerService.deleteById(lecturerId)
@@ -155,9 +155,9 @@ class LecturerServiceTest {
     void deleteById_shouldRemoveLecturer() {
         LecturerDTO saved = lecturerService.save(createLecturer("Jan", "Kowalski"));
 
-        lecturerService.deleteById(saved.getLecturerId());
+        lecturerService.deleteById(saved.getId());
         Set<UUID> images = saved.getImagesUuid();
-        assertNull(lecturerService.findById(saved.getLecturerId()));
+        assertNull(lecturerService.findById(saved.getId()));
         Image imageById = imageService.getImageById(images.stream().findFirst().orElseThrow());
         assertNull(imageById);
     }
@@ -167,10 +167,10 @@ class LecturerServiceTest {
         LecturerDTO first = lecturerService.save(createLecturer("Jan", "Kowalski"));
         LecturerDTO second = lecturerService.save(createLecturer("Anna", "Nowak"));
 
-        lecturerService.deleteById(first.getLecturerId());
+        lecturerService.deleteById(first.getId());
 
-        assertNull(lecturerService.findById(first.getLecturerId()));
-        assertNotNull(lecturerService.findById(second.getLecturerId()));
+        assertNull(lecturerService.findById(first.getId()));
+        assertNotNull(lecturerService.findById(second.getId()));
         assertEquals(1, lecturerService.findAll().size());
     }
 
@@ -186,7 +186,7 @@ class LecturerServiceTest {
         LecturerDTO updated = lecturerService.updateById(saved);
 
         assertNotNull(updated);
-        assertEquals(saved.getLecturerId(), updated.getLecturerId());
+        assertEquals(saved.getId(), updated.getId());
         assertEquals("Janusz", updated.getName());
         assertEquals("Kowal", updated.getSurname());
     }

@@ -54,8 +54,8 @@ class CoursesServiceTest {
     ParticipantDTO participant = savedParticipant("Jan", "Kowalski");
     CourseTypeDTO courseType = savedCourseType("NAV-A");
 
-    coursesService.save(createCourse(participant.getUuid(), courseType.getId()));
-    coursesService.save(createCourse(participant.getUuid(), courseType.getId()));
+    coursesService.save(createCourse(participant.getParticipantUuid(), courseType.getId()));
+    coursesService.save(createCourse(participant.getParticipantUuid(), courseType.getId()));
 
     assertEquals(2, coursesService.findAll().size());
   }
@@ -67,12 +67,12 @@ class CoursesServiceTest {
     ParticipantDTO participant = savedParticipant("Anna", "Nowak");
     CourseTypeDTO courseType = savedCourseType("NAV-B");
 
-    CoursesDTO saved = coursesService.save(createCourse(participant.getUuid(), courseType.getId()));
+    CoursesDTO saved = coursesService.save(createCourse(participant.getParticipantUuid(), courseType.getId()));
     CoursesDTO result = coursesService.findByUuid(saved.getUuid());
 
     assertNotNull(result);
     assertEquals(saved.getUuid(), result.getUuid());
-    assertEquals(participant.getUuid(), result.getParticipantUuid());
+    assertEquals(participant.getParticipantUuid(), result.getParticipantUuid());
     assertEquals(courseType.getId(), result.getCourseTypeId());
   }
 
@@ -89,19 +89,19 @@ class CoursesServiceTest {
     ParticipantDTO p2 = savedParticipant("Anna", "Nowak");
     CourseTypeDTO courseType = savedCourseType("NAV-C");
 
-    coursesService.save(createCourse(p1.getUuid(), courseType.getId()));
-    coursesService.save(createCourse(p1.getUuid(), courseType.getId()));
-    coursesService.save(createCourse(p2.getUuid(), courseType.getId()));
+    coursesService.save(createCourse(p1.getParticipantUuid(), courseType.getId()));
+    coursesService.save(createCourse(p1.getParticipantUuid(), courseType.getId()));
+    coursesService.save(createCourse(p2.getParticipantUuid(), courseType.getId()));
 
-    List<CoursesDTO> result = coursesService.findByParticipantUuid(p1.getUuid());
+    List<CoursesDTO> result = coursesService.findByParticipantUuid(p1.getParticipantUuid());
     assertEquals(2, result.size());
-    assertTrue(result.stream().allMatch(c -> p1.getUuid().equals(c.getParticipantUuid())));
+    assertTrue(result.stream().allMatch(c -> p1.getParticipantUuid().equals(c.getParticipantUuid())));
   }
 
   @Test
   void findByParticipantUuid_shouldReturnEmptyList_whenParticipantHasNoCourses() {
     ParticipantDTO participant = savedParticipant("Jan", "Kowalski");
-    List<CoursesDTO> result = coursesService.findByParticipantUuid(participant.getUuid());
+    List<CoursesDTO> result = coursesService.findByParticipantUuid(participant.getParticipantUuid());
     assertNotNull(result);
     assertTrue(result.isEmpty());
   }
@@ -117,7 +117,7 @@ class CoursesServiceTest {
   void nextId_shouldReturnMaxIdPlusOne() {
     ParticipantDTO participant = savedParticipant("Jan", "Kowalski");
     CourseTypeDTO courseType = savedCourseType("NAV-D");
-    CoursesDTO dto = createCourse(participant.getUuid(), courseType.getId());
+    CoursesDTO dto = createCourse(participant.getParticipantUuid(), courseType.getId());
     dto.setId(10L);
     coursesService.save(dto);
 
@@ -131,12 +131,12 @@ class CoursesServiceTest {
     ParticipantDTO participant = savedParticipant("Maria", "Wiśniewska");
     CourseTypeDTO courseType = savedCourseType("NAV-E");
 
-    CoursesDTO saved = coursesService.save(createCourse(participant.getUuid(), courseType.getId()));
+    CoursesDTO saved = coursesService.save(createCourse(participant.getParticipantUuid(), courseType.getId()));
 
     assertNotNull(saved);
     assertNotNull(saved.getUuid());
     assertNotNull(saved.getId());
-    assertEquals(participant.getUuid(), saved.getParticipantUuid());
+    assertEquals(participant.getParticipantUuid(), saved.getParticipantUuid());
     assertEquals(courseType.getId(), saved.getCourseTypeId());
   }
 
@@ -147,7 +147,7 @@ class CoursesServiceTest {
     LocalDate start = LocalDate.of(2025, 1, 10);
     LocalDate end = LocalDate.of(2025, 1, 20);
 
-    CoursesDTO dto = createCourse(participant.getUuid(), courseType.getId());
+    CoursesDTO dto = createCourse(participant.getParticipantUuid(), courseType.getId());
     dto.setStartDate(start);
     dto.setEndDate(end);
 
@@ -168,7 +168,7 @@ class CoursesServiceTest {
   @Test
   void save_shouldThrowException_whenCourseTypeIdIsNull() {
     ParticipantDTO participant = savedParticipant("Jan", "Kowalski");
-    CoursesDTO dto = createCourse(participant.getUuid(), null);
+    CoursesDTO dto = createCourse(participant.getParticipantUuid(), null);
 
     assertThrows(IllegalArgumentException.class, () -> coursesService.save(dto));
   }
@@ -177,7 +177,7 @@ class CoursesServiceTest {
   void save_shouldAutoAssignId_whenIdIsNull() {
     ParticipantDTO participant = savedParticipant("Jan", "Kowalski");
     CourseTypeDTO courseType = savedCourseType("NAV-H");
-    CoursesDTO dto = createCourse(participant.getUuid(), courseType.getId());
+    CoursesDTO dto = createCourse(participant.getParticipantUuid(), courseType.getId());
     dto.setId(null);
 
     CoursesDTO saved = coursesService.save(dto);
@@ -192,7 +192,7 @@ class CoursesServiceTest {
     CourseTypeDTO courseType = savedCourseType("NAV-I");
     TrainerDTO trainer = savedTrainer("Adam", "Nowak");
 
-    CoursesDTO dto = createCourse(participant.getUuid(), courseType.getId());
+    CoursesDTO dto = createCourse(participant.getParticipantUuid(), courseType.getId());
     dto.setTrainerIds(Set.of(trainer.getId()));
 
     CoursesDTO saved = coursesService.save(dto);
@@ -207,13 +207,13 @@ class CoursesServiceTest {
     CourseTypeDTO courseType = savedCourseType("NAV-J");
     LecturerDTO lecturer = savedLecturer("Ewa", "Zielińska");
 
-    CoursesDTO dto = createCourse(participant.getUuid(), courseType.getId());
-    dto.setLecturerIds(Set.of(lecturer.getLecturerId()));
+    CoursesDTO dto = createCourse(participant.getParticipantUuid(), courseType.getId());
+    dto.setLecturerIds(Set.of(lecturer.getId()));
 
     CoursesDTO saved = coursesService.save(dto);
 
     assertEquals(1, saved.getLecturerIds().size());
-    assertTrue(saved.getLecturerIds().contains(lecturer.getLecturerId()));
+    assertTrue(saved.getLecturerIds().contains(lecturer.getId()));
   }
 
   @Test
@@ -222,13 +222,13 @@ class CoursesServiceTest {
     CourseTypeDTO courseType = savedCourseType("NAV-TECH");
     TechnicianDTO technician = savedTechnician("Marek", "Technik");
 
-    CoursesDTO dto = createCourse(participant.getUuid(), courseType.getId());
-    dto.setTechnicianIds(Set.of(technician.getTechnicianId()));
+    CoursesDTO dto = createCourse(participant.getParticipantUuid(), courseType.getId());
+    dto.setTechnicianIds(Set.of(technician.getId()));
 
     CoursesDTO saved = coursesService.save(dto);
 
     assertEquals(1, saved.getTechnicianIds().size());
-    assertTrue(saved.getTechnicianIds().contains(technician.getTechnicianId()));
+    assertTrue(saved.getTechnicianIds().contains(technician.getId()));
   }
 
   // --- deleteByUuid ---
@@ -237,7 +237,7 @@ class CoursesServiceTest {
   void deleteByUuid_shouldRemoveCourse() {
     ParticipantDTO participant = savedParticipant("Jan", "Kowalski");
     CourseTypeDTO courseType = savedCourseType("NAV-K");
-    CoursesDTO saved = coursesService.save(createCourse(participant.getUuid(), courseType.getId()));
+    CoursesDTO saved = coursesService.save(createCourse(participant.getParticipantUuid(), courseType.getId()));
 
     coursesService.deleteByUuid(saved.getUuid());
 
@@ -249,8 +249,8 @@ class CoursesServiceTest {
   void deleteByUuid_shouldOnlyRemoveSpecifiedCourse() {
     ParticipantDTO participant = savedParticipant("Jan", "Kowalski");
     CourseTypeDTO courseType = savedCourseType("NAV-L");
-    CoursesDTO first = coursesService.save(createCourse(participant.getUuid(), courseType.getId()));
-    CoursesDTO second = coursesService.save(createCourse(participant.getUuid(), courseType.getId()));
+    CoursesDTO first = coursesService.save(createCourse(participant.getParticipantUuid(), courseType.getId()));
+    CoursesDTO second = coursesService.save(createCourse(participant.getParticipantUuid(), courseType.getId()));
 
     coursesService.deleteByUuid(first.getUuid());
 
@@ -265,7 +265,7 @@ class CoursesServiceTest {
   void update_shouldUpdateDates() {
     ParticipantDTO participant = savedParticipant("Jan", "Kowalski");
     CourseTypeDTO courseType = savedCourseType("NAV-M");
-    CoursesDTO saved = coursesService.save(createCourse(participant.getUuid(), courseType.getId()));
+    CoursesDTO saved = coursesService.save(createCourse(participant.getParticipantUuid(), courseType.getId()));
 
     LocalDate newStart = LocalDate.of(2026, 5, 1);
     LocalDate newEnd = LocalDate.of(2026, 5, 15);
@@ -284,7 +284,7 @@ class CoursesServiceTest {
     ParticipantDTO participant = savedParticipant("Jan", "Kowalski");
     CourseTypeDTO type1 = savedCourseType("NAV-N1");
     CourseTypeDTO type2 = savedCourseType("NAV-N2");
-    CoursesDTO saved = coursesService.save(createCourse(participant.getUuid(), type1.getId()));
+    CoursesDTO saved = coursesService.save(createCourse(participant.getParticipantUuid(), type1.getId()));
 
     saved.setCourseTypeId(type2.getId());
     CoursesDTO updated = coursesService.update(saved);
@@ -296,7 +296,7 @@ class CoursesServiceTest {
   void update_shouldNotChangeRecordCount() {
     ParticipantDTO participant = savedParticipant("Jan", "Kowalski");
     CourseTypeDTO courseType = savedCourseType("NAV-O");
-    CoursesDTO saved = coursesService.save(createCourse(participant.getUuid(), courseType.getId()));
+    CoursesDTO saved = coursesService.save(createCourse(participant.getParticipantUuid(), courseType.getId()));
     saved.setStartDate(LocalDate.of(2025, 2, 1));
     saved.setEndDate(LocalDate.of(2025, 2, 28));
 
@@ -309,7 +309,7 @@ class CoursesServiceTest {
   void update_shouldThrowException_whenUuidIsNull() {
     ParticipantDTO participant = savedParticipant("Jan", "Kowalski");
     CourseTypeDTO courseType = savedCourseType("NAV-P");
-    CoursesDTO dto = createCourse(participant.getUuid(), courseType.getId());
+    CoursesDTO dto = createCourse(participant.getParticipantUuid(), courseType.getId());
 
     assertThrows(IllegalArgumentException.class, () -> coursesService.update(dto));
   }
@@ -318,7 +318,7 @@ class CoursesServiceTest {
   void update_shouldThrowException_whenCourseDoesNotExist() {
     ParticipantDTO participant = savedParticipant("Jan", "Kowalski");
     CourseTypeDTO courseType = savedCourseType("NAV-Q");
-    CoursesDTO dto = createCourse(participant.getUuid(), courseType.getId());
+    CoursesDTO dto = createCourse(participant.getParticipantUuid(), courseType.getId());
     dto.setUuid(UUID.randomUUID());
 
     assertThrows(IllegalArgumentException.class, () -> coursesService.update(dto));
@@ -328,7 +328,7 @@ class CoursesServiceTest {
   void update_shouldThrowException_whenParticipantUuidIsNull() {
     ParticipantDTO participant = savedParticipant("Jan", "Kowalski");
     CourseTypeDTO courseType = savedCourseType("NAV-R");
-    CoursesDTO saved = coursesService.save(createCourse(participant.getUuid(), courseType.getId()));
+    CoursesDTO saved = coursesService.save(createCourse(participant.getParticipantUuid(), courseType.getId()));
     saved.setParticipantUuid(null);
 
     assertThrows(IllegalArgumentException.class, () -> coursesService.update(saved));
@@ -338,7 +338,7 @@ class CoursesServiceTest {
   void update_shouldThrowException_whenCourseTypeIdIsNull() {
     ParticipantDTO participant = savedParticipant("Jan", "Kowalski");
     CourseTypeDTO courseType = savedCourseType("NAV-S");
-    CoursesDTO saved = coursesService.save(createCourse(participant.getUuid(), courseType.getId()));
+    CoursesDTO saved = coursesService.save(createCourse(participant.getParticipantUuid(), courseType.getId()));
     saved.setCourseTypeId(null);
 
     assertThrows(IllegalArgumentException.class, () -> coursesService.update(saved));
@@ -348,7 +348,7 @@ class CoursesServiceTest {
   void save_shouldThrowException_whenEndDateIsBeforeStartDate() {
     ParticipantDTO participant = savedParticipant("Jan", "Kowalski");
     CourseTypeDTO courseType = savedCourseType("NAV-DATE");
-    CoursesDTO dto = createCourse(participant.getUuid(), courseType.getId());
+    CoursesDTO dto = createCourse(participant.getParticipantUuid(), courseType.getId());
     dto.setStartDate(LocalDate.of(2025, 5, 1));
     dto.setEndDate(LocalDate.of(2025, 4, 1));
 
@@ -360,7 +360,7 @@ class CoursesServiceTest {
   void update_shouldThrowException_whenEndDateIsBeforeStartDate() {
     ParticipantDTO participant = savedParticipant("Jan", "Kowalski");
     CourseTypeDTO courseType = savedCourseType("NAV-DATE2");
-    CoursesDTO saved = coursesService.save(createCourse(participant.getUuid(), courseType.getId()));
+    CoursesDTO saved = coursesService.save(createCourse(participant.getParticipantUuid(), courseType.getId()));
     saved.setStartDate(LocalDate.of(2025, 5, 1));
     saved.setEndDate(LocalDate.of(2025, 4, 1));
 

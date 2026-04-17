@@ -221,7 +221,7 @@ public class CustomDBController {
                             @RequestParam(value = "imageFiles", required = false) MultipartFile[] imageFiles,
                             RedirectAttributes redirectAttributes) {
     try {
-      lecturerDTO.setLecturerId(null);
+      lecturerDTO.setId(null);
       Set<UUID> uploadedImages = uploadImages(imageFiles, MAX_UPLOAD_IMAGES);
       lecturerDTO.setImagesUuid(uploadedImages);
       lecturerService.save(lecturerDTO);
@@ -238,12 +238,12 @@ public class CustomDBController {
                                @RequestParam(value = "imageFiles", required = false) MultipartFile[] imageFiles,
                                RedirectAttributes redirectAttributes) {
     try {
-      if (lecturerDTO.getLecturerId() == null) {
+      if (lecturerDTO.getId() == null) {
         throw new IllegalArgumentException("Lecturer id is required for update");
       }
       Set<UUID> uploadedImages = uploadImages(imageFiles, MAX_UPLOAD_IMAGES);
       if (uploadedImages.isEmpty()) {
-        LecturerDTO existingLecturer = lecturerService.findById(lecturerDTO.getLecturerId());
+        LecturerDTO existingLecturer = lecturerService.findById(lecturerDTO.getId());
         if (existingLecturer != null) {
           lecturerDTO.setImagesUuid(existingLecturer.getImagesUuid());
         }
@@ -284,7 +284,7 @@ public class CustomDBController {
                               @RequestParam(value = "imageFiles", required = false) MultipartFile[] imageFiles,
                               RedirectAttributes redirectAttributes) {
     try {
-      technicianDTO.setTechnicianId(null);
+      technicianDTO.setId(null);
       Set<UUID> uploadedImages = uploadImages(imageFiles, MAX_UPLOAD_IMAGES);
       technicianDTO.setImagesUuid(uploadedImages);
       technicianService.save(technicianDTO);
@@ -301,12 +301,12 @@ public class CustomDBController {
                                  @RequestParam(value = "imageFiles", required = false) MultipartFile[] imageFiles,
                                  RedirectAttributes redirectAttributes) {
     try {
-      if (technicianDTO.getTechnicianId() == null) {
+      if (technicianDTO.getId() == null) {
         throw new IllegalArgumentException("Technician id is required for update");
       }
       Set<UUID> uploadedImages = uploadImages(imageFiles, MAX_UPLOAD_IMAGES);
       if (uploadedImages.isEmpty()) {
-        TechnicianDTO existing = technicianService.findById(technicianDTO.getTechnicianId());
+        TechnicianDTO existing = technicianService.findById(technicianDTO.getId());
         if (existing != null) {
           technicianDTO.setImagesUuid(existing.getImagesUuid());
         }
@@ -391,7 +391,7 @@ public class CustomDBController {
     model.addAttribute("nextId", participantService.nextId());
     model.addAttribute("courseTypes", courseTypeService.findAll());
     Map<UUID, List<CoursesDTO>> coursesByParticipant = new HashMap<>();
-    participants.forEach(p -> coursesByParticipant.put(p.getUuid(), coursesService.findByParticipantUuid(p.getUuid())));
+    participants.forEach(p -> coursesByParticipant.put(p.getParticipantUuid(), coursesService.findByParticipantUuid(p.getParticipantUuid())));
     model.addAttribute("coursesByParticipant", coursesByParticipant);
     model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
     return "custom/participant-service";
@@ -402,7 +402,7 @@ public class CustomDBController {
                                @RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
                                RedirectAttributes redirectAttributes) {
     try {
-      participantDTO.setUuid(null);
+      participantDTO.setParticipantUuid(null);
       UUID uploadedImage = uploadSingleImage(imageFile);
       participantDTO.setImage(uploadedImage);
       participantService.save(participantDTO);
@@ -429,12 +429,12 @@ public class CustomDBController {
                                   @RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
                                   RedirectAttributes redirectAttributes) {
     try {
-      if (participantDTO.getUuid() == null) {
+      if (participantDTO.getParticipantUuid() == null) {
         throw new IllegalArgumentException("UUID is required for update");
       }
       UUID uploadedImage = uploadSingleImage(imageFile);
       if (uploadedImage == null) {
-        ParticipantDTO existingParticipant = participantService.findByUuid(participantDTO.getUuid());
+        ParticipantDTO existingParticipant = participantService.findByUuid(participantDTO.getParticipantUuid());
         if (existingParticipant != null) {
           participantDTO.setImage(existingParticipant.getImage());
         }

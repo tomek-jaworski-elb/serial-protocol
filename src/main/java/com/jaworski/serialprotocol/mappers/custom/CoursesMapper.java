@@ -35,7 +35,7 @@ public class CoursesMapper {
     ParticipantDTO participantDTO = ParticipantMapper.mapToDTO(courses.getParticipant());
     dto.setParticipantUuid(participantDTO == null
             ? null
-            : participantDTO.getUuid());
+            : participantDTO.getParticipantUuid());
 
     CourseTypeDTO courseTypeDTO = CourseTypeMapper.mapToDTO(courses.getCourseType());
     dto.setCourseTypeId(courseTypeDTO == null
@@ -61,7 +61,7 @@ public class CoursesMapper {
             : courses.getLecturers().stream()
             .map(LecturerMapper::mapToDTO)
             .filter(Objects::nonNull)
-            .map(LecturerDTO::getLecturerId)
+            .map(LecturerDTO::getId)
             .collect(Collectors.toSet());
     dto.setLecturerIds(lecturerIds);
 
@@ -70,7 +70,7 @@ public class CoursesMapper {
             : courses.getTechnicians().stream()
             .map(TechnicianMapper::mapToDTO)
             .filter(Objects::nonNull)
-            .map(TechnicianDTO::getTechnicianId)
+            .map(TechnicianDTO::getId)
             .collect(Collectors.toSet());
     dto.setTechnicianIds(technicianIds);
     return dto;
@@ -89,7 +89,7 @@ public class CoursesMapper {
 
     if (dto.getParticipantUuid() != null) {
       ParticipantDTO participantDTO = new ParticipantDTO();
-      participantDTO.setUuid(dto.getParticipantUuid());
+      participantDTO.setParticipantUuid(dto.getParticipantUuid());
       courses.setParticipant(ParticipantMapper.mapToEntity(participantDTO));
     }
 
@@ -116,7 +116,7 @@ public class CoursesMapper {
             : dto.getLecturerIds().stream()
             .map(id -> {
               LecturerDTO lecturerDTO = new LecturerDTO();
-              lecturerDTO.setLecturerId(id);
+              lecturerDTO.setId(id);
               return LecturerMapper.mapToEntity(lecturerDTO);
              }).collect(Collectors.toSet());
     courses.setLecturers(lecturers);
@@ -126,7 +126,7 @@ public class CoursesMapper {
             : dto.getTechnicianIds().stream()
             .map(id -> {
               TechnicianDTO technicianDTO = new TechnicianDTO();
-              technicianDTO.setTechnicianId(id);
+              technicianDTO.setId(id);
               return TechnicianMapper.mapToEntity(technicianDTO);
              }).collect(Collectors.toSet());
     courses.setTechnicians(technicians);

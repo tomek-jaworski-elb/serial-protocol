@@ -54,10 +54,10 @@ class ParticipantServiceTest {
     void findByUuid_shouldReturnDTO_whenParticipantExists() {
         ParticipantDTO saved = participantService.save(createParticipant("Jan", "Kowalski"));
 
-        ParticipantDTO result = participantService.findByUuid(saved.getUuid());
+        ParticipantDTO result = participantService.findByUuid(saved.getParticipantUuid());
 
         assertNotNull(result);
-        assertEquals(saved.getUuid(), result.getUuid());
+        assertEquals(saved.getParticipantUuid(), result.getParticipantUuid());
         assertEquals("Jan", result.getName());
         assertEquals("Kowalski", result.getSurname());
     }
@@ -99,7 +99,7 @@ class ParticipantServiceTest {
     void save_shouldGenerateUuid() {
         ParticipantDTO saved = participantService.save(createParticipant("Jan", "Kowalski"));
 
-        assertNotNull(saved.getUuid());
+        assertNotNull(saved.getParticipantUuid());
     }
 
     @Test
@@ -162,13 +162,13 @@ class ParticipantServiceTest {
         courseType = courseTypeService.save(courseType);
 
         CoursesDTO course = new CoursesDTO();
-        course.setParticipantUuid(participant.getUuid());
+        course.setParticipantUuid(participant.getParticipantUuid());
         course.setCourseTypeId(courseType.getId());
         course.setStartDate(LocalDate.of(2025, 1, 1));
         course.setEndDate(LocalDate.of(2025, 1, 31));
         coursesService.save(course);
 
-        UUID participantUuid = participant.getUuid();
+        UUID participantUuid = participant.getParticipantUuid();
         IllegalStateException exception = assertThrows(
             IllegalStateException.class,
             () -> participantService.deleteByUuid(participantUuid)
@@ -180,9 +180,9 @@ class ParticipantServiceTest {
     void deleteByUuid_shouldRemoveParticipant() {
         ParticipantDTO saved = participantService.save(createParticipant("Jan", "Kowalski"));
 
-        participantService.deleteByUuid(saved.getUuid());
+        participantService.deleteByUuid(saved.getParticipantUuid());
 
-        assertNull(participantService.findByUuid(saved.getUuid()));
+        assertNull(participantService.findByUuid(saved.getParticipantUuid()));
     }
 
     @Test
@@ -190,10 +190,10 @@ class ParticipantServiceTest {
         ParticipantDTO first = participantService.save(createParticipant("Jan", "Kowalski"));
         ParticipantDTO second = participantService.save(createParticipant("Anna", "Nowak"));
 
-        participantService.deleteByUuid(first.getUuid());
+        participantService.deleteByUuid(first.getParticipantUuid());
 
-        assertNull(participantService.findByUuid(first.getUuid()));
-        assertNotNull(participantService.findByUuid(second.getUuid()));
+        assertNull(participantService.findByUuid(first.getParticipantUuid()));
+        assertNotNull(participantService.findByUuid(second.getParticipantUuid()));
         assertEquals(1, participantService.findAll().size());
     }
 
@@ -209,7 +209,7 @@ class ParticipantServiceTest {
         ParticipantDTO updated = participantService.updateByUuid(saved);
 
         assertNotNull(updated);
-        assertEquals(saved.getUuid(), updated.getUuid());
+        assertEquals(saved.getParticipantUuid(), updated.getParticipantUuid());
         assertEquals("Janusz", updated.getName());
         assertEquals("Kowal", updated.getSurname());
     }

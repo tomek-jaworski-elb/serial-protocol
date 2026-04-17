@@ -141,7 +141,7 @@ class TrainerServiceTest {
     TrainerDTO trainer = trainerService.save(createTrainer("Jan", "Kowalski", "jan.kowalski@test.pl"));
 
     CoursesDTO course = new CoursesDTO();
-    course.setParticipantUuid(participant.getUuid());
+    course.setParticipantUuid(participant.getParticipantUuid());
     course.setCourseTypeId(courseType.getId());
     course.setStartDate(LocalDate.of(2025, 1, 1));
     course.setEndDate(LocalDate.of(2025, 1, 31));

@@ -18,7 +18,7 @@ public class TechnicianMapper {
       return null;
     }
     TechnicianDTO dto = new TechnicianDTO();
-    dto.setTechnicianId(technician.getUuid());
+    dto.setId(technician.getUuid());
     dto.setName(technician.getName());
     dto.setSurname(technician.getSurname());
     dto.setEmail(technician.getEmail());
@@ -34,8 +34,8 @@ public class TechnicianMapper {
       return null;
     }
     Technician technician = new Technician();
-    if (dto.getTechnicianId() != null) {
-      technician.setUuid(dto.getTechnicianId());
+    if (dto.getId() != null) {
+      technician.setUuid(dto.getId());
     }
     technician.setName(dto.getName());
     technician.setSurname(dto.getSurname());

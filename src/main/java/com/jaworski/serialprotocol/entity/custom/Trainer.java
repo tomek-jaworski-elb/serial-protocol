@@ -1,10 +1,9 @@
 package com.jaworski.serialprotocol.entity.custom;
 
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
@@ -19,31 +18,23 @@ import lombok.ToString;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
+
+import static com.jaworski.serialprotocol.entity.custom.Trainer.TABLE_NAME;
 
 @Entity
 @Data
 @NoArgsConstructor
-@Table(name = Trainer.TABLE_NAME)
-public class Trainer {
+@Table(name = TABLE_NAME)
+@AttributeOverrides({
+    @AttributeOverride(name = "uuid",    column = @Column(name = TABLE_NAME+ "_uuid",    unique = true)),
+    @AttributeOverride(name = "name",    column = @Column(name = TABLE_NAME+ "_name",    nullable = false, length = 100)),
+    @AttributeOverride(name = "surname", column = @Column(name = TABLE_NAME+ "_surname", nullable = false, length = 100))
+})
+@EqualsAndHashCode(callSuper = true)
+@ToString(callSuper = true)
+public class Trainer extends PersonBase {
 
   public static final String TABLE_NAME = "trainer";
-
-  @Id
-  @GeneratedValue(strategy = GenerationType.UUID)
-  @Column(name = TABLE_NAME + "_uuid", unique = true)
-  private UUID uuid;
-
-
-  @Column(name = TABLE_NAME + "_name", nullable = false, length = 100)
-  @NotBlank
-  @Size(max = 100)
-  private String name;
-
-  @Column(name = TABLE_NAME + "_surname", nullable = false, length = 100)
-  @NotBlank
-  @Size(max = 100)
-  private String surname;
 
   @Column(name = TABLE_NAME + "_email", nullable = false, length = 100)
   @NotBlank
@@ -53,9 +44,9 @@ public class Trainer {
 
   @ManyToMany()
   @JoinTable(
-          name = TABLE_NAME + "_image",
-          joinColumns = @JoinColumn(name = TABLE_NAME + "_uuid", referencedColumnName = TABLE_NAME + "_uuid"),
-          inverseJoinColumns = @JoinColumn(name = "image_uuid")
+      name = TABLE_NAME + "_image",
+      joinColumns = @JoinColumn(name = TABLE_NAME + "_uuid", referencedColumnName = TABLE_NAME + "_uuid"),
+      inverseJoinColumns = @JoinColumn(name = "image_uuid")
   )
   @ToString.Exclude
   @EqualsAndHashCode.Exclude

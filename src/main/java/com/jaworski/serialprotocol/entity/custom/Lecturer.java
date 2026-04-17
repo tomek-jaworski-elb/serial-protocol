@@ -1,10 +1,9 @@
 package com.jaworski.serialprotocol.entity.custom;
 
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
@@ -19,30 +18,24 @@ import lombok.ToString;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
+
+import static com.jaworski.serialprotocol.entity.custom.Lecturer.TABLE_NAME;
 
 @Entity
 @Data
 @NoArgsConstructor
-@Table(name = Lecturer.TABLE_NAME)
-public class Lecturer {
+@Table(name = TABLE_NAME)
+@AttributeOverrides({
+    @AttributeOverride(name = "uuid",    column = @Column(name = TABLE_NAME+"_uuid",    nullable = false, updatable = false)),
+    @AttributeOverride(name = "name",    column = @Column(name = TABLE_NAME+"_name",    nullable = false, length = 100)),
+    @AttributeOverride(name = "surname", column = @Column(name = TABLE_NAME+"_surname", nullable = false, length = 100))
+})
+@EqualsAndHashCode(callSuper = true)
+@ToString(callSuper = true)
+public class Lecturer extends PersonBase {
 
   public static final String TABLE_NAME = "lecturer";
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.UUID)
-  @Column(name = TABLE_NAME + "_uuid", nullable = false, updatable = false)
-  private UUID uuid;
-
-  @Column(name = TABLE_NAME + "_name", nullable = false, length = 100)
-  @NotBlank
-  @Size(max = 100)
-  private String name;
-
-  @Column(name = TABLE_NAME + "_surname", nullable = false, length = 100)
-  @NotBlank
-  @Size(max = 100)
-  private String surname;
 
   @Column(name = TABLE_NAME + "_email", nullable = false, length = 100)
   @NotBlank

@@ -63,7 +63,7 @@
         <div class="card-body">
             <h5 class="card-title">Update lecturer</h5>
             <form method="post" enctype="multipart/form-data" th:action="@{/lecturer-service/update}">
-                <input id="updateLecturerId" name="lecturerId" type="hidden" required>
+                <input id="updateLecturerId" name="id" type="hidden" required>
                 <div class="row g-3">
                     <div class="col-md-4">
                         <label for="updateLecturerName" class="form-label">Name</label>
@@ -124,16 +124,16 @@
                         <button
                                 type="button"
                                 class="btn btn-outline-info btn-sm details-lecturer-btn"
-                                th:attr="data-id=${lecturer.lecturerId},data-name=${lecturer.name},data-surname=${lecturer.surname},data-email=${lecturer.email},data-nickname=${lecturer.nickname},data-images=${lecturer.imagesUuid}">
+                                th:attr="data-id=${lecturer.id},data-name=${lecturer.name},data-surname=${lecturer.surname},data-email=${lecturer.email},data-nickname=${lecturer.nickname},data-images=${lecturer.imagesUuid}">
                             Details
                         </button>
                         <button
                                 type="button"
                                 class="btn btn-outline-warning btn-sm update-lecturer-btn"
-                                th:attr="data-id=${lecturer.lecturerId},data-name=${lecturer.name},data-surname=${lecturer.surname},data-email=${lecturer.email},data-nickname=${lecturer.nickname},data-images=${lecturer.imagesUuid}">
+                                th:attr="data-id=${lecturer.id},data-name=${lecturer.name},data-surname=${lecturer.surname},data-email=${lecturer.email},data-nickname=${lecturer.nickname},data-images=${lecturer.imagesUuid}">
                             Update
                         </button>
-                        <form method="post" th:action="@{/lecturer-service/delete/{id}(id=${lecturer.lecturerId})}">
+                        <form method="post" th:action="@{/lecturer-service/delete/{id}(id=${lecturer.id})}">
                             <button type="submit" class="btn btn-outline-danger btn-sm"
                                     onclick="return confirm('Are you sure you want to delete this item?');">
                                 Delete

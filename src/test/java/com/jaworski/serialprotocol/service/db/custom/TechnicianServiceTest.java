@@ -67,10 +67,10 @@ class TechnicianServiceTest {
     void findById_shouldReturnDTO_whenTechnicianExists() {
         TechnicianDTO saved = technicianService.save(createTechnician("Jan", "Kowalski"));
 
-        TechnicianDTO result = technicianService.findById(saved.getTechnicianId());
+        TechnicianDTO result = technicianService.findById(saved.getId());
 
         assertNotNull(result);
-        assertEquals(saved.getTechnicianId(), result.getTechnicianId());
+        assertEquals(saved.getId(), result.getId());
         assertEquals("Jan", result.getName());
         assertEquals("Kowalski", result.getSurname());
     }
@@ -90,7 +90,7 @@ class TechnicianServiceTest {
         TechnicianDTO saved = technicianService.save(dto);
 
         assertNotNull(saved);
-        assertNotNull(saved.getTechnicianId());
+        assertNotNull(saved.getId());
         assertEquals("Maria", saved.getName());
         assertEquals("Wiśniewska", saved.getSurname());
     }
@@ -137,14 +137,14 @@ class TechnicianServiceTest {
         TechnicianDTO technician = technicianService.save(createTechnician("Jan", "Kowalski"));
 
         CoursesDTO course = new CoursesDTO();
-        course.setParticipantUuid(participant.getUuid());
+        course.setParticipantUuid(participant.getParticipantUuid());
         course.setCourseTypeId(courseType.getId());
         course.setStartDate(LocalDate.of(2025, 1, 1));
         course.setEndDate(LocalDate.of(2025, 1, 31));
-        course.setTechnicianIds(Set.of(technician.getTechnicianId()));
+        course.setTechnicianIds(Set.of(technician.getId()));
         coursesService.save(course);
 
-        UUID technicianId = technician.getTechnicianId();
+        UUID technicianId = technician.getId();
         IllegalStateException exception = assertThrows(
             IllegalStateException.class,
             () -> technicianService.deleteById(technicianId)
@@ -156,9 +156,9 @@ class TechnicianServiceTest {
     void deleteById_shouldRemoveTechnician() {
         TechnicianDTO saved = technicianService.save(createTechnician("Jan", "Kowalski"));
 
-        technicianService.deleteById(saved.getTechnicianId());
+        technicianService.deleteById(saved.getId());
         Set<UUID> images = saved.getImagesUuid();
-        assertNull(technicianService.findById(saved.getTechnicianId()));
+        assertNull(technicianService.findById(saved.getId()));
         if (images != null && !images.isEmpty()) {
             Image imageById = imageService.getImageById(images.stream().findFirst().orElseThrow());
             assertNull(imageById);
@@ -170,10 +170,10 @@ class TechnicianServiceTest {
         TechnicianDTO first = technicianService.save(createTechnician("Jan", "Kowalski"));
         TechnicianDTO second = technicianService.save(createTechnician("Anna", "Nowak"));
 
-        technicianService.deleteById(first.getTechnicianId());
+        technicianService.deleteById(first.getId());
 
-        assertNull(technicianService.findById(first.getTechnicianId()));
-        assertNotNull(technicianService.findById(second.getTechnicianId()));
+        assertNull(technicianService.findById(first.getId()));
+        assertNotNull(technicianService.findById(second.getId()));
         assertEquals(1, technicianService.findAll().size());
     }
 
@@ -189,7 +189,7 @@ class TechnicianServiceTest {
         TechnicianDTO updated = technicianService.updateById(saved);
 
         assertNotNull(updated);
-        assertEquals(saved.getTechnicianId(), updated.getTechnicianId());
+        assertEquals(saved.getId(), updated.getId());
         assertEquals("Janusz", updated.getName());
         assertEquals("Kowal", updated.getSurname());
     }
@@ -239,14 +239,14 @@ class TechnicianServiceTest {
     @Test
     void updateById_shouldThrowWhenIdIsNull() {
         TechnicianDTO dto = createTechnician("Jan", "Kowalski");
-        dto.setTechnicianId(null);
+        dto.setId(null);
         assertThrows(IllegalArgumentException.class, () -> technicianService.updateById(dto));
     }
 
     @Test
     void updateById_shouldThrowWhenTechnicianNotFound() {
         TechnicianDTO dto = createTechnician("Jan", "Kowalski");
-        dto.setTechnicianId(UUID.randomUUID());
+        dto.setId(UUID.randomUUID());
         assertThrows(IllegalArgumentException.class, () -> technicianService.updateById(dto));
     }
 
