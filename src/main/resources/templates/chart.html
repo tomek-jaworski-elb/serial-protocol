@@ -6,6 +6,13 @@
     <title th:text="${@environment.getProperty('spring.application.name')} + ' : Chart'">Chart</title>
     <link th:href="@{/bootstrap-5-3-3/css/bootstrap.css}" rel="stylesheet">
     <style>
+        #main-div {
+            width: 2666px;
+            height: 4000px;
+            background-image: url('/img/MapaSilm_2666x4000.jpg');
+            background-size: cover; /* lub contain / 100% 100% */
+            background-position: center;
+        }
         .canvas-container {
             position: relative;
             width: 2666px; /* 4000px;  Adjust as needed  ----- width: 1100px; / JW4000 / JW2000 */
@@ -176,7 +183,7 @@
         </div>
     </div>
 </div>
-<div class="canvas-container">
+<div class="canvas-container" id="main-div">
     <img id="backgroundCanvas" th:src="@{/img/MapaSilm_2666x4000.jpg}" width="2666" height="4000" alt="Silm Lake Chart should be here">
     <canvas id="overlayCanvas1"></canvas>
     <canvas id="overlayCanvas1_track"></canvas>
@@ -195,9 +202,8 @@
     <p id="textField" class="form-control" style="white-space: normal; word-wrap: break-word;">Text</p>
 </div>
 <footer th:replace="~{fragment::footer}"></footer>
-<script th:src="@{/bootstrap-5-3-3/js/bootstrap.js}"></script>
-<script th:src="@{/js/chart-script.js}"></script>
-<script type="text/javascript" th:src="@{/js/common/enums.js}"></script>
-<script type="text/javascript" th:src="@{/js/common/counter.js}"></script>
+<script type="text/javascript" th:src="@{/bootstrap-5-3-3/js/bootstrap.js}"></script>
+<script type="text/javascript" th:src="@{/js/konva-10_0_7/konva.js}"></script>
+<script type="text/javascript" th:src="@{/js/chart-script.js}"></script>
 </body>
 </html>
