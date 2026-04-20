@@ -224,6 +224,54 @@ class LecturerServiceTest {
     }
 
     @Test
+    void save_shouldPersistNotes() {
+        LecturerDTO dto = createLecturer("Jan", "Kowalski");
+        dto.setNotes("Some notes about the lecturer");
+        LecturerDTO saved = lecturerService.save(dto);
+        assertEquals("Some notes about the lecturer", saved.getNotes());
+    }
+
+    @Test
+    void save_shouldPersistPhoneNumber() {
+        LecturerDTO dto = createLecturer("Jan", "Kowalski");
+        dto.setPhoneNumber("+48 123 456 789");
+        LecturerDTO saved = lecturerService.save(dto);
+        assertEquals("+48 123 456 789", saved.getPhoneNumber());
+    }
+
+    @Test
+    void save_shouldPersistAddress() {
+        LecturerDTO dto = createLecturer("Jan", "Kowalski");
+        dto.setAddress("ul. Testowa 1, 00-001 Warszawa");
+        LecturerDTO saved = lecturerService.save(dto);
+        assertEquals("ul. Testowa 1, 00-001 Warszawa", saved.getAddress());
+    }
+
+    @Test
+    void updateById_shouldUpdateNotes() {
+        LecturerDTO saved = lecturerService.save(createLecturer("Jan", "Kowalski"));
+        saved.setNotes("Updated notes");
+        LecturerDTO updated = lecturerService.updateById(saved);
+        assertEquals("Updated notes", updated.getNotes());
+    }
+
+    @Test
+    void updateById_shouldUpdatePhoneNumber() {
+        LecturerDTO saved = lecturerService.save(createLecturer("Jan", "Kowalski"));
+        saved.setPhoneNumber("+48 999 888 777");
+        LecturerDTO updated = lecturerService.updateById(saved);
+        assertEquals("+48 999 888 777", updated.getPhoneNumber());
+    }
+
+    @Test
+    void updateById_shouldUpdateAddress() {
+        LecturerDTO saved = lecturerService.save(createLecturer("Jan", "Kowalski"));
+        saved.setAddress("ul. Nowa 5, 00-002 Kraków");
+        LecturerDTO updated = lecturerService.updateById(saved);
+        assertEquals("ul. Nowa 5, 00-002 Kraków", updated.getAddress());
+    }
+
+    @Test
     void updateById_shouldNotChangeRecordCount() {
         LecturerDTO saved = lecturerService.save(createLecturer("Jan", "Kowalski"));
         saved.setName("Janusz");

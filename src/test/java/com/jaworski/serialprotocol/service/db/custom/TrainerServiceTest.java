@@ -99,6 +99,70 @@ class TrainerServiceTest {
   }
 
   @Test
+  void shouldSaveTrainerWithNotes() {
+    TrainerDTO dto = createTrainer("Jan", "Kowalski", "jan.kowalski@test.pl");
+    dto.setNotes("Trainer specialization notes");
+    TrainerDTO saved = trainerService.save(dto);
+    assertEquals("Trainer specialization notes", saved.getNotes());
+  }
+
+  @Test
+  void shouldSaveTrainerWithNickname() {
+    TrainerDTO dto = createTrainer("Jan", "Kowalski", "jan.kowalski@test.pl");
+    dto.setNickname("jkowalski");
+    TrainerDTO saved = trainerService.save(dto);
+    assertEquals("jkowalski", saved.getNickname());
+  }
+
+  @Test
+  void shouldSaveTrainerWithPhoneNumber() {
+    TrainerDTO dto = createTrainer("Jan", "Kowalski", "jan.kowalski@test.pl");
+    dto.setPhoneNumber("+48 500 600 700");
+    TrainerDTO saved = trainerService.save(dto);
+    assertEquals("+48 500 600 700", saved.getPhoneNumber());
+  }
+
+  @Test
+  void shouldSaveTrainerWithAddress() {
+    TrainerDTO dto = createTrainer("Jan", "Kowalski", "jan.kowalski@test.pl");
+    dto.setAddress("ul. Morska 7, 80-001 Gdynia");
+    TrainerDTO saved = trainerService.save(dto);
+    assertEquals("ul. Morska 7, 80-001 Gdynia", saved.getAddress());
+  }
+
+  @Test
+  void shouldUpdateTrainerNotes() {
+    TrainerDTO saved = trainerService.save(createTrainer("Jan", "Kowalski", "jan.kowalski@test.pl"));
+    saved.setNotes("Updated notes");
+    TrainerDTO updated = trainerService.update(saved);
+    assertEquals("Updated notes", updated.getNotes());
+  }
+
+  @Test
+  void shouldUpdateTrainerNickname() {
+    TrainerDTO saved = trainerService.save(createTrainer("Jan", "Kowalski", "jan.kowalski@test.pl"));
+    saved.setNickname("janko");
+    TrainerDTO updated = trainerService.update(saved);
+    assertEquals("janko", updated.getNickname());
+  }
+
+  @Test
+  void shouldUpdateTrainerPhoneNumber() {
+    TrainerDTO saved = trainerService.save(createTrainer("Jan", "Kowalski", "jan.kowalski@test.pl"));
+    saved.setPhoneNumber("+48 321 654 987");
+    TrainerDTO updated = trainerService.update(saved);
+    assertEquals("+48 321 654 987", updated.getPhoneNumber());
+  }
+
+  @Test
+  void shouldUpdateTrainerAddress() {
+    TrainerDTO saved = trainerService.save(createTrainer("Jan", "Kowalski", "jan.kowalski@test.pl"));
+    saved.setAddress("ul. Polna 2, 50-001 Poznań");
+    TrainerDTO updated = trainerService.update(saved);
+    assertEquals("ul. Polna 2, 50-001 Poznań", updated.getAddress());
+  }
+
+  @Test
   void shouldThrowWhenUpdatingTrainerWithoutId() {
     TrainerDTO trainerWithoutId = createTrainer("Jan", "Kowalski", "jan.kowalski@test.pl");
 

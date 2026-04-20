@@ -19,6 +19,11 @@ public class ParticipantDTO {
   private Long id;
   private String name;
   private String surname;
+  private String notes;
+  private String nickname;
+  private String email;
+  private String phoneNumber;
+  private String address;
   @DateTimeFormat(pattern = "dd/MM/yyyy")
   private LocalDate birthDate;
 

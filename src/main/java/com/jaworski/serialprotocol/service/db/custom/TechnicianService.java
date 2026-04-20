@@ -72,8 +72,11 @@ public class TechnicianService {
 
     existing.setName(dto.getName());
     existing.setSurname(dto.getSurname());
-    existing.setEmail(dto.getEmail());
+    existing.setNotes(dto.getNotes());
     existing.setNickname(dto.getNickname());
+    existing.setEmail(dto.getEmail());
+    existing.setPhoneNumber(dto.getPhoneNumber());
+    existing.setAddress(dto.getAddress());
     existing.setImages(requestedImages);
 
     Technician updated = technicianRepository.save(existing);

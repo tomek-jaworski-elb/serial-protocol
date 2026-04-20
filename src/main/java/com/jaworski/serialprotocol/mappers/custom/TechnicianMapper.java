@@ -21,8 +21,11 @@ public class TechnicianMapper {
     dto.setId(technician.getUuid());
     dto.setName(technician.getName());
     dto.setSurname(technician.getSurname());
-    dto.setEmail(technician.getEmail());
+    dto.setNotes(technician.getNotes());
     dto.setNickname(technician.getNickname());
+    dto.setEmail(technician.getEmail());
+    dto.setPhoneNumber(technician.getPhoneNumber());
+    dto.setAddress(technician.getAddress());
     dto.setImagesUuid(technician.getImages() == null
             ? new HashSet<>()
             : technician.getImages().stream().map(Image::getId).collect(Collectors.toSet()));
@@ -39,8 +42,11 @@ public class TechnicianMapper {
     }
     technician.setName(dto.getName());
     technician.setSurname(dto.getSurname());
-    technician.setEmail(dto.getEmail());
+    technician.setNotes(dto.getNotes());
     technician.setNickname(dto.getNickname());
+    technician.setEmail(dto.getEmail());
+    technician.setPhoneNumber(dto.getPhoneNumber());
+    technician.setAddress(dto.getAddress());
     Set<Image> images = dto.getImagesUuid() == null
             ? new HashSet<>()
             : dto.getImagesUuid().stream()

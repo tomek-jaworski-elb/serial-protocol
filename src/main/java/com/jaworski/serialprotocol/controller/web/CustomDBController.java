@@ -23,7 +23,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,6 +37,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
+import java.beans.PropertyEditorSupport;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -64,6 +67,21 @@ public class CustomDBController {
   private final ParticipantService participantService;
   private final ImageService imageService;
   private static final int MAX_UPLOAD_IMAGES = 6;
+
+  /**
+   * Converts empty strings submitted from HTML forms to null,
+   * so optional fields (email, nickname, etc.) with Bean Validation
+   * annotations (@Email, @Size) are not triggered on blank input.
+   */
+  @InitBinder
+  public void initBinder(WebDataBinder binder) {
+    binder.registerCustomEditor(String.class, new PropertyEditorSupport() {
+      @Override
+      public void setAsText(String text) {
+        setValue(text == null || text.isBlank() ? null : text.trim());
+      }
+    });
+  }
 
   @GetMapping("/courses-service")
   public String coursesService(Model model) {

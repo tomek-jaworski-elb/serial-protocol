@@ -200,6 +200,86 @@ class ParticipantServiceTest {
     // --- updateByUuid ---
 
     @Test
+    void save_shouldPersistNotes() {
+        ParticipantDTO dto = createParticipant("Jan", "Kowalski");
+        dto.setNotes("Medical notes");
+        ParticipantDTO saved = participantService.save(dto);
+        assertEquals("Medical notes", saved.getNotes());
+    }
+
+    @Test
+    void save_shouldPersistNickname() {
+        ParticipantDTO dto = createParticipant("Jan", "Kowalski");
+        dto.setNickname("jkowalski");
+        ParticipantDTO saved = participantService.save(dto);
+        assertEquals("jkowalski", saved.getNickname());
+    }
+
+    @Test
+    void save_shouldPersistEmail() {
+        ParticipantDTO dto = createParticipant("Jan", "Kowalski");
+        dto.setEmail("jan.kowalski@example.com");
+        ParticipantDTO saved = participantService.save(dto);
+        assertEquals("jan.kowalski@example.com", saved.getEmail());
+    }
+
+    @Test
+    void save_shouldPersistPhoneNumber() {
+        ParticipantDTO dto = createParticipant("Jan", "Kowalski");
+        dto.setPhoneNumber("+48 100 200 300");
+        ParticipantDTO saved = participantService.save(dto);
+        assertEquals("+48 100 200 300", saved.getPhoneNumber());
+    }
+
+    @Test
+    void save_shouldPersistAddress() {
+        ParticipantDTO dto = createParticipant("Jan", "Kowalski");
+        dto.setAddress("ul. Główna 1, 00-001 Łódź");
+        ParticipantDTO saved = participantService.save(dto);
+        assertEquals("ul. Główna 1, 00-001 Łódź", saved.getAddress());
+    }
+
+    @Test
+    void updateByUuid_shouldUpdateNotes() {
+        ParticipantDTO saved = participantService.save(createParticipant("Jan", "Kowalski"));
+        saved.setNotes("Updated notes");
+        ParticipantDTO updated = participantService.updateByUuid(saved);
+        assertEquals("Updated notes", updated.getNotes());
+    }
+
+    @Test
+    void updateByUuid_shouldUpdateNickname() {
+        ParticipantDTO saved = participantService.save(createParticipant("Jan", "Kowalski"));
+        saved.setNickname("newNick");
+        ParticipantDTO updated = participantService.updateByUuid(saved);
+        assertEquals("newNick", updated.getNickname());
+    }
+
+    @Test
+    void updateByUuid_shouldUpdateEmail() {
+        ParticipantDTO saved = participantService.save(createParticipant("Jan", "Kowalski"));
+        saved.setEmail("new@example.com");
+        ParticipantDTO updated = participantService.updateByUuid(saved);
+        assertEquals("new@example.com", updated.getEmail());
+    }
+
+    @Test
+    void updateByUuid_shouldUpdatePhoneNumber() {
+        ParticipantDTO saved = participantService.save(createParticipant("Jan", "Kowalski"));
+        saved.setPhoneNumber("+48 888 777 666");
+        ParticipantDTO updated = participantService.updateByUuid(saved);
+        assertEquals("+48 888 777 666", updated.getPhoneNumber());
+    }
+
+    @Test
+    void updateByUuid_shouldUpdateAddress() {
+        ParticipantDTO saved = participantService.save(createParticipant("Jan", "Kowalski"));
+        saved.setAddress("ul. Nowa 99, 00-099 Białystok");
+        ParticipantDTO updated = participantService.updateByUuid(saved);
+        assertEquals("ul. Nowa 99, 00-099 Białystok", updated.getAddress());
+    }
+
+    @Test
     void updateByUuid_shouldUpdateNameAndSurname() {
         ParticipantDTO saved = participantService.save(createParticipant("Jan", "Kowalski"));
 

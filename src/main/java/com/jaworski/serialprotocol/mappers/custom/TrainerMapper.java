@@ -20,7 +20,11 @@ public class TrainerMapper {
     dto.setId(trainer.getUuid());
     dto.setName(trainer.getName());
     dto.setSurname(trainer.getSurname());
+    dto.setNotes(trainer.getNotes());
+    dto.setNickname(trainer.getNickname());
     dto.setEmail(trainer.getEmail());
+    dto.setPhoneNumber(trainer.getPhoneNumber());
+    dto.setAddress(trainer.getAddress());
     dto.setImagesUuid(trainer.getImages() == null
             ? new HashSet<>()
             : trainer.getImages().stream().map(Image::getId).collect(Collectors.toSet()));
@@ -37,7 +41,11 @@ public class TrainerMapper {
     }
     trainer.setName(dto.getName());
     trainer.setSurname(dto.getSurname());
+    trainer.setNotes(dto.getNotes());
+    trainer.setNickname(dto.getNickname());
     trainer.setEmail(dto.getEmail());
+    trainer.setPhoneNumber(dto.getPhoneNumber());
+    trainer.setAddress(dto.getAddress());
     trainer.setImages(dto.getImagesUuid() == null
             ? new HashSet<>()
             : dto.getImagesUuid().stream().map(id -> {

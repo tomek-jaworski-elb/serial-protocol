@@ -37,22 +37,42 @@
                         <div class="form-text">Auto-suggested. You may change it.</div>
                     </div>
                     <div class="col-md-4">
-                        <label for="addParticipantName" class="form-label">Name</label>
+                        <label for="addParticipantName" class="form-label">Name <span class="text-danger">*</span></label>
                         <input id="addParticipantName" name="name" type="text" class="form-control" maxlength="100" required>
                     </div>
                     <div class="col-md-4">
-                        <label for="addParticipantSurname" class="form-label">Surname</label>
+                        <label for="addParticipantSurname" class="form-label">Surname <span class="text-danger">*</span></label>
                         <input id="addParticipantSurname" name="surname" type="text" class="form-control" maxlength="100" required>
                     </div>
                     <div class="col-md-2">
                         <label for="addParticipantBirthDate" class="form-label">Birth Date</label>
                         <input id="addParticipantBirthDate" name="birthDate" type="date" class="form-control"
-                               placeholder="dd/MM/yyyy" pattern="\d{2}/\d{2}/\d{4}" title="Format: dd/MM/yyyy" required>
-                        <div class="form-text">Must be a past date.</div>
+                               placeholder="dd/MM/yyyy" title="Format: dd/MM/yyyy">
+                        <div class="form-text">Optional. Must be a past date.</div>
                     </div>
-                    <div class="col-12">
+                    <div class="col-md-4">
+                        <label for="addParticipantNickname" class="form-label">Nickname</label>
+                        <input id="addParticipantNickname" name="nickname" type="text" class="form-control" maxlength="100">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="addParticipantEmail" class="form-label">Email</label>
+                        <input id="addParticipantEmail" name="email" type="email" class="form-control" maxlength="100">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="addParticipantPhoneNumber" class="form-label">Phone Number</label>
+                        <input id="addParticipantPhoneNumber" name="phoneNumber" type="text" class="form-control" maxlength="26">
+                    </div>
+                    <div class="col-md-8">
+                        <label for="addParticipantAddress" class="form-label">Address</label>
+                        <input id="addParticipantAddress" name="address" type="text" class="form-control" maxlength="300">
+                    </div>
+                    <div class="col-md-4">
                         <label for="addParticipantImageFile" class="form-label">Image</label>
                         <input id="addParticipantImageFile" name="imageFile" type="file" class="form-control" accept="image/*">
+                    </div>
+                    <div class="col-12">
+                        <label for="addParticipantNotes" class="form-label">Notes</label>
+                        <textarea id="addParticipantNotes" name="notes" class="form-control" maxlength="1000" rows="2"></textarea>
                     </div>
                 </div>
                 <div class="d-flex gap-2 mt-3">
@@ -68,7 +88,7 @@
         <div class="card-body">
             <h5 class="card-title">Update participant</h5>
             <form method="post" enctype="multipart/form-data" th:action="@{/participant-service/update}">
-                <input id="updateParticipantUuid" name="uuid" type="hidden">
+                <input id="updateParticipantUuid" name="participantUuid" type="hidden">
                 <div class="row g-3">
                     <div class="col-md-2">
                         <label for="updateParticipantId" class="form-label">ID <span class="text-muted small">(unique)</span></label>
@@ -76,23 +96,43 @@
                         <div class="form-text">Must be unique among all participants.</div>
                     </div>
                     <div class="col-md-4">
-                        <label for="updateParticipantName" class="form-label">Name</label>
+                        <label for="updateParticipantName" class="form-label">Name <span class="text-danger">*</span></label>
                         <input id="updateParticipantName" name="name" type="text" class="form-control" maxlength="100" required>
                     </div>
                     <div class="col-md-4">
-                        <label for="updateParticipantSurname" class="form-label">Surname</label>
+                        <label for="updateParticipantSurname" class="form-label">Surname <span class="text-danger">*</span></label>
                         <input id="updateParticipantSurname" name="surname" type="text" class="form-control" maxlength="100" required>
                     </div>
                     <div class="col-md-2">
                         <label for="updateParticipantBirthDate" class="form-label">Birth Date</label>
                         <input id="updateParticipantBirthDate" name="birthDate" type="text" class="form-control"
-                               placeholder="dd/MM/yyyy" pattern="\d{2}/\d{2}/\d{4}" title="Format: dd/MM/yyyy" required>
-                        <div class="form-text">Must be a past date.</div>
+                               placeholder="dd/MM/yyyy" pattern="\d{2}/\d{2}/\d{4}" title="Format: dd/MM/yyyy">
+                        <div class="form-text">Optional. Must be a past date.</div>
                     </div>
-                    <div class="col-12">
+                    <div class="col-md-4">
+                        <label for="updateParticipantNickname" class="form-label">Nickname</label>
+                        <input id="updateParticipantNickname" name="nickname" type="text" class="form-control" maxlength="100">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="updateParticipantEmail" class="form-label">Email</label>
+                        <input id="updateParticipantEmail" name="email" type="email" class="form-control" maxlength="100">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="updateParticipantPhoneNumber" class="form-label">Phone Number</label>
+                        <input id="updateParticipantPhoneNumber" name="phoneNumber" type="text" class="form-control" maxlength="26">
+                    </div>
+                    <div class="col-md-8">
+                        <label for="updateParticipantAddress" class="form-label">Address</label>
+                        <input id="updateParticipantAddress" name="address" type="text" class="form-control" maxlength="300">
+                    </div>
+                    <div class="col-md-4">
                         <label for="updateParticipantImageFile" class="form-label">Image</label>
                         <input id="updateParticipantImageFile" name="imageFile" type="file" class="form-control" accept="image/*">
                         <div class="form-text">Optional. Upload a new image to replace current one.</div>
+                    </div>
+                    <div class="col-12">
+                        <label for="updateParticipantNotes" class="form-label">Notes</label>
+                        <textarea id="updateParticipantNotes" name="notes" class="form-control" maxlength="1000" rows="2"></textarea>
                     </div>
                 </div>
                 <div class="d-flex gap-2 mt-3">
@@ -181,13 +221,13 @@
                         <button
                                 type="button"
                                 class="btn btn-outline-info btn-sm details-participant-btn"
-                                th:attr="data-uuid=${participant.participantUuid},data-id=${participant.id},data-name=${participant.name},data-surname=${participant.surname},data-birthdate=${participant.birthDate},data-image=${participant.image}">
+                                th:attr="data-uuid=${participant.participantUuid},data-id=${participant.id},data-name=${participant.name},data-surname=${participant.surname},data-birthdate=${participant.birthDate},data-nickname=${participant.nickname},data-email=${participant.email},data-phone=${participant.phoneNumber},data-address=${participant.address},data-notes=${participant.notes},data-image=${participant.image}">
                             Details
                         </button>
                         <button
                                 type="button"
                                 class="btn btn-outline-warning btn-sm update-participant-btn"
-                                th:attr="data-uuid=${participant.participantUuid},data-id=${participant.id},data-name=${participant.name},data-surname=${participant.surname},data-birthdate=${participant.birthDate}">
+                                th:attr="data-uuid=${participant.participantUuid},data-id=${participant.id},data-name=${participant.name},data-surname=${participant.surname},data-birthdate=${participant.birthDate},data-nickname=${participant.nickname},data-email=${participant.email},data-phone=${participant.phoneNumber},data-address=${participant.address},data-notes=${participant.notes}">
                             Update
                         </button>
                         <button
@@ -228,7 +268,12 @@
                         <p class="mb-2"><strong>ID:</strong> <span id="detailsParticipantId">-</span></p>
                         <p class="mb-2"><strong>Name:</strong> <span id="detailsParticipantName">-</span></p>
                         <p class="mb-2"><strong>Surname:</strong> <span id="detailsParticipantSurname">-</span></p>
-                        <p class="mb-0"><strong>Birth Date:</strong> <span id="detailsParticipantBirthDate">-</span></p>
+                        <p class="mb-2"><strong>Birth Date:</strong> <span id="detailsParticipantBirthDate">-</span></p>
+                        <p class="mb-2"><strong>Nickname:</strong> <span id="detailsParticipantNickname">-</span></p>
+                        <p class="mb-2"><strong>Email:</strong> <span id="detailsParticipantEmail">-</span></p>
+                        <p class="mb-2"><strong>Phone:</strong> <span id="detailsParticipantPhone">-</span></p>
+                        <p class="mb-2"><strong>Address:</strong> <span id="detailsParticipantAddress">-</span></p>
+                        <p class="mb-0"><strong>Notes:</strong> <span id="detailsParticipantNotes">-</span></p>
                     </div>
                     <div class="col-md-5">
                         <p class="mb-1"><strong>Image:</strong></p>
@@ -262,12 +307,22 @@
     const updateParticipantName = document.getElementById('updateParticipantName');
     const updateParticipantSurname = document.getElementById('updateParticipantSurname');
     const updateParticipantBirthDate = document.getElementById('updateParticipantBirthDate');
+    const updateParticipantNickname = document.getElementById('updateParticipantNickname');
+    const updateParticipantEmail = document.getElementById('updateParticipantEmail');
+    const updateParticipantPhoneNumber = document.getElementById('updateParticipantPhoneNumber');
+    const updateParticipantAddress = document.getElementById('updateParticipantAddress');
+    const updateParticipantNotes = document.getElementById('updateParticipantNotes');
     const detailsButtons = document.querySelectorAll('.details-participant-btn');
     const participantDetailsModal = document.getElementById('participantDetailsModal');
     const detailsParticipantId = document.getElementById('detailsParticipantId');
     const detailsParticipantName = document.getElementById('detailsParticipantName');
     const detailsParticipantSurname = document.getElementById('detailsParticipantSurname');
     const detailsParticipantBirthDate = document.getElementById('detailsParticipantBirthDate');
+    const detailsParticipantNickname = document.getElementById('detailsParticipantNickname');
+    const detailsParticipantEmail = document.getElementById('detailsParticipantEmail');
+    const detailsParticipantPhone = document.getElementById('detailsParticipantPhone');
+    const detailsParticipantAddress = document.getElementById('detailsParticipantAddress');
+    const detailsParticipantNotes = document.getElementById('detailsParticipantNotes');
     const detailsParticipantImage = document.getElementById('detailsParticipantImage');
     const detailsParticipantNoImage = document.getElementById('detailsParticipantNoImage');
     const successAlert = document.getElementById('successAlert');
@@ -276,6 +331,8 @@
         participantDetailsModal && window.bootstrap && window.bootstrap.Modal
             ? window.bootstrap.Modal.getOrCreateInstance(participantDetailsModal)
             : null;
+
+    const nullOrDash = (v) => (v && v !== 'null' ? v : '-');
 
     if (successAlert) {
         setTimeout(() => {
@@ -314,10 +371,13 @@
                 updateParticipantName.value = btn.dataset.name || '';
                 updateParticipantSurname.value = btn.dataset.surname || '';
                 updateParticipantBirthDate.value = isoToEu(btn.dataset.birthdate) || '';
+                updateParticipantNickname.value = btn.dataset.nickname !== 'null' ? (btn.dataset.nickname || '') : '';
+                updateParticipantEmail.value = btn.dataset.email !== 'null' ? (btn.dataset.email || '') : '';
+                updateParticipantPhoneNumber.value = btn.dataset.phone !== 'null' ? (btn.dataset.phone || '') : '';
+                updateParticipantAddress.value = btn.dataset.address !== 'null' ? (btn.dataset.address || '') : '';
+                updateParticipantNotes.value = btn.dataset.notes !== 'null' ? (btn.dataset.notes || '') : '';
                 updateParticipantFormContainer.classList.remove('d-none');
-                if (addParticipantFormContainer) {
-                    addParticipantFormContainer.classList.add('d-none');
-                }
+                if (addParticipantFormContainer) addParticipantFormContainer.classList.add('d-none');
                 updateParticipantFormContainer.scrollIntoView({behavior: 'smooth', block: 'start'});
             });
         });
@@ -349,10 +409,15 @@
     if (detailsButtons.length > 0 && participantDetailsModalInstance) {
         detailsButtons.forEach((btn) => {
             btn.addEventListener('click', () => {
-                detailsParticipantId.textContent = btn.dataset.id || '-';
-                detailsParticipantName.textContent = btn.dataset.name || '-';
-                detailsParticipantSurname.textContent = btn.dataset.surname || '-';
+                detailsParticipantId.textContent = nullOrDash(btn.dataset.id);
+                detailsParticipantName.textContent = nullOrDash(btn.dataset.name);
+                detailsParticipantSurname.textContent = nullOrDash(btn.dataset.surname);
                 detailsParticipantBirthDate.textContent = isoToEu(btn.dataset.birthdate) || '-';
+                detailsParticipantNickname.textContent = nullOrDash(btn.dataset.nickname);
+                detailsParticipantEmail.textContent = nullOrDash(btn.dataset.email);
+                detailsParticipantPhone.textContent = nullOrDash(btn.dataset.phone);
+                detailsParticipantAddress.textContent = nullOrDash(btn.dataset.address);
+                detailsParticipantNotes.textContent = nullOrDash(btn.dataset.notes);
 
                 detailsParticipantImage.innerHTML = '';
                 const imageUuid = btn.dataset.image;

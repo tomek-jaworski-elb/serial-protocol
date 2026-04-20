@@ -16,8 +16,11 @@ public class TechnicianDTO {
   private UUID id;
   private String name;
   private String surname;
-  private String email;
+  private String notes;
   private String nickname;
+  private String email;
+  private String phoneNumber;
+  private String address;
   private Set<UUID> imagesUuid = new HashSet<>();
 
 }

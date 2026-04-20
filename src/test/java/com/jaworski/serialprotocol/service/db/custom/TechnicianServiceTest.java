@@ -227,6 +227,54 @@ class TechnicianServiceTest {
     }
 
     @Test
+    void save_shouldPersistNotes() {
+        TechnicianDTO dto = createTechnician("Jan", "Kowalski");
+        dto.setNotes("Some technician notes");
+        TechnicianDTO saved = technicianService.save(dto);
+        assertEquals("Some technician notes", saved.getNotes());
+    }
+
+    @Test
+    void save_shouldPersistPhoneNumber() {
+        TechnicianDTO dto = createTechnician("Jan", "Kowalski");
+        dto.setPhoneNumber("+48 111 222 333");
+        TechnicianDTO saved = technicianService.save(dto);
+        assertEquals("+48 111 222 333", saved.getPhoneNumber());
+    }
+
+    @Test
+    void save_shouldPersistAddress() {
+        TechnicianDTO dto = createTechnician("Jan", "Kowalski");
+        dto.setAddress("ul. Techniczna 3, 00-003 Gdańsk");
+        TechnicianDTO saved = technicianService.save(dto);
+        assertEquals("ul. Techniczna 3, 00-003 Gdańsk", saved.getAddress());
+    }
+
+    @Test
+    void updateById_shouldUpdateNotes() {
+        TechnicianDTO saved = technicianService.save(createTechnician("Jan", "Kowalski"));
+        saved.setNotes("Updated technician notes");
+        TechnicianDTO updated = technicianService.updateById(saved);
+        assertEquals("Updated technician notes", updated.getNotes());
+    }
+
+    @Test
+    void updateById_shouldUpdatePhoneNumber() {
+        TechnicianDTO saved = technicianService.save(createTechnician("Jan", "Kowalski"));
+        saved.setPhoneNumber("+48 777 666 555");
+        TechnicianDTO updated = technicianService.updateById(saved);
+        assertEquals("+48 777 666 555", updated.getPhoneNumber());
+    }
+
+    @Test
+    void updateById_shouldUpdateAddress() {
+        TechnicianDTO saved = technicianService.save(createTechnician("Jan", "Kowalski"));
+        saved.setAddress("ul. Serwisowa 10, 00-004 Wrocław");
+        TechnicianDTO updated = technicianService.updateById(saved);
+        assertEquals("ul. Serwisowa 10, 00-004 Wrocław", updated.getAddress());
+    }
+
+    @Test
     void updateById_shouldNotChangeRecordCount() {
         TechnicianDTO saved = technicianService.save(createTechnician("Jan", "Kowalski"));
         saved.setName("Janusz");

@@ -69,7 +69,11 @@ public class TrainerService {
 
     existingTrainer.setName(trainerDTO.getName());
     existingTrainer.setSurname(trainerDTO.getSurname());
+    existingTrainer.setNotes(trainerDTO.getNotes());
+    existingTrainer.setNickname(trainerDTO.getNickname());
     existingTrainer.setEmail(trainerDTO.getEmail());
+    existingTrainer.setPhoneNumber(trainerDTO.getPhoneNumber());
+    existingTrainer.setAddress(trainerDTO.getAddress());
     existingTrainer.setImages(requestedImages);
 
     Trainer updatedTrainer = trainerRepository.save(existingTrainer);

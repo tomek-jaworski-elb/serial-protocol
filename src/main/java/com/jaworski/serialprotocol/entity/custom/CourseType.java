@@ -40,8 +40,7 @@ public class CourseType {
   @Size(max = 255)
   private String description;
 
-  @Column(name = CourseType.TABLE_NAME + "_long_description",nullable = false, length = 5_000)
+  @Column(name = CourseType.TABLE_NAME + "_long_description", nullable = true, length = 5_000)
   @Size(max = 5_000)
-  @NotBlank
   private String longDescription;
 }

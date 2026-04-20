@@ -18,7 +18,11 @@ public class TrainerDTO {
   private UUID id;
   private String name;
   private String surname;
+  private String notes;
+  private String nickname;
   private String email;
+  private String phoneNumber;
+  private String address;
 
   @ToString.Exclude
   @EqualsAndHashCode.Exclude

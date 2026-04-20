@@ -21,8 +21,11 @@ public class LecturerMapper {
     dto.setId(lecturer.getUuid());
     dto.setName(lecturer.getName());
     dto.setSurname(lecturer.getSurname());
-    dto.setEmail(lecturer.getEmail());
+    dto.setNotes(lecturer.getNotes());
     dto.setNickname(lecturer.getNickname());
+    dto.setEmail(lecturer.getEmail());
+    dto.setPhoneNumber(lecturer.getPhoneNumber());
+    dto.setAddress(lecturer.getAddress());
     dto.setImagesUuid(lecturer.getImages() == null
             ? new HashSet<>()
             : lecturer.getImages().stream().map(Image::getId).collect(Collectors.toSet()));
@@ -39,8 +42,11 @@ public class LecturerMapper {
     }
     lecturer.setName(dto.getName());
     lecturer.setSurname(dto.getSurname());
-    lecturer.setEmail(dto.getEmail());
+    lecturer.setNotes(dto.getNotes());
     lecturer.setNickname(dto.getNickname());
+    lecturer.setEmail(dto.getEmail());
+    lecturer.setPhoneNumber(dto.getPhoneNumber());
+    lecturer.setAddress(dto.getAddress());
     Set<Image> images = dto.getImagesUuid() == null
             ? new HashSet<>()
             : dto.getImagesUuid().stream()

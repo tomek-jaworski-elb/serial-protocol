@@ -72,8 +72,11 @@ public class LecturerService {
 
     existingLecturer.setName(dto.getName());
     existingLecturer.setSurname(dto.getSurname());
-    existingLecturer.setEmail(dto.getEmail());
+    existingLecturer.setNotes(dto.getNotes());
     existingLecturer.setNickname(dto.getNickname());
+    existingLecturer.setEmail(dto.getEmail());
+    existingLecturer.setPhoneNumber(dto.getPhoneNumber());
+    existingLecturer.setAddress(dto.getAddress());
     existingLecturer.setImages(requestedImages);
 
     Lecturer updatedLecturer = lecturerRepository.save(existingLecturer);

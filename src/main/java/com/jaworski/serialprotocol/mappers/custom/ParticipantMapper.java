@@ -18,6 +18,11 @@ public class ParticipantMapper {
     dto.setId(participant.getId());
     dto.setName(participant.getName());
     dto.setSurname(participant.getSurname());
+    dto.setNotes(participant.getNotes());
+    dto.setNickname(participant.getNickname());
+    dto.setEmail(participant.getEmail());
+    dto.setPhoneNumber(participant.getPhoneNumber());
+    dto.setAddress(participant.getAddress());
     dto.setBirthDate(participant.getBirthDate());
     dto.setImage(participant.getImage() == null ? null : participant.getImage().getId());
     return dto;
@@ -32,6 +37,11 @@ public class ParticipantMapper {
     participant.setId(dto.getId());
     participant.setName(dto.getName());
     participant.setSurname(dto.getSurname());
+    participant.setNotes(dto.getNotes());
+    participant.setNickname(dto.getNickname());
+    participant.setEmail(dto.getEmail());
+    participant.setPhoneNumber(dto.getPhoneNumber());
+    participant.setAddress(dto.getAddress());
     participant.setBirthDate(dto.getBirthDate());
     if (dto.getImage() != null) {
       Image image = new Image();

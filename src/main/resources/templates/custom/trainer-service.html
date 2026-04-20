@@ -24,27 +24,44 @@
         </div>
     </div>
 
+    <!-- Add form -->
     <div id="addTrainerFormContainer" class="card mb-3 d-none">
         <div class="card-body">
             <h5 class="card-title">Add trainer</h5>
             <form method="post" enctype="multipart/form-data" th:action="@{/trainer-service/add}">
                 <div class="row g-3">
                     <div class="col-md-4">
-                        <label for="trainerName" class="form-label">Name</label>
+                        <label for="trainerName" class="form-label">Name <span class="text-danger">*</span></label>
                         <input id="trainerName" name="name" type="text" class="form-control" maxlength="100" required>
                     </div>
                     <div class="col-md-4">
-                        <label for="trainerSurname" class="form-label">Surname</label>
+                        <label for="trainerSurname" class="form-label">Surname <span class="text-danger">*</span></label>
                         <input id="trainerSurname" name="surname" type="text" class="form-control" maxlength="100" required>
                     </div>
                     <div class="col-md-4">
-                        <label for="trainerEmail" class="form-label">Email</label>
-                        <input id="trainerEmail" name="email" type="email" class="form-control" maxlength="100" required>
+                        <label for="trainerNickname" class="form-label">Nickname</label>
+                        <input id="trainerNickname" name="nickname" type="text" class="form-control" maxlength="100">
                     </div>
-                    <div class="col-12">
+                    <div class="col-md-4">
+                        <label for="trainerEmail" class="form-label">Email</label>
+                        <input id="trainerEmail" name="email" type="email" class="form-control" maxlength="100">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="trainerPhoneNumber" class="form-label">Phone Number</label>
+                        <input id="trainerPhoneNumber" name="phoneNumber" type="text" class="form-control" maxlength="26">
+                    </div>
+                    <div class="col-md-4">
                         <label for="trainerImages" class="form-label">Images</label>
                         <input id="trainerImages" name="imageFiles" type="file" class="form-control" accept="image/*" multiple>
                         <div class="form-text">Optional. You can upload up to 6 images.</div>
+                    </div>
+                    <div class="col-md-8">
+                        <label for="trainerAddress" class="form-label">Address</label>
+                        <input id="trainerAddress" name="address" type="text" class="form-control" maxlength="300">
+                    </div>
+                    <div class="col-12">
+                        <label for="trainerNotes" class="form-label">Notes</label>
+                        <textarea id="trainerNotes" name="notes" class="form-control" maxlength="1000" rows="2"></textarea>
                     </div>
                 </div>
                 <div class="d-flex gap-2 mt-3">
@@ -55,6 +72,7 @@
         </div>
     </div>
 
+    <!-- Update form -->
     <div id="updateTrainerFormContainer" class="card mb-3 d-none">
         <div class="card-body">
             <h5 class="card-title">Update trainer</h5>
@@ -62,21 +80,37 @@
                 <input id="updateTrainerId" name="id" type="hidden" required>
                 <div class="row g-3">
                     <div class="col-md-4">
-                        <label for="updateTrainerName" class="form-label">Name</label>
+                        <label for="updateTrainerName" class="form-label">Name <span class="text-danger">*</span></label>
                         <input id="updateTrainerName" name="name" type="text" class="form-control" maxlength="100" required>
                     </div>
                     <div class="col-md-4">
-                        <label for="updateTrainerSurname" class="form-label">Surname</label>
+                        <label for="updateTrainerSurname" class="form-label">Surname <span class="text-danger">*</span></label>
                         <input id="updateTrainerSurname" name="surname" type="text" class="form-control" maxlength="100" required>
                     </div>
                     <div class="col-md-4">
-                        <label for="updateTrainerEmail" class="form-label">Email</label>
-                        <input id="updateTrainerEmail" name="email" type="email" class="form-control" maxlength="100" required>
+                        <label for="updateTrainerNickname" class="form-label">Nickname</label>
+                        <input id="updateTrainerNickname" name="nickname" type="text" class="form-control" maxlength="100">
                     </div>
-                    <div class="col-12">
+                    <div class="col-md-4">
+                        <label for="updateTrainerEmail" class="form-label">Email</label>
+                        <input id="updateTrainerEmail" name="email" type="email" class="form-control" maxlength="100">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="updateTrainerPhoneNumber" class="form-label">Phone Number</label>
+                        <input id="updateTrainerPhoneNumber" name="phoneNumber" type="text" class="form-control" maxlength="26">
+                    </div>
+                    <div class="col-md-4">
                         <label for="updateTrainerImages" class="form-label">Images</label>
                         <input id="updateTrainerImages" name="imageFiles" type="file" class="form-control" accept="image/*" multiple>
                         <div class="form-text">Optional. Upload new images (max 6) to replace current set.</div>
+                    </div>
+                    <div class="col-md-8">
+                        <label for="updateTrainerAddress" class="form-label">Address</label>
+                        <input id="updateTrainerAddress" name="address" type="text" class="form-control" maxlength="300">
+                    </div>
+                    <div class="col-12">
+                        <label for="updateTrainerNotes" class="form-label">Notes</label>
+                        <textarea id="updateTrainerNotes" name="notes" class="form-control" maxlength="1000" rows="2"></textarea>
                     </div>
                 </div>
                 <div class="d-flex gap-2 mt-3">
@@ -87,6 +121,7 @@
         </div>
     </div>
 
+    <!-- Table -->
     <div class="table-responsive" th:if="${!#lists.isEmpty(trainers)}">
         <table class="table table-striped table-hover align-middle text-center">
             <thead class="table-light">
@@ -94,7 +129,9 @@
                 <th scope="col">#</th>
                 <th scope="col">Name</th>
                 <th scope="col">Surname</th>
+                <th scope="col">Nickname</th>
                 <th scope="col">Email</th>
+                <th scope="col">Phone</th>
                 <th scope="col">Images</th>
                 <th scope="col">Actions</th>
             </tr>
@@ -104,30 +141,26 @@
                 <th scope="row" th:text="${trainerStat.index + 1}">1</th>
                 <td th:text="${trainer.name}">John</td>
                 <td th:text="${trainer.surname}">Doe</td>
-                <td th:text="${trainer.email}">john@example.com</td>
+                <td th:text="${trainer.nickname != null ? trainer.nickname : '—'}">jdoe</td>
+                <td th:text="${trainer.email != null ? trainer.email : '—'}">john@example.com</td>
+                <td th:text="${trainer.phoneNumber != null ? trainer.phoneNumber : '—'}">+48 000</td>
                 <td>
                     <span class="badge text-bg-success" th:if="${trainer.imagesUuid != null && !trainer.imagesUuid.isEmpty()}" th:text="${trainer.imagesUuid.size() + ' assigned'}">1 assigned</span>
                     <span class="badge text-bg-secondary" th:unless="${trainer.imagesUuid != null && !trainer.imagesUuid.isEmpty()}">Missing</span>
                 </td>
                 <td>
                     <div class="d-flex justify-content-center gap-2">
-                        <button
-                                type="button"
-                                class="btn btn-outline-info btn-sm details-trainer-btn"
-                                th:attr="data-id=${trainer.id},data-name=${trainer.name},data-surname=${trainer.surname},data-email=${trainer.email},data-images=${trainer.imagesUuid}">
+                        <button type="button" class="btn btn-outline-info btn-sm details-trainer-btn"
+                                th:attr="data-id=${trainer.id},data-name=${trainer.name},data-surname=${trainer.surname},data-nickname=${trainer.nickname},data-email=${trainer.email},data-phone=${trainer.phoneNumber},data-address=${trainer.address},data-notes=${trainer.notes},data-images=${trainer.imagesUuid}">
                             Details
                         </button>
-                        <button
-                                type="button"
-                                class="btn btn-outline-warning btn-sm update-trainer-btn"
-                                th:attr="data-id=${trainer.id},data-name=${trainer.name},data-surname=${trainer.surname},data-email=${trainer.email}">
+                        <button type="button" class="btn btn-outline-warning btn-sm update-trainer-btn"
+                                th:attr="data-id=${trainer.id},data-name=${trainer.name},data-surname=${trainer.surname},data-nickname=${trainer.nickname},data-email=${trainer.email},data-phone=${trainer.phoneNumber},data-address=${trainer.address},data-notes=${trainer.notes}">
                             Update
                         </button>
                         <form method="post" th:action="@{/trainer-service/delete/{id}(id=${trainer.id})}">
                             <button type="submit" class="btn btn-outline-danger btn-sm"
-                                    onclick="return confirm('Are you sure you want to delete this item?');">
-                                Delete
-                            </button>
+                                    onclick="return confirm('Are you sure you want to delete this item?');">Delete</button>
                         </form>
                     </div>
                 </td>
@@ -136,11 +169,10 @@
         </table>
     </div>
 
-    <div class="alert alert-info text-center" th:if="${#lists.isEmpty(trainers)}">
-        No trainers found.
-    </div>
+    <div class="alert alert-info text-center" th:if="${#lists.isEmpty(trainers)}">No trainers found.</div>
 </div>
 
+<!-- Details Modal -->
 <div class="modal fade" id="trainerDetailsModal" tabindex="-1" aria-labelledby="trainerDetailsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
@@ -154,7 +186,11 @@
                         <p class="mb-2"><strong>ID:</strong> <span id="detailsTrainerId">-</span></p>
                         <p class="mb-2"><strong>Name:</strong> <span id="detailsTrainerName">-</span></p>
                         <p class="mb-2"><strong>Surname:</strong> <span id="detailsTrainerSurname">-</span></p>
-                        <p class="mb-0"><strong>Email:</strong> <span id="detailsTrainerEmail">-</span></p>
+                        <p class="mb-2"><strong>Nickname:</strong> <span id="detailsTrainerNickname">-</span></p>
+                        <p class="mb-2"><strong>Email:</strong> <span id="detailsTrainerEmail">-</span></p>
+                        <p class="mb-2"><strong>Phone:</strong> <span id="detailsTrainerPhone">-</span></p>
+                        <p class="mb-2"><strong>Address:</strong> <span id="detailsTrainerAddress">-</span></p>
+                        <p class="mb-0"><strong>Notes:</strong> <span id="detailsTrainerNotes">-</span></p>
                     </div>
                     <div class="col-md-5">
                         <p class="mb-1"><strong>Images:</strong></p>
@@ -181,59 +217,52 @@
     const updateTrainerId = document.getElementById('updateTrainerId');
     const updateTrainerName = document.getElementById('updateTrainerName');
     const updateTrainerSurname = document.getElementById('updateTrainerSurname');
+    const updateTrainerNickname = document.getElementById('updateTrainerNickname');
     const updateTrainerEmail = document.getElementById('updateTrainerEmail');
+    const updateTrainerPhoneNumber = document.getElementById('updateTrainerPhoneNumber');
+    const updateTrainerAddress = document.getElementById('updateTrainerAddress');
+    const updateTrainerNotes = document.getElementById('updateTrainerNotes');
     const detailsButtons = document.querySelectorAll('.details-trainer-btn');
     const trainerDetailsModal = document.getElementById('trainerDetailsModal');
     const detailsTrainerId = document.getElementById('detailsTrainerId');
     const detailsTrainerName = document.getElementById('detailsTrainerName');
     const detailsTrainerSurname = document.getElementById('detailsTrainerSurname');
+    const detailsTrainerNickname = document.getElementById('detailsTrainerNickname');
     const detailsTrainerEmail = document.getElementById('detailsTrainerEmail');
+    const detailsTrainerPhone = document.getElementById('detailsTrainerPhone');
+    const detailsTrainerAddress = document.getElementById('detailsTrainerAddress');
+    const detailsTrainerNotes = document.getElementById('detailsTrainerNotes');
     const detailsTrainerImages = document.getElementById('detailsTrainerImages');
     const detailsTrainerNoImages = document.getElementById('detailsTrainerNoImages');
     const successAlert = document.getElementById('successAlert');
 
     const trainerDetailsModalInstance =
         trainerDetailsModal && window.bootstrap && window.bootstrap.Modal
-            ? window.bootstrap.Modal.getOrCreateInstance(trainerDetailsModal)
-            : null;
+            ? window.bootstrap.Modal.getOrCreateInstance(trainerDetailsModal) : null;
 
     const parseUuidList = (value) =>
-        (value || '')
-            .replace(/^\[/, '')
-            .replace(/\]$/, '')
-            .split(',')
-            .map((item) => item.trim())
-            .filter(Boolean);
+        (value || '').replace(/^\[/, '').replace(/\]$/, '').split(',').map(s => s.trim()).filter(Boolean);
+
+    const nullOrDash = (v) => (v && v !== 'null' ? v : '-');
 
     if (successAlert) {
         setTimeout(() => {
             if (window.bootstrap && window.bootstrap.Alert) {
-                const alertInstance = window.bootstrap.Alert.getOrCreateInstance(successAlert);
-                alertInstance.close();
-            } else {
-                successAlert.classList.remove('show');
-                successAlert.remove();
-            }
+                window.bootstrap.Alert.getOrCreateInstance(successAlert).close();
+            } else { successAlert.remove(); }
         }, 10000);
     }
 
     if (showAddFormBtn && hideAddFormBtn && addTrainerFormContainer) {
         showAddFormBtn.addEventListener('click', () => {
             addTrainerFormContainer.classList.remove('d-none');
-            if (updateTrainerFormContainer) {
-                updateTrainerFormContainer.classList.add('d-none');
-            }
+            if (updateTrainerFormContainer) updateTrainerFormContainer.classList.add('d-none');
         });
-
-        hideAddFormBtn.addEventListener('click', () => {
-            addTrainerFormContainer.classList.add('d-none');
-        });
+        hideAddFormBtn.addEventListener('click', () => addTrainerFormContainer.classList.add('d-none'));
     }
 
     if (hideUpdateFormBtn && updateTrainerFormContainer) {
-        hideUpdateFormBtn.addEventListener('click', () => {
-            updateTrainerFormContainer.classList.add('d-none');
-        });
+        hideUpdateFormBtn.addEventListener('click', () => updateTrainerFormContainer.classList.add('d-none'));
     }
 
     if (updateButtons.length > 0 && updateTrainerFormContainer) {
@@ -242,11 +271,13 @@
                 updateTrainerId.value = btn.dataset.id || '';
                 updateTrainerName.value = btn.dataset.name || '';
                 updateTrainerSurname.value = btn.dataset.surname || '';
-                updateTrainerEmail.value = btn.dataset.email || '';
+                updateTrainerNickname.value = btn.dataset.nickname !== 'null' ? (btn.dataset.nickname || '') : '';
+                updateTrainerEmail.value = btn.dataset.email !== 'null' ? (btn.dataset.email || '') : '';
+                updateTrainerPhoneNumber.value = btn.dataset.phone !== 'null' ? (btn.dataset.phone || '') : '';
+                updateTrainerAddress.value = btn.dataset.address !== 'null' ? (btn.dataset.address || '') : '';
+                updateTrainerNotes.value = btn.dataset.notes !== 'null' ? (btn.dataset.notes || '') : '';
                 updateTrainerFormContainer.classList.remove('d-none');
-                if (addTrainerFormContainer) {
-                    addTrainerFormContainer.classList.add('d-none');
-                }
+                if (addTrainerFormContainer) addTrainerFormContainer.classList.add('d-none');
                 updateTrainerFormContainer.scrollIntoView({behavior: 'smooth', block: 'start'});
             });
         });
@@ -255,11 +286,14 @@
     if (detailsButtons.length > 0 && trainerDetailsModalInstance) {
         detailsButtons.forEach((btn) => {
             btn.addEventListener('click', () => {
-                detailsTrainerId.textContent = btn.dataset.id || '-';
-                detailsTrainerName.textContent = btn.dataset.name || '-';
-                detailsTrainerSurname.textContent = btn.dataset.surname || '-';
-                detailsTrainerEmail.textContent = btn.dataset.email || '-';
-
+                detailsTrainerId.textContent = nullOrDash(btn.dataset.id);
+                detailsTrainerName.textContent = nullOrDash(btn.dataset.name);
+                detailsTrainerSurname.textContent = nullOrDash(btn.dataset.surname);
+                detailsTrainerNickname.textContent = nullOrDash(btn.dataset.nickname);
+                detailsTrainerEmail.textContent = nullOrDash(btn.dataset.email);
+                detailsTrainerPhone.textContent = nullOrDash(btn.dataset.phone);
+                detailsTrainerAddress.textContent = nullOrDash(btn.dataset.address);
+                detailsTrainerNotes.textContent = nullOrDash(btn.dataset.notes);
                 detailsTrainerImages.innerHTML = '';
                 const imageUuids = parseUuidList(btn.dataset.images);
                 if (imageUuids.length > 0) {
