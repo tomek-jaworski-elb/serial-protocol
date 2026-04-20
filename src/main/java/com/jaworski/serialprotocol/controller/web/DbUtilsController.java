@@ -10,10 +10,10 @@ import com.jaworski.serialprotocol.service.db.DatabaseBackupService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -58,32 +58,24 @@ public class DbUtilsController {
     }
 
     /**
-     * Creates a full database backup and returns it as a downloadable
-     * GZIP-compressed JSON file.
+     * Creates a full database backup and streams it directly to the client as a
+     * GZIP-compressed JSON file. Writes synchronously to the response output stream –
+     * no intermediate byte[] buffer, handles databases of arbitrary size.
      */
     @PostMapping("/backup")
-    public ResponseEntity<byte[]> backup() {
-        try {
-            byte[] backupData = databaseBackupService.createBackup();
-            String filename = "db-backup-" + LocalDateTime.now().format(FILENAME_FORMATTER) + ".json.gz";
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentDisposition(
-                    ContentDisposition.attachment().filename(filename).build());
-            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-            headers.setContentLength(backupData.length);
-
-            LOG.info("Backup download: filename={}, size={} bytes", filename, backupData.length);
-            return ResponseEntity.ok().headers(headers).body(backupData);
-
-        } catch (IOException e) {
-            LOG.error("Failed to create backup", e);
-            return ResponseEntity.internalServerError().build();
-        }
+    public void backup(HttpServletResponse response) throws IOException {
+        String filename = "db-backup-" + LocalDateTime.now().format(FILENAME_FORMATTER) + ".json.gz";
+        response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE);
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
+                ContentDisposition.attachment().filename(filename).build().toString());
+        databaseBackupService.createBackup(response.getOutputStream());
+        response.flushBuffer();
+        LOG.info("Backup download streamed: filename={}", filename);
     }
 
     /**
      * Accepts a previously created backup file and restores the database.
+     * The uploaded file is read as a stream – no full byte[] copy in memory.
      * All existing data is replaced.
      */
     @PostMapping("/restore")
@@ -96,9 +88,8 @@ public class DbUtilsController {
             return "redirect:/db-utils";
         }
 
-        try {
-            byte[] data = backupFile.getBytes();
-            databaseBackupService.restoreFromBackup(data);
+        try (java.io.InputStream is = backupFile.getInputStream()) {
+            databaseBackupService.restoreFromBackup(is);
             redirectAttributes.addFlashAttribute("successMessage",
                     "Database restored successfully from '" + backupFile.getOriginalFilename() + "'.");
             LOG.info("Database restored from file: {}", backupFile.getOriginalFilename());
@@ -120,4 +111,3 @@ public class DbUtilsController {
         return "redirect:/db-utils";
     }
 }
-
