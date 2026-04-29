@@ -114,4 +114,8 @@ public class Resources {
     @Value("${custom.server.credentials.admin.password}")
     @Getter
     private String serverAdminPassword;
+
+    @Value("${app.runs.test-enabled:false}")
+    @Getter
+    private boolean testEnabled;
 }

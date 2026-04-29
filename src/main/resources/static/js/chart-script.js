@@ -252,13 +252,14 @@ function createKonvaObjectsForModels() {
             closed: true,
             stroke: 'black',
             strokeWidth: 1,
-            listening: true // od razu pozwalamy na eventy
+            listening: true, // od razu pozwalamy na eventy
+            hitStrokeWidth: 25 // zwiększamy obszar klikalny
         });
 
         // handler kliknięcia statku
-        shipShape.on("click", (ev) => {
+        shipShape.on("click tap", (ev) => {
             // zabezpieczenie: czy tooltip istnieje?
-            if (!tooltipText || !tooltipBg || !tooltipLayer) {
+            if (!tooltipTexts || tooltipTexts.length === 0 || !tooltipBg || !tooltipLayer) {
                 console.warn("Tooltip nie jest jeszcze zainicjowany");
                 return;
             }
@@ -266,33 +267,23 @@ function createKonvaObjectsForModels() {
             // zapobiegaj propagacji do stage
             ev.cancelBubble = true;
 
-            const modelInfo = ModelsOfShips.getValueFromId(id);
-            const modelName = modelInfo ? modelInfo.name : `Model ${id}`;
+            currentTooltipShipId = id;
 
-            // Pobieramy aktualne dane statku
-            const obj = KonvaObjects[id];
-            const lastAngle = obj?.lastAngle ?? 0;
-            const lastSpeed = document.getElementById(modelsConfig[id].speedField)?.textContent ?? "0";
-
-            // Konva.Text nie obsługuje HTML, więc użyjemy prostego formatowania per linia
-            tooltipText.text(` ${modelName}\n ${parseFloat(lastSpeed).toFixed(1)} kn\n ${parseFloat(lastAngle).toFixed(1)}°`);
-
-            const mousePos = konvaStage.getPointerPosition() || { x: 0, y: 0 };
-
-            // ustawiamy pozycję tooltipa
-            const px = mousePos.x + 10;
-            const py = mousePos.y + 10;
-            tooltipText.position({ x: px, y: py });
-
-            // dopasuj tło do tekstu (dodajemy padding)
-            const padding = tooltipText.padding() || 6;
-            tooltipBg.position({ x: px, y: py });
-            tooltipBg.width(tooltipText.width() + padding * 2);
-            tooltipBg.height(tooltipText.height() + padding * 2);
+            // Ustaw początkowy tooltip
+            updateTooltipContent(id);
 
             tooltipBg.visible(true);
-            tooltipText.visible(true);
-            tooltipLayer.batchDraw();
+            for (let t of tooltipTexts) {
+                t.visible(true);
+            }
+
+            // Uruchom interwał do aktualizacji (dla zmiany czasu)
+            if (tooltipUpdateInterval) clearInterval(tooltipUpdateInterval);
+            tooltipUpdateInterval = setInterval(() => {
+                if (currentTooltipShipId === id) {
+                    updateTooltipContent(id);
+                }
+            }, 1000);
         });
 
         konvaShipLayer.add(shipShape);
@@ -303,7 +294,8 @@ function createKonvaObjectsForModels() {
             lastPos: { x: 0, y: 0 },
             lastAngle: 0,
             lastSpeed: 0,
-            lastHeading: 0
+            lastHeading: 0,
+            lastUpdateTime: null
         };
     }
     konvaTrackLayer.draw();
@@ -334,6 +326,12 @@ function updateKonvaShip(id, x, y, angle) {
     }
     obj.lastPos = { x, y };
     obj.lastAngle = angle;
+
+    // Jeśli tooltip jest widoczny dla tego statku, zaktualizuj jego zawartość i pozycję natychmiast
+    if (currentTooltipShipId === id && tooltipTexts && tooltipTexts.length > 0 && tooltipBg && tooltipLayer) {
+        // Aktualizuj zawartość tooltip (wartości, czas)
+        updateTooltipContent(id);
+    }
 }
 
 // Aktualizuje Konva-ową linię trasy na podstawie tablicy punktów cfg.track
@@ -431,6 +429,7 @@ function updateModelDisplay(config, modelId, positionX, positionY, angle, speed,
     if (KonvaObjects[modelId]) {
         KonvaObjects[modelId].lastSpeed = speed;
         KonvaObjects[modelId].lastHeading = angle;
+        KonvaObjects[modelId].lastUpdateTime = Date.now();
         updateKonvaShip(modelId, positionX, positionY, angle);
     } else {
         // fallback: rysuj na canvasie
@@ -577,8 +576,8 @@ function ledBlink(elementId, duration) {
 // ------------------------------------------------------------------
 // TEST funkcja runShipTest - teraz korzysta z updateModelDisplay (Konva się zaktualizuje)
 // ------------------------------------------------------------------
-const ENABLE_TEST_RUNS = false;
-const ENABLE_TRIANGLE_RUNS = false;
+const ENABLE_TEST_RUNS = ENABLE_TEST_RUNS_VAR;
+const ENABLE_TRIANGLE_RUNS = ENABLE_TEST_RUNS_VAR;
 
 function runShipTest(id, angleQ, center_X, center_Y, step, intervalIn) {
     console.log("Starting ship and track test...");
@@ -608,12 +607,12 @@ function runShipTest(id, angleQ, center_X, center_Y, step, intervalIn) {
 
 // uruchamiamy test (odkomentuj/usun w produkcji)
 if (ENABLE_TEST_RUNS) {
-    runShipTest(1, 0, 400, 400, 36, 500);
-    runShipTest(2, Math.PI/4, 300, 600, 63,222);
-    runShipTest(3, -Math.PI/3, 600, 400, 50,333);
-    runShipTest(4, -Math.PI/5, 540, 320, 70,333);
-    runShipTest(5, -Math.PI/2.5, 400, 230, 70,333);
-    runShipTest(6, -Math.PI/2, 333, 333, 70,333);
+    runShipTest(1, 0, 400, 400, 36, 2000);
+    runShipTest(2, Math.PI/4, 300, 600, 63,1500);
+    runShipTest(3, -Math.PI/3, 600, 400, 50,2500);
+    runShipTest(4, -Math.PI/5, 540, 320, 70,1333);
+    runShipTest(5, -Math.PI/2.5, 400, 230, 70,2800);
+    runShipTest(6, -Math.PI/2, 333, 333, 70,750);
 }
 
 function drawTriangle(x, y, size = 20, color = "red", label = "") {
@@ -676,9 +675,92 @@ document.addEventListener("visibilitychange", () => {
 });
 
 // === TOOLTIP KONVA ===
+function getTimeAgo(timestamp) {
+    const now = Date.now();
+    const diff = now - timestamp;
+    const seconds = Math.floor(diff / 1000);
+    if (seconds < 60) return `${seconds} seconds ago`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes} minutes ago`;
+    const hours = Math.floor(minutes / 60);
+    return `${hours} hours ago`;
+}
+
 let tooltipLayer = null;
-let tooltipText = null;
+let tooltipTexts = []; // tablica dla tekstu nazwy (bold) i pozostałych linii
 let tooltipBg = null;
+let tooltipUpdateInterval = null;
+let currentTooltipShipId = null;
+
+// Funkcja do aktualizacji zawartości tooltip na podstawie ID statku
+function updateTooltipContent(id) {
+    if (!tooltipTexts || tooltipTexts.length === 0 || !tooltipBg || !tooltipLayer) return;
+
+    const obj = KonvaObjects[id];
+    const cfg = modelsConfig[id];
+    if (!obj || !cfg) return;
+
+    const modelInfo = ModelsOfShips.getValueFromId(id);
+    const modelName = modelInfo ? modelInfo.name : `Model ${id}`;
+
+    // Pobieramy aktualne dane z obiektu Konva (zawsze świeże wartości)
+    const lastAngle = obj.lastAngle ?? 0;
+    const lastSpeed = document.getElementById(cfg.speedField)?.textContent ?? "0";
+    const lastUpdateTime = obj.lastUpdateTime;
+    const updateStr = lastUpdateTime ? `Updated: ${getTimeAgo(lastUpdateTime)}` : 'No update';
+
+    // Dane do wyświetlenia - teraz każdy element to tablica [tekst, czyBold]
+    const contentData = [
+        [{ text: modelName, isBold: true }],  // nazwa statku - jeden element
+        [{ text: "Speed:", isBold: false }, { text: `${parseFloat(lastSpeed).toFixed(1)} kn`, isBold: true }],  // Speed: etykieta normalna + wartość pogrubiona
+        [{ text: "Heading:", isBold: false }, { text: `${parseFloat(lastAngle).toFixed(1)}°`, isBold: true }],  // Heading: etykieta normalna + wartość pogrubiona
+        [{ text: "Updated:", isBold: false }, { text: lastUpdateTime ? getTimeAgo(lastUpdateTime) : 'No update', isBold: true }]  // Updated: etykieta normalna + wartość pogrubiona
+    ];
+
+    // Aktualizuj teksty
+    let textIndex = 0;
+    for (let line of contentData) {
+        for (let item of line) {
+            if (tooltipTexts[textIndex]) {
+                tooltipTexts[textIndex].text(item.text);
+                tooltipTexts[textIndex].fontStyle(item.isBold ? 'bold' : 'normal');
+            }
+            textIndex++;
+        }
+    }
+
+    // Oblicz wymiary tooltip na podstawie wszystkich tekstów
+    const padding = 8;
+    let maxWidth = 0;
+    let totalHeight = 0;
+
+    for (let t of tooltipTexts) {
+        maxWidth = Math.max(maxWidth, t.width());
+        totalHeight += t.height();
+    }
+
+    const lineSpacing = 4;
+    totalHeight += lineSpacing * (tooltipTexts.length - 1);
+
+    tooltipBg.width(maxWidth + padding * 2);
+    tooltipBg.height(totalHeight + padding * 2);
+
+    // Aktualizuj pozycję tooltip na podstawie pozycji statku
+    const shipPos = obj.lastPos;
+    const px = shipPos.x + 10;
+    const py = shipPos.y + 10;
+
+    // Ustawianie pozycji dla każdego tekstu
+    let currentY = py + padding;
+    for (let t of tooltipTexts) {
+        t.position({ x: px + padding, y: currentY });
+        currentY += t.height() + lineSpacing;
+    }
+
+    tooltipBg.position({ x: px, y: py });
+
+    tooltipLayer.batchDraw();
+}
 
 function initTooltip() {
     if (!konvaStage) {
@@ -690,7 +772,7 @@ function initTooltip() {
     if (tooltipLayer) {
         tooltipLayer.destroy();
         tooltipLayer = null;
-        tooltipText = null;
+        tooltipTexts = [];
         tooltipBg = null;
     }
 
@@ -698,34 +780,59 @@ function initTooltip() {
 
     tooltipBg = new Konva.Rect({
         x: 0, y: 0,
-        width: 140, height: 40,
+        width: 0, height: 0,
         fill: "rgba(0,0,0,0.7)",
         cornerRadius: 6,
         visible: false
     });
 
-    tooltipText = new Konva.Text({
-        x: 0, y: 0,
-        fontFamily: 'Calibri',
-        text: "",
-        fontSize: 14,
-        fill: "white",
-        padding: 6,
-        visible: false
-    });
-
+    // Dodaj tło PIERWSZE (będzie na dnie)
     tooltipLayer.add(tooltipBg);
-    tooltipLayer.add(tooltipText);
+
+    // Tworzenie 8 tekstów: nazwa + Speed (etykieta + wartość) + Heading (etykieta + wartość) + Updated (etykieta + wartość)
+    tooltipTexts = [];
+    const textConfigs = [
+        { isBold: true, fontSize: 15 },   // nazwa statku
+        { isBold: false, fontSize: 13 },  // Speed: etykieta
+        { isBold: true, fontSize: 13 },   // wartość Speed
+        { isBold: false, fontSize: 13 },  // Heading: etykieta
+        { isBold: true, fontSize: 13 },   // wartość Heading
+        { isBold: false, fontSize: 12 },  // Updated: etykieta
+        { isBold: true, fontSize: 12 }    // wartość Updated
+    ];
+
+    for (let i = 0; i < textConfigs.length; i++) {
+        const config = textConfigs[i];
+        const txt = new Konva.Text({
+            x: 0, y: 0,
+            fontFamily: 'Calibri',
+            fontStyle: config.isBold ? 'bold' : 'normal',
+            text: "",
+            fontSize: config.fontSize,
+            fill: "white",
+            visible: false
+        });
+        tooltipLayer.add(txt);
+        tooltipTexts.push(txt);
+    }
+
     konvaStage.add(tooltipLayer);
     tooltipLayer.draw();
 }
 
 // ukrywanie tooltipa
 function hideTooltip() {
-    if (!tooltipLayer || !tooltipText || !tooltipBg) return;
+    if (!tooltipLayer || !tooltipBg) return;
     tooltipBg.visible(false);
-    tooltipText.visible(false);
+    for (let t of tooltipTexts) {
+        t.visible(false);
+    }
     tooltipLayer.batchDraw();
+    if (tooltipUpdateInterval) {
+        clearInterval(tooltipUpdateInterval);
+        tooltipUpdateInterval = null;
+    }
+    currentTooltipShipId = null;
 }
 
 // ------------------------------------------------------------------
@@ -738,7 +845,7 @@ function hideTooltip() {
         createKonvaObjectsForModels(); // teraz tworzymy statki (handlery mają dostęp do tooltip)
         // stage click => ukryj tooltip
         if (konvaStage) {
-            konvaStage.on("click", () => {
+            konvaStage.on("click tap", () => {
                 hideTooltip();
             });
         }
