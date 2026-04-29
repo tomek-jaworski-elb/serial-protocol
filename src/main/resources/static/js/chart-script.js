@@ -252,11 +252,12 @@ function createKonvaObjectsForModels() {
             closed: true,
             stroke: 'black',
             strokeWidth: 1,
-            listening: true // od razu pozwalamy na eventy
+            listening: true, // od razu pozwalamy na eventy
+            hitStrokeWidth: 25 // zwiększamy obszar klikalny
         });
 
         // handler kliknięcia statku
-        shipShape.on("click", (ev) => {
+        shipShape.on("click tap", (ev) => {
             // zabezpieczenie: czy tooltip istnieje?
             if (!tooltipTexts || tooltipTexts.length === 0 || !tooltipBg || !tooltipLayer) {
                 console.warn("Tooltip nie jest jeszcze zainicjowany");
@@ -844,7 +845,7 @@ function hideTooltip() {
         createKonvaObjectsForModels(); // teraz tworzymy statki (handlery mają dostęp do tooltip)
         // stage click => ukryj tooltip
         if (konvaStage) {
-            konvaStage.on("click", () => {
+            konvaStage.on("click tap", () => {
                 hideTooltip();
             });
         }
