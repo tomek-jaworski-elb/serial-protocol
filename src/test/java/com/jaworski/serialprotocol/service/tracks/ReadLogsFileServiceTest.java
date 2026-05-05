@@ -1,6 +1,7 @@
 package com.jaworski.serialprotocol.service.tracks;
 
 import com.jaworski.serialprotocol.resources.Resources;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -37,7 +38,7 @@ class ReadLogsFileServiceTest {
             List<String> strings = readLogsFileService.readLogs();
 
             // Verify that the file was read
-            assertThat(strings).isNotNull().asList().isEmpty();
+            assertThat(strings).isNotNull().asInstanceOf(InstanceOfAssertFactories.LIST).isEmpty();
         }
     }
 
@@ -51,7 +52,7 @@ class ReadLogsFileServiceTest {
             List<String> strings = readLogsFileService.readLogs();
 
             // Verify that the file was read
-            assertThat(strings).isNotNull().asList().isNotEmpty().hasSize(3)
+            assertThat(strings).isNotNull().asInstanceOf(InstanceOfAssertFactories.LIST).isNotEmpty().hasSize(3)
                     .element(0).isEqualTo("Line 1");
         }
     }
