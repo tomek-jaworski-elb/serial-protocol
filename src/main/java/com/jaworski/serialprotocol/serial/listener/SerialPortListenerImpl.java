@@ -1,6 +1,5 @@
 package com.jaworski.serialprotocol.serial.listener;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fazecast.jSerialComm.SerialPort;
 import com.fazecast.jSerialComm.SerialPortEvent;
 import com.fazecast.jSerialComm.SerialPortMessageListener;
@@ -14,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import tools.jackson.core.JacksonException;
 
 import java.util.Arrays;
 
@@ -59,7 +59,7 @@ public class SerialPortListenerImpl implements SerialPortMessageListener {
             webSocketPublisher.publishForAllClients(jsonString, SessionType.JSON);
         } catch (IllegalArgumentException e) {
             LOG.error("Failed to translate message: {}", Arrays.toString(delimitedMessage), e);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             LOG.error("Failed to serialize message: {}", Arrays.toString(delimitedMessage), e);
         }
     }

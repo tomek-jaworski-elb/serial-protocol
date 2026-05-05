@@ -15,10 +15,8 @@ import org.apache.hc.core5.http.config.Registry;
 import org.apache.hc.core5.http.config.RegistryBuilder;
 import org.apache.hc.core5.ssl.SSLContexts;
 import org.apache.hc.core5.ssl.TrustStrategy;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
@@ -28,7 +26,7 @@ import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 @Configuration
 @RequiredArgsConstructor
@@ -53,8 +51,8 @@ public class RestTemplateClient {
                 .setConnectionManager(connectionManager)
                 .build();
         HttpComponentsClientHttpRequestFactory httpRequestFactory = new HttpComponentsClientHttpRequestFactory(httpClient);
-        httpRequestFactory.setConnectTimeout(Duration.of(20, ChronoUnit.SECONDS));
-        httpRequestFactory.setConnectionRequestTimeout(Duration.of(20, ChronoUnit.SECONDS));
+        httpRequestFactory.setConnectionRequestTimeout(Duration.ofSeconds(20));
+        httpRequestFactory.setReadTimeout(Duration.ofSeconds(20));
         return httpRequestFactory;
     }
 
@@ -63,11 +61,13 @@ public class RestTemplateClient {
         HttpComponentsClientHttpRequestFactory requestFactory = getRequestFactory();
 
         User user = userService.getUser();
-        return new RestTemplateBuilder()
-                .basicAuthentication(user.getName(), user.getPassword())
-                .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
-                .requestFactory(() -> requestFactory)
-                .build();
+        RestTemplate restTemplate = new RestTemplate(requestFactory);
+        restTemplate.getInterceptors().add((request, body, execution) -> {
+            request.getHeaders().setBasicAuth(user.getName(), user.getPassword());
+            request.getHeaders().setAccept(List.of(MediaType.APPLICATION_JSON));
+            return execution.execute(request, body);
+        });
+        return restTemplate;
     }
 
 }

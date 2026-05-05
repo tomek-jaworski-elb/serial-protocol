@@ -1,6 +1,6 @@
 package com.jaworski.serialprotocol.service.utils;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import tools.jackson.core.JacksonException;
 import com.jaworski.serialprotocol.dto.ModelTrackDTO;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -53,7 +53,7 @@ class ModelDTOTest {
   @ParameterizedTest
   @MethodSource("provideInputData")
   @DisplayName("Test getModelId with various inputs")
-  void realDataMessageToDTOTest(byte[] message, int expected,  boolean isValid) throws JsonProcessingException, IllegalArgumentException {
+  void realDataMessageToDTOTest(byte[] message, int expected,  boolean isValid) throws JacksonException, IllegalArgumentException {
     ModelTrackDTO dto = assertDoesNotThrow(() -> messageTranslator.getDTO(message));
     System.out.println(dto);
     System.out.println(jsonMapperService.toJsonString(dto));

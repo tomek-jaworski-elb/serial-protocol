@@ -2,14 +2,12 @@ package com.jaworski.serialprotocol.service.tracks;
 
 import com.jaworski.serialprotocol.dto.CheckBoxOption;
 import com.jaworski.serialprotocol.dto.LogItem;
-import com.jaworski.serialprotocol.resources.Resources;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -26,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
-@SpringBootTest(classes = {TrackService.class, ReadLogsFileService.class, Resources.class})
+@ExtendWith(MockitoExtension.class)
 class TrackServiceTest {
 
     @Mock
@@ -35,10 +33,6 @@ class TrackServiceTest {
     @InjectMocks
     private TrackService trackService;
 
-    @BeforeAll
-    static void setup() {
-        MockitoAnnotations.openMocks(TrackServiceTest.class);//without this you will get NPE
-    }
 
     @Test
     void returnEmptyMap_whenNoModels() throws IOException {
