@@ -31,7 +31,11 @@ build/
 
 ### VS Code ###
 .vscode/
-/.mvn/
+# Keep Maven Wrapper files in repository for CI
+!/.mvn/
+!/.mvn/wrapper/
+!/.mvn/wrapper/maven-wrapper.jar
+!/.mvn/wrapper/maven-wrapper.properties
 /sps.tgz
 /*.tgz
 /logs/

@@ -24,10 +24,18 @@ jobs:
           cache: maven
 
       - name: Ensure Maven wrapper is executable
-        run: chmod +x mvnw
+        run: |
+          if [ -f "./mvnw" ]; then
+            chmod +x mvnw
+          fi
 
       - name: Run tests
-        run: ./mvnw -B test
+        run: |
+          if [ -f "./mvnw" ] && [ -f "./.mvn/wrapper/maven-wrapper.properties" ]; then
+            ./mvnw -B test
+          else
+            mvn -B test
+          fi
 
   build:
     name: Build package
@@ -46,8 +54,15 @@ jobs:
           cache: maven
 
       - name: Ensure Maven wrapper is executable
-        run: chmod +x mvnw
+        run: |
+          if [ -f "./mvnw" ]; then
+            chmod +x mvnw
+          fi
 
       - name: Build application package
-        run: ./mvnw -B -DskipTests package
-
+        run: |
+          if [ -f "./mvnw" ] && [ -f "./.mvn/wrapper/maven-wrapper.properties" ]; then
+            ./mvnw -B -DskipTests package
+          else
+            mvn -B -DskipTests package
+          fi
