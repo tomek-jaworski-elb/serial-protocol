@@ -283,7 +283,7 @@ function createKonvaObjectsForModels() {
                 if (currentTooltipShipId === id) {
                     updateTooltipContent(id);
                 }
-            }, 1000);
+            }, 100);
         });
 
         konvaShipLayer.add(shipShape);
@@ -678,11 +678,11 @@ document.addEventListener("visibilitychange", () => {
 function getTimeAgo(timestamp) {
     const now = Date.now();
     const diff = now - timestamp;
-    const seconds = Math.floor(diff / 1000);
+    const seconds = parseFloat((diff / 1000).toFixed(1)).toFixed(1);
     if (seconds < 60) return `${seconds} seconds ago`;
-    const minutes = Math.floor(seconds / 60);
+    const minutes = parseFloat((seconds / 60).toFixed(1)).toFixed(1);
     if (minutes < 60) return `${minutes} minutes ago`;
-    const hours = Math.floor(minutes / 60);
+    const hours = parseFloat((minutes / 60).toFixed(1)).toFixed(1);
     return `${hours} hours ago`;
 }
 

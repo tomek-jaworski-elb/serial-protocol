@@ -2,7 +2,6 @@ package com.jaworski.serialprotocol.controller.web;
 
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.boot.web.servlet.error.ErrorController;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -12,7 +11,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 @Controller
-public class MyErrorController implements ErrorController {
+public class MyErrorController {
 
     @GetMapping("/error")
     public String getErrorPath(HttpServletRequest request, Model model) {

@@ -1,7 +1,7 @@
 package com.jaworski.serialprotocol.restclient;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.jaworski.serialprotocol.configuration.RestTemplateClient;
 import com.jaworski.serialprotocol.dto.StudentDTO;
 import com.jaworski.serialprotocol.exception.CustomRestException;
@@ -56,7 +56,7 @@ class RestNameServiceTest {
     }
 
     @Test
-    void testGetNames_HappyPath() throws URISyntaxException, CustomRestException, JsonProcessingException {
+    void testGetNames_HappyPath() throws URISyntaxException, CustomRestException, JacksonException {
         StudentDTO studentDTO = new StudentDTO();
         studentDTO.setName("name");
         studentDTO.setId(1);
@@ -80,7 +80,7 @@ class RestNameServiceTest {
     }
 
     @Test
-    void testGetNamesLatest_HappyPath() throws URISyntaxException, CustomRestException, JsonProcessingException {
+    void testGetNamesLatest_HappyPath() throws URISyntaxException, CustomRestException, JacksonException {
         StudentDTO studentDTO = new StudentDTO();
         studentDTO.setName("name");
         List<StudentDTO> studentsSet = List.of(studentDTO);
