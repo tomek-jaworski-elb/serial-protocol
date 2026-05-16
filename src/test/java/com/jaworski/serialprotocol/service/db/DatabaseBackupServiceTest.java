@@ -5,10 +5,10 @@
  */
 package com.jaworski.serialprotocol.service.db;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.cfg.DateTimeFeature;
+import tools.jackson.databind.json.JsonMapper;
 import com.jaworski.serialprotocol.dto.backup.DatabaseBackupDTO;
 import com.jaworski.serialprotocol.entity.Instructor;
 import com.jaworski.serialprotocol.entity.Student;
@@ -30,7 +30,7 @@ import com.jaworski.serialprotocol.repository.custom.TechnicianRepository;
 import com.jaworski.serialprotocol.repository.custom.TrainerRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
@@ -78,10 +78,10 @@ class DatabaseBackupServiceTest {
     static class TestConfig {
         @Bean
         ObjectMapper objectMapper() {
-            return new ObjectMapper()
-                    .registerModule(new JavaTimeModule())
-                    .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            return JsonMapper.builder()
+                    .configure(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                    .build();
         }
     }
 

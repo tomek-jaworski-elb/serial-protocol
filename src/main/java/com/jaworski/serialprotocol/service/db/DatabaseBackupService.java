@@ -5,10 +5,11 @@
  */
 package com.jaworski.serialprotocol.service.db;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.databind.ObjectMapper;
 import com.jaworski.serialprotocol.dto.backup.ImageBackupDTO;
 import com.jaworski.serialprotocol.dto.backup.InstructorBackupDTO;
 import com.jaworski.serialprotocol.dto.backup.StudentBackupDTO;
@@ -137,11 +138,11 @@ public class DatabaseBackupService {
     @Transactional(readOnly = true)
     public void createBackup(OutputStream outputStream) throws IOException {
         try (GZIPOutputStream gzos = new GZIPOutputStream(outputStream);
-             JsonGenerator gen = objectMapper.getFactory().createGenerator(gzos)) {
+             JsonGenerator gen = objectMapper.createGenerator(gzos)) {
 
             gen.writeStartObject();
-            gen.writeStringField("schemaVersion", SCHEMA_VERSION);
-            gen.writeStringField("timestamp", LocalDateTime.now().toString());
+            gen.writeStringProperty("schemaVersion", SCHEMA_VERSION);
+            gen.writeStringProperty("timestamp", LocalDateTime.now().toString());
 
             streamWriteImages(gen);
             streamWriteCourseTypes(gen);
@@ -174,7 +175,7 @@ public class DatabaseBackupService {
     // -- per-type streaming writers -------------------------------------------
 
     private void streamWriteImages(JsonGenerator gen) throws IOException {
-        gen.writeFieldName("images");
+        gen.writeName("images");
         gen.writeStartArray();
         long total = 0;
         int page = 0;
@@ -182,7 +183,7 @@ public class DatabaseBackupService {
         do {
             chunk = imageRepository.findAll(PageRequest.of(page++, BATCH_SIZE));
             for (Image img : chunk) {
-                gen.writeObject(new ImageBackupDTO(img.getId(), img.getData(), img.getContentType()));
+                gen.writePOJO(new ImageBackupDTO(img.getId(), img.getData(), img.getContentType()));
                 entityManager.detach(img);
                 total++;
             }
@@ -192,7 +193,7 @@ public class DatabaseBackupService {
     }
 
     private void streamWriteCourseTypes(JsonGenerator gen) throws IOException {
-        gen.writeFieldName("courseTypes");
+        gen.writeName("courseTypes");
         gen.writeStartArray();
         long total = 0;
         int page = 0;
@@ -200,7 +201,7 @@ public class DatabaseBackupService {
         do {
             chunk = courseTypeRepository.findAll(PageRequest.of(page++, BATCH_SIZE));
             for (CourseType ct : chunk) {
-                gen.writeObject(new CourseTypeDTO(ct.getId(), ct.getCode(), ct.getDescription(), ct.getLongDescription()));
+                gen.writePOJO(new CourseTypeDTO(ct.getId(), ct.getCode(), ct.getDescription(), ct.getLongDescription()));
                 entityManager.detach(ct);
                 total++;
             }
@@ -210,7 +211,7 @@ public class DatabaseBackupService {
     }
 
     private void streamWriteCourseCounters(JsonGenerator gen) throws IOException {
-        gen.writeFieldName("courseCounters");
+        gen.writeName("courseCounters");
         gen.writeStartArray();
         long total = 0;
         int page = 0;
@@ -218,7 +219,7 @@ public class DatabaseBackupService {
         do {
             chunk = courseCounterRepository.findAll(PageRequest.of(page++, BATCH_SIZE));
             for (CourseCounter cc : chunk) {
-                gen.writeObject(new CourseCounterDTO(
+                gen.writePOJO(new CourseCounterDTO(
                         cc.getUuid(),
                         cc.getCounter(),
                         cc.getImage() == null ? null : cc.getImage().getId()));
@@ -231,7 +232,7 @@ public class DatabaseBackupService {
     }
 
     private void streamWriteTrainers(JsonGenerator gen) throws IOException {
-        gen.writeFieldName("trainers");
+        gen.writeName("trainers");
         gen.writeStartArray();
         long total = 0;
         int page = 0;
@@ -239,7 +240,7 @@ public class DatabaseBackupService {
         do {
             chunk = trainerRepository.findAll(PageRequest.of(page++, BATCH_SIZE));
             for (Trainer t : chunk) {
-                gen.writeObject(TrainerMapper.mapToDTO(t));
+                gen.writePOJO(TrainerMapper.mapToDTO(t));
                 entityManager.detach(t);
                 total++;
             }
@@ -249,7 +250,7 @@ public class DatabaseBackupService {
     }
 
     private void streamWriteLecturers(JsonGenerator gen) throws IOException {
-        gen.writeFieldName("lecturers");
+        gen.writeName("lecturers");
         gen.writeStartArray();
         long total = 0;
         int page = 0;
@@ -257,7 +258,7 @@ public class DatabaseBackupService {
         do {
             chunk = lecturerRepository.findAll(PageRequest.of(page++, BATCH_SIZE));
             for (Lecturer l : chunk) {
-                gen.writeObject(LecturerMapper.mapToDTO(l));
+                gen.writePOJO(LecturerMapper.mapToDTO(l));
                 entityManager.detach(l);
                 total++;
             }
@@ -267,7 +268,7 @@ public class DatabaseBackupService {
     }
 
     private void streamWriteTechnicians(JsonGenerator gen) throws IOException {
-        gen.writeFieldName("technicians");
+        gen.writeName("technicians");
         gen.writeStartArray();
         long total = 0;
         int page = 0;
@@ -275,7 +276,7 @@ public class DatabaseBackupService {
         do {
             chunk = technicianRepository.findAll(PageRequest.of(page++, BATCH_SIZE));
             for (Technician t : chunk) {
-                gen.writeObject(TechnicianMapper.mapToDTO(t));
+                gen.writePOJO(TechnicianMapper.mapToDTO(t));
                 entityManager.detach(t);
                 total++;
             }
@@ -285,7 +286,7 @@ public class DatabaseBackupService {
     }
 
     private void streamWriteParticipants(JsonGenerator gen) throws IOException {
-        gen.writeFieldName("participants");
+        gen.writeName("participants");
         gen.writeStartArray();
         long total = 0;
         int page = 0;
@@ -293,7 +294,7 @@ public class DatabaseBackupService {
         do {
             chunk = participantRepository.findAll(PageRequest.of(page++, BATCH_SIZE));
             for (Participant p : chunk) {
-                gen.writeObject(ParticipantMapper.mapToDTO(p));
+                gen.writePOJO(ParticipantMapper.mapToDTO(p));
                 entityManager.detach(p);
                 total++;
             }
@@ -303,7 +304,7 @@ public class DatabaseBackupService {
     }
 
     private void streamWriteCourses(JsonGenerator gen) throws IOException {
-        gen.writeFieldName("courses");
+        gen.writeName("courses");
         gen.writeStartArray();
         long total = 0;
         int page = 0;
@@ -311,7 +312,7 @@ public class DatabaseBackupService {
         do {
             chunk = coursesRepository.findAll(PageRequest.of(page++, BATCH_SIZE));
             for (Courses c : chunk) {
-                gen.writeObject(CoursesMapper.mapToDTO(c));
+                gen.writePOJO(CoursesMapper.mapToDTO(c));
                 entityManager.detach(c);
                 total++;
             }
@@ -321,7 +322,7 @@ public class DatabaseBackupService {
     }
 
     private void streamWriteStudents(JsonGenerator gen) throws IOException {
-        gen.writeFieldName("students");
+        gen.writeName("students");
         gen.writeStartArray();
         long total = 0;
         int page = 0;
@@ -329,7 +330,7 @@ public class DatabaseBackupService {
         do {
             chunk = studentRepository.findAll(PageRequest.of(page++, BATCH_SIZE));
             for (Student s : chunk) {
-                gen.writeObject(new StudentBackupDTO(
+                gen.writePOJO(new StudentBackupDTO(
                         s.getId(), s.getName(), s.getLastName(), s.getCourseNo(),
                         s.getDateBegine(), s.getDateEnd(), s.getMrMs(), s.getCertType(), s.getPhoto()));
                 entityManager.detach(s);
@@ -341,7 +342,7 @@ public class DatabaseBackupService {
     }
 
     private void streamWriteInstructors(JsonGenerator gen) throws IOException {
-        gen.writeFieldName("instructors");
+        gen.writeName("instructors");
         gen.writeStartArray();
         long total = 0;
         int page = 0;
@@ -349,7 +350,7 @@ public class DatabaseBackupService {
         do {
             chunk = instructorRepository.findAll(PageRequest.of(page++, BATCH_SIZE));
             for (Instructor i : chunk) {
-                gen.writeObject(new InstructorBackupDTO(
+                gen.writePOJO(new InstructorBackupDTO(
                         i.getNo(), i.getName(), i.getSurname(), i.getEmail(),
                         i.getPhone(), i.getMobile(), i.getCity(), i.getAddress(), i.getPostcode(),
                         i.getPhoto1(), i.getPhoto2(), i.getPhoto3(), i.getPhoto4(),
@@ -385,7 +386,7 @@ public class DatabaseBackupService {
         TransactionTemplate txTemplate = new TransactionTemplate(transactionManager);
 
         try (GZIPInputStream gzis = new GZIPInputStream(inputStream);
-             JsonParser parser = objectMapper.getFactory().createParser(gzis)) {
+             JsonParser parser = objectMapper.createParser(gzis)) {
 
             // expect START_OBJECT
             parser.nextToken();
@@ -394,7 +395,7 @@ public class DatabaseBackupService {
             Map<Long, Long> courseTypeIdMap = new HashMap<>();
 
             while (parser.nextToken() != JsonToken.END_OBJECT) {
-                if (parser.currentToken() != JsonToken.FIELD_NAME) {
+                if (parser.currentToken() != JsonToken.PROPERTY_NAME) {
                     break;
                 }
                 String fieldName = parser.currentName();
@@ -402,7 +403,7 @@ public class DatabaseBackupService {
 
                 switch (fieldName) {
                     case "schemaVersion":
-                        schemaVersion = parser.getText();
+                        schemaVersion = parser.getString();
                         if (!SCHEMA_VERSION.equals(schemaVersion)) {
                             throw new IllegalArgumentException(
                                     "Incompatible schema version: expected=" + SCHEMA_VERSION
@@ -465,6 +466,11 @@ public class DatabaseBackupService {
                 });
             } catch (Exception cleanupEx) {
                 LOG.error("Cleanup after failed restore also failed", cleanupEx);
+            }
+            // In Jackson 3.x JacksonException extends RuntimeException (not IOException).
+            // Wrap it so the public API consistently throws IOException for parse errors.
+            if (e instanceof JacksonException je) {
+                throw new IOException("JSON processing error during restore: " + je.getMessage(), je);
             }
             throw e;
         }
