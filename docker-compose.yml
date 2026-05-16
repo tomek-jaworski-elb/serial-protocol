@@ -21,7 +21,7 @@ services:
           retries: 3
           start_period: 10s
         volumes:
-            - ./logs:/app/logs
+            - logs:/app/logs
         devices:
             - /dev/ttyS0:/dev/ttyS0
             - /dev/ttyS2:/dev/ttyS2
@@ -69,3 +69,5 @@ volumes:
     name: db-data
   server-data:
     name: server-data
+  logs:
+    name: server-logs

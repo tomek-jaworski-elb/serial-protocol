@@ -5,6 +5,7 @@ import com.jaworski.serialprotocol.dto.InstructorDto;
 import com.jaworski.serialprotocol.dto.LogItem;
 import com.jaworski.serialprotocol.dto.StudentDTO;
 import com.jaworski.serialprotocol.mappers.InstructorMapper;
+import com.jaworski.serialprotocol.resources.Resources;
 import com.jaworski.serialprotocol.service.WebSocketPublisher;
 import com.jaworski.serialprotocol.service.db.InstructorService;
 import com.jaworski.serialprotocol.service.db.StudentService;
@@ -39,6 +40,7 @@ public class MapController {
     private final StudentService studentService;
     private final InstructorService instructorService;
     private final WebSocketPublisher webSockerService;
+    private final Resources resources;
 
     @GetMapping(path = {"/", "/index.html", "/index", "/index.htm"})
     public String index(Model model) {
@@ -69,9 +71,10 @@ public class MapController {
     }
 
     @GetMapping("/chart")
-    public String greeting(Model model) {
+    public String chart(Model model) {
         model.addAttribute(ATTRIBUTE_NAME, "chart");
         model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
+        model.addAttribute("isTestEnabled", resources.isTestEnabled());
         return "chart";
     }
 
