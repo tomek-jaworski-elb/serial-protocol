@@ -17,6 +17,9 @@ public class CourseTypeService {
   private final CoursesRepository coursesRepository;
 
   public CourseTypeDTO save(CourseTypeDTO courseTypeDTO) {
+    if (courseTypeRepository.existsByCode(courseTypeDTO.getCode())) {
+      throw new IllegalArgumentException("Course type with code '" + courseTypeDTO.getCode() + "' already exists.");
+    }
     var entity = CourseTypeMapper.mapToEntity(courseTypeDTO);
     return CourseTypeMapper.mapToDTO(courseTypeRepository.save(entity));
   }
@@ -47,6 +50,10 @@ public class CourseTypeService {
     if (!courseTypeRepository.existsById(courseTypeDTO.getId())) {
       throw new IllegalArgumentException("Course type with id " + courseTypeDTO.getId() + " not found");
     }
-    return save(courseTypeDTO);
+    if (courseTypeRepository.existsByCodeAndIdNot(courseTypeDTO.getCode(), courseTypeDTO.getId())) {
+      throw new IllegalArgumentException("Course type with code '" + courseTypeDTO.getCode() + "' already exists.");
+    }
+    var entity = CourseTypeMapper.mapToEntity(courseTypeDTO);
+    return CourseTypeMapper.mapToDTO(courseTypeRepository.save(entity));
   }
 }

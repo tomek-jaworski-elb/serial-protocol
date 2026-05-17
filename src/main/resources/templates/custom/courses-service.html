@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
-<head th:insert="~{fragment::head}"></head>
 <head>
     <title th:text="${@environment.getProperty('spring.application.name')} + ' : Courses'">Serial port server</title>
+    <link rel="stylesheet" th:href="@{/flatpickr/flatpickr.min.css}">
+    <th:block th:replace="~{fragment::headContent}"></th:block>
 </head>
 <body>
 <header th:replace="~{fragment::header}"></header>
@@ -59,33 +60,36 @@
                     </div>
                     <div class="col-md-2">
                         <label for="addStartDate" class="form-label">Start Date</label>
-                        <input id="addStartDate" name="startDate" type="date" class="form-control"
+                        <input id="addStartDate" name="startDate" type="text" class="form-control"
                                placeholder="dd/MM/yyyy" pattern="\d{2}/\d{2}/\d{4}" title="Format: dd/MM/yyyy" required>
                     </div>
                     <div class="col-md-2">
                         <label for="addEndDate" class="form-label">End Date</label>
-                        <input id="addEndDate" name="endDate" type="date" class="form-control"
+                        <input id="addEndDate" name="endDate" type="text" class="form-control"
                                placeholder="dd/MM/yyyy" pattern="\d{2}/\d{2}/\d{4}" title="Format: dd/MM/yyyy" required>
                     </div>
-                    <div class="col-md-6" th:if="${!#lists.isEmpty(trainers)}">
+                    <div class="col-md-6">
                         <label for="addTrainerIds" class="form-label">Trainers <span class="text-muted small">(optional, Ctrl+click for multiple)</span></label>
                         <select id="addTrainerIds" name="trainerIds" class="form-select" multiple size="4">
+                            <option th:if="${#lists.isEmpty(trainers)}" value="" disabled>No trainers available</option>
                             <option th:each="t : ${trainers}"
                                     th:value="${t.id}"
                                     th:text="${t.name + ' ' + t.surname}">Trainer</option>
                         </select>
                     </div>
-                    <div class="col-md-6" th:if="${!#lists.isEmpty(lecturers)}">
+                    <div class="col-md-6">
                         <label for="addLecturerIds" class="form-label">Lecturers <span class="text-muted small">(optional, Ctrl+click for multiple)</span></label>
                         <select id="addLecturerIds" name="lecturerIds" class="form-select" multiple size="4">
+                            <option th:if="${#lists.isEmpty(lecturers)}" value="" disabled>No lecturers available</option>
                             <option th:each="l : ${lecturers}"
                                     th:value="${l.id}"
                                     th:text="${l.name + ' ' + l.surname}">Lecturer</option>
                         </select>
                     </div>
-                    <div class="col-md-6" th:if="${!#lists.isEmpty(technicians)}">
+                    <div class="col-md-6">
                         <label for="addTechnicianIds" class="form-label">Technicians <span class="text-muted small">(optional, Ctrl+click for multiple)</span></label>
                         <select id="addTechnicianIds" name="technicianIds" class="form-select" multiple size="4">
+                            <option th:if="${#lists.isEmpty(technicians)}" value="" disabled>No technicians available</option>
                             <option th:each="tech : ${technicians}"
                                     th:value="${tech.id}"
                                     th:text="${tech.name + ' ' + tech.surname}">Technician</option>
@@ -145,25 +149,28 @@
                         <input id="updateEndDate" name="endDate" type="text" class="form-control"
                                placeholder="dd/MM/yyyy" pattern="\d{2}/\d{2}/\d{4}" title="Format: dd/MM/yyyy" required>
                     </div>
-                    <div class="col-md-6" th:if="${!#lists.isEmpty(trainers)}">
+                    <div class="col-md-6">
                         <label for="updateTrainerIds" class="form-label">Trainers <span class="text-muted small">(optional, Ctrl+click for multiple)</span></label>
                         <select id="updateTrainerIds" name="trainerIds" class="form-select" multiple size="4">
+                            <option th:if="${#lists.isEmpty(trainers)}" value="" disabled>No trainers available</option>
                             <option th:each="t : ${trainers}"
                                     th:value="${t.id}"
                                     th:text="${t.name + ' ' + t.surname}">Trainer</option>
                         </select>
                     </div>
-                    <div class="col-md-6" th:if="${!#lists.isEmpty(lecturers)}">
+                    <div class="col-md-6">
                         <label for="updateLecturerIds" class="form-label">Lecturers <span class="text-muted small">(optional, Ctrl+click for multiple)</span></label>
                         <select id="updateLecturerIds" name="lecturerIds" class="form-select" multiple size="4">
+                            <option th:if="${#lists.isEmpty(lecturers)}" value="" disabled>No lecturers available</option>
                             <option th:each="l : ${lecturers}"
                                     th:value="${l.id}"
                                     th:text="${l.name + ' ' + l.surname}">Lecturer</option>
                         </select>
                     </div>
-                    <div class="col-md-6" th:if="${!#lists.isEmpty(technicians)}">
+                    <div class="col-md-6">
                         <label for="updateTechnicianIds" class="form-label">Technicians <span class="text-muted small">(optional, Ctrl+click for multiple)</span></label>
                         <select id="updateTechnicianIds" name="technicianIds" class="form-select" multiple size="4">
+                            <option th:if="${#lists.isEmpty(technicians)}" value="" disabled>No technicians available</option>
                             <option th:each="tech : ${technicians}"
                                     th:value="${tech.id}"
                                     th:text="${tech.name + ' ' + tech.surname}">Technician</option>
@@ -317,12 +324,50 @@
 </div>
 
 <footer th:replace="~{fragment::footer}"></footer>
+<script th:src="@{/flatpickr/flatpickr.min.js}"></script>
 <script>
     function isoToEu(dateStr) {
         if (!dateStr) return '';
         const parts = dateStr.split('-');
         if (parts.length !== 3) return dateStr;
         return parts[2] + '/' + parts[1] + '/' + parts[0];
+    }
+
+    const fpConfig = { dateFormat: 'd/m/Y', allowInput: true, locale: { firstDayOfWeek: 1 } };
+    const fpAddStartDate    = flatpickr('#addStartDate',    fpConfig);
+    const fpAddEndDate      = flatpickr('#addEndDate',      fpConfig);
+    const fpUpdateStartDate = flatpickr('#updateStartDate', fpConfig);
+    const fpUpdateEndDate   = flatpickr('#updateEndDate',   fpConfig);
+
+    function euToDate(euStr) {
+        if (!euStr) return null;
+        const parts = euStr.split('/');
+        if (parts.length !== 3) return null;
+        return new Date(+parts[2], parts[1] - 1, +parts[0]);
+    }
+
+    const addCourseForm = document.querySelector('#addCourseFormContainer form');
+    if (addCourseForm) {
+        addCourseForm.addEventListener('submit', (e) => {
+            const start = euToDate(document.getElementById('addStartDate').value);
+            const end   = euToDate(document.getElementById('addEndDate').value);
+            if (start && end && start > end) {
+                e.preventDefault();
+                alert('End Date must be on or after Start Date.');
+            }
+        });
+    }
+
+    const updateCourseForm = document.querySelector('#updateCourseFormContainer form');
+    if (updateCourseForm) {
+        updateCourseForm.addEventListener('submit', (e) => {
+            const start = euToDate(document.getElementById('updateStartDate').value);
+            const end   = euToDate(document.getElementById('updateEndDate').value);
+            if (start && end && start > end) {
+                e.preventDefault();
+                alert('End Date must be on or after Start Date.');
+            }
+        });
     }
 
     const successAlert = document.getElementById('successAlert');
@@ -369,8 +414,8 @@
                 for (let opt of courseTypeSelect.options) opt.selected = opt.value === btn.dataset.courseTypeId;
                 if (counterInput) counterInput.value = btn.dataset.counter || '';
 
-                document.getElementById('updateStartDate').value = isoToEu(btn.dataset.startDate) || '';
-                document.getElementById('updateEndDate').value = isoToEu(btn.dataset.endDate) || '';
+                fpUpdateStartDate.setDate(btn.dataset.startDate || '', false, 'Y-m-d');
+                fpUpdateEndDate.setDate(btn.dataset.endDate || '', false, 'Y-m-d');
 
                 const trainerSelect = document.getElementById('updateTrainerIds');
                 const lecturerSelect = document.getElementById('updateLecturerIds');

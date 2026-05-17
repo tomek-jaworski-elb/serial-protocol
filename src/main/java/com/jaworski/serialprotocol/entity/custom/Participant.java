@@ -24,7 +24,7 @@ import static com.jaworski.serialprotocol.entity.custom.Participant.TABLE_NAME;
 @Table(name = TABLE_NAME)
 @NoArgsConstructor
 @AttributeOverrides({
-    @AttributeOverride(name = "uuid",        column = @Column(name = TABLE_NAME + "_uuid",         nullable = false, updatable = false)),
+    @AttributeOverride(name = "uuid",        column = @Column(name = TABLE_NAME + "_uuid",         nullable = false, updatable = false, unique = true)),
     @AttributeOverride(name = "name",        column = @Column(name = TABLE_NAME + "_name",         nullable = false, length = 100)),
     @AttributeOverride(name = "surname",     column = @Column(name = TABLE_NAME + "_surname",      nullable = false, length = 100)),
     @AttributeOverride(name = "notes",       column = @Column(name = TABLE_NAME + "_notes",        nullable = true, length = 1000)),

@@ -76,6 +76,14 @@ public class CoursesMapper {
     return dto;
   }
 
+  /**
+   * @deprecated This method creates stub entities with only IDs populated.
+   * Persisting the result via JPA {@code save()} would overwrite existing entity data with nulls.
+   * Use {@code EntityRepository.getReferenceById()} for JPA-managed references instead.
+   * In the current codebase, {@link com.jaworski.serialprotocol.service.db.custom.CoursesService#buildCourses}
+   * uses the correct approach. This method is kept for read-only/DTO conversion scenarios only.
+   */
+  @Deprecated(since = "1.9", forRemoval = false)
   public static Courses mapToEntity(CoursesDTO dto) {
     if (dto == null) {
       return null;

@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
-<head th:insert="~{fragment::head}"></head>
 <head>
     <title th:text="${@environment.getProperty('spring.application.name')} + ' : Participant'">Serial port server</title>
+    <link rel="stylesheet" th:href="@{/flatpickr/flatpickr.min.css}">
+    <th:block th:replace="~{fragment::headContent}"></th:block>
 </head>
 <body>
 <header th:replace="~{fragment::header}"></header>
@@ -46,8 +47,8 @@
                     </div>
                     <div class="col-md-2">
                         <label for="addParticipantBirthDate" class="form-label">Birth Date</label>
-                        <input id="addParticipantBirthDate" name="birthDate" type="date" class="form-control"
-                               placeholder="dd/MM/yyyy" title="Format: dd/MM/yyyy">
+                        <input id="addParticipantBirthDate" name="birthDate" type="text" class="form-control"
+                               placeholder="dd/MM/yyyy" pattern="\d{2}/\d{2}/\d{4}" title="Format: dd/MM/yyyy">
                         <div class="form-text">Optional. Must be a past date.</div>
                     </div>
                     <div class="col-md-4">
@@ -147,6 +148,11 @@
     <div id="addToCourseFormContainer" class="card mb-3 d-none border-info">
         <div class="card-body">
             <h5 class="card-title">Assign participant to certificates</h5>
+            <div class="alert alert-warning alert-sm py-2 mb-3" role="alert">
+                <i class="bi bi-info-circle me-1"></i>
+                The course will be saved <strong>without trainers, lecturers, technicians and course counter</strong>.
+                You can complete the assignment later in the <a th:href="@{/courses-service}" class="alert-link">Certificates</a> view.
+            </div>
             <form method="post" th:action="@{/courses-service/add-participant}">
                 <input id="addToCourseParticipantUuid" name="participantUuid" type="hidden">
                 <div class="row g-3">
@@ -288,12 +294,39 @@
         </div>
     </div>
 </div>
+<script th:src="@{/flatpickr/flatpickr.min.js}"></script>
 <script>
     function isoToEu(dateStr) {
         if (!dateStr) return '';
         const parts = dateStr.split('-');
         if (parts.length !== 3) return dateStr;
         return parts[2] + '/' + parts[1] + '/' + parts[0];
+    }
+
+    const fpConfig     = { dateFormat: 'd/m/Y', allowInput: true, locale: { firstDayOfWeek: 1 } };
+    const fpConfigPast = { ...fpConfig, maxDate: 'today' };
+    const fpAddBirthDate    = flatpickr('#addParticipantBirthDate',    fpConfigPast);
+    const fpUpdateBirthDate = flatpickr('#updateParticipantBirthDate', fpConfigPast);
+    const fpAddStartDate    = flatpickr('#addToCourseStartDate',       fpConfig);
+    const fpAddEndDate      = flatpickr('#addToCourseEndDate',         fpConfig);
+
+    function euToDate(euStr) {
+        if (!euStr) return null;
+        const parts = euStr.split('/');
+        if (parts.length !== 3) return null;
+        return new Date(+parts[2], parts[1] - 1, +parts[0]);
+    }
+
+    const addToCourseForm = document.querySelector('#addToCourseFormContainer form');
+    if (addToCourseForm) {
+        addToCourseForm.addEventListener('submit', (e) => {
+            const start = euToDate(document.getElementById('addToCourseStartDate').value);
+            const end   = euToDate(document.getElementById('addToCourseEndDate').value);
+            if (start && end && start > end) {
+                e.preventDefault();
+                alert('End Date must be on or after Start Date.');
+            }
+        });
     }
 
     const showAddFormBtn = document.getElementById('showAddFormBtn');
@@ -370,7 +403,7 @@
                 updateParticipantId.value = btn.dataset.id || '';
                 updateParticipantName.value = btn.dataset.name || '';
                 updateParticipantSurname.value = btn.dataset.surname || '';
-                updateParticipantBirthDate.value = isoToEu(btn.dataset.birthdate) || '';
+                fpUpdateBirthDate.setDate(btn.dataset.birthdate || '', false, 'Y-m-d');
                 updateParticipantNickname.value = btn.dataset.nickname !== 'null' ? (btn.dataset.nickname || '') : '';
                 updateParticipantEmail.value = btn.dataset.email !== 'null' ? (btn.dataset.email || '') : '';
                 updateParticipantPhoneNumber.value = btn.dataset.phone !== 'null' ? (btn.dataset.phone || '') : '';

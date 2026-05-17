@@ -23,7 +23,7 @@ import static com.jaworski.serialprotocol.entity.custom.Technician.TABLE_NAME;
 @NoArgsConstructor
 @Table(name = TABLE_NAME)
 @AttributeOverrides({
-    @AttributeOverride(name = "uuid",        column = @Column(name = TABLE_NAME + "_uuid",         nullable = false, updatable = false)),
+    @AttributeOverride(name = "uuid",        column = @Column(name = TABLE_NAME + "_uuid",         nullable = false, updatable = false, unique = true)),
     @AttributeOverride(name = "name",        column = @Column(name = TABLE_NAME + "_name",         nullable = false, length = 100)),
     @AttributeOverride(name = "surname",     column = @Column(name = TABLE_NAME + "_surname",      nullable = false, length = 100)),
     @AttributeOverride(name = "notes",       column = @Column(name = TABLE_NAME + "_notes",        nullable = true, length = 1000)),
@@ -42,7 +42,7 @@ public class Technician extends PersonBase {
   @ManyToMany()
   @JoinTable(
       name = TABLE_NAME + "_image",
-      joinColumns = @JoinColumn(name = TABLE_NAME + "_uuid"),
+      joinColumns = @JoinColumn(name = TABLE_NAME + "_uuid", referencedColumnName = TABLE_NAME + "_uuid"),
       inverseJoinColumns = @JoinColumn(name = "image_uuid")
   )
   @ToString.Exclude

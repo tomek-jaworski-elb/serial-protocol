@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
-<head th:insert="~{fragment::head}"></head>
 <head>
     <title th:text="${@environment.getProperty('spring.application.name')} + ' : Course Type'">Serial port server</title>
+    <th:block th:replace="~{fragment::headContent}"></th:block>
 </head>
 <body>
 <header th:replace="~{fragment::header}"></header>
@@ -31,11 +31,11 @@
                 <div class="row g-3">
                     <div class="col-md-3">
                         <label for="courseTypeCode" class="form-label">Code</label>
-                        <input id="courseTypeCode" name="code" type="text" class="form-control" required>
+                        <input id="courseTypeCode" name="code" type="text" class="form-control" maxlength="32" required>
                     </div>
                     <div class="col-md-6">
                         <label for="courseTypeDescription" class="form-label">Description</label>
-                        <input id="courseTypeDescription" name="description" type="text" class="form-control" required>
+                        <input id="courseTypeDescription" name="description" type="text" class="form-control" maxlength="255" required>
                     </div>
                     <div class="col-12">
                         <label for="courseTypeLongDescription" class="form-label">Long Description</label>
@@ -58,11 +58,11 @@
                 <div class="row g-3">
                     <div class="col-md-3">
                         <label for="updateCourseTypeCode" class="form-label">Code</label>
-                        <input id="updateCourseTypeCode" name="code" type="text" class="form-control" required>
+                        <input id="updateCourseTypeCode" name="code" type="text" class="form-control" maxlength="32" required>
                     </div>
                     <div class="col-md-6">
                         <label for="updateCourseTypeDescription" class="form-label">Description</label>
-                        <input id="updateCourseTypeDescription" name="description" type="text" class="form-control" required>
+                        <input id="updateCourseTypeDescription" name="description" type="text" class="form-control" maxlength="255" required>
                     </div>
                     <div class="col-12">
                         <label for="updateCourseTypeLongDescription" class="form-label">Long Description</label>

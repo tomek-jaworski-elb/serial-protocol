@@ -30,7 +30,7 @@ public class CourseType {
   @Column(name = CourseType.TABLE_NAME + "_id", nullable = false, updatable = false)
   private Long id;
 
-  @Column(name = CourseType.TABLE_NAME + "_code", nullable = false, length = 32)
+  @Column(name = CourseType.TABLE_NAME + "_code", nullable = false, unique = true, length = 32)
   @NotBlank
   @Size(max = 32)
   private String code;
