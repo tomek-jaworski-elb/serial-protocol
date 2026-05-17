@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title th:text="${@environment.getProperty('spring.application.name')} + ' : Courses'">Serial port server</title>
+    <link rel="stylesheet" th:href="@{/flatpickr/flatpickr.min.css}">
+    <th:block th:replace="~{fragment::headContent}"></th:block>
+</head>
+<body>
+<header th:replace="~{fragment::header}"></header>
+<div class="container mb-4">
+    <div id="successAlert" class="alert alert-success alert-dismissible fade show" role="alert" th:if="${successMessage}">
+        <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert" th:if="${errorMessage}">
+        <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center my-3">
+        <h4 class="mb-0">Certificates</h4>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-secondary" th:text="${#lists.size(courses)}" th:if="${!#lists.isEmpty(courses)}">0</span>
+            <button id="showAddFormBtn" type="button" class="btn btn-primary btn-sm">Add</button>
+        </div>
+    </div>
+
+    <!-- Add form -->
+    <div id="addCourseFormContainer" class="card mb-3 d-none">
+        <div class="card-body">
+            <h5 class="card-title">Add certificate</h5>
+            <form method="post" th:action="@{/courses-service/add}">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="addParticipantUuid" class="form-label">Participant</label>
+                        <select id="addParticipantUuid" name="participantUuid" class="form-select" required>
+                            <option value="" disabled selected>Select participant</option>
+                            <option th:each="p : ${participants}"
+                                    th:value="${p.participantUuid}"
+                                    th:text="${p.name + ' ' + p.surname + ' (ID: ' + p.id + ')'}">Participant</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="addCourseTypeId" class="form-label">Course Type</label>
+                        <select id="addCourseTypeId" name="courseTypeId" class="form-select" required>
+                            <option value="" disabled selected>Select course type</option>
+                            <option th:each="ct : ${courseTypes}"
+                                    th:value="${ct.id}"
+                                    th:text="${ct.code + ' - ' + ct.description}">Course Type</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="addCounter" class="form-label">Course Counter</label>
+                        <select id="addCounter" name="counter" class="form-select">
+                            <option value="" disabled selected>Select counter</option>
+                            <option th:each="cc : ${courseCounters}"
+                                    th:value="${cc.counter}"
+                                    th:text="${cc.counter}">Counter</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="addStartDate" class="form-label">Start Date</label>
+                        <input id="addStartDate" name="startDate" type="text" class="form-control"
+                               placeholder="dd/MM/yyyy" pattern="\d{2}/\d{2}/\d{4}" title="Format: dd/MM/yyyy" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="addEndDate" class="form-label">End Date</label>
+                        <input id="addEndDate" name="endDate" type="text" class="form-control"
+                               placeholder="dd/MM/yyyy" pattern="\d{2}/\d{2}/\d{4}" title="Format: dd/MM/yyyy" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="addTrainerIds" class="form-label">Trainers <span class="text-muted small">(optional, Ctrl+click for multiple)</span></label>
+                        <select id="addTrainerIds" name="trainerIds" class="form-select" multiple size="4">
+                            <option th:if="${#lists.isEmpty(trainers)}" value="" disabled>No trainers available</option>
+                            <option th:each="t : ${trainers}"
+                                    th:value="${t.id}"
+                                    th:text="${t.name + ' ' + t.surname}">Trainer</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="addLecturerIds" class="form-label">Lecturers <span class="text-muted small">(optional, Ctrl+click for multiple)</span></label>
+                        <select id="addLecturerIds" name="lecturerIds" class="form-select" multiple size="4">
+                            <option th:if="${#lists.isEmpty(lecturers)}" value="" disabled>No lecturers available</option>
+                            <option th:each="l : ${lecturers}"
+                                    th:value="${l.id}"
+                                    th:text="${l.name + ' ' + l.surname}">Lecturer</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="addTechnicianIds" class="form-label">Technicians <span class="text-muted small">(optional, Ctrl+click for multiple)</span></label>
+                        <select id="addTechnicianIds" name="technicianIds" class="form-select" multiple size="4">
+                            <option th:if="${#lists.isEmpty(technicians)}" value="" disabled>No technicians available</option>
+                            <option th:each="tech : ${technicians}"
+                                    th:value="${tech.id}"
+                                    th:text="${tech.name + ' ' + tech.surname}">Technician</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-success btn-sm">Save</button>
+                    <button id="hideAddFormBtn" type="button" class="btn btn-outline-secondary btn-sm">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Update form -->
+    <div id="updateCourseFormContainer" class="card mb-3 d-none">
+        <div class="card-body">
+            <h5 class="card-title">Update course</h5>
+            <form method="post" th:action="@{/courses-service/update}">
+                <input id="updateCourseUuid" name="uuid" type="hidden">
+                <input id="updateCourseId" name="id" type="hidden">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="updateParticipantUuid" class="form-label">Participant</label>
+                        <select id="updateParticipantUuid" name="participantUuid" class="form-select" required>
+                            <option value="" disabled>Select participant</option>
+                            <option th:each="p : ${participants}"
+                                    th:value="${p.participantUuid}"
+                                    th:text="${p.name + ' ' + p.surname + ' (ID: ' + p.id + ')'}">Participant</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="updateCourseTypeId" class="form-label">Course Type</label>
+                        <select id="updateCourseTypeId" name="courseTypeId" class="form-select" required>
+                            <option value="" disabled>Select course type</option>
+                            <option th:each="ct : ${courseTypes}"
+                                    th:value="${ct.id}"
+                                    th:text="${ct.code + ' - ' + ct.description}">Course Type</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="updateCounter" class="form-label">Course Counter</label>
+                        <select id="updateCounter" name="counter" class="form-select">
+                            <option value="" disabled selected>Select counter</option>
+                            <option th:each="cc : ${courseCounters}"
+                                    th:value="${cc.counter}"
+                                    th:text="${cc.counter}">Counter</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="updateStartDate" class="form-label">Start Date</label>
+                        <input id="updateStartDate" name="startDate" type="text" class="form-control"
+                               placeholder="dd/MM/yyyy" pattern="\d{2}/\d{2}/\d{4}" title="Format: dd/MM/yyyy" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="updateEndDate" class="form-label">End Date</label>
+                        <input id="updateEndDate" name="endDate" type="text" class="form-control"
+                               placeholder="dd/MM/yyyy" pattern="\d{2}/\d{2}/\d{4}" title="Format: dd/MM/yyyy" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="updateTrainerIds" class="form-label">Trainers <span class="text-muted small">(optional, Ctrl+click for multiple)</span></label>
+                        <select id="updateTrainerIds" name="trainerIds" class="form-select" multiple size="4">
+                            <option th:if="${#lists.isEmpty(trainers)}" value="" disabled>No trainers available</option>
+                            <option th:each="t : ${trainers}"
+                                    th:value="${t.id}"
+                                    th:text="${t.name + ' ' + t.surname}">Trainer</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="updateLecturerIds" class="form-label">Lecturers <span class="text-muted small">(optional, Ctrl+click for multiple)</span></label>
+                        <select id="updateLecturerIds" name="lecturerIds" class="form-select" multiple size="4">
+                            <option th:if="${#lists.isEmpty(lecturers)}" value="" disabled>No lecturers available</option>
+                            <option th:each="l : ${lecturers}"
+                                    th:value="${l.id}"
+                                    th:text="${l.name + ' ' + l.surname}">Lecturer</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="updateTechnicianIds" class="form-label">Technicians <span class="text-muted small">(optional, Ctrl+click for multiple)</span></label>
+                        <select id="updateTechnicianIds" name="technicianIds" class="form-select" multiple size="4">
+                            <option th:if="${#lists.isEmpty(technicians)}" value="" disabled>No technicians available</option>
+                            <option th:each="tech : ${technicians}"
+                                    th:value="${tech.id}"
+                                    th:text="${tech.name + ' ' + tech.surname}">Technician</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-warning btn-sm">Update</button>
+                    <button id="hideUpdateFormBtn" type="button" class="btn btn-outline-secondary btn-sm">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="table-responsive" th:if="${!#lists.isEmpty(courses)}">
+        <table class="table table-striped table-hover align-middle text-center">
+            <thead class="table-light">
+            <tr>
+                <th scope="col">ID</th>
+                <th scope="col">Participant</th>
+                <th scope="col">Course Type</th>
+                <th scope="col">Start Date</th>
+                <th scope="col">End Date</th>
+                <th scope="col">Course Counter</th>
+                <th scope="col">Trainers</th>
+                <th scope="col">Lecturers</th>
+                <th scope="col">Technicians</th>
+                <th scope="col">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="course, courseStat : ${courses}">
+                <td th:text="${course.id}">1</td>
+                <td>
+                    <span th:each="p : ${participants}" th:if="${p.participantUuid == course.participantUuid}"
+                          th:text="${p.name + ' ' + p.surname}">Participant</span>
+                </td>
+                <td>
+                    <span th:each="ct : ${courseTypes}" th:if="${ct.id == course.courseTypeId}"
+                          class="badge text-bg-primary" th:text="${ct.code}">Code</span>
+                </td>
+                <td th:text="${course.startDate != null ? #temporals.format(course.startDate, 'dd/MM/yyyy') : '-'}">2026-03-15</td>
+                <td th:text="${course.endDate != null ? #temporals.format(course.endDate, 'dd/MM/yyyy') : '-'}">2026-03-22</td>
+                <td>
+                    <span th:if="${course.counter != null}" class="badge text-bg-dark" th:text="${course.counter}">0</span>
+                    <span th:if="${course.counter == null}" class="text-muted small">-</span>
+                </td>
+                <td>
+                    <span th:each="t : ${trainers}" th:if="${course.trainerIds.contains(t.id)}"
+                          class="badge text-bg-secondary me-1" th:text="${t.name + ' ' + t.surname}">Trainer</span>
+                    <span th:if="${course.trainerIds.isEmpty()}" class="text-muted small">-</span>
+                </td>
+                <td>
+                    <span th:each="l : ${lecturers}" th:if="${course.lecturerIds.contains(l.id)}"
+                          class="badge text-bg-secondary me-1" th:text="${l.name + ' ' + l.surname}">Lecturer</span>
+                    <span th:if="${course.lecturerIds.isEmpty()}" class="text-muted small">-</span>
+                </td>
+                <td>
+                    <span th:each="tech : ${technicians}" th:if="${course.technicianIds.contains(tech.id)}"
+                          class="badge text-bg-secondary me-1" th:text="${tech.name + ' ' + tech.surname}">Technician</span>
+                    <span th:if="${course.technicianIds.isEmpty()}" class="text-muted small">-</span>
+                </td>
+                <td>
+                    <div class="d-flex justify-content-center gap-2 flex-wrap">
+                        <button
+                                type="button"
+                                class="btn btn-outline-info btn-sm details-course-btn"
+                                th:with="ct=${course.courseTypeId != null ? courseTypeMap[course.courseTypeId] : null}"
+                                th:attr="data-uuid=${course.uuid},data-id=${course.id},data-start-date=${course.startDate},data-end-date=${course.endDate},data-course-type-desc=${ct != null ? ct.description : ''},data-course-type-long-desc=${ct != null ? ct.longDescription : ''},data-counter=${course.counter}">
+                            Details
+                        </button>
+                        <button
+                                type="button"
+                                class="btn btn-outline-warning btn-sm update-course-btn"
+                                th:attr="data-uuid=${course.uuid},data-id=${course.id},data-participant-uuid=${course.participantUuid},data-course-type-id=${course.courseTypeId},data-start-date=${course.startDate},data-end-date=${course.endDate},data-counter=${course.counter}"
+                                th:data-trainer-ids="${course.trainerIdsString}"
+                                th:data-lecturer-ids="${course.lecturerIdsString}"
+                                th:data-technician-ids="${course.technicianIdsString}">
+                            Update
+                        </button>
+                        <form method="post" th:action="@{/courses-service/delete/{uuid}(uuid=${course.uuid})}">
+                            <button type="submit" class="btn btn-outline-danger btn-sm"
+                                    onclick="return confirm('Are you sure you want to delete this course?');">
+                                Delete
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="alert alert-info text-center" th:if="${#lists.isEmpty(courses)}">
+        No certificates found.
+    </div>
+</div>
+
+<!-- Details Modal -->
+<div class="modal fade" id="courseDetailsModal" tabindex="-1" aria-labelledby="courseDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="courseDetailsModalLabel">Course Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Course ID</dt>
+                    <dd class="col-sm-8" id="detailId">—</dd>
+
+                    <dt class="col-sm-4">UUID</dt>
+                    <dd class="col-sm-8 text-muted small font-monospace" id="detailUuid">—</dd>
+
+                    <dt class="col-sm-4">Participant</dt>
+                    <dd class="col-sm-8" id="detailParticipant">—</dd>
+
+                    <dt class="col-sm-4">Course Type</dt>
+                    <dd class="col-sm-8" id="detailCourseType">—</dd>
+
+                    <dt class="col-sm-4">Description</dt>
+                    <dd class="col-sm-8" id="detailCourseTypeDesc">—</dd>
+
+                    <dt class="col-sm-4">Long Description</dt>
+                    <dd class="col-sm-8" id="detailCourseTypeLongDesc">—</dd>
+
+                    <dt class="col-sm-4">Start Date</dt>
+                    <dd class="col-sm-8" id="detailStartDate">—</dd>
+
+                    <dt class="col-sm-4">End Date</dt>
+                    <dd class="col-sm-8" id="detailEndDate">—</dd>
+
+                    <dt class="col-sm-4">Course Counter</dt>
+                    <dd class="col-sm-8" id="detailCourseCounter">—</dd>
+
+                    <dt class="col-sm-4">Trainers</dt>
+                    <dd class="col-sm-8" id="detailTrainers">—</dd>
+
+                    <dt class="col-sm-4">Lecturers</dt>
+                    <dd class="col-sm-8" id="detailLecturers">—</dd>
+
+                    <dt class="col-sm-4">Technicians</dt>
+                    <dd class="col-sm-8" id="detailTechnicians">—</dd>
+                </dl>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer th:replace="~{fragment::footer}"></footer>
+<script th:src="@{/flatpickr/flatpickr.min.js}"></script>
+<script>
+    function isoToEu(dateStr) {
+        if (!dateStr) return '';
+        const parts = dateStr.split('-');
+        if (parts.length !== 3) return dateStr;
+        return parts[2] + '/' + parts[1] + '/' + parts[0];
+    }
+
+    const fpConfig = { dateFormat: 'd/m/Y', allowInput: true, locale: { firstDayOfWeek: 1 } };
+    const fpAddStartDate    = flatpickr('#addStartDate',    fpConfig);
+    const fpAddEndDate      = flatpickr('#addEndDate',      fpConfig);
+    const fpUpdateStartDate = flatpickr('#updateStartDate', fpConfig);
+    const fpUpdateEndDate   = flatpickr('#updateEndDate',   fpConfig);
+
+    function euToDate(euStr) {
+        if (!euStr) return null;
+        const parts = euStr.split('/');
+        if (parts.length !== 3) return null;
+        return new Date(+parts[2], parts[1] - 1, +parts[0]);
+    }
+
+    const addCourseForm = document.querySelector('#addCourseFormContainer form');
+    if (addCourseForm) {
+        addCourseForm.addEventListener('submit', (e) => {
+            const start = euToDate(document.getElementById('addStartDate').value);
+            const end   = euToDate(document.getElementById('addEndDate').value);
+            if (start && end && start > end) {
+                e.preventDefault();
+                alert('End Date must be on or after Start Date.');
+            }
+        });
+    }
+
+    const updateCourseForm = document.querySelector('#updateCourseFormContainer form');
+    if (updateCourseForm) {
+        updateCourseForm.addEventListener('submit', (e) => {
+            const start = euToDate(document.getElementById('updateStartDate').value);
+            const end   = euToDate(document.getElementById('updateEndDate').value);
+            if (start && end && start > end) {
+                e.preventDefault();
+                alert('End Date must be on or after Start Date.');
+            }
+        });
+    }
+
+    const successAlert = document.getElementById('successAlert');
+    if (successAlert) {
+        setTimeout(() => {
+            if (window.bootstrap && window.bootstrap.Alert) {
+                window.bootstrap.Alert.getOrCreateInstance(successAlert).close();
+            } else {
+                successAlert.remove();
+            }
+        }, 10000);
+    }
+
+    const showAddFormBtn = document.getElementById('showAddFormBtn');
+    const hideAddFormBtn = document.getElementById('hideAddFormBtn');
+    const addCourseFormContainer = document.getElementById('addCourseFormContainer');
+    const updateCourseFormContainer = document.getElementById('updateCourseFormContainer');
+    const hideUpdateFormBtn = document.getElementById('hideUpdateFormBtn');
+    const updateButtons = document.querySelectorAll('.update-course-btn');
+
+    if (showAddFormBtn && hideAddFormBtn && addCourseFormContainer) {
+        showAddFormBtn.addEventListener('click', () => {
+            addCourseFormContainer.classList.remove('d-none');
+            if (updateCourseFormContainer) updateCourseFormContainer.classList.add('d-none');
+            addCourseFormContainer.scrollIntoView({behavior: 'smooth', block: 'start'});
+        });
+        hideAddFormBtn.addEventListener('click', () => addCourseFormContainer.classList.add('d-none'));
+    }
+
+    if (hideUpdateFormBtn && updateCourseFormContainer) {
+        hideUpdateFormBtn.addEventListener('click', () => updateCourseFormContainer.classList.add('d-none'));
+    }
+
+    if (updateButtons.length > 0 && updateCourseFormContainer) {
+        updateButtons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                document.getElementById('updateCourseUuid').value = btn.dataset.uuid || '';
+                document.getElementById('updateCourseId').value = btn.dataset.id || '';
+
+                const participantSelect = document.getElementById('updateParticipantUuid');
+                const courseTypeSelect = document.getElementById('updateCourseTypeId');
+                const counterInput = document.getElementById('updateCounter');
+                for (let opt of participantSelect.options) opt.selected = opt.value === btn.dataset.participantUuid;
+                for (let opt of courseTypeSelect.options) opt.selected = opt.value === btn.dataset.courseTypeId;
+                if (counterInput) counterInput.value = btn.dataset.counter || '';
+
+                fpUpdateStartDate.setDate(btn.dataset.startDate || '', false, 'Y-m-d');
+                fpUpdateEndDate.setDate(btn.dataset.endDate || '', false, 'Y-m-d');
+
+                const trainerSelect = document.getElementById('updateTrainerIds');
+                const lecturerSelect = document.getElementById('updateLecturerIds');
+                const technicianSelect = document.getElementById('updateTechnicianIds');
+                const trainerIds = (btn.dataset.trainerIds || '').split(',').filter(Boolean);
+                const lecturerIds = (btn.dataset.lecturerIds || '').split(',').filter(Boolean);
+                const technicianIds = (btn.dataset.technicianIds || '').split(',').filter(Boolean);
+                if (trainerSelect) for (let opt of trainerSelect.options) opt.selected = trainerIds.includes(opt.value);
+                if (lecturerSelect) for (let opt of lecturerSelect.options) opt.selected = lecturerIds.includes(opt.value);
+                if (technicianSelect) for (let opt of technicianSelect.options) opt.selected = technicianIds.includes(opt.value);
+
+                updateCourseFormContainer.classList.remove('d-none');
+                if (addCourseFormContainer) addCourseFormContainer.classList.add('d-none');
+                updateCourseFormContainer.scrollIntoView({behavior: 'smooth', block: 'start'});
+            });
+        });
+    }
+
+    const detailButtons = document.querySelectorAll('.details-course-btn');
+    const detailsModal = document.getElementById('courseDetailsModal')
+        ? new bootstrap.Modal(document.getElementById('courseDetailsModal')) : null;
+
+    detailButtons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const row = btn.closest('tr');
+            const cells = row.querySelectorAll('td');
+            // cells: [0]=ID, [1]=Participant, [2]=CourseType, [3]=StartDate, [4]=EndDate, [5]=CourseCounter, [6]=Trainers, [7]=Lecturers, [8]=Technicians
+            document.getElementById('detailId').textContent        = cells[0].textContent.trim();
+            document.getElementById('detailUuid').textContent      = btn.dataset.uuid || '—';
+            document.getElementById('detailParticipant').textContent  = cells[1].textContent.trim() || '—';
+            document.getElementById('detailCourseType').textContent   = cells[2].textContent.trim() || '—';
+            document.getElementById('detailCourseTypeDesc').textContent     = btn.dataset.courseTypeDesc || '—';
+            document.getElementById('detailCourseTypeLongDesc').textContent = btn.dataset.courseTypeLongDesc || '—';
+            document.getElementById('detailStartDate').textContent = cells[3].textContent.trim() || '—';
+            document.getElementById('detailEndDate').textContent   = cells[4].textContent.trim() || '—';
+            document.getElementById('detailCourseCounter').textContent = cells[5].textContent.trim() || '—';
+            document.getElementById('detailTrainers').textContent  = cells[6].textContent.trim() || '—';
+            document.getElementById('detailLecturers').textContent = cells[7].textContent.trim() || '—';
+            document.getElementById('detailTechnicians').textContent = cells[8].textContent.trim() || '—';
+            if (detailsModal) detailsModal.show();
+        });
+    });
+</script>
+</body>
+</html>

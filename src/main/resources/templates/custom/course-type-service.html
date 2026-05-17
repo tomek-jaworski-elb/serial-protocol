@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title th:text="${@environment.getProperty('spring.application.name')} + ' : Course Type'">Serial port server</title>
+    <th:block th:replace="~{fragment::headContent}"></th:block>
+</head>
+<body>
+<header th:replace="~{fragment::header}"></header>
+<div class="container mb-4">
+    <div id="successAlert" class="alert alert-success alert-dismissible fade show" role="alert" th:if="${successMessage}">
+        <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert" th:if="${errorMessage}">
+        <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center my-3">
+        <h4 class="mb-0">Course Type</h4>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-secondary" th:text="${#lists.size(courseTypes)}" th:if="${!#lists.isEmpty(courseTypes)}">0</span>
+            <button id="showAddFormBtn" type="button" class="btn btn-primary btn-sm">Add</button>
+        </div>
+    </div>
+
+    <div id="addCourseTypeFormContainer" class="card mb-3 d-none">
+        <div class="card-body">
+            <h5 class="card-title">Add course type</h5>
+            <form method="post" th:action="@{/course-type-service/add}">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="courseTypeCode" class="form-label">Code</label>
+                        <input id="courseTypeCode" name="code" type="text" class="form-control" maxlength="32" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="courseTypeDescription" class="form-label">Description</label>
+                        <input id="courseTypeDescription" name="description" type="text" class="form-control" maxlength="255" required>
+                    </div>
+                    <div class="col-12">
+                        <label for="courseTypeLongDescription" class="form-label">Long Description</label>
+                        <textarea id="courseTypeLongDescription" name="longDescription" class="form-control" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-success btn-sm">Save</button>
+                    <button id="hideAddFormBtn" type="button" class="btn btn-outline-secondary btn-sm">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="updateCourseTypeFormContainer" class="card mb-3 d-none">
+        <div class="card-body">
+            <h5 class="card-title">Update course type</h5>
+            <form method="post" th:action="@{/course-type-service/update}">
+                <input id="updateCourseTypeId" name="id" type="hidden" required>
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="updateCourseTypeCode" class="form-label">Code</label>
+                        <input id="updateCourseTypeCode" name="code" type="text" class="form-control" maxlength="32" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="updateCourseTypeDescription" class="form-label">Description</label>
+                        <input id="updateCourseTypeDescription" name="description" type="text" class="form-control" maxlength="255" required>
+                    </div>
+                    <div class="col-12">
+                        <label for="updateCourseTypeLongDescription" class="form-label">Long Description</label>
+                        <textarea id="updateCourseTypeLongDescription" name="longDescription" class="form-control" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-warning btn-sm">Update</button>
+                    <button id="hideUpdateFormBtn" type="button" class="btn btn-outline-secondary btn-sm">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="table-responsive" th:if="${!#lists.isEmpty(courseTypes)}">
+        <table class="table table-striped table-hover align-middle text-center">
+            <thead class="table-light">
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Code</th>
+                <th scope="col">Description</th>
+                <th scope="col">Long Description</th>
+                <th scope="col">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="courseType, courseTypeStat : ${courseTypes}">
+                <th scope="row" th:text="${courseTypeStat.index + 1}">1</th>
+                <td th:text="${courseType.code}">A1</td>
+                <td th:text="${courseType.description}">Description</td>
+                <td class="text-start" th:text="${courseType.longDescription}">Long description</td>
+                <td>
+                    <div class="d-flex justify-content-center gap-2">
+                        <button
+                                type="button"
+                                class="btn btn-outline-warning btn-sm update-course-type-btn"
+                                th:attr="data-id=${courseType.id},data-code=${courseType.code},data-description=${courseType.description},data-long-description=${courseType.longDescription}">
+                            Update
+                        </button>
+                        <form method="post" th:action="@{/course-type-service/delete/{id}(id=${courseType.id})}">
+                            <button type="submit" class="btn btn-outline-danger btn-sm"
+                                    onclick="return confirm('Are you sure you want to delete this item?');">
+                                Delete
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="alert alert-info text-center" th:if="${#lists.isEmpty(courseTypes)}">
+        No course types found.
+    </div>
+</div>
+<footer th:replace="~{fragment::footer}"></footer>
+<script>
+    const showAddFormBtn = document.getElementById('showAddFormBtn');
+    const hideAddFormBtn = document.getElementById('hideAddFormBtn');
+    const addCourseTypeFormContainer = document.getElementById('addCourseTypeFormContainer');
+    const updateCourseTypeFormContainer = document.getElementById('updateCourseTypeFormContainer');
+    const hideUpdateFormBtn = document.getElementById('hideUpdateFormBtn');
+    const updateButtons = document.querySelectorAll('.update-course-type-btn');
+    const updateCourseTypeId = document.getElementById('updateCourseTypeId');
+    const updateCourseTypeCode = document.getElementById('updateCourseTypeCode');
+    const updateCourseTypeDescription = document.getElementById('updateCourseTypeDescription');
+    const updateCourseTypeLongDescription = document.getElementById('updateCourseTypeLongDescription');
+    const successAlert = document.getElementById('successAlert');
+
+    if (successAlert) {
+        setTimeout(() => {
+            if (window.bootstrap && window.bootstrap.Alert) {
+                const alertInstance = window.bootstrap.Alert.getOrCreateInstance(successAlert);
+                alertInstance.close();
+            } else {
+                successAlert.classList.remove('show');
+                successAlert.remove();
+            }
+        }, 10000);
+    }
+
+    if (showAddFormBtn && hideAddFormBtn && addCourseTypeFormContainer) {
+        showAddFormBtn.addEventListener('click', () => {
+            addCourseTypeFormContainer.classList.remove('d-none');
+            if (updateCourseTypeFormContainer) {
+                updateCourseTypeFormContainer.classList.add('d-none');
+            }
+        });
+
+        hideAddFormBtn.addEventListener('click', () => {
+            addCourseTypeFormContainer.classList.add('d-none');
+        });
+    }
+
+    if (hideUpdateFormBtn && updateCourseTypeFormContainer) {
+        hideUpdateFormBtn.addEventListener('click', () => {
+            updateCourseTypeFormContainer.classList.add('d-none');
+        });
+    }
+
+    if (updateButtons.length > 0 && updateCourseTypeFormContainer) {
+        updateButtons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                updateCourseTypeId.value = btn.dataset.id || '';
+                updateCourseTypeCode.value = btn.dataset.code || '';
+                updateCourseTypeDescription.value = btn.dataset.description || '';
+                updateCourseTypeLongDescription.value = btn.dataset.longDescription || '';
+                updateCourseTypeFormContainer.classList.remove('d-none');
+                if (addCourseTypeFormContainer) {
+                    addCourseTypeFormContainer.classList.add('d-none');
+                }
+                updateCourseTypeFormContainer.scrollIntoView({behavior: 'smooth', block: 'start'});
+            });
+        });
+    }
+</script>
+</body>
+</html>
+

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:insert="~{fragment::head}"></head>
+<head>
+    <title th:text="${@environment.getProperty('spring.application.name')} + ' : DB Utils'">DB Utils</title>
+</head>
+<body>
+<header th:replace="~{fragment::header}"></header>
+
+<div class="container mt-4" style="max-width: 720px;">
+
+    <h4 class="text-center mb-4">🗄️ Database Utilities</h4>
+
+    <!-- Alert messages -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <!-- ===== SAVE / BACKUP ===== -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-primary text-white fw-bold">
+            💾 Save – Backup Database
+        </div>
+        <div class="card-body">
+            <p class="card-text text-muted small">
+                Creates a complete dump of <strong>all</strong> database tables
+                (images, course types, counters, trainers, lecturers, technicians,
+                participants, courses, students, instructors) and downloads it as a
+                <code>.json.gz</code> file (GZIP-compressed JSON, schema&nbsp;v<span th:text="${schemaVersion}">1.0</span>).
+            </p>
+            <p class="card-text text-muted small">
+                Binary data (photos, images) is stored as Base64 within the JSON.
+                The file can be used later with the <em>Restore</em> function below.
+            </p>
+            <form method="post" th:action="@{/db-utils/backup}">
+                <button type="submit" class="btn btn-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                         class="bi bi-download me-1" viewBox="0 0 16 16">
+                        <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0
+                                 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0
+                                 1-2-2v-2.5a.5.5 0 0 1 .5-.5"/>
+                        <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0
+                                 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354
+                                 8.146a.5.5 0 1 0-.708.708z"/>
+                    </svg>
+                    Save (Download Backup)
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== RESTORE ===== -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-warning fw-bold">
+            🔄 Restore DB
+        </div>
+        <div class="card-body">
+            <div class="alert alert-warning small mb-3" role="alert">
+                <strong>⚠️ Warning:</strong> Restoring will <strong>permanently replace all current data</strong>
+                with the contents of the backup file. This action cannot be undone.
+            </div>
+            <p class="card-text text-muted small">
+                Select a <code>.json.gz</code> backup file created by the <em>Save</em> function above.
+                The schema version is validated before any data is changed.
+                Expected schema version: <strong th:text="${schemaVersion}">1.0</strong>.
+            </p>
+            <form method="post" th:action="@{/db-utils/restore}" enctype="multipart/form-data"
+                  id="restoreForm" onsubmit="return confirmRestore()">
+                <div class="mb-3">
+                    <label for="backupFile" class="form-label fw-semibold">Backup file (.json.gz)</label>
+                    <input class="form-control" type="file" id="backupFile" name="backupFile"
+                           accept=".gz,.json.gz" required>
+                </div>
+                <button type="submit" class="btn btn-warning">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                         class="bi bi-arrow-counterclockwise me-1" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M8 3a5 5 0 1 1-4.546 2.914.5.5 0 0
+                                0-.908-.417A6 6 0 1 0 8 2z"/>
+                        <path d="M8 4.466V.534a.25.25 0 0 0-.41-.192L5.23 2.308a.25.25 0 0
+                                0 0 .384l2.36 1.966A.25.25 0 0 0 8 4.466"/>
+                    </svg>
+                    Restore DB
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Info box -->
+    <div class="card border-info mb-4">
+        <div class="card-body small text-muted">
+            <strong>ℹ️ Format details:</strong>
+            GZIP-compressed JSON. Images and photos are Base64-encoded within the file.
+            <br>
+            The backup includes: <em>images, course types, course counters, trainers, lecturers,
+            technicians, participants, courses, students, instructors</em>.
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function confirmRestore() {
+        return confirm(
+            '⚠️ Are you sure you want to RESTORE the database?\n\n' +
+            'ALL current data will be permanently replaced with the backup file contents.\n\n' +
+            'This action cannot be undone!'
+        );
+    }
+</script>
+
+<footer th:replace="~{fragment::footer}"></footer>
+</body>
+</html>
+
