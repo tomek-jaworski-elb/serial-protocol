@@ -148,7 +148,7 @@
             <label class="form-label mb-0 small text-muted">Per page:</label>
             <select class="form-select form-select-sm" style="width: auto;"
                     onchange="window.location.href = this.value;">
-                <option th:each="opt : ${{10, 25, 50, 100}}"
+                <option th:each="opt : ${T(java.util.List).of(10, 25, 50, 100)}"
                         th:value="${baseUrl + '?page=0&size=' + opt}"
                         th:text="${opt}"
                         th:selected="${opt == pageSize}">10</option>
