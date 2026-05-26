@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.Optional;
 
@@ -118,6 +120,31 @@ class CourseCounterServiceTest {
     assertEquals(updatedImage.getId(), update.imageUuid());
     assertEquals(1, imageService.getAllImages());
 
+  }
+
+  @Test
+  void testFindAllWithPagination() {
+    Image image1 = imageService.saveImage(new byte[]{1, 2, 3}, "context text 1");
+    Image image2 = imageService.saveImage(new byte[]{4, 5, 6}, "context text 2");
+    Image image3 = imageService.saveImage(new byte[]{7, 8, 9}, "context text 3");
+    courseCounterService.save(new CourseCounterDTO(5L, image1.getId()));
+    courseCounterService.save(new CourseCounterDTO(10L, image2.getId()));
+    courseCounterService.save(new CourseCounterDTO(15L, image3.getId()));
+
+    Page<CourseCounterDTO> firstPage = courseCounterService.findAll(PageRequest.of(0, 2));
+    assertEquals(2, firstPage.getContent().size());
+    assertEquals(3, firstPage.getTotalElements());
+    assertEquals(2, firstPage.getTotalPages());
+
+    Page<CourseCounterDTO> secondPage = courseCounterService.findAll(PageRequest.of(1, 2));
+    assertEquals(1, secondPage.getContent().size());
+  }
+
+  @Test
+  void testFindAllShouldReturnEmptyPageWhenNoData() {
+    Page<CourseCounterDTO> page = courseCounterService.findAll(PageRequest.of(0, 10));
+    assertTrue(page.getContent().isEmpty());
+    assertEquals(0, page.getTotalElements());
   }
 
 

@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -143,6 +145,28 @@ class CourseTypeServiceTest {
         () -> courseTypeService.deleteById(id)
     );
     assertTrue(exception.getMessage().contains("referenced by existing courses"));
+  }
+
+  @Test
+  void shouldFindAllWithPagination() {
+    courseTypeService.save(createCourseType("C-A", "Basic", "Basic navigation course"));
+    courseTypeService.save(createCourseType("C-B", "Advanced", "Advanced navigation course"));
+    courseTypeService.save(createCourseType("C-C", "Expert", "Expert navigation course"));
+
+    Page<CourseTypeDTO> firstPage = courseTypeService.findAll(PageRequest.of(0, 2));
+    assertEquals(2, firstPage.getContent().size());
+    assertEquals(3, firstPage.getTotalElements());
+    assertEquals(2, firstPage.getTotalPages());
+
+    Page<CourseTypeDTO> secondPage = courseTypeService.findAll(PageRequest.of(1, 2));
+    assertEquals(1, secondPage.getContent().size());
+  }
+
+  @Test
+  void shouldReturnEmptyPageWhenNoData() {
+    Page<CourseTypeDTO> page = courseTypeService.findAll(PageRequest.of(0, 10));
+    assertTrue(page.getContent().isEmpty());
+    assertEquals(0, page.getTotalElements());
   }
 
   private CourseTypeDTO createCourseType(String code, String description, String longDescription) {

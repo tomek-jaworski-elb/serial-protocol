@@ -12,6 +12,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -365,6 +367,33 @@ class CoursesServiceTest {
     saved.setEndDate(LocalDate.of(2025, 4, 1));
 
     assertThrows(IllegalArgumentException.class, () -> coursesService.update(saved));
+  }
+
+  // --- pagination ---
+
+  @Test
+  void findAll_shouldReturnPageWithPagination() {
+    ParticipantDTO participant = savedParticipant("Jan", "Kowalski");
+    CourseTypeDTO courseType = savedCourseType("NAV-PAG");
+
+    coursesService.save(createCourse(participant.getParticipantUuid(), courseType.getId()));
+    coursesService.save(createCourse(participant.getParticipantUuid(), courseType.getId()));
+    coursesService.save(createCourse(participant.getParticipantUuid(), courseType.getId()));
+
+    Page<CoursesDTO> firstPage = coursesService.findAll(PageRequest.of(0, 2));
+    assertEquals(2, firstPage.getContent().size());
+    assertEquals(3, firstPage.getTotalElements());
+    assertEquals(2, firstPage.getTotalPages());
+
+    Page<CoursesDTO> secondPage = coursesService.findAll(PageRequest.of(1, 2));
+    assertEquals(1, secondPage.getContent().size());
+  }
+
+  @Test
+  void findAll_shouldReturnEmptyPageWhenNoData() {
+    Page<CoursesDTO> page = coursesService.findAll(PageRequest.of(0, 10));
+    assertTrue(page.getContent().isEmpty());
+    assertEquals(0, page.getTotalElements());
   }
 
   // --- helpers ---

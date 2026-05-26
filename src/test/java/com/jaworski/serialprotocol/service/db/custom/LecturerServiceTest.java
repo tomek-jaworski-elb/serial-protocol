@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.LocalDate;
 import java.util.HashSet;
@@ -279,6 +281,30 @@ class LecturerServiceTest {
         lecturerService.updateById(saved);
 
         assertEquals(1, lecturerService.findAll().size());
+    }
+
+    // --- pagination ---
+
+    @Test
+    void findAll_shouldReturnPageWithPagination() {
+        lecturerService.save(createLecturer("Jan", "Kowalski"));
+        lecturerService.save(createLecturer("Anna", "Nowak"));
+        lecturerService.save(createLecturer("Piotr", "Zając"));
+
+        Page<LecturerDTO> firstPage = lecturerService.findAll(PageRequest.of(0, 2));
+        assertEquals(2, firstPage.getContent().size());
+        assertEquals(3, firstPage.getTotalElements());
+        assertEquals(2, firstPage.getTotalPages());
+
+        Page<LecturerDTO> secondPage = lecturerService.findAll(PageRequest.of(1, 2));
+        assertEquals(1, secondPage.getContent().size());
+    }
+
+    @Test
+    void findAll_shouldReturnEmptyPageWhenNoData() {
+        Page<LecturerDTO> page = lecturerService.findAll(PageRequest.of(0, 10));
+        assertTrue(page.getContent().isEmpty());
+        assertEquals(0, page.getTotalElements());
     }
 
     // --- helper ---
