@@ -126,5 +126,90 @@
     <script type="text/javascript"  th:src="@{/js/ws-session-count.js}"></script>
 </footer>
 
+<!--
+  Reusable pagination fragment for server-side paging.
+  Parameters (th:with):
+    - page       : Spring Data Page object
+    - baseUrl    : base path for pagination links (e.g. '/trainer-service')
+    - pageSize   : current page size
+-->
+<div th:fragment="pagination(page, baseUrl, pageSize)" th:if="${page != null && page.totalPages > 0}">
+    <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+        <!-- Left: info text -->
+        <div class="text-muted small">
+            <span th:text="'Showing ' + (${page.number} * ${page.size} + 1) + ' to ' + ${T(Math).min((${page.number} + 1) * ${page.size}, ${page.totalElements})} + ' of ' + ${page.totalElements} + ' entries'">
+                Showing 1 to 10 of 50 entries
+            </span>
+        </div>
+
+        <!-- Center: page size selector -->
+        <div class="d-flex align-items-center gap-2">
+            <label for="pageSizeSelect" class="form-label mb-0 small text-muted">Per page:</label>
+            <select id="pageSizeSelect" class="form-select form-select-sm" style="width: auto;"
+                    onchange="window.location.href = this.value;">
+                <option th:each="opt : ${new int[]{10, 25, 50, 100}}"
+                        th:value="@{${baseUrl}(page=0, size=${opt})}"
+                        th:text="${opt}"
+                        th:selected="${opt == pageSize}">10</option>
+            </select>
+        </div>
+
+        <!-- Right: pagination nav -->
+        <nav aria-label="Page navigation" th:if="${page.totalPages > 1}">
+            <ul class="pagination pagination-sm mb-0">
+                <!-- Previous -->
+                <li class="page-item" th:classappend="${page.first} ? 'disabled'">
+                    <a class="page-link" th:href="@{${baseUrl}(page=${page.number - 1}, size=${pageSize})}"
+                       th:if="${!page.first}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                    <span class="page-link" th:if="${page.first}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </span>
+                </li>
+
+                <!-- Page numbers (show max 7 pages with ellipsis) -->
+                <th:block th:with="startPage=${T(Math).max(0, page.number - 3)}, endPage=${T(Math).min(page.totalPages - 1, page.number + 3)}">
+                    <!-- First page + ellipsis if needed -->
+                    <li class="page-item" th:if="${startPage > 0}" th:classappend="${0 == page.number} ? 'active'">
+                        <a class="page-link" th:href="@{${baseUrl}(page=0, size=${pageSize})}">1</a>
+                    </li>
+                    <li class="page-item disabled" th:if="${startPage > 1}">
+                        <span class="page-link">&hellip;</span>
+                    </li>
+
+                    <!-- Middle pages -->
+                    <th:block th:each="i : ${#numbers.sequence(startPage, endPage)}">
+                        <li class="page-item" th:classappend="${i == page.number} ? 'active'">
+                            <a class="page-link" th:href="@{${baseUrl}(page=${i}, size=${pageSize})}"
+                               th:text="${i + 1}">1</a>
+                        </li>
+                    </th:block>
+
+                    <!-- Last page + ellipsis if needed -->
+                    <li class="page-item disabled" th:if="${endPage < page.totalPages - 2}">
+                        <span class="page-link">&hellip;</span>
+                    </li>
+                    <li class="page-item" th:if="${endPage < page.totalPages - 1}" th:classappend="${page.totalPages - 1 == page.number} ? 'active'">
+                        <a class="page-link" th:href="@{${baseUrl}(page=${page.totalPages - 1}, size=${pageSize})}"
+                           th:text="${page.totalPages}">99</a>
+                    </li>
+                </th:block>
+
+                <!-- Next -->
+                <li class="page-item" th:classappend="${page.last} ? 'disabled'">
+                    <a class="page-link" th:href="@{${baseUrl}(page=${page.number + 1}, size=${pageSize})}"
+                       th:if="${!page.last}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                    <span class="page-link" th:if="${page.last}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </span>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</div>
+
 </body>
 </html>

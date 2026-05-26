@@ -19,6 +19,8 @@ import com.jaworski.serialprotocol.repository.custom.TrainerRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,6 +50,11 @@ public class CoursesService {
     return coursesRepository.findAll(Sort.by(Sort.Direction.DESC, "id")).stream()
         .map(CoursesMapper::mapToDTO)
         .toList();
+  }
+
+  @Transactional(readOnly = true)
+  public Page<CoursesDTO> findAll(Pageable pageable) {
+    return coursesRepository.findAll(pageable).map(CoursesMapper::mapToDTO);
   }
 
   @Transactional(readOnly = true)

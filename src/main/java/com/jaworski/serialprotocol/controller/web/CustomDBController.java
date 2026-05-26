@@ -50,6 +50,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+
 @RequiredArgsConstructor
 @Controller
 public class CustomDBController {
@@ -67,6 +71,7 @@ public class CustomDBController {
   private final ParticipantService participantService;
   private final ImageService imageService;
   private static final int MAX_UPLOAD_IMAGES = 6;
+  private static final int DEFAULT_PAGE_SIZE = 10;
 
   /**
    * Converts empty strings submitted from HTML forms to null,
@@ -84,9 +89,17 @@ public class CustomDBController {
   }
 
   @GetMapping("/courses-service")
-  public String coursesService(Model model) {
+  public String coursesService(
+          @RequestParam(defaultValue = "0") int page,
+          @RequestParam(defaultValue = "10") int size,
+          Model model) {
     model.addAttribute(ATTRIBUTE_NAME, "courses-service");
-    model.addAttribute("courses", coursesService.findAll());
+    Page<CoursesDTO> coursesPage = coursesService.findAll(
+            PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id")));
+    model.addAttribute("courses", coursesPage.getContent());
+    model.addAttribute("coursesPage", coursesPage);
+    model.addAttribute("currentPage", page);
+    model.addAttribute("pageSize", size);
     model.addAttribute("participants", participantService.findAll());
     List<CourseTypeDTO> courseTypes = courseTypeService.findAll();
     model.addAttribute("courseTypes", courseTypes);
@@ -164,9 +177,16 @@ public class CustomDBController {
   }
 
   @GetMapping("/trainer-service")
-  public String trainerService(Model model) {
+  public String trainerService(
+          @RequestParam(defaultValue = "0") int page,
+          @RequestParam(defaultValue = "10") int size,
+          Model model) {
     model.addAttribute(ATTRIBUTE_NAME, "trainer-service");
-    model.addAttribute("trainers", trainerService.findAll());
+    Page<TrainerDTO> trainerPage = trainerService.findAll(PageRequest.of(page, size));
+    model.addAttribute("trainers", trainerPage.getContent());
+    model.addAttribute("trainerPage", trainerPage);
+    model.addAttribute("currentPage", page);
+    model.addAttribute("pageSize", size);
     model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
     return "custom/trainer-service";
   }
@@ -227,9 +247,16 @@ public class CustomDBController {
   }
 
   @GetMapping("/lecturer-service")
-  public String lecturerService(Model model) {
+  public String lecturerService(
+          @RequestParam(defaultValue = "0") int page,
+          @RequestParam(defaultValue = "10") int size,
+          Model model) {
     model.addAttribute(ATTRIBUTE_NAME, "lecturer-service");
-    model.addAttribute("lecturers", lecturerService.findAll());
+    Page<LecturerDTO> lecturerPage = lecturerService.findAll(PageRequest.of(page, size));
+    model.addAttribute("lecturers", lecturerPage.getContent());
+    model.addAttribute("lecturerPage", lecturerPage);
+    model.addAttribute("currentPage", page);
+    model.addAttribute("pageSize", size);
     model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
     return "custom/lecturer-service";
   }
@@ -290,9 +317,16 @@ public class CustomDBController {
   }
 
   @GetMapping("/technician-service")
-  public String technicianService(Model model) {
+  public String technicianService(
+          @RequestParam(defaultValue = "0") int page,
+          @RequestParam(defaultValue = "10") int size,
+          Model model) {
     model.addAttribute(ATTRIBUTE_NAME, "technician-service");
-    model.addAttribute("technicians", technicianService.findAll());
+    Page<TechnicianDTO> technicianPage = technicianService.findAll(PageRequest.of(page, size));
+    model.addAttribute("technicians", technicianPage.getContent());
+    model.addAttribute("technicianPage", technicianPage);
+    model.addAttribute("currentPage", page);
+    model.addAttribute("pageSize", size);
     model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
     return "custom/technician-service";
   }
@@ -353,9 +387,16 @@ public class CustomDBController {
   }
 
   @GetMapping("/course-type-service")
-  public String courseTypeService(Model model) {
+  public String courseTypeService(
+          @RequestParam(defaultValue = "0") int page,
+          @RequestParam(defaultValue = "10") int size,
+          Model model) {
     model.addAttribute(ATTRIBUTE_NAME, "course-type-service");
-    model.addAttribute("courseTypes", courseTypeService.findAll());
+    Page<CourseTypeDTO> courseTypePage = courseTypeService.findAll(PageRequest.of(page, size));
+    model.addAttribute("courseTypes", courseTypePage.getContent());
+    model.addAttribute("courseTypePage", courseTypePage);
+    model.addAttribute("currentPage", page);
+    model.addAttribute("pageSize", size);
     model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
     return "custom/course-type-service";
   }
@@ -402,10 +443,18 @@ public class CustomDBController {
   }
 
   @GetMapping("/participant-service")
-  public String participantService(Model model) {
+  public String participantService(
+          @RequestParam(defaultValue = "0") int page,
+          @RequestParam(defaultValue = "10") int size,
+          Model model) {
     model.addAttribute(ATTRIBUTE_NAME, "participant-service");
-    List<ParticipantDTO> participants = participantService.findAll();
+    Page<ParticipantDTO> participantPage = participantService.findAll(
+            PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id")));
+    List<ParticipantDTO> participants = participantPage.getContent();
     model.addAttribute("participants", participants);
+    model.addAttribute("participantPage", participantPage);
+    model.addAttribute("currentPage", page);
+    model.addAttribute("pageSize", size);
     model.addAttribute("nextId", participantService.nextId());
     model.addAttribute("courseTypes", courseTypeService.findAll());
     Map<UUID, List<CoursesDTO>> coursesByParticipant = new HashMap<>();
@@ -491,10 +540,18 @@ public class CustomDBController {
   }
 
   @GetMapping("/course-counter-service")
-  public String courseCounterService(Model model) {
+  public String courseCounterService(
+          @RequestParam(defaultValue = "0") int page,
+          @RequestParam(defaultValue = "10") int size,
+          Model model) {
     model.addAttribute(ATTRIBUTE_NAME, "course-counter-service");
-    List<CourseCounterDTO> counters = courseCounterService.findAll();
+    Page<CourseCounterDTO> counterPage = courseCounterService.findAll(
+            PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "counter")));
+    List<CourseCounterDTO> counters = counterPage.getContent();
     model.addAttribute("courseCounters", counters);
+    model.addAttribute("counterPage", counterPage);
+    model.addAttribute("currentPage", page);
+    model.addAttribute("pageSize", size);
     model.addAttribute("nextCounter", courseCounterService.nextCounter());
     Map<UUID, List<CoursesDTO>> coursesByCourseCounter = new HashMap<>();
     counters.forEach(cc -> coursesByCourseCounter.put(cc.uuid(), coursesService.findByCourseCounterUuid(cc.uuid())));

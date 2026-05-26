@@ -20,7 +20,7 @@
         <h4 class="mb-0">Technician</h4>
         <div class="d-flex align-items-center gap-2">
             <input id="tableFilterInput" type="text" class="form-control form-control-sm" placeholder="Filter..." style="width: 180px;">
-            <span class="badge bg-secondary" th:text="${#lists.size(technicians)}" th:if="${!#lists.isEmpty(technicians)}">0</span>
+            <span class="badge bg-secondary" th:text="${technicianPage.totalElements}" th:if="${technicianPage != null && technicianPage.totalElements > 0}">0</span>
             <button id="printReportBtn" type="button" class="btn btn-outline-secondary btn-sm" disabled>
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-printer me-1" viewBox="0 0 16 16">
                     <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1"/>
@@ -178,6 +178,8 @@
             </tbody>
         </table>
     </div>
+
+    <div th:replace="~{fragment :: pagination(${technicianPage}, '/technician-service', ${pageSize})}"></div>
 
     <div class="alert alert-info text-center" th:if="${#lists.isEmpty(technicians)}">No technicians found.</div>
 </div>

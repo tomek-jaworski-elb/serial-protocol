@@ -8,6 +8,8 @@ import com.jaworski.serialprotocol.repository.custom.CourseCounterRepository;
 import com.jaworski.serialprotocol.repository.custom.ImageRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
@@ -36,6 +38,10 @@ public class CourseCounterService {
     return courseCounterRepository.findAll(Sort.by(Sort.Direction.DESC, "counter")).stream()
             .map(CourseCounterMapper::toDTO)
             .toList();
+  }
+
+  public Page<CourseCounterDTO> findAll(Pageable pageable) {
+    return courseCounterRepository.findAll(pageable).map(CourseCounterMapper::toDTO);
   }
 
   public Long nextCounter() {

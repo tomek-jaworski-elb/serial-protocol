@@ -10,6 +10,8 @@ import com.jaworski.serialprotocol.repository.custom.ParticipantRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +32,10 @@ public class ParticipantService {
     return participantRepository.findAll(Sort.by(Sort.Direction.DESC, "id")).stream()
             .map(ParticipantMapper::mapToDTO)
             .toList();
+  }
+
+  public Page<ParticipantDTO> findAll(Pageable pageable) {
+    return participantRepository.findAll(pageable).map(ParticipantMapper::mapToDTO);
   }
 
   public ParticipantDTO findByUuid(UUID uuid) {

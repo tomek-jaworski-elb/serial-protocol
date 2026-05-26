@@ -5,6 +5,8 @@ import com.jaworski.serialprotocol.mappers.custom.CourseTypeMapper;
 import com.jaworski.serialprotocol.repository.custom.CourseTypeRepository;
 import com.jaworski.serialprotocol.repository.custom.CoursesRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -28,6 +30,10 @@ public class CourseTypeService {
     return courseTypeRepository.findAll().stream()
         .map(CourseTypeMapper::mapToDTO)
         .toList();
+  }
+
+  public Page<CourseTypeDTO> findAll(Pageable pageable) {
+    return courseTypeRepository.findAll(pageable).map(CourseTypeMapper::mapToDTO);
   }
 
   public CourseTypeDTO findById(Long id) {
