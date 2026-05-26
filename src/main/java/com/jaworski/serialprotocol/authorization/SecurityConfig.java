@@ -51,6 +51,14 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests((authorizeHttpRequests) ->
                         authorizeHttpRequests
+                                .requestMatchers("/trainer-service/**").hasRole(SecurityRoles.ROLE_USER.getName())
+                                .requestMatchers("/lecturer-service/**").hasRole(SecurityRoles.ROLE_USER.getName())
+                                .requestMatchers("/technician-service/**").hasRole(SecurityRoles.ROLE_USER.getName())
+                                .requestMatchers("/participant-service/**").hasRole(SecurityRoles.ROLE_USER.getName())
+                                .requestMatchers("/courses-service/**").hasRole(SecurityRoles.ROLE_USER.getName())
+                                .requestMatchers("/course-type-service/**").hasRole(SecurityRoles.ROLE_USER.getName())
+                                .requestMatchers("/course-counter-service/**").hasRole(SecurityRoles.ROLE_USER.getName())
+                                .requestMatchers("/pdf/**").hasRole(SecurityRoles.ROLE_USER.getName())
                                 .requestMatchers("/name-service").hasRole(SecurityRoles.ROLE_USER.getName())
                                 .requestMatchers("/instructor-service").hasRole(SecurityRoles.ROLE_USER.getName())
                                 .requestMatchers("/api/**").hasRole(SecurityRoles.ROLE_USER.getName())

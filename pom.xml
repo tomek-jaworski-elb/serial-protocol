@@ -152,6 +152,19 @@
             <artifactId>junit-jupiter-engine</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- PDF generation — OpenPDF 3.x (com.github.librepdf:openpdf:3.x, packages org.openpdf.text.*) -->
+        <dependency>
+            <groupId>com.github.librepdf</groupId>
+            <artifactId>openpdf</artifactId>
+            <version>3.0.4</version>
+        </dependency>
+        <!-- PDF text extraction for tests only -->
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>3.0.3</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

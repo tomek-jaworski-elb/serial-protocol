@@ -20,7 +20,15 @@
     <div class="d-flex justify-content-between align-items-center my-3">
         <h4 class="mb-0">Participant</h4>
         <div class="d-flex align-items-center gap-2">
+            <input id="tableFilterInput" type="text" class="form-control form-control-sm" placeholder="Filter..." style="width: 180px;">
             <span class="badge bg-secondary" th:text="${#lists.size(participants)}" th:if="${!#lists.isEmpty(participants)}">0</span>
+            <button id="printReportBtn" type="button" class="btn btn-outline-secondary btn-sm" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-printer me-1" viewBox="0 0 16 16">
+                    <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1"/>
+                    <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2zm3 1h4a1 1 0 0 1 1 1v2H5V3a1 1 0 0 1 1-1zm-3 8v-1h8v2a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-1zm8-5a1 1 0 0 0-1 1H4a1 1 0 0 0-1-1z"/>
+                </svg>
+                Print Report
+            </button>
             <button id="showAddFormBtn" type="button" class="btn btn-primary btn-sm">Add</button>
         </div>
     </div>
@@ -190,13 +198,14 @@
 
 
     <div class="table-responsive" th:if="${!#lists.isEmpty(participants)}">
-        <table class="table table-striped table-hover align-middle text-center">
+        <table class="table table-striped table-hover align-middle text-center filterable-table">
             <thead class="table-light">
             <tr>
-                <th scope="col">ID</th>
-                <th scope="col">Name</th>
-                <th scope="col">Surname</th>
-                <th scope="col">Birth Date</th>
+                <th scope="col"><input type="checkbox" class="form-check-input" id="selectAllCheckbox" title="Select all"></th>
+                <th scope="col" data-sort="number">ID</th>
+                <th scope="col" data-sort="text">Name</th>
+                <th scope="col" data-sort="text">Surname</th>
+                <th scope="col" data-sort="date">Birth Date</th>
                 <th scope="col">Image</th>
                 <th scope="col">Certificates</th>
                 <th scope="col">Actions</th>
@@ -204,6 +213,7 @@
             </thead>
             <tbody>
             <tr th:each="participant, participantStat : ${participants}">
+                <td><input type="checkbox" class="form-check-input row-select-checkbox" th:value="${participant.participantUuid}"></td>
                 <td th:text="${participant.id}">1</td>
                 <td th:text="${participant.name}">John</td>
                 <td th:text="${participant.surname}">Doe</td>
@@ -259,7 +269,11 @@
         No participants found.
     </div>
 </div>
+<form id="pdfReportForm" method="post" th:action="@{/pdf/participant}" target="_blank" style="display:none;">
+    <input type="hidden" id="pdfReportIds" name="ids" value="">
+</form>
 <footer th:replace="~{fragment::footer}"></footer>
+<script th:src="@{/js/common/table-filter-sort.js}"></script>
 
 <div class="modal fade" id="participantDetailsModal" tabindex="-1" aria-labelledby="participantDetailsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -470,6 +484,47 @@
 
                 participantDetailsModalInstance.show();
             });
+        });
+    }
+
+    // ── PDF Report ──────────────────────────────────────────────────────────
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const rowCheckboxes = document.querySelectorAll('.row-select-checkbox');
+    const printReportBtn = document.getElementById('printReportBtn');
+    const pdfReportForm = document.getElementById('pdfReportForm');
+    const pdfReportIds = document.getElementById('pdfReportIds');
+
+    function updatePrintButton() {
+        const checkedBoxes = document.querySelectorAll('.row-select-checkbox:checked');
+        const total = rowCheckboxes.length;
+        const checked = checkedBoxes.length;
+        if (printReportBtn) {
+            printReportBtn.disabled = checked === 0;
+        }
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = checked === total && total > 0;
+            selectAllCheckbox.indeterminate = checked > 0 && checked < total;
+        }
+    }
+
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', () => {
+            rowCheckboxes.forEach(cb => { cb.checked = selectAllCheckbox.checked; });
+            updatePrintButton();
+        });
+    }
+
+    rowCheckboxes.forEach(cb => {
+        cb.addEventListener('change', updatePrintButton);
+    });
+
+    if (printReportBtn && pdfReportForm && pdfReportIds) {
+        printReportBtn.addEventListener('click', () => {
+            const checkedIds = Array.from(document.querySelectorAll('.row-select-checkbox:checked'))
+                .map(cb => cb.value)
+                .join(',');
+            pdfReportIds.value = checkedIds;
+            pdfReportForm.submit();
         });
     }
 </script>
