@@ -13,6 +13,9 @@ import org.springframework.validation.annotation.Validated;
  * <p>Example {@code application.properties}:
  * <pre>
  * pdf.report.max-records=200
+ * pdf.report.company-name=Serial Protocol
+ * pdf.report.table-view-enabled=true
+ * pdf.report.table-max-columns=6
  * pdf.report.font.name=DejaVuSans
  * pdf.report.font.size.regular=10
  * pdf.report.font.size.small=8
@@ -37,10 +40,25 @@ public class PdfReportProperties {
     /** Maximum number of records allowed per single PDF report request. */
     private int maxRecords = 100;
 
+    /** Company/organization name displayed in PDF header */
+    private String companyName = "Serial Protocol";
+
+    /** Enable table view for compatible entities */
+    private boolean tableViewEnabled = true;
+
+    /** Maximum columns threshold for automatic TABLE_VIEW selection */
+    private int tableMaxColumns = 6;
+
     public FontConfig getFont() { return font; }
     public void setFont(FontConfig font) { this.font = font; }
     public int getMaxRecords() { return maxRecords; }
     public void setMaxRecords(int maxRecords) { this.maxRecords = maxRecords; }
+    public String getCompanyName() { return companyName; }
+    public void setCompanyName(String companyName) { this.companyName = companyName; }
+    public boolean isTableViewEnabled() { return tableViewEnabled; }
+    public void setTableViewEnabled(boolean tableViewEnabled) { this.tableViewEnabled = tableViewEnabled; }
+    public int getTableMaxColumns() { return tableMaxColumns; }
+    public void setTableMaxColumns(int tableMaxColumns) { this.tableMaxColumns = tableMaxColumns; }
 
     /**
      * Font configuration — defines the font family name and size variants.
