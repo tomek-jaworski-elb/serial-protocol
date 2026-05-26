@@ -44,6 +44,7 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <!-- Left links -->
                 <ul class="navbar-nav">
+                    <!-- Public items -->
                     <li class="nav-item">
                         <a th:if="${name == 'home'}" class="nav-link active" aria-current="page" th:href="@{/}">Home</a>
                         <a th:unless="${name == 'home'}" class="nav-link" aria-current="page" th:href="@{/}">Home</a>
@@ -64,7 +65,9 @@
                         <a th:if="${name == 'terminal'}" class="nav-link active" th:href="@{/terminal}">Terminal</a>
                         <a th:unless="${name == 'terminal'}" class="nav-link" th:href="@{/terminal}">Terminal</a>
                     </li>
-                    <li class="nav-item">
+
+                    <!-- Authenticated items -->
+                    <li sec:authorize="isAuthenticated()" class="nav-item">
                         <a th:if="${name == 'name-service'}" class="nav-link active" th:href="@{/name-service}">Names</a>
                         <a th:unless="${name == 'name-service'}" class="nav-link" th:href="@{/name-service}">Names</a>
                     </li>
@@ -72,43 +75,91 @@
                         <a th:if="${name == 'instructor-service'}" class="nav-link active" th:href="@{/instructor-service}">Instructors</a>
                         <a th:unless="${name == 'instructor-service'}" class="nav-link" th:href="@{/instructor-service}">Instructors</a>
                     </li>
-                    <li th:if="${@environment.getProperty('web.ui.extened') == 'true'}" class="nav-item">
+
+                    <!-- Extended UI items (authenticated + web.ui.extened) -->
+                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extened') == 'true'}" class="nav-item">
                         <a th:if="${name == 'courses-service'}" class="nav-link active" th:href="@{/courses-service}">Certificates</a>
                         <a th:unless="${name == 'courses-service'}" class="nav-link" th:href="@{/courses-service}">Certificates</a>
                     </li>
-                    <li th:if="${@environment.getProperty('web.ui.extened') == 'true'}" class="nav-item">
+                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extened') == 'true'}" class="nav-item">
                         <a th:if="${name == 'trainer-service'}" class="nav-link active" th:href="@{/trainer-service}">Trainer</a>
                         <a th:unless="${name == 'trainer-service'}" class="nav-link" th:href="@{/trainer-service}">Trainer</a>
                     </li>
-                    <li th:if="${@environment.getProperty('web.ui.extened') == 'true'}" class="nav-item">
+                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extened') == 'true'}" class="nav-item">
                         <a th:if="${name == 'lecturer-service'}" class="nav-link active" th:href="@{/lecturer-service}">Lecturer</a>
                         <a th:unless="${name == 'lecturer-service'}" class="nav-link" th:href="@{/lecturer-service}">Lecturer</a>
                     </li>
-                    <li th:if="${@environment.getProperty('web.ui.extened') == 'true'}" class="nav-item">
+                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extened') == 'true'}" class="nav-item">
                         <a th:if="${name == 'technician-service'}" class="nav-link active" th:href="@{/technician-service}">Technician</a>
                         <a th:unless="${name == 'technician-service'}" class="nav-link" th:href="@{/technician-service}">Technician</a>
                     </li>
-                    <li th:if="${@environment.getProperty('web.ui.extened') == 'true'}" class="nav-item">
+                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extened') == 'true'}" class="nav-item">
                         <a th:if="${name == 'course-type-service'}" class="nav-link active" th:href="@{/course-type-service}">Course Type</a>
                         <a th:unless="${name == 'course-type-service'}" class="nav-link" th:href="@{/course-type-service}">Course Type</a>
                     </li>
-                    <li th:if="${@environment.getProperty('web.ui.extened') == 'true'}" class="nav-item">
+                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extened') == 'true'}" class="nav-item">
                         <a th:if="${name == 'participant-service'}" class="nav-link active" th:href="@{/participant-service}">Participant</a>
                         <a th:unless="${name == 'participant-service'}" class="nav-link" th:href="@{/participant-service}">Participant</a>
                     </li>
-                    <li th:if="${@environment.getProperty('web.ui.extened') == 'true'}" class="nav-item">
+                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extened') == 'true'}" class="nav-item">
                         <a th:if="${name == 'course-counter-service'}" class="nav-link active" th:href="@{/course-counter-service}">Course Counter</a>
                         <a th:unless="${name == 'course-counter-service'}" class="nav-link" th:href="@{/course-counter-service}">Course Counter</a>
                     </li>
+
+                    <!-- Admin items -->
                     <li sec:authorize="hasRole('ADMIN')" class="nav-item">
                         <a th:if="${name == 'db-utils'}" class="nav-link active" th:href="@{/db-utils}">DB Utils</a>
                         <a th:unless="${name == 'db-utils'}" class="nav-link" th:href="@{/db-utils}">DB Utils</a>
                     </li>
-                    <li sec:authorize="isAuthenticated()" class="nav-item">
-                        <a th:href="@{/logout}" class="nav-link text-danger fw-bold">Logout</a>
+                </ul>
+
+                <!-- Right side: Login / User dropdown -->
+                <ul class="navbar-nav ms-auto">
+                    <!-- Login button (visible when NOT authenticated) -->
+                    <li sec:authorize="!isAuthenticated()" class="nav-item">
+                        <a class="nav-link" th:href="@{/login}"
+                           th:classappend="${name == 'login'} ? 'active'">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                 class="bi bi-box-arrow-in-right me-1" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd" d="M6 3.5a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-2a.5.5 0 0 0-1 0v2A1.5 1.5 0 0 0 6.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-8A1.5 1.5 0 0 0 5 3.5v2a.5.5 0 0 0 1 0z"/>
+                                <path fill-rule="evenodd" d="M11.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 1 0-.708.708L10.293 7.5H1.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708z"/>
+                            </svg>
+                            Login
+                        </a>
+                    </li>
+
+                    <!-- User dropdown (visible when authenticated) -->
+                    <li sec:authorize="isAuthenticated()" class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button"
+                           data-bs-toggle="dropdown" aria-expanded="false">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                 class="bi bi-person-circle me-1" viewBox="0 0 16 16">
+                                <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0"/>
+                                <path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1"/>
+                            </svg>
+                            <span sec:authentication="name">User</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <span class="dropdown-item-text text-muted small">
+                                    <span sec:authorize="hasRole('ADMIN')">Role: Admin</span>
+                                    <span sec:authorize="!hasRole('ADMIN')">Role: User</span>
+                                </span>
+                            </li>
+                            <li><hr class="dropdown-divider"/></li>
+                            <li>
+                                <a class="dropdown-item text-danger" th:href="@{/logout}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                         class="bi bi-box-arrow-right me-1" viewBox="0 0 16 16">
+                                        <path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0z"/>
+                                        <path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708z"/>
+                                    </svg>
+                                    Logout
+                                </a>
+                            </li>
+                        </ul>
                     </li>
                 </ul>
-                <!-- Left links -->
             </div>
             <!-- Collapsible wrapper -->
         </div>
