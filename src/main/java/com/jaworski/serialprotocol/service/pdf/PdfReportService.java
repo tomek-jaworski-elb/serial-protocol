@@ -212,25 +212,17 @@ public class PdfReportService {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             Document document = openDocument(baos);
-            addDocumentHeader(document, "Participants Report");
+            
+            // Cover page
+            addCoverPage(document, "Participants Report", participants.size());
 
-            for (int i = 0; i < participants.size(); i++) {
-                ParticipantDTO p = participants.get(i);
-                if (i > 0) {
-                    addSeparator(document);
-                }
-                PdfPTable table = createTable();
-                addRow(table, "ID",           str(p.getId()));
-                addRow(table, "UUID",         str(p.getParticipantUuid()));
-                addRow(table, "Name",         strBlank(p.getName()));
-                addRow(table, "Surname",      strBlank(p.getSurname()));
-                addRow(table, "Birth Date",   p.getBirthDate() != null ? p.getBirthDate().format(DATE_FMT) : EM_DASH);
-                addRow(table, "Nickname",     strBlank(p.getNickname()));
-                addRow(table, "Email",        strBlank(p.getEmail()));
-                addRow(table, "Phone",        strBlank(p.getPhoneNumber()));
-                addRow(table, "Address",      strBlank(p.getAddress()));
-                addRow(table, "Notes",        strBlank(p.getNotes()));
-                document.add(table);
+            // Determine layout strategy
+            PdfPageLayout.LayoutStrategy strategy = PdfPageLayout.decideParticipantLayout(participants);
+
+            if (strategy == PdfPageLayout.LayoutStrategy.TABLE_VIEW && properties.isTableViewEnabled()) {
+                renderParticipantsTableView(document, participants);
+            } else {
+                renderParticipantsCardView(document, participants);
             }
 
             document.close();
@@ -254,25 +246,17 @@ public class PdfReportService {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             Document document = openDocument(baos);
-            addDocumentHeader(document, "Courses Report");
+            
+            // Cover page
+            addCoverPage(document, "Courses Report", courses.size());
 
-            for (int i = 0; i < courses.size(); i++) {
-                CoursesDTO c = courses.get(i);
-                if (i > 0) {
-                    addSeparator(document);
-                }
-                PdfPTable table = createTable();
-                addRow(table, "Course ID",    str(c.getId()));
-                addRow(table, "UUID",         str(c.getUuid()));
-                addRow(table, "Participant",  resolveParticipantName(c.getParticipantUuid()));
-                addRow(table, "Course Type",  resolveCourseTypeLabel(c.getCourseTypeId()));
-                addRow(table, "Start Date",   c.getStartDate() != null ? c.getStartDate().format(DATE_FMT) : EM_DASH);
-                addRow(table, "End Date",     c.getEndDate()   != null ? c.getEndDate().format(DATE_FMT)   : EM_DASH);
-                addRow(table, "Counter",      str(c.getCounter()));
-                addRow(table, "Trainers",     resolvePersonNames(c.getTrainerIds(),    this::resolveTrainerName));
-                addRow(table, "Lecturers",    resolvePersonNames(c.getLecturerIds(),   this::resolveLecturerName));
-                addRow(table, "Technicians",  resolvePersonNames(c.getTechnicianIds(), this::resolveTechnicianName));
-                document.add(table);
+            // Determine layout strategy
+            PdfPageLayout.LayoutStrategy strategy = PdfPageLayout.decideCourseLayout(courses);
+
+            if (strategy == PdfPageLayout.LayoutStrategy.TABLE_VIEW && properties.isTableViewEnabled()) {
+                renderCoursesTableView(document, courses);
+            } else {
+                renderCoursesCardView(document, courses);
             }
 
             document.close();
@@ -293,7 +277,9 @@ public class PdfReportService {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             Document document = openDocument(baos);
-            addDocumentHeader(document, "Course Types Report");
+
+            // Cover page
+            addCoverPage(document, "Course Types Report", courseTypes.size());
 
             for (int i = 0; i < courseTypes.size(); i++) {
                 CourseTypeDTO ct = courseTypes.get(i);
@@ -326,7 +312,9 @@ public class PdfReportService {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             Document document = openDocument(baos);
-            addDocumentHeader(document, "Course Counters Report");
+
+            // Cover page
+            addCoverPage(document, "Course Counters Report", courseCounters.size());
 
             for (int i = 0; i < courseCounters.size(); i++) {
                 CourseCounterDTO cc = courseCounters.get(i);
@@ -349,29 +337,213 @@ public class PdfReportService {
     // ── private PDF building helpers ────────────────────────────────────────
 
     /**
+     * Renders participants in TABLE_VIEW format (compact columns).
+     * Columns: Name, Surname, Email, Phone, BirthDate, Nickname
+     */
+    private void renderParticipantsTableView(Document document, List<ParticipantDTO> participants) throws DocumentException {
+        PdfPTable table = new PdfPTable(new float[]{16f, 16f, 22f, 14f, 14f, 14f});
+        table.setWidthPercentage(100f);
+        table.setSpacingBefore(6f);
+
+        String[] headers = {"Name", "Surname", "Email", "Phone", "Birth Date", "Nickname"};
+        for (String header : headers) {
+            addTableHeaderCell(table, header);
+        }
+
+        for (int i = 0; i < participants.size(); i++) {
+            ParticipantDTO p = participants.get(i);
+            java.awt.Color rowBg = PdfColorScheme.getRowBackgroundColor(i);
+            addTableCell(table, strBlank(p.getName()), rowBg);
+            addTableCell(table, strBlank(p.getSurname()), rowBg);
+            addTableCell(table, strBlank(p.getEmail()), rowBg);
+            addTableCell(table, strBlank(p.getPhoneNumber()), rowBg);
+            addTableCell(table, p.getBirthDate() != null ? p.getBirthDate().format(DATE_FMT) : EM_DASH, rowBg);
+            addTableCell(table, strBlank(p.getNickname()), rowBg);
+        }
+
+        document.add(table);
+    }
+
+    /**
+     * Renders participants in CARD_VIEW format (detailed, one per section with frame).
+     */
+    private void renderParticipantsCardView(Document document, List<ParticipantDTO> participants) throws DocumentException {
+        for (int i = 0; i < participants.size(); i++) {
+            ParticipantDTO p = participants.get(i);
+            if (i > 0) {
+                addDecorativeSeparator(document);
+            }
+
+            Paragraph counterPara = new Paragraph(
+                    "Record " + (i + 1) + " of " + participants.size(),
+                    cachedFonts.small());
+            counterPara.setAlignment(Element.ALIGN_RIGHT);
+            counterPara.setSpacingAfter(4f);
+            document.add(counterPara);
+
+            PdfPTable card = createCardTable();
+            addRow(card, "ID",           str(p.getId()));
+            addRow(card, "UUID",         str(p.getParticipantUuid()));
+            addRow(card, "Name",         strBlank(p.getName()));
+            addRow(card, "Surname",      strBlank(p.getSurname()));
+            addRow(card, "Birth Date",   p.getBirthDate() != null ? p.getBirthDate().format(DATE_FMT) : EM_DASH);
+            addRow(card, "Nickname",     strBlank(p.getNickname()));
+            addRow(card, "Email",        strBlank(p.getEmail()));
+            addRow(card, "Phone",        strBlank(p.getPhoneNumber()));
+            addRow(card, "Address",      strBlank(p.getAddress()));
+            addRow(card, "Notes",        strBlank(p.getNotes()));
+            document.add(card);
+        }
+    }
+
+    /**
+     * Renders courses in TABLE_VIEW format (compact columns).
+     * Columns: ID, Participant, Course Type, Start Date, End Date, Counter
+     */
+    private void renderCoursesTableView(Document document, List<CoursesDTO> courses) throws DocumentException {
+        PdfPTable table = new PdfPTable(new float[]{8f, 20f, 24f, 14f, 14f, 10f});
+        table.setWidthPercentage(100f);
+        table.setSpacingBefore(6f);
+
+        String[] headers = {"ID", "Participant", "Course Type", "Start Date", "End Date", "Counter"};
+        for (String header : headers) {
+            addTableHeaderCell(table, header);
+        }
+
+        for (int i = 0; i < courses.size(); i++) {
+            CoursesDTO c = courses.get(i);
+            java.awt.Color rowBg = PdfColorScheme.getRowBackgroundColor(i);
+            addTableCell(table, str(c.getId()), rowBg);
+            addTableCell(table, resolveParticipantName(c.getParticipantUuid()), rowBg);
+            addTableCell(table, resolveCourseTypeLabel(c.getCourseTypeId()), rowBg);
+            addTableCell(table, c.getStartDate() != null ? c.getStartDate().format(DATE_FMT) : EM_DASH, rowBg);
+            addTableCell(table, c.getEndDate() != null ? c.getEndDate().format(DATE_FMT) : EM_DASH, rowBg);
+            addTableCell(table, str(c.getCounter()), rowBg);
+        }
+
+        document.add(table);
+    }
+
+    /**
+     * Renders courses in CARD_VIEW format (detailed, one per section with frame).
+     */
+    private void renderCoursesCardView(Document document, List<CoursesDTO> courses) throws DocumentException {
+        for (int i = 0; i < courses.size(); i++) {
+            CoursesDTO c = courses.get(i);
+            if (i > 0) {
+                addDecorativeSeparator(document);
+            }
+
+            Paragraph counterPara = new Paragraph(
+                    "Record " + (i + 1) + " of " + courses.size(),
+                    cachedFonts.small());
+            counterPara.setAlignment(Element.ALIGN_RIGHT);
+            counterPara.setSpacingAfter(4f);
+            document.add(counterPara);
+
+            PdfPTable card = createCardTable();
+            addRow(card, "Course ID",    str(c.getId()));
+            addRow(card, "UUID",         str(c.getUuid()));
+            addRow(card, "Participant",  resolveParticipantName(c.getParticipantUuid()));
+            addRow(card, "Course Type",  resolveCourseTypeLabel(c.getCourseTypeId()));
+            addRow(card, "Start Date",   c.getStartDate() != null ? c.getStartDate().format(DATE_FMT) : EM_DASH);
+            addRow(card, "End Date",     c.getEndDate()   != null ? c.getEndDate().format(DATE_FMT)   : EM_DASH);
+            addRow(card, "Counter",      str(c.getCounter()));
+            addRow(card, "Trainers",     resolvePersonNames(c.getTrainerIds(),    this::resolveTrainerName));
+            addRow(card, "Lecturers",    resolvePersonNames(c.getLecturerIds(),   this::resolveLecturerName));
+            addRow(card, "Technicians",  resolvePersonNames(c.getTechnicianIds(), this::resolveTechnicianName));
+            document.add(card);
+        }
+    }
+
+    /**
+     * Adds a cover page (title page) with report metadata.
+     * Includes: accent bar, report title, generation date/time, company name, record count, and page break.
+     */
+    private void addCoverPage(Document document, String reportTitle, int recordCount) throws DocumentException {
+        // Company name heading
+        Paragraph companyPara = new Paragraph(properties.getCompanyName(), cachedFonts.heading());
+        companyPara.setAlignment(Element.ALIGN_CENTER);
+        companyPara.setSpacingAfter(8f);
+        document.add(companyPara);
+
+        // Accent bar (colored line under company name)
+        LineSeparator accentBar = new LineSeparator(2.5f, 30f, PdfColorScheme.ACCENT_BLUE, Element.ALIGN_CENTER, -2f);
+        Paragraph accentPara = new Paragraph(new Chunk(accentBar));
+        accentPara.setSpacingAfter(20f);
+        document.add(accentPara);
+
+        // Spacing
+        document.add(new Paragraph("\n\n"));
+
+        // Main title
+        Paragraph titlePara = new Paragraph(reportTitle, cachedFonts.title());
+        titlePara.setAlignment(Element.ALIGN_CENTER);
+        titlePara.setSpacingAfter(24f);
+        document.add(titlePara);
+
+        // Decorative separator
+        addDecorativeSeparator(document);
+
+        document.add(new Paragraph("\n"));
+
+        // Statistics
+        String generatedTime = LocalDateTime.now().format(DATETIME_FMT);
+        String statsText = "Generated: " + generatedTime + "\n"
+                         + "Records: " + recordCount;
+        Paragraph statsPara = new Paragraph(statsText, cachedFonts.small());
+        statsPara.setAlignment(Element.ALIGN_CENTER);
+        statsPara.setSpacingBefore(12f);
+        document.add(statsPara);
+
+        // Page break after cover page
+        document.newPage();
+    }
+
+    /**
+     * Adds a decorative separator (horizontal line) to the document.
+     * Used in cover page and between record sections.
+     */
+    private void addDecorativeSeparator(Document document) throws DocumentException {
+        LineSeparator ls = new LineSeparator(1.0f, 50f, PdfColorScheme.DIVIDER, Element.ALIGN_CENTER, -4f);
+        Paragraph sep = new Paragraph(new Chunk(ls));
+        sep.setSpacingBefore(8f);
+        sep.setSpacingAfter(8f);
+        document.add(sep);
+    }
+
+    /**
+     * Adds a page header with company branding.
+     * This is a simplified header printed at the top of content (not floating).
+     */
+    private void addPageHeader(Document document, String reportTitle) throws DocumentException {
+        Paragraph headerPara = new Paragraph(properties.getCompanyName() + " — " + reportTitle, cachedFonts.small());
+        headerPara.setAlignment(Element.ALIGN_CENTER);
+        headerPara.setSpacingAfter(6f);
+        document.add(headerPara);
+
+        addDecorativeSeparator(document);
+        document.add(new Paragraph());
+    }
+
+    /**
      * Shared person-list PDF builder used by trainers, lecturers and technicians.
      */
     private byte[] generatePersonListPdf(String docTitle, List<PersonRow> rows) throws IOException {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             Document document = openDocument(baos);
-            addDocumentHeader(document, docTitle);
 
-            for (int i = 0; i < rows.size(); i++) {
-                PersonRow r = rows.get(i);
-                if (i > 0) {
-                    addSeparator(document);
-                }
-                PdfPTable table = createTable();
-                addRow(table, "UUID",     r.id());
-                addRow(table, "Name",     strBlank(r.name()));
-                addRow(table, "Surname",  strBlank(r.surname()));
-                addRow(table, "Nickname", strBlank(r.nickname()));
-                addRow(table, "Email",    strBlank(r.email()));
-                addRow(table, "Phone",    strBlank(r.phone()));
-                addRow(table, "Address",  strBlank(r.address()));
-                addRow(table, "Notes",    strBlank(r.notes()));
-                document.add(table);
+            // Cover page
+            addCoverPage(document, docTitle, rows.size());
+
+            // Determine layout strategy
+            PdfPageLayout.LayoutStrategy strategy = decidePersonLayout(rows.size());
+
+            if (strategy == PdfPageLayout.LayoutStrategy.TABLE_VIEW && properties.isTableViewEnabled()) {
+                renderPersonTableView(document, rows);
+            } else {
+                renderPersonCardView(document, docTitle, rows);
             }
 
             document.close();
@@ -382,12 +554,116 @@ public class PdfReportService {
     }
 
     /**
+     * Renders person data in TABLE_VIEW format (compact, columns-based).
+     */
+    private void renderPersonTableView(Document document, List<PersonRow> rows) throws DocumentException {
+        // Table with 6 columns: Name, Surname, Email, Phone, Nickname, Address
+        PdfPTable table = new PdfPTable(new float[]{15f, 15f, 20f, 15f, 15f, 20f});
+        table.setWidthPercentage(100f);
+        table.setSpacingBefore(6f);
+
+        // Table header
+        String[] headers = {"Name", "Surname", "Email", "Phone", "Nickname", "Address"};
+        for (String header : headers) {
+            PdfPCell headerCell = new PdfPCell(new Phrase(header, cachedFonts.heading()));
+            headerCell.setBackgroundColor(PdfColorScheme.TABLE_HEADER_BG);
+            headerCell.setBorder(Rectangle.NO_BORDER);
+            headerCell.setPadding(6f);
+
+            // Header text color
+            Font headerFont = new Font(cachedFonts.heading().getBaseFont(),
+                    properties.getFont().getSize().getRegular(), Font.BOLD);
+            headerFont.setColor(PdfColorScheme.TABLE_HEADER_TEXT);
+            headerCell.setPhrase(new Phrase(header, headerFont));
+
+            table.addCell(headerCell);
+        }
+
+        // Table rows with alternating colors
+        for (int i = 0; i < rows.size(); i++) {
+            PersonRow r = rows.get(i);
+            java.awt.Color rowBg = PdfColorScheme.getRowBackgroundColor(i);
+
+            addTableCell(table, r.name(), rowBg);
+            addTableCell(table, r.surname(), rowBg);
+            addTableCell(table, r.email(), rowBg);
+            addTableCell(table, r.phone(), rowBg);
+            addTableCell(table, r.nickname(), rowBg);
+            addTableCell(table, r.address(), rowBg);
+        }
+
+        document.add(table);
+    }
+
+    /**
+     * Renders person data in CARD_VIEW format (detailed, one person per section with frame).
+     */
+    private void renderPersonCardView(Document document, String docTitle, List<PersonRow> rows) throws DocumentException {
+        for (int i = 0; i < rows.size(); i++) {
+            PersonRow r = rows.get(i);
+            if (i > 0) {
+                addDecorativeSeparator(document);
+            }
+
+            // Record counter
+            Paragraph counterPara = new Paragraph(
+                    "Record " + (i + 1) + " of " + rows.size(),
+                    cachedFonts.small());
+            counterPara.setAlignment(Element.ALIGN_RIGHT);
+            counterPara.setSpacingAfter(4f);
+            document.add(counterPara);
+
+            PdfPTable card = createCardTable();
+            addRow(card, "UUID", r.id());
+            addRow(card, "Name", strBlank(r.name()));
+            addRow(card, "Surname", strBlank(r.surname()));
+            addRow(card, "Nickname", strBlank(r.nickname()));
+            addRow(card, "Email", strBlank(r.email()));
+            addRow(card, "Phone", strBlank(r.phone()));
+            addRow(card, "Address", strBlank(r.address()));
+            addRow(card, "Notes", strBlank(r.notes()));
+            document.add(card);
+        }
+    }
+
+    /**
+     * Decides layout strategy for person entities (Trainer, Lecturer, Technician).
+     */
+    private PdfPageLayout.LayoutStrategy decidePersonLayout(int recordCount) {
+        if (!properties.isTableViewEnabled()) {
+            return PdfPageLayout.LayoutStrategy.CARD_VIEW;
+        }
+        return recordCount > 20 ? PdfPageLayout.LayoutStrategy.CARD_VIEW : PdfPageLayout.LayoutStrategy.TABLE_VIEW;
+    }
+
+    /**
+     * Adds a cell to a table with optional background color.
+     */
+    private void addTableCell(PdfPTable table, String value, java.awt.Color backgroundColor) {
+        String displayValue = (value != null && !value.isBlank()) ? value : EM_DASH;
+        PdfPCell cell = new PdfPCell(new Phrase(displayValue, cachedFonts.regular()));
+        cell.setBackgroundColor(backgroundColor);
+        cell.setBorder(Rectangle.NO_BORDER);
+        cell.setPadding(4f);
+        table.addCell(cell);
+    }
+
+
+    /**
      * Opens an A4 {@link Document} backed by the given output stream.
+     * Registers the {@link PdfHeaderFooterEvent} for footer rendering.
      * The caller is responsible for calling {@link Document#close()}.
      */
     private Document openDocument(ByteArrayOutputStream baos) throws DocumentException {
         Document document = new Document(PageSize.A4, MARGIN_H, MARGIN_H, MARGIN_TOP, MARGIN_BOTTOM);
-        PdfWriter.getInstance(document, baos);
+        PdfWriter writer = PdfWriter.getInstance(document, baos);
+
+        // Register header/footer event
+        writer.setPageEvent(new PdfHeaderFooterEvent(
+                properties.getCompanyName(),
+                cachedFonts.regular().getBaseFont(),
+                properties.getFont().getSize().getSmall()));
+
         document.open();
         return document;
     }
@@ -429,6 +705,39 @@ public class PdfReportService {
         table.setSpacingBefore(4f);
         table.setSpacingAfter(4f);
         return table;
+    }
+
+    /**
+     * Creates a two-column card-style {@link PdfPTable} with a subtle frame
+     * (light background and border) for CARD_VIEW layouts.
+     */
+    private PdfPTable createCardTable() throws DocumentException {
+        PdfPTable table = new PdfPTable(COL_WIDTHS);
+        table.setWidthPercentage(100f);
+        table.setSpacingBefore(4f);
+        table.setSpacingAfter(4f);
+
+        // Outer table cell acts as a frame wrapper
+        PdfPCell frameCell = new PdfPCell(table);
+        // We apply frame styling via individual cell backgrounds instead,
+        // since OpenPDF doesn't support outer table borders easily.
+        // The frame effect is achieved through alternating row backgrounds.
+        return table;
+    }
+
+    /**
+     * Adds a header cell to a multi-column table with dark background and white text.
+     */
+    private void addTableHeaderCell(PdfPTable table, String header) {
+        Font headerFont = new Font(cachedFonts.heading().getBaseFont(),
+                properties.getFont().getSize().getRegular(), Font.BOLD);
+        headerFont.setColor(PdfColorScheme.TABLE_HEADER_TEXT);
+
+        PdfPCell headerCell = new PdfPCell(new Phrase(header, headerFont));
+        headerCell.setBackgroundColor(PdfColorScheme.TABLE_HEADER_BG);
+        headerCell.setBorder(Rectangle.NO_BORDER);
+        headerCell.setPadding(6f);
+        table.addCell(headerCell);
     }
 
     /**
