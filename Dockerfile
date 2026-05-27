@@ -1,6 +1,6 @@
 FROM eclipse-temurin:21-jre-noble
 LABEL author="Tomek Jaworski"
-ARG VERSION=1.9
+ARG VERSION=2.0
 LABEL version=$VERSION
 
 WORKDIR /app
