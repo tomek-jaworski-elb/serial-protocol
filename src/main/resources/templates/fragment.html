@@ -76,32 +76,32 @@
                         <a th:unless="${name == 'instructor-service'}" class="nav-link" th:href="@{/instructor-service}">Instructors</a>
                     </li>
 
-                    <!-- Extended UI items (authenticated + web.ui.extened) -->
-                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extened') == 'true'}" class="nav-item">
+                    <!-- Extended UI items (authenticated + web.ui.extended) -->
+                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}" class="nav-item">
                         <a th:if="${name == 'courses-service'}" class="nav-link active" th:href="@{/courses-service}">Certificates</a>
                         <a th:unless="${name == 'courses-service'}" class="nav-link" th:href="@{/courses-service}">Certificates</a>
                     </li>
-                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extened') == 'true'}" class="nav-item">
+                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}" class="nav-item">
                         <a th:if="${name == 'trainer-service'}" class="nav-link active" th:href="@{/trainer-service}">Trainer</a>
                         <a th:unless="${name == 'trainer-service'}" class="nav-link" th:href="@{/trainer-service}">Trainer</a>
                     </li>
-                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extened') == 'true'}" class="nav-item">
+                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}" class="nav-item">
                         <a th:if="${name == 'lecturer-service'}" class="nav-link active" th:href="@{/lecturer-service}">Lecturer</a>
                         <a th:unless="${name == 'lecturer-service'}" class="nav-link" th:href="@{/lecturer-service}">Lecturer</a>
                     </li>
-                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extened') == 'true'}" class="nav-item">
+                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}" class="nav-item">
                         <a th:if="${name == 'technician-service'}" class="nav-link active" th:href="@{/technician-service}">Technician</a>
                         <a th:unless="${name == 'technician-service'}" class="nav-link" th:href="@{/technician-service}">Technician</a>
                     </li>
-                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extened') == 'true'}" class="nav-item">
+                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}" class="nav-item">
                         <a th:if="${name == 'course-type-service'}" class="nav-link active" th:href="@{/course-type-service}">Course Type</a>
                         <a th:unless="${name == 'course-type-service'}" class="nav-link" th:href="@{/course-type-service}">Course Type</a>
                     </li>
-                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extened') == 'true'}" class="nav-item">
+                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}" class="nav-item">
                         <a th:if="${name == 'participant-service'}" class="nav-link active" th:href="@{/participant-service}">Participant</a>
                         <a th:unless="${name == 'participant-service'}" class="nav-link" th:href="@{/participant-service}">Participant</a>
                     </li>
-                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extened') == 'true'}" class="nav-item">
+                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}" class="nav-item">
                         <a th:if="${name == 'course-counter-service'}" class="nav-link active" th:href="@{/course-counter-service}">Course Counter</a>
                         <a th:unless="${name == 'course-counter-service'}" class="nav-link" th:href="@{/course-counter-service}">Course Counter</a>
                     </li>

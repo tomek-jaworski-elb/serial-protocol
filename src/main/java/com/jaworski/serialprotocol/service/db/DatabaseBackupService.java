@@ -622,7 +622,11 @@ public class DatabaseBackupService {
             trainer.setUuid(dto.getId());
             trainer.setName(dto.getName());
             trainer.setSurname(dto.getSurname());
+            trainer.setNotes(dto.getNotes());
+            trainer.setNickname(dto.getNickname());
             trainer.setEmail(dto.getEmail());
+            trainer.setPhoneNumber(dto.getPhoneNumber());
+            trainer.setAddress(dto.getAddress());
             trainer.setImages(resolveImageRefs(dto.getImagesUuid()));
             entityManager.persist(trainer);
         }
@@ -656,8 +660,11 @@ public class DatabaseBackupService {
             lecturer.setUuid(dto.getId());
             lecturer.setName(dto.getName());
             lecturer.setSurname(dto.getSurname());
-            lecturer.setEmail(dto.getEmail());
+            lecturer.setNotes(dto.getNotes());
             lecturer.setNickname(dto.getNickname());
+            lecturer.setEmail(dto.getEmail());
+            lecturer.setPhoneNumber(dto.getPhoneNumber());
+            lecturer.setAddress(dto.getAddress());
             lecturer.setImages(resolveImageRefs(dto.getImagesUuid()));
             entityManager.persist(lecturer);
         }
@@ -691,8 +698,11 @@ public class DatabaseBackupService {
             technician.setUuid(dto.getId());
             technician.setName(dto.getName());
             technician.setSurname(dto.getSurname());
-            technician.setEmail(dto.getEmail());
+            technician.setNotes(dto.getNotes());
             technician.setNickname(dto.getNickname());
+            technician.setEmail(dto.getEmail());
+            technician.setPhoneNumber(dto.getPhoneNumber());
+            technician.setAddress(dto.getAddress());
             technician.setImages(resolveImageRefs(dto.getImagesUuid()));
             entityManager.persist(technician);
         }
@@ -727,6 +737,11 @@ public class DatabaseBackupService {
             p.setId(dto.getId());
             p.setName(dto.getName());
             p.setSurname(dto.getSurname());
+            p.setNotes(dto.getNotes());
+            p.setNickname(dto.getNickname());
+            p.setEmail(dto.getEmail());
+            p.setPhoneNumber(dto.getPhoneNumber());
+            p.setAddress(dto.getAddress());
             p.setBirthDate(dto.getBirthDate());
             if (dto.getImage() != null) {
                 p.setImage(entityManager.getReference(Image.class, dto.getImage()));
