@@ -4,10 +4,10 @@ import java.util.UUID;
 
 public record CourseCounterDTO(
         UUID uuid,
-        long counter,
+        Long counter,
         UUID imageUuid
 ) {
-  public CourseCounterDTO(long counter, UUID imageUuid) {
+  public CourseCounterDTO(Long counter, UUID imageUuid) {
     this(null, counter, imageUuid);
   }
 }

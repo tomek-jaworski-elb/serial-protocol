@@ -5,7 +5,6 @@ import com.jaworski.serialprotocol.entity.custom.Image;
 import com.jaworski.serialprotocol.entity.custom.Technician;
 
 import java.util.HashSet;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 public class TechnicianMapper {
@@ -47,16 +46,7 @@ public class TechnicianMapper {
     technician.setEmail(dto.getEmail());
     technician.setPhoneNumber(dto.getPhoneNumber());
     technician.setAddress(dto.getAddress());
-    Set<Image> images = dto.getImagesUuid() == null
-            ? new HashSet<>()
-            : dto.getImagesUuid().stream()
-            .map(id -> {
-              Image image = new Image();
-              image.setId(id);
-              return image;
-            })
-            .collect(Collectors.toSet());
-    technician.setImages(images);
+    // Images are resolved and set by the service layer — not mapped here
     return technician;
   }
 }

@@ -6,12 +6,12 @@ import com.jaworski.serialprotocol.entity.custom.Image;
 import com.jaworski.serialprotocol.mappers.custom.CourseCounterMapper;
 import com.jaworski.serialprotocol.repository.custom.CourseCounterRepository;
 import com.jaworski.serialprotocol.repository.custom.ImageRepository;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -74,15 +74,13 @@ public class CourseCounterService {
   public CourseCounterDTO update(CourseCounterDTO toSave) {
     CourseCounter courseCounter = courseCounterRepository.findById(toSave.uuid())
             .orElseThrow(() -> new IllegalArgumentException("CourseCounter with id " + toSave.uuid() + " not found"));
-    if (courseCounter.getImage() != null && courseCounter.getImage().getId() != null
-            && toSave.imageUuid() != null
-            && !courseCounter.getImage().getId().equals(toSave.imageUuid())) {
-      UUID id = courseCounter.getImage().getId();
-      imageRepository.deleteById(id);
-    }
+    UUID oldImageId = courseCounter.getImage() != null ? courseCounter.getImage().getId() : null;
     courseCounter.setImage(resolveImage(toSave.imageUuid()));
     courseCounter.setCounter(toSave.counter());
     CourseCounter save = courseCounterRepository.save(courseCounter);
+    if (oldImageId != null && !oldImageId.equals(toSave.imageUuid())) {
+      imageRepository.deleteById(oldImageId);
+    }
     return CourseCounterMapper.toDTO(save);
   }
 }

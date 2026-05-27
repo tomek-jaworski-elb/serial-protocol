@@ -16,11 +16,14 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 import java.util.List;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class ParticipantService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ParticipantService.class);
@@ -28,16 +31,19 @@ public class ParticipantService {
   private final ImageRepository imageRepository;
   private final CoursesRepository coursesRepository;
 
+  @Transactional(readOnly = true)
   public List<ParticipantDTO> findAll() {
     return participantRepository.findAll(Sort.by(Sort.Direction.DESC, "id")).stream()
             .map(ParticipantMapper::mapToDTO)
             .toList();
   }
 
+  @Transactional(readOnly = true)
   public Page<ParticipantDTO> findAll(Pageable pageable) {
     return participantRepository.findAll(pageable).map(ParticipantMapper::mapToDTO);
   }
 
+  @Transactional(readOnly = true)
   public ParticipantDTO findByUuid(UUID uuid) {
     return participantRepository.findById(uuid)
             .map(ParticipantMapper::mapToDTO)
@@ -75,6 +81,11 @@ public class ParticipantService {
     if (coursesRepository.existsByParticipant_Uuid(uuid)) {
       throw new IllegalStateException("Cannot delete participant with uuid " + uuid + " because they are referenced by existing courses.");
     }
+    participantRepository.findById(uuid).ifPresent(participant -> {
+      if (participant.getImage() != null) {
+        imageRepository.deleteById(participant.getImage().getId());
+      }
+    });
     participantRepository.deleteById(uuid);
   }
 

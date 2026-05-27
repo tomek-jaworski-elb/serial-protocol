@@ -7,8 +7,8 @@ import com.jaworski.serialprotocol.dto.custom.ParticipantDTO;
 import com.jaworski.serialprotocol.dto.custom.TechnicianDTO;
 import com.jaworski.serialprotocol.dto.custom.TrainerDTO;
 import com.jaworski.serialprotocol.entity.custom.CourseCounter;
-import com.jaworski.serialprotocol.entity.custom.CourseType;
 import com.jaworski.serialprotocol.entity.custom.Courses;
+import com.jaworski.serialprotocol.entity.custom.CourseType;
 import com.jaworski.serialprotocol.entity.custom.Lecturer;
 import com.jaworski.serialprotocol.entity.custom.Technician;
 import com.jaworski.serialprotocol.entity.custom.Trainer;
@@ -32,15 +32,13 @@ public class CoursesMapper {
     CoursesDTO dto = new CoursesDTO();
     dto.setUuid(courses.getUuid());
     dto.setId(courses.getId());
-    ParticipantDTO participantDTO = ParticipantMapper.mapToDTO(courses.getParticipant());
-    dto.setParticipantUuid(participantDTO == null
+    dto.setParticipantUuid(courses.getParticipant() == null
             ? null
-            : participantDTO.getParticipantUuid());
+            : courses.getParticipant().getUuid());
 
-    CourseTypeDTO courseTypeDTO = CourseTypeMapper.mapToDTO(courses.getCourseType());
-    dto.setCourseTypeId(courseTypeDTO == null
+    dto.setCourseTypeId(courses.getCourseType() == null
             ? null
-            : courseTypeDTO.getId());
+            : courses.getCourseType().getId());
     CourseCounter courseCounter = courses.getCourseCounter();
     dto.setCourseCounterUuid(courseCounter == null ? null : courseCounter.getUuid());
     dto.setCounter(courseCounter == null ? null : courseCounter.getCounter());
@@ -50,27 +48,24 @@ public class CoursesMapper {
     Set<UUID> trainerIds = courses.getTrainers() == null
             ? new HashSet<>()
             : courses.getTrainers().stream()
-            .map(TrainerMapper::mapToDTO)
+            .map(Trainer::getUuid)
             .filter(Objects::nonNull)
-            .map(TrainerDTO::getId)
             .collect(Collectors.toSet());
     dto.setTrainerIds(trainerIds);
 
     Set<UUID> lecturerIds = courses.getLecturers() == null
             ? new HashSet<>()
             : courses.getLecturers().stream()
-            .map(LecturerMapper::mapToDTO)
+            .map(Lecturer::getUuid)
             .filter(Objects::nonNull)
-            .map(LecturerDTO::getId)
             .collect(Collectors.toSet());
     dto.setLecturerIds(lecturerIds);
 
     Set<UUID> technicianIds = courses.getTechnicians() == null
             ? new HashSet<>()
             : courses.getTechnicians().stream()
-            .map(TechnicianMapper::mapToDTO)
+            .map(Technician::getUuid)
             .filter(Objects::nonNull)
-            .map(TechnicianDTO::getId)
             .collect(Collectors.toSet());
     dto.setTechnicianIds(technicianIds);
     return dto;

@@ -1,7 +1,6 @@
 package com.jaworski.serialprotocol.mappers.custom;
 
 import com.jaworski.serialprotocol.dto.custom.ParticipantDTO;
-import com.jaworski.serialprotocol.entity.custom.Image;
 import com.jaworski.serialprotocol.entity.custom.Participant;
 
 public class ParticipantMapper {
@@ -43,11 +42,7 @@ public class ParticipantMapper {
     participant.setPhoneNumber(dto.getPhoneNumber());
     participant.setAddress(dto.getAddress());
     participant.setBirthDate(dto.getBirthDate());
-    if (dto.getImage() != null) {
-      Image image = new Image();
-      image.setId(dto.getImage());
-      participant.setImage(image);
-    }
+    // Image is resolved and set by the service layer — not mapped here
     return participant;
   }
 }

@@ -36,7 +36,7 @@ public class ImageService {
   }
 
   public int getAllImages() {
-    return imageRepository.findAll().size();
+    return (int) imageRepository.count();
   }
 
   public void delete(UUID id) {

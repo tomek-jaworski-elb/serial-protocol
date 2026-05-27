@@ -59,6 +59,11 @@ public class TrainerService {
     if (coursesRepository.existsByTrainers_Uuid(id)) {
       throw new IllegalStateException("Cannot delete trainer with id " + id + " because it is referenced by existing courses.");
     }
+    trainerRepository.findById(id).ifPresent(trainer -> {
+      if (!trainer.getImages().isEmpty()) {
+        imageRepository.deleteAll(trainer.getImages());
+      }
+    });
     trainerRepository.deleteById(id);
   }
 

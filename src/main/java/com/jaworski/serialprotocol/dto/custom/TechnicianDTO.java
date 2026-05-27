@@ -2,7 +2,9 @@ package com.jaworski.serialprotocol.dto.custom;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -21,6 +23,9 @@ public class TechnicianDTO {
   private String email;
   private String phoneNumber;
   private String address;
+
+  @ToString.Exclude
+  @EqualsAndHashCode.Exclude
   private Set<UUID> imagesUuid = new HashSet<>();
 
 }
