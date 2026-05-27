@@ -7,14 +7,7 @@
 <body>
 <header th:replace="~{fragment::header}"></header>
 <div class="container mb-4">
-    <div id="successAlert" class="alert alert-success alert-dismissible fade show" role="alert" th:if="${successMessage}">
-        <span th:text="${successMessage}"></span>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    <div class="alert alert-danger alert-dismissible fade show" role="alert" th:if="${errorMessage}">
-        <span th:text="${errorMessage}"></span>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
+    <th:block th:replace="~{fragment::toastNotifications}"></th:block>
 
     <div class="d-flex justify-content-between align-items-center my-3">
         <h4 class="mb-0">Technician</h4>
@@ -250,7 +243,6 @@
     const detailsTechnicianNotes = document.getElementById('detailsTechnicianNotes');
     const detailsTechnicianImages = document.getElementById('detailsTechnicianImages');
     const detailsTechnicianNoImages = document.getElementById('detailsTechnicianNoImages');
-    const successAlert = document.getElementById('successAlert');
 
     const technicianDetailsModalInstance =
         technicianDetailsModal && window.bootstrap && window.bootstrap.Modal
@@ -261,13 +253,6 @@
 
     const nullOrDash = (v) => (v && v !== 'null' ? v : '-');
 
-    if (successAlert) {
-        setTimeout(() => {
-            if (window.bootstrap && window.bootstrap.Alert) {
-                window.bootstrap.Alert.getOrCreateInstance(successAlert).close();
-            } else { successAlert.remove(); }
-        }, 10000);
-    }
 
     if (showAddFormBtn && hideAddFormBtn && addTechnicianFormContainer) {
         showAddFormBtn.addEventListener('click', () => {
