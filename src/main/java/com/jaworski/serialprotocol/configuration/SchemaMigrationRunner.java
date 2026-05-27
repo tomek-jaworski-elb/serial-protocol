@@ -76,6 +76,10 @@ public class SchemaMigrationRunner {
      * Executes {@code ALTER TABLE `table` MODIFY COLUMN `column` definition}.
      * If the column does not yet exist (new install), the error is swallowed —
      * Hibernate will create it with the correct definition on its own DDL pass.
+     * <p>
+     * <strong>Security note:</strong> All arguments are hardcoded string literals from
+     * {@link #applyMigrations()}. Never pass user-supplied values to this method.
+     * </p>
      */
     private void alter(String table, String column, String definition) {
         String sql = String.format("ALTER TABLE `%s` MODIFY COLUMN `%s` %s", table, column, definition);

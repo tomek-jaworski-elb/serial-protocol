@@ -337,9 +337,7 @@ public class PdfReportController {
         }
 
         Set<UUID> idSet = Set.copyOf(idList);
-        List<CourseCounterDTO> dtos = courseCounterService.findAll().stream()
-                .filter(cc -> idSet.contains(cc.uuid()))
-                .toList();
+        List<CourseCounterDTO> dtos = courseCounterService.findAllByUuids(idSet);
 
         try {
             byte[] pdf = pdfReportService.generateCourseCountersPdf(dtos);

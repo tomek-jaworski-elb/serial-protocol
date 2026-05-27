@@ -6,7 +6,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -58,6 +57,7 @@ public class SecurityConfig {
                                 .requestMatchers("/courses-service/**").hasRole(SecurityRoles.ROLE_USER.getName())
                                 .requestMatchers("/course-type-service/**").hasRole(SecurityRoles.ROLE_USER.getName())
                                 .requestMatchers("/course-counter-service/**").hasRole(SecurityRoles.ROLE_USER.getName())
+                                .requestMatchers("/custom/image/**").hasRole(SecurityRoles.ROLE_USER.getName())
                                 .requestMatchers("/pdf/**").hasRole(SecurityRoles.ROLE_USER.getName())
                                 .requestMatchers("/name-service").hasRole(SecurityRoles.ROLE_USER.getName())
                                 .requestMatchers("/instructor-service").hasRole(SecurityRoles.ROLE_USER.getName())
@@ -83,8 +83,7 @@ public class SecurityConfig {
                                         .invalidateHttpSession(true)
                                         .permitAll()
                                         .logoutSuccessHandler(customLogoutHandler)
-                )
-                .csrf(AbstractHttpConfigurer::disable);
+                );
         return http.build();
     }
 }

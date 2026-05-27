@@ -38,6 +38,7 @@ public class PdfReportProperties {
     private FontConfig font = new FontConfig();
 
     /** Maximum number of records allowed per single PDF report request. */
+    @Min(1) @Max(10000)
     private int maxRecords = 100;
 
     /** Company/organization name displayed in PDF header */
@@ -47,6 +48,7 @@ public class PdfReportProperties {
     private boolean tableViewEnabled = true;
 
     /** Maximum columns threshold for automatic TABLE_VIEW selection */
+    @Min(1) @Max(20)
     private int tableMaxColumns = 6;
 
     public FontConfig getFont() { return font; }

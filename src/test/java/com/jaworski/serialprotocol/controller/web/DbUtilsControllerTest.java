@@ -29,6 +29,7 @@ import java.util.zip.GZIPOutputStream;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -88,28 +89,31 @@ class DbUtilsControllerTest {
 
     @Test
     void backup_post_shouldReturn401_whenUnauthenticated() throws Exception {
-        mockMvc.perform(post("/db-utils/backup"))
+        mockMvc.perform(post("/db-utils/backup").with(csrf()))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     void backup_post_shouldReturn403_whenUserRole() throws Exception {
         mockMvc.perform(post("/db-utils/backup")
-                        .header(HttpHeaders.AUTHORIZATION, basicAuth("user", "user")))
+                        .header(HttpHeaders.AUTHORIZATION, basicAuth("user", "user"))
+                        .with(csrf()))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     void backup_post_shouldReturn200_whenAdmin() throws Exception {
         mockMvc.perform(post("/db-utils/backup")
-                        .header(HttpHeaders.AUTHORIZATION, adminAuth()))
+                        .header(HttpHeaders.AUTHORIZATION, adminAuth())
+                        .with(csrf()))
                 .andExpect(status().isOk());
     }
 
     @Test
     void backup_post_shouldReturnOctetStream_whenAdmin() throws Exception {
         mockMvc.perform(post("/db-utils/backup")
-                        .header(HttpHeaders.AUTHORIZATION, adminAuth()))
+                        .header(HttpHeaders.AUTHORIZATION, adminAuth())
+                        .with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_OCTET_STREAM));
     }
@@ -117,7 +121,8 @@ class DbUtilsControllerTest {
     @Test
     void backup_post_shouldSetContentDispositionAttachment_whenAdmin() throws Exception {
         mockMvc.perform(post("/db-utils/backup")
-                        .header(HttpHeaders.AUTHORIZATION, adminAuth()))
+                        .header(HttpHeaders.AUTHORIZATION, adminAuth())
+                        .with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION,
                         containsString("attachment")))
@@ -130,7 +135,8 @@ class DbUtilsControllerTest {
     @Test
     void backup_post_shouldReturnValidGzip_whenAdmin() throws Exception {
         MvcResult result = mockMvc.perform(post("/db-utils/backup")
-                        .header(HttpHeaders.AUTHORIZATION, adminAuth()))
+                        .header(HttpHeaders.AUTHORIZATION, adminAuth())
+                        .with(csrf()))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -148,7 +154,8 @@ class DbUtilsControllerTest {
     @Test
     void backup_post_shouldReturnJsonWithCorrectSchemaVersion_whenAdmin() throws Exception {
         MvcResult result = mockMvc.perform(post("/db-utils/backup")
-                        .header(HttpHeaders.AUTHORIZATION, adminAuth()))
+                        .header(HttpHeaders.AUTHORIZATION, adminAuth())
+                        .with(csrf()))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -169,14 +176,15 @@ class DbUtilsControllerTest {
 
     @Test
     void restore_post_shouldReturn401_whenUnauthenticated() throws Exception {
-        mockMvc.perform(multipart("/db-utils/restore"))
+        mockMvc.perform(multipart("/db-utils/restore").with(csrf()))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     void restore_post_shouldReturn403_whenUserRole() throws Exception {
         mockMvc.perform(multipart("/db-utils/restore")
-                        .header(HttpHeaders.AUTHORIZATION, basicAuth("user", "user")))
+                        .header(HttpHeaders.AUTHORIZATION, basicAuth("user", "user"))
+                        .with(csrf()))
                 .andExpect(status().isForbidden());
     }
 
@@ -188,7 +196,8 @@ class DbUtilsControllerTest {
     void restore_post_shouldRedirectWithSuccessMessage_whenValidBackup() throws Exception {
         // obtain a valid backup first
         MvcResult backupResult = mockMvc.perform(post("/db-utils/backup")
-                        .header(HttpHeaders.AUTHORIZATION, adminAuth()))
+                        .header(HttpHeaders.AUTHORIZATION, adminAuth())
+                        .with(csrf()))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -199,7 +208,8 @@ class DbUtilsControllerTest {
                         .file(new MockMultipartFile(
                                 "backupFile", "db-backup.json.gz",
                                 "application/octet-stream", backupBytes))
-                        .header(HttpHeaders.AUTHORIZATION, adminAuth()))
+                        .header(HttpHeaders.AUTHORIZATION, adminAuth())
+                        .with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/db-utils"))
                 .andExpect(flash().attribute("successMessage",
@@ -214,7 +224,8 @@ class DbUtilsControllerTest {
                         .file(new MockMultipartFile(
                                 "backupFile", "my-custom-backup.json.gz",
                                 "application/octet-stream", backupBytes))
-                        .header(HttpHeaders.AUTHORIZATION, adminAuth()))
+                        .header(HttpHeaders.AUTHORIZATION, adminAuth())
+                        .with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(flash().attribute("successMessage",
                         containsString("my-custom-backup.json.gz")));
@@ -229,7 +240,8 @@ class DbUtilsControllerTest {
         mockMvc.perform(multipart("/db-utils/restore")
                         .file(new MockMultipartFile(
                                 "backupFile", "", "application/octet-stream", new byte[0]))
-                        .header(HttpHeaders.AUTHORIZATION, adminAuth()))
+                        .header(HttpHeaders.AUTHORIZATION, adminAuth())
+                        .with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/db-utils"))
                 .andExpect(flash().attribute("errorMessage",
@@ -244,7 +256,8 @@ class DbUtilsControllerTest {
                         .file(new MockMultipartFile(
                                 "backupFile", "bad.json.gz",
                                 "application/octet-stream", notGzip))
-                        .header(HttpHeaders.AUTHORIZATION, adminAuth()))
+                        .header(HttpHeaders.AUTHORIZATION, adminAuth())
+                        .with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/db-utils"))
                 .andExpect(flash().attributeExists("errorMessage"));
@@ -258,7 +271,8 @@ class DbUtilsControllerTest {
                         .file(new MockMultipartFile(
                                 "backupFile", "wrong-schema.json.gz",
                                 "application/octet-stream", wrongSchema))
-                        .header(HttpHeaders.AUTHORIZATION, adminAuth()))
+                        .header(HttpHeaders.AUTHORIZATION, adminAuth())
+                        .with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/db-utils"))
                 .andExpect(flash().attributeExists("errorMessage"));
@@ -273,7 +287,8 @@ class DbUtilsControllerTest {
                         .file(new MockMultipartFile(
                                 "backupFile", "old-schema.json.gz",
                                 "application/octet-stream", wrongSchema))
-                        .header(HttpHeaders.AUTHORIZATION, adminAuth()))
+                        .header(HttpHeaders.AUTHORIZATION, adminAuth())
+                        .with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andReturn();
 
@@ -295,7 +310,8 @@ class DbUtilsControllerTest {
                         .file(new MockMultipartFile(
                                 "backupFile", "bad-json.json.gz",
                                 "application/octet-stream", badJson))
-                        .header(HttpHeaders.AUTHORIZATION, adminAuth()))
+                        .header(HttpHeaders.AUTHORIZATION, adminAuth())
+                        .with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(flash().attributeExists("errorMessage"));
     }
@@ -315,7 +331,8 @@ class DbUtilsControllerTest {
 
     private byte[] getValidBackupBytes() throws Exception {
         MvcResult result = mockMvc.perform(post("/db-utils/backup")
-                        .header(HttpHeaders.AUTHORIZATION, adminAuth()))
+                        .header(HttpHeaders.AUTHORIZATION, adminAuth())
+                        .with(csrf()))
                 .andExpect(status().isOk())
                 .andReturn();
         return result.getResponse().getContentAsByteArray();

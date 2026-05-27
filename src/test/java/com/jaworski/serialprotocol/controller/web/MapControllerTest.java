@@ -16,6 +16,7 @@ import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -67,7 +68,8 @@ class MapControllerTest {
         ObjectMapper objectMapper = new ObjectMapper();
         String json = objectMapper.writeValueAsString(Collections.emptyList());
         this.mockMvc.perform(post(Paths.ROOT + Paths.STUDENT).contentType(MediaType.APPLICATION_JSON).content(json)
-                        .header(HttpHeaders.AUTHORIZATION, getAuthorizationHeaderValue("user", "user")))
+                        .header(HttpHeaders.AUTHORIZATION, getAuthorizationHeaderValue("user", "user"))
+                        .with(csrf()))
                 .andExpect(result -> assertEquals(HttpStatus.OK.value(), result.getResponse().getStatus()))
                 .andExpect(result -> assertEquals("application/json", result.getResponse().getHeaderValue(HttpHeaders.CONTENT_TYPE)));
     }
@@ -77,7 +79,8 @@ class MapControllerTest {
         ObjectMapper objectMapper = new ObjectMapper();
         String json = objectMapper.writeValueAsString(Collections.emptyList());
         this.mockMvc.perform(post(Paths.ROOT + Paths.INSTRUCTOR).contentType(MediaType.APPLICATION_JSON).content(json)
-                        .header(HttpHeaders.AUTHORIZATION, getAuthorizationHeaderValue("user", "user")))
+                        .header(HttpHeaders.AUTHORIZATION, getAuthorizationHeaderValue("user", "user"))
+                        .with(csrf()))
                 .andExpect(result -> assertEquals(HttpStatus.OK.value(), result.getResponse().getStatus()))
                 .andExpect(result -> assertEquals("application/json", result.getResponse().getHeaderValue(HttpHeaders.CONTENT_TYPE)));
     }

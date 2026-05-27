@@ -209,9 +209,10 @@ public class PdfReportService {
      * @throws IOException if PDF generation fails
      */
     public byte[] generateParticipantsPdf(List<ParticipantDTO> participants) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        Document document = null;
         try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            Document document = openDocument(baos);
+            document = openDocument(baos);
             
             // Cover page
             addCoverPage(document, "Participants Report", participants.size());
@@ -229,6 +230,10 @@ public class PdfReportService {
             return baos.toByteArray();
         } catch (DocumentException e) {
             throw new IOException("Failed to generate Participants PDF", e);
+        } finally {
+            if (document != null && document.isOpen()) {
+                document.close();
+            }
         }
     }
 
@@ -243,9 +248,10 @@ public class PdfReportService {
      * @throws IOException if PDF generation fails
      */
     public byte[] generateCoursesPdf(List<CoursesDTO> courses) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        Document document = null;
         try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            Document document = openDocument(baos);
+            document = openDocument(baos);
             
             // Cover page
             addCoverPage(document, "Courses Report", courses.size());
@@ -263,6 +269,10 @@ public class PdfReportService {
             return baos.toByteArray();
         } catch (DocumentException e) {
             throw new IOException("Failed to generate Courses PDF", e);
+        } finally {
+            if (document != null && document.isOpen()) {
+                document.close();
+            }
         }
     }
 
@@ -274,9 +284,10 @@ public class PdfReportService {
      * @throws IOException if PDF generation fails
      */
     public byte[] generateCourseTypesPdf(List<CourseTypeDTO> courseTypes) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        Document document = null;
         try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            Document document = openDocument(baos);
+            document = openDocument(baos);
 
             // Cover page
             addCoverPage(document, "Course Types Report", courseTypes.size());
@@ -298,6 +309,10 @@ public class PdfReportService {
             return baos.toByteArray();
         } catch (DocumentException e) {
             throw new IOException("Failed to generate Course Types PDF", e);
+        } finally {
+            if (document != null && document.isOpen()) {
+                document.close();
+            }
         }
     }
 
@@ -309,9 +324,10 @@ public class PdfReportService {
      * @throws IOException if PDF generation fails
      */
     public byte[] generateCourseCountersPdf(List<CourseCounterDTO> courseCounters) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        Document document = null;
         try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            Document document = openDocument(baos);
+            document = openDocument(baos);
 
             // Cover page
             addCoverPage(document, "Course Counters Report", courseCounters.size());
@@ -331,6 +347,10 @@ public class PdfReportService {
             return baos.toByteArray();
         } catch (DocumentException e) {
             throw new IOException("Failed to generate Course Counters PDF", e);
+        } finally {
+            if (document != null && document.isOpen()) {
+                document.close();
+            }
         }
     }
 
@@ -530,9 +550,10 @@ public class PdfReportService {
      * Shared person-list PDF builder used by trainers, lecturers and technicians.
      */
     private byte[] generatePersonListPdf(String docTitle, List<PersonRow> rows) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        Document document = null;
         try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            Document document = openDocument(baos);
+            document = openDocument(baos);
 
             // Cover page
             addCoverPage(document, docTitle, rows.size());
@@ -550,6 +571,10 @@ public class PdfReportService {
             return baos.toByteArray();
         } catch (DocumentException e) {
             throw new IOException("Failed to generate '" + docTitle + "' PDF", e);
+        } finally {
+            if (document != null && document.isOpen()) {
+                document.close();
+            }
         }
     }
 

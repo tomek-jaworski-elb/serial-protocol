@@ -13,6 +13,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -69,6 +70,12 @@ public class CourseCounterService {
   public Optional<CourseCounterDTO> getByUuid(UUID uuid) {
     return courseCounterRepository.findById(uuid)
             .map(CourseCounterMapper::toDTO);
+  }
+
+  public List<CourseCounterDTO> findAllByUuids(Collection<UUID> uuids) {
+    return courseCounterRepository.findAllByUuidIn(uuids).stream()
+            .map(CourseCounterMapper::toDTO)
+            .toList();
   }
 
   public CourseCounterDTO update(CourseCounterDTO toSave) {

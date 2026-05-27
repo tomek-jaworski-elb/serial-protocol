@@ -19,6 +19,7 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -56,7 +57,8 @@ class RestStudentTest {
         MvcResult mvcResult = mockMvc.perform(post(Paths.ROOT + Paths.STUDENT).header(HttpHeaders.AUTHORIZATION, getAuthorizationHeaderValue("user", "user"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(writeValueAsString)
-                        .accept(MediaType.APPLICATION_JSON))
+                        .accept(MediaType.APPLICATION_JSON)
+                        .with(csrf()))
                 .andExpect(status().is2xxSuccessful())
                 .andReturn();
         Assertions.assertEquals(HttpStatus.OK.value(), mvcResult.getResponse().getStatus());
@@ -82,7 +84,8 @@ class RestStudentTest {
         MvcResult mvcResult = mockMvc.perform(post(Paths.ROOT + Paths.INSTRUCTOR).header(HttpHeaders.AUTHORIZATION, getAuthorizationHeaderValue("user", "user"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(writeValueAsString)
-                        .accept(MediaType.APPLICATION_JSON))
+                        .accept(MediaType.APPLICATION_JSON)
+                        .with(csrf()))
                 .andExpect(status().is2xxSuccessful())
                 .andReturn();
         Assertions.assertEquals(HttpStatus.OK.value(), mvcResult.getResponse().getStatus());
@@ -188,7 +191,8 @@ class RestStudentTest {
                         .header(HttpHeaders.AUTHORIZATION, getAuthorizationHeaderValue("user", "user"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(writeValueAsString)
-                        .accept(MediaType.APPLICATION_JSON))
+                        .accept(MediaType.APPLICATION_JSON)
+                        .with(csrf()))
                 .andExpect(status().is2xxSuccessful());
     }
 

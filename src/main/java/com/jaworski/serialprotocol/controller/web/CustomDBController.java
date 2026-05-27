@@ -125,7 +125,7 @@ public class CustomDBController {
       redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (RuntimeException e) {
       LOG.error("Cannot add course. payload={}", coursesDTO, e);
-      redirectAttributes.addFlashAttribute("errorMessage", "Failed to add course: " + e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to add course. Please verify your input.");
     }
     return "redirect:/courses-service";
   }
@@ -143,7 +143,7 @@ public class CustomDBController {
       redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (RuntimeException e) {
       LOG.error("Cannot update course. payload={}", coursesDTO, e);
-      redirectAttributes.addFlashAttribute("errorMessage", "Failed to update course: " + e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to update course. Please verify your input.");
     }
     return "redirect:/courses-service";
   }
@@ -155,7 +155,7 @@ public class CustomDBController {
       redirectAttributes.addFlashAttribute("successMessage", "Course deleted successfully.");
     } catch (RuntimeException e) {
       LOG.error("Cannot delete course. uuid={}", uuid, e);
-      redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete course: " + e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete course.");
     }
     return "redirect:/courses-service";
   }
@@ -171,7 +171,7 @@ public class CustomDBController {
       redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (RuntimeException e) {
       LOG.error("Cannot assign participant to course. payload={}", coursesDTO, e);
-      redirectAttributes.addFlashAttribute("errorMessage", "Failed to assign participant to course: " + e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to assign participant to course.");
     }
     return "redirect:/participant-service";
   }
@@ -203,7 +203,7 @@ public class CustomDBController {
       redirectAttributes.addFlashAttribute("successMessage", "Trainer added successfully.");
     } catch (RuntimeException e) {
       LOG.error("Cannot add trainer. payload={}", trainerDTO, e);
-      redirectAttributes.addFlashAttribute("errorMessage", "Failed to add trainer: " + e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to add trainer. Please verify your input.");
     }
     return "redirect:/trainer-service";
   }
@@ -229,7 +229,7 @@ public class CustomDBController {
       redirectAttributes.addFlashAttribute("successMessage", "Trainer updated successfully.");
     } catch (RuntimeException e) {
       LOG.error("Cannot update trainer. payload={}", trainerDTO, e);
-      redirectAttributes.addFlashAttribute("errorMessage", "Failed to update trainer: " + e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to update trainer. Please verify your input.");
     }
     return "redirect:/trainer-service";
   }
@@ -241,7 +241,7 @@ public class CustomDBController {
       redirectAttributes.addFlashAttribute("successMessage", "Trainer deleted successfully.");
     } catch (RuntimeException e) {
       LOG.error("Cannot delete trainer. id={}", id, e);
-      redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete trainer: " + e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete trainer.");
     }
     return "redirect:/trainer-service";
   }
@@ -273,7 +273,7 @@ public class CustomDBController {
       redirectAttributes.addFlashAttribute("successMessage", "Lecturer added successfully.");
     } catch (RuntimeException e) {
       LOG.error("Cannot add lecturer. payload={}", lecturerDTO, e);
-      redirectAttributes.addFlashAttribute("errorMessage", "Failed to add lecturer: " + e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to add lecturer. Please verify your input.");
     }
     return "redirect:/lecturer-service";
   }
@@ -299,7 +299,7 @@ public class CustomDBController {
       redirectAttributes.addFlashAttribute("successMessage", "Lecturer updated successfully.");
     } catch (RuntimeException e) {
       LOG.error("Cannot update lecturer. payload={}", lecturerDTO, e);
-      redirectAttributes.addFlashAttribute("errorMessage", "Failed to update lecturer: " + e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to update lecturer. Please verify your input.");
     }
     return "redirect:/lecturer-service";
   }
@@ -311,7 +311,7 @@ public class CustomDBController {
       redirectAttributes.addFlashAttribute("successMessage", "Lecturer deleted successfully.");
     } catch (RuntimeException e) {
       LOG.error("Cannot delete lecturer. id={}", id, e);
-      redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete lecturer: " + e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete lecturer.");
     }
     return "redirect:/lecturer-service";
   }
@@ -343,7 +343,7 @@ public class CustomDBController {
       redirectAttributes.addFlashAttribute("successMessage", "Technician added successfully.");
     } catch (RuntimeException e) {
       LOG.error("Cannot add technician. payload={}", technicianDTO, e);
-      redirectAttributes.addFlashAttribute("errorMessage", "Failed to add technician: " + e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to add technician. Please verify your input.");
     }
     return "redirect:/technician-service";
   }
@@ -369,7 +369,7 @@ public class CustomDBController {
       redirectAttributes.addFlashAttribute("successMessage", "Technician updated successfully.");
     } catch (RuntimeException e) {
       LOG.error("Cannot update technician. payload={}", technicianDTO, e);
-      redirectAttributes.addFlashAttribute("errorMessage", "Failed to update technician: " + e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to update technician. Please verify your input.");
     }
     return "redirect:/technician-service";
   }
@@ -381,7 +381,7 @@ public class CustomDBController {
       redirectAttributes.addFlashAttribute("successMessage", "Technician deleted successfully.");
     } catch (RuntimeException e) {
       LOG.error("Cannot delete technician. id={}", id, e);
-      redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete technician: " + e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete technician.");
     }
     return "redirect:/technician-service";
   }
@@ -409,7 +409,7 @@ public class CustomDBController {
       redirectAttributes.addFlashAttribute("successMessage", "Course type added successfully.");
     } catch (RuntimeException e) {
       LOG.error("Cannot add course type. payload={}", courseTypeDTO, e);
-      redirectAttributes.addFlashAttribute("errorMessage", "Failed to add course type: " + e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to add course type. Please verify your input.");
     }
     return "redirect:/course-type-service";
   }
@@ -425,7 +425,7 @@ public class CustomDBController {
       redirectAttributes.addFlashAttribute("successMessage", "Course type updated successfully.");
     } catch (RuntimeException e) {
       LOG.error("Cannot update course type. payload={}", courseTypeDTO, e);
-      redirectAttributes.addFlashAttribute("errorMessage", "Failed to update course type: " + e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to update course type. Please verify your input.");
     }
     return "redirect:/course-type-service";
   }
@@ -437,7 +437,7 @@ public class CustomDBController {
       redirectAttributes.addFlashAttribute("successMessage", "Course type deleted successfully.");
     } catch (RuntimeException e) {
       LOG.error("Cannot delete course type. id={}", id, e);
-      redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete course type: " + e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete course type.");
     }
     return "redirect:/course-type-service";
   }
@@ -486,7 +486,7 @@ public class CustomDBController {
       redirectAttributes.addFlashAttribute("errorMessage", "Validation error: " + violations);
     } catch (RuntimeException e) {
       LOG.error("Cannot add participant. payload={}", participantDTO, e);
-      redirectAttributes.addFlashAttribute("errorMessage", "Failed to add participant: " + e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to add participant. Please verify your input.");
     }
     return "redirect:/participant-service";
   }
@@ -522,7 +522,7 @@ public class CustomDBController {
       redirectAttributes.addFlashAttribute("errorMessage", "Validation error: " + violations);
     } catch (RuntimeException e) {
       LOG.error("Cannot update participant. payload={}", participantDTO, e);
-      redirectAttributes.addFlashAttribute("errorMessage", "Failed to update participant: " + e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to update participant. Please verify your input.");
     }
     return "redirect:/participant-service";
   }
@@ -534,7 +534,7 @@ public class CustomDBController {
       redirectAttributes.addFlashAttribute("successMessage", "Participant deleted successfully.");
     } catch (RuntimeException e) {
       LOG.error("Cannot delete participant. uuid={}", uuid, e);
-      redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete participant: " + e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete participant.");
     }
     return "redirect:/participant-service";
   }
@@ -574,7 +574,7 @@ public class CustomDBController {
       redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (RuntimeException e) {
       LOG.error("Cannot add course counter. payload={}", courseCounterDTO, e);
-      redirectAttributes.addFlashAttribute("errorMessage", "Failed to add course counter: " + e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to add course counter. Please verify your input.");
     }
     return "redirect:/course-counter-service";
   }
@@ -603,7 +603,7 @@ public class CustomDBController {
       redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (RuntimeException e) {
       LOG.error("Cannot update course counter. payload={}", courseCounterDTO, e);
-      redirectAttributes.addFlashAttribute("errorMessage", "Failed to update course counter: " + e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to update course counter. Please verify your input.");
     }
     return "redirect:/course-counter-service";
   }
@@ -615,7 +615,7 @@ public class CustomDBController {
       redirectAttributes.addFlashAttribute("successMessage", "Course counter deleted successfully.");
     } catch (RuntimeException e) {
       LOG.error("Cannot delete course counter. uuid={}", uuid, e);
-      redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete course counter: " + e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete course counter.");
     }
     return "redirect:/course-counter-service";
   }
