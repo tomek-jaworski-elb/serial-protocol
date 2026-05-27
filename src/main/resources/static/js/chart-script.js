@@ -1,10 +1,4 @@
 let socket;
-let trackWarta = []; // Warta
-let trackCherryLady = []; // Cherry Lady
-let trackBlueLady = []; // Blue Lady
-let trackDorchesterLady = []; // Dorchester Lady
-let trackKolobrzeg = []; // Kołobrzeg
-let trackLadyMarie = []; // Lady Marie
 
 if (isSamsungBrowser()) {
     alert("Samsung browser is not supported!\nSwitch to Chrome or Safari instead.")
@@ -14,26 +8,8 @@ function isSamsungBrowser() {
     return navigator.userAgent.toLocaleLowerCase().includes('samsung');
 }
 
-function getTrackCanvasName(canvasName) {
-    return canvasName + "_track";
-}
-
 const imgMap = document.getElementById("backgroundCanvas");
 const container = document.querySelector('.canvas-container');
-
-for (let elementsByTagNameElement of container.getElementsByTagName('canvas')) {
-    if (navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad') || navigator.userAgent.includes('ios')) {
-        elementsByTagNameElement.width = imgMap.width;
-        elementsByTagNameElement.height = imgMap.height;
-        elementsByTagNameElement.style.width = imgMap.width + 'px';
-        elementsByTagNameElement.style.height =imgMap.height + 'px';
-    } else {
-        elementsByTagNameElement.width = imgMap.width;
-        elementsByTagNameElement.height = imgMap.height;
-        elementsByTagNameElement.style.width = imgMap.width + 'px';
-        elementsByTagNameElement.style.height =imgMap.height + 'px';
-    }
-}
 
 // --- tu dodajemy konvaContainer dynamicznie i stage ---
 const konvaContainerId = 'konvaContainer';
@@ -57,7 +33,7 @@ function initKonvaOverlay() {
     konvaDiv.style.height = imgMap.height + 'px';
     // WAŻNE: musimy odbierać eventy, więc pointerEvents = 'auto'
     konvaDiv.style.pointerEvents = 'auto';
-    konvaDiv.style.zIndex = 999;
+    konvaDiv.style.zIndex = '10';
     container.appendChild(konvaDiv);
 
     // Stworzenie stage Konva
@@ -112,8 +88,8 @@ function preloadImage(src) {
 
 // Ensure images are fully loaded before using them
 const imagesLoaded = Promise.all([
-    preloadImage("/img/led_connection_green.bmp"),
-    preloadImage("/img/led_connection_1.bmp")
+    preloadImage("/img/led_connection_green.png"),
+    preloadImage("/img/led_connection_1.png")
 ]);
 
 let imgLedOn, imgLedOff;
@@ -130,12 +106,12 @@ const textField = document.getElementById("textField");
 // MODELS CONFIG (używane też do przechowywania obiektów Konva)
 // ------------------------------------------------------------------
 const modelsConfig = {
-    1: { canvas: "overlayCanvas1", headingField: "heading1", speedField: "speed1", led: "led1", rsField: "rs_model1_no", track: trackWarta, scale: 2, shipParams: [12.21, 2, 0] },
-    2: { canvas: "overlayCanvas2", headingField: "heading2", speedField: "speed2", led: "led2", rsField: "rs_model2_no", track: trackBlueLady, scale: 2,  shipParams: [13.78, 2.38, 0] },
-    3: { canvas: "overlayCanvas3", headingField: "heading3", speedField: "speed3", led: "led3", rsField: "rs_model3_no", track: trackDorchesterLady, scale: 2,  shipParams: [11.55, 1.8, 0] },
-    4: { canvas: "overlayCanvas4", headingField: "heading4", speedField: "speed4", led: "led4", rsField: "rs_model4_no", track: trackCherryLady, scale: 2,  shipParams: [15.5, 1.79, 0] },
-    5: { canvas: "overlayCanvas5", headingField: "heading5", speedField: "speed5", led: "led5", rsField: "rs_model5_no", track: trackKolobrzeg, scale: 2,  shipParams: [10.98, 1.78, 1] },
-    6: { canvas: "overlayCanvas6", headingField: "heading6", speedField: "speed6", led: "led6", rsField: "rs_model6_no", track: trackLadyMarie, scale: 2,  shipParams: [16.43, 2.23, 0] },
+    1: { headingField: "heading1", speedField: "speed1", led: "led1", rsField: "rs_model1_no", track: [], scale: 2, shipParams: [12.21, 2, 0] },
+    2: { headingField: "heading2", speedField: "speed2", led: "led2", rsField: "rs_model2_no", track: [], scale: 2, shipParams: [13.78, 2.38, 0] },
+    3: { headingField: "heading3", speedField: "speed3", led: "led3", rsField: "rs_model3_no", track: [], scale: 2, shipParams: [11.55, 1.8, 0] },
+    4: { headingField: "heading4", speedField: "speed4", led: "led4", rsField: "rs_model4_no", track: [], scale: 2, shipParams: [15.5, 1.79, 0] },
+    5: { headingField: "heading5", speedField: "speed5", led: "led5", rsField: "rs_model5_no", track: [], scale: 2, shipParams: [10.98, 1.78, 1] },
+    6: { headingField: "heading6", speedField: "speed6", led: "led6", rsField: "rs_model6_no", track: [], scale: 2, shipParams: [16.43, 2.23, 0] },
 };
 
 // kolor i informacje o modelach
@@ -355,114 +331,43 @@ function updateKonvaTrack(id) {
 }
 
 // ------------------------------------------------------------------
-// Zamiennik funkcji drawTrack / drawShip: teraz Konva będzie rysował statek i trasę.
-// (Zostawiam też oryginalne drawTrack/drawShip na wypadek, jeśli gdzieś indziej się odwołujesz.)
-// ------------------------------------------------------------------
-
-// ORYGINALNE funkcje zostają (ale nie używane dla statku/trasy w wariancie B)
-function drawTrack(overlayCanvas1Track, track, color) {
-    // elastyczny fallback - rysowanie na zwykłym canvasie
-    clearCanvas(overlayCanvas1Track);
-    const element = document.getElementById(overlayCanvas1Track);
-    const ctx = element.getContext('2d');
-    if (track.length < 2) return;
-    ctx.beginPath();
-    ctx.moveTo(track[0].x, track[0].y);
-    const path = new Path2D();
-    path.moveTo(track[0].x, track[0].y);
-    for (let i = 1; i < track.length; i++) {
-        path.lineTo(track[i].x, track[i].y);
-    }
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1;
-    ctx.stroke(path);
-}
-
-function drawShip(elementId, x, y, scale, angle, fillColor, yy, xx, pp) {
-    // pozostawiam oryginalną implementację jako fallback (nie powinna być wywoływana dla Konva)
-    const ANGLE_CORRECTION_LOCAL = 9;
-    const element = document.getElementById(elementId);
-    if (!element) return;
-    const ctx = element.getContext('2d');
-    let vertices = [
-        {x:       0, y: -0.5*yy + pp*(yy/10)},
-        {x:  0.5*xx, y: -0.4*yy + pp*(yy/10)},
-        {x:  0.5*xx, y:  0.5*yy + pp*(yy/10)},
-        {x: -0.5*xx, y:  0.5*yy + pp*(yy/10)},
-        {x: -0.5*xx, y: -0.4*yy + pp*(yy/10)}
-    ];
-    vertices = vertices.map(vertex => ({ x: vertex.x * scale * 1.1, y: vertex.y * scale }));
-    const radians = (angle + ANGLE_CORRECTION_LOCAL) * Math.PI / 180;
-    vertices = vertices.map(vertex => ({
-        x: vertex.x * Math.cos(radians) - vertex.y * Math.sin(radians),
-        y: vertex.x * Math.sin(radians) + vertex.y * Math.cos(radians)
-    }));
-    vertices = vertices.map(vertex => ({ x: vertex.x + x, y: vertex.y + y }));
-    ctx.beginPath();
-    ctx.moveTo(vertices[0].x, vertices[0].y);
-    for (let i = 1; i < vertices.length; i++) ctx.lineTo(vertices[i].x, vertices[i].y);
-    ctx.closePath();
-    ctx.fillStyle = fillColor;
-    ctx.fill();
-    ctx.strokeStyle = 'black';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-}
-
-// ------------------------------------------------------------------
-// Funkcja do aktualizacji wyświetlania modelu - zmieniona by aktualizować Konva
+// Funkcja do aktualizacji wyświetlania modelu
 // ------------------------------------------------------------------
 function updateModelDisplay(config, modelId, positionX, positionY, angle, speed, blinkDuration = 250) {
-    // nadal czyścimy canvas przypisany do modelu (jeśli tam jest coś rysowane)
-    try {
-        clearCanvas(config.canvas);
-    } catch (e) {
-        console.warn("clearCanvas error:", e);
-    }
-
     fillFieldValues(config.headingField, angle);
     fillFieldValues(config.speedField, speed);
     ledBlink(config.led, blinkDuration);
     fillFieldValues0(config.rsField, ShipCounter.incrementIntMap(modelId));
 
-    // zamiast drawShip na canvasie - aktualizujemy Konva
     if (KonvaObjects[modelId]) {
         KonvaObjects[modelId].lastSpeed = speed;
         KonvaObjects[modelId].lastHeading = angle;
         KonvaObjects[modelId].lastUpdateTime = Date.now();
         updateKonvaShip(modelId, positionX, positionY, angle);
-    } else {
-        // fallback: rysuj na canvasie
-        drawShip(config.canvas, positionX, positionY, config.scale, angle, ModelsOfShips.getColorFromId(modelId), ...config.shipParams);
     }
 
-    // aktualizujemy lokalny track (tablica punktów) - dodajemy limit długości
     config.track.push({ x: positionX, y: positionY });
     if (config.track.length > 1000) {
         config.track.splice(0, config.track.length - 1000);
     }
 
-    // zamiast rysowania track na canvasie - aktualizujemy Konva track
     if (KonvaObjects[modelId]) {
         updateKonvaTrack(modelId);
-    } else {
-        drawTrack(getTrackCanvasName(config.canvas), config.track, ModelsOfShips.getColorFromId(modelId));
     }
-
-    // Usunięto nadmiarowy log
-    // console.log(`Drawing model with ID: ${modelId} at position X: ${positionX}, Y: ${positionY}`);
 }
 
 // ------------------------------------------------------------------
-// WebSocket, skalowanie i reszta logiki - zgodnie z oryginałem (z małą poprawką aby resize Konva działał)
+// WebSocket with automatic reconnect (exponential backoff)
 // ------------------------------------------------------------------
+const WS_RECONNECT_BASE_DELAY = 1000;
+const WS_RECONNECT_MAX_DELAY = 30000;
+let wsReconnectDelay = WS_RECONNECT_BASE_DELAY;
+let wsReconnectTimer = null;
+
 function createWebSocket() {
     const ws = new WebSocket(`${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.hostname}:${window.location.port}${path}`);
 
     ws.onmessage = function (event) {
-        console.log("WebSocket message received: ", event.data);
-        textField.textContent = event.data;
-
         try {
             const data = JSON.parse(event.data);
             const modelId = Number(data.modelName);
@@ -471,7 +376,10 @@ function createWebSocket() {
             const angle = parseFloat(data.heading);
             const speed = parseFloat(data.speed);
 
-            // Skalowanie punktów
+            const modelInfo = ModelsOfShips.getValueFromId(modelId);
+            const modelName = modelInfo ? modelInfo.name : `Model ${modelId}`;
+            textField.textContent = `${modelName} | Pos: ${positionX.toFixed(2)}, ${positionY.toFixed(2)} | Speed: ${speed.toFixed(1)} kn | Heading: ${angle.toFixed(1)}°`;
+
             const newPoints = getScaledPoints(positionX, positionY);
             positionX = newPoints.x;
             positionY = newPoints.y;
@@ -480,8 +388,6 @@ function createWebSocket() {
 
             if (config) {
                 updateModelDisplay(config, modelId, positionX, positionY, angle, speed);
-            } else {
-                console.log(`Unknown model ID: ${modelId} at position X: ${positionX}, Y: ${positionY}`);
             }
 
         } catch (error) {
@@ -494,13 +400,25 @@ function createWebSocket() {
     };
 
     ws.onopen = function (event) {
-        console.log("WebSocket connection opened.");
+        wsReconnectDelay = WS_RECONNECT_BASE_DELAY;
     };
 
     ws.onclose = function (event) {
-        console.log("WebSocket connection closed.");
+        scheduleReconnect();
     };
     return ws;
+}
+
+function scheduleReconnect() {
+    if (document.hidden) return;
+    if (wsReconnectTimer) return;
+    wsReconnectTimer = setTimeout(() => {
+        wsReconnectTimer = null;
+        if (!socket || socket.readyState === WebSocket.CLOSED) {
+            socket = createWebSocket();
+        }
+        wsReconnectDelay = Math.min(wsReconnectDelay * 2, WS_RECONNECT_MAX_DELAY);
+    }, wsReconnectDelay);
 }
 socket = createWebSocket();
 
@@ -509,28 +427,14 @@ function getScaledPoints(oldX, oldY) {
     const staticShift_x = 64;
     const scaleX = mapa_x;
     const scaleY = mapa_x;
-    // Usunięto logi
-    // console.log("ScaleX: " + scaleX + ", ScaleY: " + scaleY);
-    // console.log("Old X: " + oldX + ", Old Y:  " + oldY)
     const y = (-oldX + staticShift_y) * scaleY;
     const x = (oldY + staticShift_x ) * scaleX;
-    // console.log("New X: " + x + ", New Y: " +  y);
     return {x, y};
 }
 
-// Function to clear the first canvas
-function clearCanvas(elementId) {
-    const element = getCachedElement(elementId);
-    if (!element) return;
-    const context = element.getContext('2d');
-    context.clearRect(0, 0, element.width, element.height);
-    // console.log("Clear canvas width: " + element.width + ", height: " +  element.height);
-}
-
 // ------------------------------------------------------------------
-// Pozostałe pomocnicze funkcje (LED, pola) - zostawione bez zmian
+// Pozostałe pomocnicze funkcje (LED, pola)
 // ------------------------------------------------------------------
-// Bufor na referencje do elementów DOM
 const domElementCache = {};
 function getCachedElement(id) {
     if (!domElementCache[id]) {
@@ -544,10 +448,8 @@ function fillFieldValues(elementId, value) {
     if (!spanElement) return;
     if (String(elementId).includes("heading")) {
         spanElement.innerHTML = value.toFixed(1).padStart(4, '0');
-        // console.log("Heading: " + value.toFixed(1).padStart(4, '0'));
     } else {
         spanElement.innerHTML = value.toFixed(1);
-        // console.log("Speed: " + value.toFixed(1));
     }
 }
 
@@ -558,15 +460,9 @@ function fillFieldValues0(elementId, value) {
 }
 
 function ledBlink(elementId, duration) {
-    if (!imgLedOn || !imgLedOff) {
-        // console.warn("Obrazy jeszcze się nie załadowały");
-        return;
-    }
+    if (!imgLedOn || !imgLedOff) return;
     const element = getCachedElement(elementId);
-    if (!element) {
-        // console.error(`Element z ID '${elementId}' nie istnieje`);
-        return;
-    }
+    if (!element) return;
     element.src = imgLedOn.src;
     setTimeout(() => {
         element.src = imgLedOff.src;
@@ -580,7 +476,6 @@ const ENABLE_TEST_RUNS = ENABLE_TEST_RUNS_VAR;
 const ENABLE_TRIANGLE_RUNS = ENABLE_TEST_RUNS_VAR;
 
 function runShipTest(id, angleQ, center_X, center_Y, step, intervalIn) {
-    console.log("Starting ship and track test...");
     const centerX = center_X;
     const centerY = center_Y;
     const radius = 200;
@@ -600,7 +495,6 @@ function runShipTest(id, angleQ, center_X, center_Y, step, intervalIn) {
         angle += angleStep;
         if (angle >= 2 * Math.PI) {
             clearInterval(testInterval);
-            console.log("Ship and track test completed successfully!");
         }
     }, interval);
 }
@@ -664,10 +558,15 @@ function drawTriangle(x, y, size = 20, color = "red", label = "") {
 // Zarządzanie widocznością dokumentu (WebSocket reconnect)
 document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
+        if (wsReconnectTimer) {
+            clearTimeout(wsReconnectTimer);
+            wsReconnectTimer = null;
+        }
         if (socket) {
             socket.close();
         }
     } else {
+        wsReconnectDelay = WS_RECONNECT_BASE_DELAY;
         if (!socket || socket.readyState === WebSocket.CLOSED) {
             socket = createWebSocket();
         }
@@ -677,13 +576,13 @@ document.addEventListener("visibilitychange", () => {
 // === TOOLTIP KONVA ===
 function getTimeAgo(timestamp) {
     const now = Date.now();
-    const diff = now - timestamp;
-    const seconds = parseFloat((diff / 1000).toFixed(1)).toFixed(1);
-    if (seconds < 60) return `${seconds} seconds ago`;
-    const minutes = parseFloat((seconds / 60).toFixed(1)).toFixed(1);
-    if (minutes < 60) return `${minutes} minutes ago`;
-    const hours = parseFloat((minutes / 60).toFixed(1)).toFixed(1);
-    return `${hours} hours ago`;
+    const diffMs = now - timestamp;
+    const seconds = diffMs / 1000;
+    if (seconds < 60) return `${seconds.toFixed(1)} seconds ago`;
+    const minutes = seconds / 60;
+    if (minutes < 60) return `${minutes.toFixed(1)} minutes ago`;
+    const hours = minutes / 60;
+    return `${hours.toFixed(1)} hours ago`;
 }
 
 let tooltipLayer = null;
@@ -863,16 +762,3 @@ function hideTooltip() {
         console.error("Błąd podczas inicjalizacji Konva:", e);
     }
 })();
-
-/*
-drawTriangle("overlayCanvas1", (0 + 60 + 4) * mapa_x, (0 + 506) * mapa_x, 6, 1, 'white');         // pozycja 0 x 0             0x0
-drawTriangle("overlayCanvas1", (77.07 + 60 + 4) * mapa_x, (97.25 + 506) * mapa_x, 6, 1, 'orange');        // SBM    -97.25x77.07
-drawTriangle("overlayCanvas1", (378.3 + 60 + 4) * mapa_x, (191.8 + 506) * mapa_x, 6, 1, 'orange');        // FPSO   -191.8x378.3
-drawTriangle("overlayCanvas1", (-25 + 64) * mapa_x, (84 + 506) * mapa_x, 6, 1, 'red');               // <- nabieznik             -84x25
-drawTriangle("overlayCanvas1", (82.8 + 64) * mapa_x, (-69 + 506) * mapa_x, 6, 1, 'red');               // port nabieznik ->         69x82.8
-drawTriangle("overlayCanvas1", (2 + 64) * mapa_x, (-130 + 506) * mapa_x, 6, 1, 'red');               // pomost Lesniczowka        130x2
-drawTriangle("overlayCanvas1", (79 + 64) * mapa_x, (-188 + 506) * mapa_x, 6, 1, 'red');               // Slip kolej END           188x79
-drawTriangle("overlayCanvas1", (570 + 64) * mapa_x, (-362 + 506) * mapa_x, 6, 1, 'red');               // boja kompielisko         320x570
-drawTriangle("overlayCanvas1", (820 + 64) * mapa_x, (610 + 506) * mapa_x, 6, 1, 'red');               // -> zatoka               -610x820
-drawTriangle("overlayCanvas1", (926 + 64) * mapa_x, (1149 + 506) * mapa_x, 6, 1, 'red');               // Wiata END jeziora      -1149x926
-*/

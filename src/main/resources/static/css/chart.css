@@ -1,0 +1,46 @@
+#main-div {
+    width: 2666px;
+    height: 4000px;
+    background-image: url('/img/MapaSilm_2666x4000.jpg');
+    background-size: cover;
+    background-position: center;
+}
+
+.canvas-container {
+    position: relative;
+    z-index: 0;
+    width: 2666px;
+    height: 4000px;
+    border: 1px solid #555151;
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+    overflow: hidden;
+}
+
+#backgroundCanvas {
+    z-index: 0;
+}
+
+.form-control {
+    font-family: "Courier New", Times, Monospace, serif;
+    font-size: 12px;
+    text-align: left;
+}
+
+#bg-color-1, #bg-color-2, #bg-color-3, #bg-color-4, #bg-color-5, #bg-color-6 {
+    color: white;
+    text-shadow: black 0 0 8px;
+}
+
+.box {
+    width: 210px;
+    height: 180px;
+    margin-bottom: 15px;
+    padding-bottom: 5px;
+    padding-top: 5px;
+    border: 1px solid black;
+    box-shadow: #1a1d20 0 0 12px;
+}
