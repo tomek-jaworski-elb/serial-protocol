@@ -6,7 +6,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -51,10 +50,20 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests((authorizeHttpRequests) ->
                         authorizeHttpRequests
+                                .requestMatchers("/trainer-service/**").hasRole(SecurityRoles.ROLE_USER.getName())
+                                .requestMatchers("/lecturer-service/**").hasRole(SecurityRoles.ROLE_USER.getName())
+                                .requestMatchers("/technician-service/**").hasRole(SecurityRoles.ROLE_USER.getName())
+                                .requestMatchers("/participant-service/**").hasRole(SecurityRoles.ROLE_USER.getName())
+                                .requestMatchers("/courses-service/**").hasRole(SecurityRoles.ROLE_USER.getName())
+                                .requestMatchers("/course-type-service/**").hasRole(SecurityRoles.ROLE_USER.getName())
+                                .requestMatchers("/course-counter-service/**").hasRole(SecurityRoles.ROLE_USER.getName())
+                                .requestMatchers("/custom/image/**").hasRole(SecurityRoles.ROLE_USER.getName())
+                                .requestMatchers("/pdf/**").hasRole(SecurityRoles.ROLE_USER.getName())
                                 .requestMatchers("/name-service").hasRole(SecurityRoles.ROLE_USER.getName())
                                 .requestMatchers("/instructor-service").hasRole(SecurityRoles.ROLE_USER.getName())
                                 .requestMatchers("/api/**").hasRole(SecurityRoles.ROLE_USER.getName())
                                 .requestMatchers("/admin/**").hasRole(SecurityRoles.ROLE_ADMIN.getName())
+                                .requestMatchers("/db-utils/**").hasRole(SecurityRoles.ROLE_ADMIN.getName())
                                 .anyRequest().permitAll()
                 )
                 .httpBasic(withDefaults())
@@ -74,8 +83,7 @@ public class SecurityConfig {
                                         .invalidateHttpSession(true)
                                         .permitAll()
                                         .logoutSuccessHandler(customLogoutHandler)
-                )
-                .csrf(AbstractHttpConfigurer::disable);
+                );
         return http.build();
     }
 }

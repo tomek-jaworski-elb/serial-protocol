@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title th:text="${@environment.getProperty('spring.application.name')} + ' : Participant'">Serial port server</title>
+    <link rel="stylesheet" th:href="@{/flatpickr/flatpickr.min.css}">
+    <th:block th:replace="~{fragment::headContent}"></th:block>
+</head>
+<body>
+<header th:replace="~{fragment::header}"></header>
+<div class="container mb-4">
+    <th:block th:replace="~{fragment::toastNotifications}"></th:block>
+
+    <div class="d-flex justify-content-between align-items-center my-3">
+        <h4 class="mb-0">Participant</h4>
+        <div class="d-flex align-items-center gap-2">
+            <input id="tableFilterInput" type="text" class="form-control form-control-sm" placeholder="Filter..." style="width: 180px;">
+            <span class="badge bg-secondary" th:text="${participantPage.totalElements}" th:if="${participantPage != null && participantPage.totalElements > 0}">0</span>
+            <button id="printReportBtn" type="button" class="btn btn-outline-secondary btn-sm" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-printer me-1" viewBox="0 0 16 16">
+                    <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1"/>
+                    <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2zm3 1h4a1 1 0 0 1 1 1v2H5V3a1 1 0 0 1 1-1zm-3 8v-1h8v2a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-1zm8-5a1 1 0 0 0-1 1H4a1 1 0 0 0-1-1z"/>
+                </svg>
+                Print Report
+            </button>
+            <button id="showAddFormBtn" type="button" class="btn btn-primary btn-sm">Add</button>
+        </div>
+    </div>
+
+    <!-- Add form -->
+    <div id="addParticipantFormContainer" class="card mb-3 d-none">
+        <div class="card-body">
+            <h5 class="card-title">Add participant</h5>
+            <form method="post" enctype="multipart/form-data" th:action="@{/participant-service/add}">
+                <div class="row g-3">
+                    <div class="col-md-2">
+                        <label for="addParticipantId" class="form-label">ID <span class="text-muted small">(unique)</span></label>
+                        <input id="addParticipantId" name="id" type="number" min="1" class="form-control"
+                               th:value="${nextId}" required>
+                        <div class="form-text">Auto-suggested. You may change it.</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="addParticipantName" class="form-label">Name <span class="text-danger">*</span></label>
+                        <input id="addParticipantName" name="name" type="text" class="form-control" maxlength="100" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="addParticipantSurname" class="form-label">Surname <span class="text-danger">*</span></label>
+                        <input id="addParticipantSurname" name="surname" type="text" class="form-control" maxlength="100" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="addParticipantBirthDate" class="form-label">Birth Date</label>
+                        <input id="addParticipantBirthDate" name="birthDate" type="text" class="form-control"
+                               placeholder="dd/MM/yyyy" pattern="\d{2}/\d{2}/\d{4}" title="Format: dd/MM/yyyy">
+                        <div class="form-text">Optional. Must be a past date.</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="addParticipantNickname" class="form-label">Nickname</label>
+                        <input id="addParticipantNickname" name="nickname" type="text" class="form-control" maxlength="100">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="addParticipantEmail" class="form-label">Email</label>
+                        <input id="addParticipantEmail" name="email" type="email" class="form-control" maxlength="100">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="addParticipantPhoneNumber" class="form-label">Phone Number</label>
+                        <input id="addParticipantPhoneNumber" name="phoneNumber" type="text" class="form-control" maxlength="26">
+                    </div>
+                    <div class="col-md-8">
+                        <label for="addParticipantAddress" class="form-label">Address</label>
+                        <input id="addParticipantAddress" name="address" type="text" class="form-control" maxlength="300">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="addParticipantImageFile" class="form-label">Image</label>
+                        <input id="addParticipantImageFile" name="imageFile" type="file" class="form-control" accept="image/*">
+                    </div>
+                    <div class="col-12">
+                        <label for="addParticipantNotes" class="form-label">Notes</label>
+                        <textarea id="addParticipantNotes" name="notes" class="form-control" maxlength="1000" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-success btn-sm">Save</button>
+                    <button id="hideAddFormBtn" type="button" class="btn btn-outline-secondary btn-sm">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Update form -->
+    <div id="updateParticipantFormContainer" class="card mb-3 d-none">
+        <div class="card-body">
+            <h5 class="card-title">Update participant</h5>
+            <form method="post" enctype="multipart/form-data" th:action="@{/participant-service/update}">
+                <input id="updateParticipantUuid" name="participantUuid" type="hidden">
+                <div class="row g-3">
+                    <div class="col-md-2">
+                        <label for="updateParticipantId" class="form-label">ID <span class="text-muted small">(unique)</span></label>
+                        <input id="updateParticipantId" name="id" type="number" min="1" class="form-control" required>
+                        <div class="form-text">Must be unique among all participants.</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="updateParticipantName" class="form-label">Name <span class="text-danger">*</span></label>
+                        <input id="updateParticipantName" name="name" type="text" class="form-control" maxlength="100" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="updateParticipantSurname" class="form-label">Surname <span class="text-danger">*</span></label>
+                        <input id="updateParticipantSurname" name="surname" type="text" class="form-control" maxlength="100" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="updateParticipantBirthDate" class="form-label">Birth Date</label>
+                        <input id="updateParticipantBirthDate" name="birthDate" type="text" class="form-control"
+                               placeholder="dd/MM/yyyy" pattern="\d{2}/\d{2}/\d{4}" title="Format: dd/MM/yyyy">
+                        <div class="form-text">Optional. Must be a past date.</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="updateParticipantNickname" class="form-label">Nickname</label>
+                        <input id="updateParticipantNickname" name="nickname" type="text" class="form-control" maxlength="100">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="updateParticipantEmail" class="form-label">Email</label>
+                        <input id="updateParticipantEmail" name="email" type="email" class="form-control" maxlength="100">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="updateParticipantPhoneNumber" class="form-label">Phone Number</label>
+                        <input id="updateParticipantPhoneNumber" name="phoneNumber" type="text" class="form-control" maxlength="26">
+                    </div>
+                    <div class="col-md-8">
+                        <label for="updateParticipantAddress" class="form-label">Address</label>
+                        <input id="updateParticipantAddress" name="address" type="text" class="form-control" maxlength="300">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="updateParticipantImageFile" class="form-label">Image</label>
+                        <input id="updateParticipantImageFile" name="imageFile" type="file" class="form-control" accept="image/*">
+                        <div class="form-text">Optional. Upload a new image to replace current one.</div>
+                    </div>
+                    <div class="col-12">
+                        <label for="updateParticipantNotes" class="form-label">Notes</label>
+                        <textarea id="updateParticipantNotes" name="notes" class="form-control" maxlength="1000" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-warning btn-sm">Update</button>
+                    <button id="hideUpdateFormBtn" type="button" class="btn btn-outline-secondary btn-sm">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add to Course form -->
+    <div id="addToCourseFormContainer" class="card mb-3 d-none border-info">
+        <div class="card-body">
+            <h5 class="card-title">Assign participant to certificates</h5>
+            <div class="alert alert-warning alert-sm py-2 mb-3" role="alert">
+                <i class="bi bi-info-circle me-1"></i>
+                The course will be saved <strong>without trainers, lecturers, technicians and course counter</strong>.
+                You can complete the assignment later in the <a th:href="@{/courses-service}" class="alert-link">Certificates</a> view.
+            </div>
+            <form method="post" th:action="@{/courses-service/add-participant}">
+                <input id="addToCourseParticipantUuid" name="participantUuid" type="hidden">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Participant</label>
+                        <input id="addToCourseParticipantName" type="text" class="form-control" disabled>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="addToCourseTypeId" class="form-label">Course Type</label>
+                        <select id="addToCourseTypeId" name="courseTypeId" class="form-select" required>
+                            <option value="" disabled selected>Select course type</option>
+                            <option th:each="ct : ${courseTypes}"
+                                    th:value="${ct.id}"
+                                    th:text="${ct.code + ' - ' + ct.description}">Course Type</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="addToCourseStartDate" class="form-label">Start Date</label>
+                        <input id="addToCourseStartDate" name="startDate" type="text" class="form-control"
+                               placeholder="dd/MM/yyyy" pattern="\d{2}/\d{2}/\d{4}" title="Format: dd/MM/yyyy" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="addToCourseEndDate" class="form-label">End Date</label>
+                        <input id="addToCourseEndDate" name="endDate" type="text" class="form-control"
+                               placeholder="dd/MM/yyyy" pattern="\d{2}/\d{2}/\d{4}" title="Format: dd/MM/yyyy" required>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-info btn-sm">Assign</button>
+                    <button id="hideAddToCourseFormBtn" type="button" class="btn btn-outline-secondary btn-sm">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <div class="table-responsive" th:if="${!#lists.isEmpty(participants)}">
+        <table class="table table-striped table-hover align-middle text-center filterable-table">
+            <thead class="table-light">
+            <tr>
+                <th scope="col"><input type="checkbox" class="form-check-input" id="selectAllCheckbox" title="Select all"></th>
+                <th scope="col" data-sort="number">ID</th>
+                <th scope="col" data-sort="text">Name</th>
+                <th scope="col" data-sort="text">Surname</th>
+                <th scope="col" data-sort="date">Birth Date</th>
+                <th scope="col">Image</th>
+                <th scope="col">Certificates</th>
+                <th scope="col">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="participant, participantStat : ${participants}">
+                <td><input type="checkbox" class="form-check-input row-select-checkbox" th:value="${participant.participantUuid}"></td>
+                <td th:text="${participant.id}">1</td>
+                <td th:text="${participant.name}">John</td>
+                <td th:text="${participant.surname}">Doe</td>
+                <td th:text="${participant.birthDate != null ? #temporals.format(participant.birthDate, 'dd/MM/yyyy') : '-'}">2026-03-15</td>
+                <td>
+                    <span class="badge text-bg-success" th:if="${participant.image != null}">Assigned</span>
+                    <span class="badge text-bg-secondary" th:unless="${participant.image != null}">Missing</span>
+                </td>
+                <td>
+                    <th:block th:if="${coursesByParticipant[participant.participantUuid] != null && !coursesByParticipant[participant.participantUuid].isEmpty()}">
+                        <th:block th:each="course : ${coursesByParticipant[participant.participantUuid]}">
+                            <span th:each="ct : ${courseTypes}" th:if="${ct.id == course.courseTypeId}"
+                                  class="badge text-bg-primary me-1" th:text="${ct.code}">Course</span>
+                        </th:block>
+                    </th:block>
+                    <span th:if="${coursesByParticipant[participant.participantUuid] == null || coursesByParticipant[participant.participantUuid].isEmpty()}"
+                          class="text-muted small">—</span>
+                </td>
+                <td>
+                    <div class="d-flex justify-content-center gap-2 flex-wrap">
+                        <button
+                                type="button"
+                                class="btn btn-outline-info btn-sm details-participant-btn"
+                                th:attr="data-uuid=${participant.participantUuid},data-id=${participant.id},data-name=${participant.name},data-surname=${participant.surname},data-birthdate=${participant.birthDate},data-nickname=${participant.nickname},data-email=${participant.email},data-phone=${participant.phoneNumber},data-address=${participant.address},data-notes=${participant.notes},data-image=${participant.image}">
+                            Details
+                        </button>
+                        <button
+                                type="button"
+                                class="btn btn-outline-warning btn-sm update-participant-btn"
+                                th:attr="data-uuid=${participant.participantUuid},data-id=${participant.id},data-name=${participant.name},data-surname=${participant.surname},data-birthdate=${participant.birthDate},data-nickname=${participant.nickname},data-email=${participant.email},data-phone=${participant.phoneNumber},data-address=${participant.address},data-notes=${participant.notes}">
+                            Update
+                        </button>
+                        <button
+                                type="button"
+                                class="btn btn-outline-info btn-sm add-to-course-btn"
+                                th:attr="data-uuid=${participant.participantUuid},data-name=${participant.name + ' ' + participant.surname}">
+                            Add to Course
+                        </button>
+                        <form method="post" th:action="@{/participant-service/delete/{uuid}(uuid=${participant.participantUuid})}">
+                            <button type="submit" class="btn btn-outline-danger btn-sm"
+                                    onclick="return confirm('Are you sure you want to delete this participant?');">
+                                Delete
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div th:replace="~{fragment :: pagination(${participantPage}, '/participant-service', ${pageSize})}"></div>
+
+    <div class="alert alert-info text-center" th:if="${#lists.isEmpty(participants)}">
+        No participants found.
+    </div>
+</div>
+<form id="pdfReportForm" method="post" th:action="@{/pdf/participant}" target="_blank" style="display:none;">
+    <input type="hidden" id="pdfReportIds" name="ids" value="">
+</form>
+<footer th:replace="~{fragment::footer}"></footer>
+<script th:src="@{/js/common/table-filter-sort.js}"></script>
+
+<div class="modal fade" id="participantDetailsModal" tabindex="-1" aria-labelledby="participantDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="participantDetailsModalLabel">Participant details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-7">
+                        <p class="mb-2"><strong>ID:</strong> <span id="detailsParticipantId">-</span></p>
+                        <p class="mb-2"><strong>Name:</strong> <span id="detailsParticipantName">-</span></p>
+                        <p class="mb-2"><strong>Surname:</strong> <span id="detailsParticipantSurname">-</span></p>
+                        <p class="mb-2"><strong>Birth Date:</strong> <span id="detailsParticipantBirthDate">-</span></p>
+                        <p class="mb-2"><strong>Nickname:</strong> <span id="detailsParticipantNickname">-</span></p>
+                        <p class="mb-2"><strong>Email:</strong> <span id="detailsParticipantEmail">-</span></p>
+                        <p class="mb-2"><strong>Phone:</strong> <span id="detailsParticipantPhone">-</span></p>
+                        <p class="mb-2"><strong>Address:</strong> <span id="detailsParticipantAddress">-</span></p>
+                        <p class="mb-0"><strong>Notes:</strong> <span id="detailsParticipantNotes">-</span></p>
+                    </div>
+                    <div class="col-md-5">
+                        <p class="mb-1"><strong>Image:</strong></p>
+                        <div id="detailsParticipantImage"></div>
+                        <div id="detailsParticipantNoImage" class="small text-muted">No image assigned.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script th:src="@{/flatpickr/flatpickr.min.js}"></script>
+<script>
+    function isoToEu(dateStr) {
+        if (!dateStr) return '';
+        const parts = dateStr.split('-');
+        if (parts.length !== 3) return dateStr;
+        return parts[2] + '/' + parts[1] + '/' + parts[0];
+    }
+
+    const fpConfig     = { dateFormat: 'd/m/Y', allowInput: true, locale: { firstDayOfWeek: 1 } };
+    const fpConfigPast = { ...fpConfig, maxDate: 'today' };
+    const fpAddBirthDate    = flatpickr('#addParticipantBirthDate',    fpConfigPast);
+    const fpUpdateBirthDate = flatpickr('#updateParticipantBirthDate', fpConfigPast);
+    const fpAddStartDate    = flatpickr('#addToCourseStartDate',       fpConfig);
+    const fpAddEndDate      = flatpickr('#addToCourseEndDate',         fpConfig);
+
+    function euToDate(euStr) {
+        if (!euStr) return null;
+        const parts = euStr.split('/');
+        if (parts.length !== 3) return null;
+        return new Date(+parts[2], parts[1] - 1, +parts[0]);
+    }
+
+    const addToCourseForm = document.querySelector('#addToCourseFormContainer form');
+    if (addToCourseForm) {
+        addToCourseForm.addEventListener('submit', (e) => {
+            const start = euToDate(document.getElementById('addToCourseStartDate').value);
+            const end   = euToDate(document.getElementById('addToCourseEndDate').value);
+            if (start && end && start > end) {
+                e.preventDefault();
+                alert('End Date must be on or after Start Date.');
+            }
+        });
+    }
+
+    const showAddFormBtn = document.getElementById('showAddFormBtn');
+    const hideAddFormBtn = document.getElementById('hideAddFormBtn');
+    const addParticipantFormContainer = document.getElementById('addParticipantFormContainer');
+    const updateParticipantFormContainer = document.getElementById('updateParticipantFormContainer');
+    const hideUpdateFormBtn = document.getElementById('hideUpdateFormBtn');
+    const updateButtons = document.querySelectorAll('.update-participant-btn');
+    const updateParticipantUuid = document.getElementById('updateParticipantUuid');
+    const updateParticipantId = document.getElementById('updateParticipantId');
+    const updateParticipantName = document.getElementById('updateParticipantName');
+    const updateParticipantSurname = document.getElementById('updateParticipantSurname');
+    const updateParticipantBirthDate = document.getElementById('updateParticipantBirthDate');
+    const updateParticipantNickname = document.getElementById('updateParticipantNickname');
+    const updateParticipantEmail = document.getElementById('updateParticipantEmail');
+    const updateParticipantPhoneNumber = document.getElementById('updateParticipantPhoneNumber');
+    const updateParticipantAddress = document.getElementById('updateParticipantAddress');
+    const updateParticipantNotes = document.getElementById('updateParticipantNotes');
+    const detailsButtons = document.querySelectorAll('.details-participant-btn');
+    const participantDetailsModal = document.getElementById('participantDetailsModal');
+    const detailsParticipantId = document.getElementById('detailsParticipantId');
+    const detailsParticipantName = document.getElementById('detailsParticipantName');
+    const detailsParticipantSurname = document.getElementById('detailsParticipantSurname');
+    const detailsParticipantBirthDate = document.getElementById('detailsParticipantBirthDate');
+    const detailsParticipantNickname = document.getElementById('detailsParticipantNickname');
+    const detailsParticipantEmail = document.getElementById('detailsParticipantEmail');
+    const detailsParticipantPhone = document.getElementById('detailsParticipantPhone');
+    const detailsParticipantAddress = document.getElementById('detailsParticipantAddress');
+    const detailsParticipantNotes = document.getElementById('detailsParticipantNotes');
+    const detailsParticipantImage = document.getElementById('detailsParticipantImage');
+    const detailsParticipantNoImage = document.getElementById('detailsParticipantNoImage');
+
+    const participantDetailsModalInstance =
+        participantDetailsModal && window.bootstrap && window.bootstrap.Modal
+            ? window.bootstrap.Modal.getOrCreateInstance(participantDetailsModal)
+            : null;
+
+    const nullOrDash = (v) => (v && v !== 'null' ? v : '-');
+
+    if (showAddFormBtn && hideAddFormBtn && addParticipantFormContainer) {
+        showAddFormBtn.addEventListener('click', () => {
+            addParticipantFormContainer.classList.remove('d-none');
+            if (updateParticipantFormContainer) {
+                updateParticipantFormContainer.classList.add('d-none');
+            }
+            addParticipantFormContainer.scrollIntoView({behavior: 'smooth', block: 'start'});
+        });
+        hideAddFormBtn.addEventListener('click', () => {
+            addParticipantFormContainer.classList.add('d-none');
+        });
+    }
+
+    if (hideUpdateFormBtn && updateParticipantFormContainer) {
+        hideUpdateFormBtn.addEventListener('click', () => {
+            updateParticipantFormContainer.classList.add('d-none');
+        });
+    }
+
+    if (updateButtons.length > 0 && updateParticipantFormContainer) {
+        updateButtons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                updateParticipantUuid.value = btn.dataset.uuid || '';
+                updateParticipantId.value = btn.dataset.id || '';
+                updateParticipantName.value = btn.dataset.name || '';
+                updateParticipantSurname.value = btn.dataset.surname || '';
+                fpUpdateBirthDate.setDate(btn.dataset.birthdate || '', false, 'Y-m-d');
+                updateParticipantNickname.value = btn.dataset.nickname !== 'null' ? (btn.dataset.nickname || '') : '';
+                updateParticipantEmail.value = btn.dataset.email !== 'null' ? (btn.dataset.email || '') : '';
+                updateParticipantPhoneNumber.value = btn.dataset.phone !== 'null' ? (btn.dataset.phone || '') : '';
+                updateParticipantAddress.value = btn.dataset.address !== 'null' ? (btn.dataset.address || '') : '';
+                updateParticipantNotes.value = btn.dataset.notes !== 'null' ? (btn.dataset.notes || '') : '';
+                updateParticipantFormContainer.classList.remove('d-none');
+                if (addParticipantFormContainer) addParticipantFormContainer.classList.add('d-none');
+                updateParticipantFormContainer.scrollIntoView({behavior: 'smooth', block: 'start'});
+            });
+        });
+    }
+
+    const addToCourseFormContainer = document.getElementById('addToCourseFormContainer');
+    const hideAddToCourseFormBtn = document.getElementById('hideAddToCourseFormBtn');
+    const addToCourseParticipantUuid = document.getElementById('addToCourseParticipantUuid');
+    const addToCourseParticipantName = document.getElementById('addToCourseParticipantName');
+    const addToCourseButtons = document.querySelectorAll('.add-to-course-btn');
+
+    if (addToCourseButtons.length > 0 && addToCourseFormContainer) {
+        addToCourseButtons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                addToCourseParticipantUuid.value = btn.dataset.uuid || '';
+                addToCourseParticipantName.value = btn.dataset.name || '';
+                addToCourseFormContainer.classList.remove('d-none');
+                if (addParticipantFormContainer) addParticipantFormContainer.classList.add('d-none');
+                if (updateParticipantFormContainer) updateParticipantFormContainer.classList.add('d-none');
+                addToCourseFormContainer.scrollIntoView({behavior: 'smooth', block: 'start'});
+            });
+        });
+    }
+
+    if (hideAddToCourseFormBtn && addToCourseFormContainer) {
+        hideAddToCourseFormBtn.addEventListener('click', () => addToCourseFormContainer.classList.add('d-none'));
+    }
+
+    if (detailsButtons.length > 0 && participantDetailsModalInstance) {
+        detailsButtons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                detailsParticipantId.textContent = nullOrDash(btn.dataset.id);
+                detailsParticipantName.textContent = nullOrDash(btn.dataset.name);
+                detailsParticipantSurname.textContent = nullOrDash(btn.dataset.surname);
+                detailsParticipantBirthDate.textContent = isoToEu(btn.dataset.birthdate) || '-';
+                detailsParticipantNickname.textContent = nullOrDash(btn.dataset.nickname);
+                detailsParticipantEmail.textContent = nullOrDash(btn.dataset.email);
+                detailsParticipantPhone.textContent = nullOrDash(btn.dataset.phone);
+                detailsParticipantAddress.textContent = nullOrDash(btn.dataset.address);
+                detailsParticipantNotes.textContent = nullOrDash(btn.dataset.notes);
+
+                detailsParticipantImage.innerHTML = '';
+                const imageUuid = btn.dataset.image;
+                if (imageUuid && imageUuid !== 'null' && imageUuid.trim() !== '') {
+                    detailsParticipantNoImage.classList.add('d-none');
+                    const img = document.createElement('img');
+                    img.src = `/custom/image/${imageUuid}`;
+                    img.alt = 'Participant image';
+                    img.className = 'img-thumbnail';
+                    img.style.maxWidth = '150px';
+                    img.style.maxHeight = '150px';
+                    img.style.objectFit = 'cover';
+                    detailsParticipantImage.appendChild(img);
+                } else {
+                    detailsParticipantNoImage.classList.remove('d-none');
+                }
+
+                participantDetailsModalInstance.show();
+            });
+        });
+    }
+
+    // ── PDF Report ──────────────────────────────────────────────────────────
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const rowCheckboxes = document.querySelectorAll('.row-select-checkbox');
+    const printReportBtn = document.getElementById('printReportBtn');
+    const pdfReportForm = document.getElementById('pdfReportForm');
+    const pdfReportIds = document.getElementById('pdfReportIds');
+
+    function updatePrintButton() {
+        const checkedBoxes = document.querySelectorAll('.row-select-checkbox:checked');
+        const total = rowCheckboxes.length;
+        const checked = checkedBoxes.length;
+        if (printReportBtn) {
+            printReportBtn.disabled = checked === 0;
+        }
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = checked === total && total > 0;
+            selectAllCheckbox.indeterminate = checked > 0 && checked < total;
+        }
+    }
+
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', () => {
+            rowCheckboxes.forEach(cb => { cb.checked = selectAllCheckbox.checked; });
+            updatePrintButton();
+        });
+    }
+
+    rowCheckboxes.forEach(cb => {
+        cb.addEventListener('change', updatePrintButton);
+    });
+
+    if (printReportBtn && pdfReportForm && pdfReportIds) {
+        printReportBtn.addEventListener('click', () => {
+            const checkedIds = Array.from(document.querySelectorAll('.row-select-checkbox:checked'))
+                .map(cb => cb.value)
+                .join(',');
+            pdfReportIds.value = checkedIds;
+            pdfReportForm.submit();
+        });
+    }
+</script>
+</body>
+</html>

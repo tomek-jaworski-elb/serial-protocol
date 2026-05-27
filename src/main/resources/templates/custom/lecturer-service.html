@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title th:text="${@environment.getProperty('spring.application.name')} + ' : Lecturer'">Serial port server</title>
+    <th:block th:replace="~{fragment::headContent}"></th:block>
+</head>
+<body>
+<header th:replace="~{fragment::header}"></header>
+<div class="container mb-4">
+    <th:block th:replace="~{fragment::toastNotifications}"></th:block>
+
+    <div class="d-flex justify-content-between align-items-center my-3">
+        <h4 class="mb-0">Lecturer</h4>
+        <div class="d-flex align-items-center gap-2">
+            <input id="tableFilterInput" type="text" class="form-control form-control-sm" placeholder="Filter..." style="width: 180px;">
+            <span class="badge bg-secondary" th:text="${lecturerPage.totalElements}" th:if="${lecturerPage != null && lecturerPage.totalElements > 0}">0</span>
+            <button id="printReportBtn" type="button" class="btn btn-outline-secondary btn-sm" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-printer me-1" viewBox="0 0 16 16">
+                    <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1"/>
+                    <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2zm3 1h4a1 1 0 0 1 1 1v2H5V3a1 1 0 0 1 1-1zm-3 8v-1h8v2a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-1zm8-5a1 1 0 0 0-1 1H4a1 1 0 0 0-1-1z"/>
+                </svg>
+                Print Report
+            </button>
+            <button id="showAddFormBtn" type="button" class="btn btn-primary btn-sm">Add</button>
+        </div>
+    </div>
+
+    <!-- Add form -->
+    <div id="addLecturerFormContainer" class="card mb-3 d-none">
+        <div class="card-body">
+            <h5 class="card-title">Add lecturer</h5>
+            <form method="post" enctype="multipart/form-data" th:action="@{/lecturer-service/add}">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="lecturerName" class="form-label">Name <span class="text-danger">*</span></label>
+                        <input id="lecturerName" name="name" type="text" class="form-control" maxlength="100" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="lecturerSurname" class="form-label">Surname <span class="text-danger">*</span></label>
+                        <input id="lecturerSurname" name="surname" type="text" class="form-control" maxlength="100" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="lecturerNickname" class="form-label">Nickname</label>
+                        <input id="lecturerNickname" name="nickname" type="text" class="form-control" maxlength="100">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="lecturerEmail" class="form-label">Email</label>
+                        <input id="lecturerEmail" name="email" type="email" class="form-control" maxlength="100">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="lecturerPhoneNumber" class="form-label">Phone Number</label>
+                        <input id="lecturerPhoneNumber" name="phoneNumber" type="text" class="form-control" maxlength="26">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="lecturerImages" class="form-label">Images</label>
+                        <input id="lecturerImages" name="imageFiles" type="file" class="form-control" accept="image/*" multiple>
+                        <div class="form-text">Optional. You can upload up to 6 images.</div>
+                    </div>
+                    <div class="col-md-8">
+                        <label for="lecturerAddress" class="form-label">Address</label>
+                        <input id="lecturerAddress" name="address" type="text" class="form-control" maxlength="300">
+                    </div>
+                    <div class="col-12">
+                        <label for="lecturerNotes" class="form-label">Notes</label>
+                        <textarea id="lecturerNotes" name="notes" class="form-control" maxlength="1000" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-success btn-sm">Save</button>
+                    <button id="hideAddFormBtn" type="button" class="btn btn-outline-secondary btn-sm">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Update form -->
+    <div id="updateLecturerFormContainer" class="card mb-3 d-none">
+        <div class="card-body">
+            <h5 class="card-title">Update lecturer</h5>
+            <form method="post" enctype="multipart/form-data" th:action="@{/lecturer-service/update}">
+                <input id="updateLecturerId" name="id" type="hidden" required>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="updateLecturerName" class="form-label">Name <span class="text-danger">*</span></label>
+                        <input id="updateLecturerName" name="name" type="text" class="form-control" maxlength="100" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="updateLecturerSurname" class="form-label">Surname <span class="text-danger">*</span></label>
+                        <input id="updateLecturerSurname" name="surname" type="text" class="form-control" maxlength="100" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="updateLecturerNickname" class="form-label">Nickname</label>
+                        <input id="updateLecturerNickname" name="nickname" type="text" class="form-control" maxlength="100">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="updateLecturerEmail" class="form-label">Email</label>
+                        <input id="updateLecturerEmail" name="email" type="email" class="form-control" maxlength="100">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="updateLecturerPhoneNumber" class="form-label">Phone Number</label>
+                        <input id="updateLecturerPhoneNumber" name="phoneNumber" type="text" class="form-control" maxlength="26">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="updateLecturerImages" class="form-label">Images</label>
+                        <input id="updateLecturerImages" name="imageFiles" type="file" class="form-control" accept="image/*" multiple>
+                        <div class="form-text">Optional. Upload new images (max 6) to replace current set.</div>
+                    </div>
+                    <div class="col-md-8">
+                        <label for="updateLecturerAddress" class="form-label">Address</label>
+                        <input id="updateLecturerAddress" name="address" type="text" class="form-control" maxlength="300">
+                    </div>
+                    <div class="col-12">
+                        <label for="updateLecturerNotes" class="form-label">Notes</label>
+                        <textarea id="updateLecturerNotes" name="notes" class="form-control" maxlength="1000" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-warning btn-sm">Update</button>
+                    <button id="hideUpdateFormBtn" type="button" class="btn btn-outline-secondary btn-sm">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-responsive" th:if="${!#lists.isEmpty(lecturers)}">
+        <table class="table table-striped table-hover align-middle text-center filterable-table">
+            <thead class="table-light">
+            <tr>
+                <th scope="col"><input type="checkbox" class="form-check-input" id="selectAllCheckbox" title="Select all"></th>
+                <th scope="col">#</th>
+                <th scope="col" data-sort="text">Name</th>
+                <th scope="col" data-sort="text">Surname</th>
+                <th scope="col" data-sort="text">Nickname</th>
+                <th scope="col" data-sort="text">Email</th>
+                <th scope="col" data-sort="text">Phone</th>
+                <th scope="col">Images</th>
+                <th scope="col">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="lecturer, lecturerStat : ${lecturers}">
+                <td><input type="checkbox" class="form-check-input row-select-checkbox" th:value="${lecturer.id}"></td>
+                <th scope="row" th:text="${lecturerStat.index + 1}">1</th>
+                <td th:text="${lecturer.name}">Jane</td>
+                <td th:text="${lecturer.surname}">Doe</td>
+                <td th:text="${lecturer.nickname != null ? lecturer.nickname : '—'}">janedoe</td>
+                <td th:text="${lecturer.email != null ? lecturer.email : '—'}">jane@example.com</td>
+                <td th:text="${lecturer.phoneNumber != null ? lecturer.phoneNumber : '—'}">+48 000</td>
+                <td>
+                    <span class="badge text-bg-success" th:if="${lecturer.imagesUuid != null && !lecturer.imagesUuid.isEmpty()}" th:text="${lecturer.imagesUuid.size() + ' assigned'}">1 assigned</span>
+                    <span class="badge text-bg-secondary" th:unless="${lecturer.imagesUuid != null && !lecturer.imagesUuid.isEmpty()}">Missing</span>
+                </td>
+                <td>
+                    <div class="d-flex justify-content-center gap-2">
+                        <button type="button" class="btn btn-outline-info btn-sm details-lecturer-btn"
+                                th:attr="data-id=${lecturer.id},data-name=${lecturer.name},data-surname=${lecturer.surname},data-nickname=${lecturer.nickname},data-email=${lecturer.email},data-phone=${lecturer.phoneNumber},data-address=${lecturer.address},data-notes=${lecturer.notes},data-images=${lecturer.imagesUuid}">
+                            Details
+                        </button>
+                        <button type="button" class="btn btn-outline-warning btn-sm update-lecturer-btn"
+                                th:attr="data-id=${lecturer.id},data-name=${lecturer.name},data-surname=${lecturer.surname},data-nickname=${lecturer.nickname},data-email=${lecturer.email},data-phone=${lecturer.phoneNumber},data-address=${lecturer.address},data-notes=${lecturer.notes},data-images=${lecturer.imagesUuid}">
+                            Update
+                        </button>
+                        <form method="post" th:action="@{/lecturer-service/delete/{id}(id=${lecturer.id})}">
+                            <button type="submit" class="btn btn-outline-danger btn-sm"
+                                    onclick="return confirm('Are you sure you want to delete this item?');">Delete</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div th:replace="~{fragment :: pagination(${lecturerPage}, '/lecturer-service', ${pageSize})}"></div>
+
+    <div class="alert alert-info text-center" th:if="${#lists.isEmpty(lecturers)}">No lecturers found.</div>
+</div>
+
+<!-- Details Modal -->
+<div class="modal fade" id="lecturerDetailsModal" tabindex="-1" aria-labelledby="lecturerDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="lecturerDetailsModalLabel">Lecturer details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-7">
+                        <p class="mb-2"><strong>ID:</strong> <span id="detailsLecturerId">-</span></p>
+                        <p class="mb-2"><strong>Name:</strong> <span id="detailsLecturerName">-</span></p>
+                        <p class="mb-2"><strong>Surname:</strong> <span id="detailsLecturerSurname">-</span></p>
+                        <p class="mb-2"><strong>Nickname:</strong> <span id="detailsLecturerNickname">-</span></p>
+                        <p class="mb-2"><strong>Email:</strong> <span id="detailsLecturerEmail">-</span></p>
+                        <p class="mb-2"><strong>Phone:</strong> <span id="detailsLecturerPhone">-</span></p>
+                        <p class="mb-2"><strong>Address:</strong> <span id="detailsLecturerAddress">-</span></p>
+                        <p class="mb-0"><strong>Notes:</strong> <span id="detailsLecturerNotes">-</span></p>
+                    </div>
+                    <div class="col-md-5">
+                        <p class="mb-1"><strong>Images:</strong></p>
+                        <div id="detailsLecturerImages" class="d-flex flex-wrap gap-2"></div>
+                        <div id="detailsLecturerNoImages" class="small text-muted">No images assigned.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form id="pdfReportForm" method="post" th:action="@{/pdf/lecturer}" target="_blank" style="display:none;">
+    <input type="hidden" id="pdfReportIds" name="ids" value="">
+</form>
+<footer th:replace="~{fragment::footer}"></footer>
+<script th:src="@{/js/common/table-filter-sort.js}"></script>
+<script>
+    const showAddFormBtn = document.getElementById('showAddFormBtn');
+    const hideAddFormBtn = document.getElementById('hideAddFormBtn');
+    const addLecturerFormContainer = document.getElementById('addLecturerFormContainer');
+    const updateLecturerFormContainer = document.getElementById('updateLecturerFormContainer');
+    const hideUpdateFormBtn = document.getElementById('hideUpdateFormBtn');
+    const updateButtons = document.querySelectorAll('.update-lecturer-btn');
+    const updateLecturerId = document.getElementById('updateLecturerId');
+    const updateLecturerName = document.getElementById('updateLecturerName');
+    const updateLecturerSurname = document.getElementById('updateLecturerSurname');
+    const updateLecturerNickname = document.getElementById('updateLecturerNickname');
+    const updateLecturerEmail = document.getElementById('updateLecturerEmail');
+    const updateLecturerPhoneNumber = document.getElementById('updateLecturerPhoneNumber');
+    const updateLecturerAddress = document.getElementById('updateLecturerAddress');
+    const updateLecturerNotes = document.getElementById('updateLecturerNotes');
+    const detailsButtons = document.querySelectorAll('.details-lecturer-btn');
+    const lecturerDetailsModal = document.getElementById('lecturerDetailsModal');
+    const detailsLecturerId = document.getElementById('detailsLecturerId');
+    const detailsLecturerName = document.getElementById('detailsLecturerName');
+    const detailsLecturerSurname = document.getElementById('detailsLecturerSurname');
+    const detailsLecturerNickname = document.getElementById('detailsLecturerNickname');
+    const detailsLecturerEmail = document.getElementById('detailsLecturerEmail');
+    const detailsLecturerPhone = document.getElementById('detailsLecturerPhone');
+    const detailsLecturerAddress = document.getElementById('detailsLecturerAddress');
+    const detailsLecturerNotes = document.getElementById('detailsLecturerNotes');
+    const detailsLecturerImages = document.getElementById('detailsLecturerImages');
+    const detailsLecturerNoImages = document.getElementById('detailsLecturerNoImages');
+
+    const lecturerDetailsModalInstance =
+        lecturerDetailsModal && window.bootstrap && window.bootstrap.Modal
+            ? window.bootstrap.Modal.getOrCreateInstance(lecturerDetailsModal) : null;
+
+    const parseUuidList = (value) =>
+        (value || '').replace(/^\[/, '').replace(/\]$/, '').split(',').map(s => s.trim()).filter(Boolean);
+
+    const nullOrDash = (v) => (v && v !== 'null' ? v : '-');
+
+
+    if (showAddFormBtn && hideAddFormBtn && addLecturerFormContainer) {
+        showAddFormBtn.addEventListener('click', () => {
+            addLecturerFormContainer.classList.remove('d-none');
+            if (updateLecturerFormContainer) updateLecturerFormContainer.classList.add('d-none');
+            addLecturerFormContainer.scrollIntoView({behavior: 'smooth', block: 'start'});
+        });
+        hideAddFormBtn.addEventListener('click', () => addLecturerFormContainer.classList.add('d-none'));
+    }
+
+    if (hideUpdateFormBtn && updateLecturerFormContainer) {
+        hideUpdateFormBtn.addEventListener('click', () => updateLecturerFormContainer.classList.add('d-none'));
+    }
+
+    if (updateButtons.length > 0 && updateLecturerFormContainer) {
+        updateButtons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                updateLecturerId.value = btn.dataset.id || '';
+                updateLecturerName.value = btn.dataset.name || '';
+                updateLecturerSurname.value = btn.dataset.surname || '';
+                updateLecturerNickname.value = btn.dataset.nickname !== 'null' ? (btn.dataset.nickname || '') : '';
+                updateLecturerEmail.value = btn.dataset.email !== 'null' ? (btn.dataset.email || '') : '';
+                updateLecturerPhoneNumber.value = btn.dataset.phone !== 'null' ? (btn.dataset.phone || '') : '';
+                updateLecturerAddress.value = btn.dataset.address !== 'null' ? (btn.dataset.address || '') : '';
+                updateLecturerNotes.value = btn.dataset.notes !== 'null' ? (btn.dataset.notes || '') : '';
+                updateLecturerFormContainer.classList.remove('d-none');
+                if (addLecturerFormContainer) addLecturerFormContainer.classList.add('d-none');
+                updateLecturerFormContainer.scrollIntoView({behavior: 'smooth', block: 'start'});
+            });
+        });
+    }
+
+    if (detailsButtons.length > 0 && lecturerDetailsModalInstance) {
+        detailsButtons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                detailsLecturerId.textContent = nullOrDash(btn.dataset.id);
+                detailsLecturerName.textContent = nullOrDash(btn.dataset.name);
+                detailsLecturerSurname.textContent = nullOrDash(btn.dataset.surname);
+                detailsLecturerNickname.textContent = nullOrDash(btn.dataset.nickname);
+                detailsLecturerEmail.textContent = nullOrDash(btn.dataset.email);
+                detailsLecturerPhone.textContent = nullOrDash(btn.dataset.phone);
+                detailsLecturerAddress.textContent = nullOrDash(btn.dataset.address);
+                detailsLecturerNotes.textContent = nullOrDash(btn.dataset.notes);
+                detailsLecturerImages.innerHTML = '';
+                const imageUuids = parseUuidList(btn.dataset.images);
+                if (imageUuids.length > 0) {
+                    detailsLecturerNoImages.classList.add('d-none');
+                    imageUuids.forEach((uuid) => {
+                        const img = document.createElement('img');
+                        img.src = `/custom/image/${uuid}`;
+                        img.alt = 'Lecturer image';
+                        img.className = 'img-thumbnail';
+                        img.style.maxWidth = '110px';
+                        img.style.maxHeight = '110px';
+                        img.style.objectFit = 'cover';
+                        detailsLecturerImages.appendChild(img);
+                    });
+                } else {
+                    detailsLecturerNoImages.classList.remove('d-none');
+                }
+
+                lecturerDetailsModalInstance.show();
+            });
+        });
+    }
+
+    // ── PDF Report ──────────────────────────────────────────────────────────
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const rowCheckboxes = document.querySelectorAll('.row-select-checkbox');
+    const printReportBtn = document.getElementById('printReportBtn');
+    const pdfReportForm = document.getElementById('pdfReportForm');
+    const pdfReportIds = document.getElementById('pdfReportIds');
+
+    function updatePrintButton() {
+        const checkedBoxes = document.querySelectorAll('.row-select-checkbox:checked');
+        const total = rowCheckboxes.length;
+        const checked = checkedBoxes.length;
+        if (printReportBtn) {
+            printReportBtn.disabled = checked === 0;
+        }
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = checked === total && total > 0;
+            selectAllCheckbox.indeterminate = checked > 0 && checked < total;
+        }
+    }
+
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', () => {
+            rowCheckboxes.forEach(cb => { cb.checked = selectAllCheckbox.checked; });
+            updatePrintButton();
+        });
+    }
+
+    rowCheckboxes.forEach(cb => {
+        cb.addEventListener('change', updatePrintButton);
+    });
+
+    if (printReportBtn && pdfReportForm && pdfReportIds) {
+        printReportBtn.addEventListener('click', () => {
+            const checkedIds = Array.from(document.querySelectorAll('.row-select-checkbox:checked'))
+                .map(cb => cb.value)
+                .join(',');
+            pdfReportIds.value = checkedIds;
+            pdfReportForm.submit();
+        });
+    }
+</script>
+</body>
+</html>

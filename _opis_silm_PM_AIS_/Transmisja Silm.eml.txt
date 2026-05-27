@@ -1,0 +1,157 @@
+Witam!
+Zgodnie z ustaleniami telefonicznymi przesy³am opis transmisji wykorzystywanej do przekazywania informacji o modelach nad jez.Silm.
+(opis by³ zawarty w sprawozdaniu ze spotkania 17.11.17: "Pytania  i odpowiedzi na spotkanie 17_11_2017 zweryf v.1.doc")
+
+
+Transmisja Ais i Ecdis na jeziorze Silm w I³awie. Stan na rok 2017 
+
+Bajt                                                                                     Opis danej 
+
+
+1 = w,b,d,c,k,l
+ Identyfikacja modelu 1
+ 
+2 =  1,2,3,4,5,6
+ Identyfikacja modelu 2
+ 
+3 - word [Hi]
+ Kurs, starszy bajt [stopnie, dok³adnoœæ 0.1]
+ 
+4 - word[Lo]
+    Kurs, m³odszy bajt [stopnie, dok³adnoœæ 0.1]
+ 
+5 - word[Hi]
+ Kierunek, Azipod L lub obrotnica holownika D [stopnie, dok³adnoœæ 0.1]
+ 
+6 - word[Lo]
+ Kierunek, Azipod L lub obrotnica holownika D [stopnie, dok³adnoœæ 0.1]
+ 
+7 
+ Ci¹g (si³a), Azipod L lub holownik D [%]
+ 
+8
+ Ci¹g (si³a), Napêd g³ówny [%]
+ 
+9 
+ Ci¹g (si³a), Azipod R lub holownik R [%]
+ 
+10 - word[Hi]
+ Kierunek, Azipod R lub obrotnica holownika R [stopnie, dok³adnoœæ 0.1]
+ 
+11 - word[Lo]
+ Kierunek, Azipod R lub obrotnica holownika R [stopnie, dok³adnoœæ 0.1]
+ 
+12
+ Ster [stopnie]
+ 
+13
+ Prêdkoœæ [knot]
+ 
+14-17 floating-point
+ liczba zmiennoprzecinkowa, zgodna z IEEE 754, Wspó³rzêdna X [m]
+ 
+18-21 floating-point
+ liczba zmiennoprzecinkowa, zgodna z IEEE 754, Wspó³rzêdna Y [m]
+ 
+22
+ Ster Strumieniowy/ holownik [%]
+ 
+23 - word[Hi]
+ Dok³adnoœæ GPS [m]
+ 
+24 - word[Lo]
+ Dok³adnoœæ GPS [m]
+ 
+25
+ CRC [Lo]
+ 
+26
+ [CR]
+ 
+27
+ [LF]
+ 
+
+Ad.14-21. Budowa liczby zmiennoprzecinkowa, zgodna ze standardem IEEE 754 jest nastêpuj¹ca:  
+
+Znak (Z)
+ Cecha (C)
+ Mantysa (M)
+ 
+1 bit
+ 8 bitów
+ 23 bity
+ 
+
+Postaæ liczby jest nastêpuj¹ca:
+
+(-1)^Z * 0,M * 2^(C-127)
+
+Bit znaku 0 oznacza +, bit 1 oznacza -. 
+
+
+
+
+
+Opis identyfikacji modeli:
+1.w1 = Warta
+2.b2  = Blue Lady
+3.d3  = Dorchester Lady
+4.c4  = Cherry Lady
+5.k5  = Ko³obrzeg     - do przygotowania na sezon 2018
+6.l6   = Lady Marie 
+
+
+Za³¹czam plik sprawozdania oraz szkic pomiarów wykorzystanych do osnowy geodezyjnej.
+
+Do pomiarów wykorzystujemy nastêpuj¹ce odbiorniki GPS Leica:
+1. SR530
+2. GX1230
+3. Viva GS10
+
+Wspó³rzêdne otrzymywane z GPS:  NMEA-0183 message: LLQ 
+
+Leica local position and quality
+Field Meaning 
+0 Message ID $GPLLQ 
+1 hhmmss.ss - UTC time of position 
+2 ddmmyy - UTC date 
+3 xxx.xxx - Grid easting (meters)  = Gxx
+ 
+4 M - Meter, fixed text 
+5 xxxx.xxxx - Grid northing (meters) =  Gyy
+ 
+6 M - Meter, fixed text 
+7 x - GPS quality. 0 = not valid. 1 = GPS Nav Fix. 2 = DGPS Fix. 3 = RTK Fix. 
+8 x - Number of satellites used in computation 
+9 xx.xx - Position quality (meters) 
+10 xxxx.xxxx - Height (meters) 
+11 M - Meter, fixed text 
+  *hh - checksum 
+  <CR> - carriage return 
+  <LF> - Line feed 
+
+
+GPS - Local Position and Quality
+Za³o¿ona dok³adnoœæ pozycji = 1cm.
+  
+Wspó³czynniki wyznaczone przez geodetów:
+     XB    = 5875388.24;
+     YB    = 4471125.73;
+     xxb  = 26.35;
+     yyb  = 19.80;
+       u    = 0.1777;
+       v     = 0.9836;
+Obliczenia na nasz uk³ad wspó³rzêdnych: 
+x=xxb+(Gxx-XB)*v - (Gyy-YB)*u;
+y=yyb+(Gxx-XB)*u + (Gyy-YB)*v;
+x - lokalne wspó³rzêdne w metrach
+y - lokalne wspó³rzêdne w metrach
+Gxx – GPS local position field nr 3 w tabeli
+Gyy – GPS local position field nr 5 w tabeli
+
+
+Dane transmitowane s¹ za pomoc¹ modemów SATELLINE-2ASxE na czêstotliwoœci 449.7875 MHz.
+
+Pozdrawiam
+Piotr Micha³owski

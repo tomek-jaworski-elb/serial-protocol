@@ -1,7 +1,7 @@
 @echo off
 REM Batch Script to Check Java Version and Run the serial-protocol application
 
-SET JAR_FILE_VERSION=1.9
+SET JAR_FILE_VERSION=2.0
 SET JAVA_TOOL_OPTIONS=-Xms256m -Xmx512m
 SET APP_FILE=serial-protocol
 

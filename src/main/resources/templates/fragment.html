@@ -7,7 +7,27 @@
     <meta http-equiv="refresh" content="no-cache">
     <link th:href="@{/bootstrap-5-3-3/css/bootstrap.css}" rel="stylesheet"/>
     <script type="text/javascript" th:src="@{/bootstrap-5-3-3/js/bootstrap.bundle.js}"></script>
+    <style>
+        body {
+            min-height: 100vh;
+            background: linear-gradient(180deg, #e6f4ff 0%, #ffffff 100%) fixed;
+        }
+    </style>
 </head>
+<th:block th:fragment="headContent">
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta http-equiv="content-type" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="refresh" content="no-cache">
+    <link th:href="@{/bootstrap-5-3-3/css/bootstrap.css}" rel="stylesheet"/>
+    <script type="text/javascript" th:src="@{/bootstrap-5-3-3/js/bootstrap.bundle.js}"></script>
+    <style>
+        body {
+            min-height: 100vh;
+            background: linear-gradient(180deg, #e6f4ff 0%, #ffffff 100%) fixed;
+        }
+    </style>
+</th:block>
 <body>
 <header th:fragment="header" class="header p-3">
     <p class="text-center h4">Simple AIS server</p>
@@ -24,6 +44,7 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <!-- Left links -->
                 <ul class="navbar-nav">
+                    <!-- Public items -->
                     <li class="nav-item">
                         <a th:if="${name == 'home'}" class="nav-link active" aria-current="page" th:href="@{/}">Home</a>
                         <a th:unless="${name == 'home'}" class="nav-link" aria-current="page" th:href="@{/}">Home</a>
@@ -44,7 +65,9 @@
                         <a th:if="${name == 'terminal'}" class="nav-link active" th:href="@{/terminal}">Terminal</a>
                         <a th:unless="${name == 'terminal'}" class="nav-link" th:href="@{/terminal}">Terminal</a>
                     </li>
-                    <li class="nav-item">
+
+                    <!-- Authenticated items -->
+                    <li sec:authorize="isAuthenticated()" class="nav-item">
                         <a th:if="${name == 'name-service'}" class="nav-link active" th:href="@{/name-service}">Names</a>
                         <a th:unless="${name == 'name-service'}" class="nav-link" th:href="@{/name-service}">Names</a>
                     </li>
@@ -52,11 +75,93 @@
                         <a th:if="${name == 'instructor-service'}" class="nav-link active" th:href="@{/instructor-service}">Instructors</a>
                         <a th:unless="${name == 'instructor-service'}" class="nav-link" th:href="@{/instructor-service}">Instructors</a>
                     </li>
-                    <li sec:authorize="isAuthenticated()" class="nav-item">
-                        <a th:href="@{/logout}" class="nav-link text-danger fw-bold">Logout</a>
+
+                    <!-- Extended UI items (authenticated + web.ui.extended) -->
+                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}" class="nav-item">
+                        <a th:if="${name == 'courses-service'}" class="nav-link active" th:href="@{/courses-service}">Certificates</a>
+                        <a th:unless="${name == 'courses-service'}" class="nav-link" th:href="@{/courses-service}">Certificates</a>
+                    </li>
+                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}" class="nav-item">
+                        <a th:if="${name == 'trainer-service'}" class="nav-link active" th:href="@{/trainer-service}">Trainer</a>
+                        <a th:unless="${name == 'trainer-service'}" class="nav-link" th:href="@{/trainer-service}">Trainer</a>
+                    </li>
+                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}" class="nav-item">
+                        <a th:if="${name == 'lecturer-service'}" class="nav-link active" th:href="@{/lecturer-service}">Lecturer</a>
+                        <a th:unless="${name == 'lecturer-service'}" class="nav-link" th:href="@{/lecturer-service}">Lecturer</a>
+                    </li>
+                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}" class="nav-item">
+                        <a th:if="${name == 'technician-service'}" class="nav-link active" th:href="@{/technician-service}">Technician</a>
+                        <a th:unless="${name == 'technician-service'}" class="nav-link" th:href="@{/technician-service}">Technician</a>
+                    </li>
+                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}" class="nav-item">
+                        <a th:if="${name == 'course-type-service'}" class="nav-link active" th:href="@{/course-type-service}">Course Type</a>
+                        <a th:unless="${name == 'course-type-service'}" class="nav-link" th:href="@{/course-type-service}">Course Type</a>
+                    </li>
+                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}" class="nav-item">
+                        <a th:if="${name == 'participant-service'}" class="nav-link active" th:href="@{/participant-service}">Participant</a>
+                        <a th:unless="${name == 'participant-service'}" class="nav-link" th:href="@{/participant-service}">Participant</a>
+                    </li>
+                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}" class="nav-item">
+                        <a th:if="${name == 'course-counter-service'}" class="nav-link active" th:href="@{/course-counter-service}">Course Counter</a>
+                        <a th:unless="${name == 'course-counter-service'}" class="nav-link" th:href="@{/course-counter-service}">Course Counter</a>
+                    </li>
+
+                    <!-- Admin items -->
+                    <li sec:authorize="hasRole('ADMIN')" class="nav-item">
+                        <a th:if="${name == 'db-utils'}" class="nav-link active" th:href="@{/db-utils}">DB Utils</a>
+                        <a th:unless="${name == 'db-utils'}" class="nav-link" th:href="@{/db-utils}">DB Utils</a>
                     </li>
                 </ul>
-                <!-- Left links -->
+
+                <!-- Right side: Login / User dropdown -->
+                <ul class="navbar-nav ms-auto">
+                    <!-- Login button (visible when NOT authenticated) -->
+                    <li sec:authorize="!isAuthenticated()" class="nav-item">
+                        <a class="nav-link" th:href="@{/login}"
+                           th:classappend="${name == 'login'} ? 'active'">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                 class="bi bi-box-arrow-in-right me-1" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd" d="M6 3.5a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-2a.5.5 0 0 0-1 0v2A1.5 1.5 0 0 0 6.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-8A1.5 1.5 0 0 0 5 3.5v2a.5.5 0 0 0 1 0z"/>
+                                <path fill-rule="evenodd" d="M11.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 1 0-.708.708L10.293 7.5H1.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708z"/>
+                            </svg>
+                            Login
+                        </a>
+                    </li>
+
+                    <!-- User dropdown (visible when authenticated) -->
+                    <li sec:authorize="isAuthenticated()" class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button"
+                           data-bs-toggle="dropdown" aria-expanded="false">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                 class="bi bi-person-circle me-1" viewBox="0 0 16 16">
+                                <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0"/>
+                                <path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1"/>
+                            </svg>
+                            <span sec:authentication="name">User</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <span class="dropdown-item-text text-muted small">
+                                    <span sec:authorize="hasRole('ADMIN')">Role: Admin</span>
+                                    <span sec:authorize="!hasRole('ADMIN')">Role: User</span>
+                                </span>
+                            </li>
+                            <li><hr class="dropdown-divider"/></li>
+                            <li>
+                                <form th:action="@{/logout}" method="post" class="m-0 p-0">
+                                    <button type="submit" class="dropdown-item text-danger" style="border: none; background: none; cursor: pointer;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                             class="bi bi-box-arrow-right me-1" viewBox="0 0 16 16">
+                                            <path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0z"/>
+                                            <path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708z"/>
+                                        </svg>
+                                        Logout
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
             </div>
             <!-- Collapsible wrapper -->
         </div>
@@ -73,6 +178,141 @@
         Application version</p>
     <script type="text/javascript"  th:src="@{/js/ws-session-count.js}"></script>
 </footer>
+
+<!--
+  Reusable pagination fragment for server-side paging.
+  Parameters (th:with):
+    - page       : Spring Data Page object
+    - baseUrl    : base path for pagination links (e.g. '/trainer-service')
+    - pageSize   : current page size
+-->
+<div th:fragment="pagination(page, baseUrl, pageSize)" th:if="${page != null and page.totalPages > 0}">
+    <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+        <!-- Left: info text -->
+        <div class="text-muted small"
+             th:with="fromItem=${page.number * page.size + 1}, toItem=${page.number * page.size + page.numberOfElements}">
+            <span th:text="|Showing ${fromItem} to ${toItem} of ${page.totalElements} entries|">
+                Showing 1 to 10 of 50 entries
+            </span>
+        </div>
+
+        <!-- Center: page size selector -->
+        <div class="d-flex align-items-center gap-2">
+            <label class="form-label mb-0 small text-muted">Per page:</label>
+            <select class="form-select form-select-sm" style="width: auto;"
+                    onchange="window.location.href = this.value;">
+                <option th:each="opt : ${T(java.util.List).of(10, 25, 50, 100)}"
+                        th:value="${baseUrl + '?page=0&size=' + opt}"
+                        th:text="${opt}"
+                        th:selected="${opt == pageSize}">10</option>
+            </select>
+        </div>
+
+        <!-- Right: pagination nav -->
+        <nav aria-label="Page navigation" th:if="${page.totalPages > 1}">
+            <ul class="pagination pagination-sm mb-0">
+                <!-- Previous -->
+                <li class="page-item" th:classappend="${page.first ? 'disabled' : ''}">
+                    <a class="page-link"
+                       th:href="${baseUrl + '?page=' + (page.number - 1) + '&size=' + pageSize}"
+                       th:if="${not page.first}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                    <span class="page-link" th:if="${page.first}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </span>
+                </li>
+
+                <!-- Page numbers (show max 7 pages with ellipsis) -->
+                <th:block th:with="startPage=${page.number > 3 ? page.number - 3 : 0}, endPage=${page.number + 3 < page.totalPages - 1 ? page.number + 3 : page.totalPages - 1}">
+                    <!-- First page + ellipsis if needed -->
+                    <li class="page-item" th:if="${startPage > 0}" th:classappend="${0 == page.number ? 'active' : ''}">
+                        <a class="page-link" th:href="${baseUrl + '?page=0&size=' + pageSize}">1</a>
+                    </li>
+                    <li class="page-item disabled" th:if="${startPage > 1}">
+                        <span class="page-link">&hellip;</span>
+                    </li>
+
+                    <!-- Middle pages -->
+                    <th:block th:each="i : ${#numbers.sequence(startPage, endPage)}">
+                        <li class="page-item" th:classappend="${i == page.number ? 'active' : ''}">
+                            <a class="page-link"
+                               th:href="${baseUrl + '?page=' + i + '&size=' + pageSize}"
+                               th:text="${i + 1}">1</a>
+                        </li>
+                    </th:block>
+
+                    <!-- Last page + ellipsis if needed -->
+                    <li class="page-item disabled" th:if="${endPage < page.totalPages - 2}">
+                        <span class="page-link">&hellip;</span>
+                    </li>
+                    <li class="page-item" th:if="${endPage < page.totalPages - 1}" th:classappend="${page.totalPages - 1 == page.number ? 'active' : ''}">
+                        <a class="page-link"
+                           th:href="${baseUrl + '?page=' + (page.totalPages - 1) + '&size=' + pageSize}"
+                           th:text="${page.totalPages}">99</a>
+                    </li>
+                </th:block>
+
+                <!-- Next -->
+                <li class="page-item" th:classappend="${page.last ? 'disabled' : ''}">
+                    <a class="page-link"
+                       th:href="${baseUrl + '?page=' + (page.number + 1) + '&size=' + pageSize}"
+                       th:if="${not page.last}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                    <span class="page-link" th:if="${page.last}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </span>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<!--
+  Reusable toast notification fragment (Bootstrap 5 Toast).
+  Replaces top-of-page alert banners with bottom-right slide-up toasts.
+  Parameters (model attributes):
+    - successMessage : success text (green toast)
+    - errorMessage   : error text (red toast)
+-->
+<th:block th:fragment="toastNotifications">
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1090;">
+        <div th:if="${successMessage}" id="successToast" class="toast align-items-center text-bg-success border-0"
+             role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="8000">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                         class="bi bi-check-circle-fill me-2" viewBox="0 0 16 16">
+                        <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0m-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                    </svg>
+                    <span th:text="${successMessage}"></span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+        <div th:if="${errorMessage}" id="errorToast" class="toast align-items-center text-bg-danger border-0"
+             role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="12000">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                         class="bi bi-exclamation-triangle-fill me-2" viewBox="0 0 16 16">
+                        <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.436-.99.98-1.767zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5m.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2"/>
+                    </svg>
+                    <span th:text="${errorMessage}"></span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+    <script th:inline="javascript">
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.toast-container .toast').forEach(function (toastEl) {
+                new bootstrap.Toast(toastEl).show();
+            });
+        });
+    </script>
+</th:block>
 
 </body>
 </html>

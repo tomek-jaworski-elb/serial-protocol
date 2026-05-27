@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title th:text="${@environment.getProperty('spring.application.name')} + ' : Course Counter'">Serial port server</title>
+    <th:block th:replace="~{fragment::headContent}"></th:block>
+</head>
+<body>
+<header th:replace="~{fragment::header}"></header>
+<div class="container mb-4">
+    <th:block th:replace="~{fragment::toastNotifications}"></th:block>
+
+    <div class="d-flex justify-content-between align-items-center my-3">
+        <h4 class="mb-0">Course Counter</h4>
+        <div class="d-flex align-items-center gap-2">
+            <input id="tableFilterInput" type="text" class="form-control form-control-sm" placeholder="Filter..." style="width: 180px;">
+            <span class="badge bg-secondary" th:text="${counterPage.totalElements}" th:if="${counterPage != null && counterPage.totalElements > 0}">0</span>
+            <button id="printReportBtn" type="button" class="btn btn-outline-secondary btn-sm" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-printer me-1" viewBox="0 0 16 16">
+                    <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1"/>
+                    <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2zm3 1h4a1 1 0 0 1 1 1v2H5V3a1 1 0 0 1 1-1zm-3 8v-1h8v2a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-1zm8-5a1 1 0 0 0-1 1H4a1 1 0 0 0-1-1z"/>
+                </svg>
+                Print Report
+            </button>
+            <button id="showAddFormBtn" type="button" class="btn btn-primary btn-sm">Add</button>
+        </div>
+    </div>
+
+    <div id="addCourseCounterFormContainer" class="card mb-3 d-none">
+        <div class="card-body">
+            <h5 class="card-title">Add course counter</h5>
+            <form method="post" enctype="multipart/form-data" th:action="@{/course-counter-service/add}">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="addCounter" class="form-label">ID <span class="text-danger">*</span></label>
+                        <input id="addCounter" name="counter" type="number" min="1" class="form-control" th:value="${nextCounter}" required>
+                    </div>
+                    <div class="col-md-8">
+                        <label for="addImageFile" class="form-label">Image</label>
+                        <input id="addImageFile" name="imageFile" type="file" class="form-control" accept="image/*">
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-success btn-sm">Save</button>
+                    <button id="hideAddFormBtn" type="button" class="btn btn-outline-secondary btn-sm">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="updateCourseCounterFormContainer" class="card mb-3 d-none">
+        <div class="card-body">
+            <h5 class="card-title">Update course counter</h5>
+            <form method="post" enctype="multipart/form-data" th:action="@{/course-counter-service/update}">
+                <input id="updateUuid" name="uuid" type="hidden" required>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="updateCounter" class="form-label">ID <span class="text-danger">*</span></label>
+                        <input id="updateCounter" name="counter" type="number" min="1" class="form-control" required>
+                    </div>
+                    <div class="col-md-8">
+                        <label for="updateImageFile" class="form-label">Image</label>
+                        <input id="updateImageFile" name="imageFile" type="file" class="form-control" accept="image/*">
+                        <div class="form-text">Optional. Upload a new image to replace the current one.</div>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-warning btn-sm">Update</button>
+                    <button id="hideUpdateFormBtn" type="button" class="btn btn-outline-secondary btn-sm">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="table-responsive" th:if="${!#lists.isEmpty(courseCounters)}">
+        <table class="table table-striped table-hover align-middle text-center filterable-table">
+            <thead class="table-light">
+            <tr>
+                <th scope="col"><input type="checkbox" class="form-check-input" id="selectAllCheckbox" title="Select all"></th>
+                <th scope="col">#</th>
+                <th scope="col" data-sort="number">ID</th>
+                <th scope="col">Image</th>
+                <th scope="col">Certificates</th>
+                <th scope="col">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="courseCounter, courseCounterStat : ${courseCounters}">
+                <td><input type="checkbox" class="form-check-input row-select-checkbox" th:value="${courseCounter.uuid}"></td>
+                <th scope="row" th:text="${courseCounterStat.index + 1}">1</th>
+                <td th:text="${courseCounter.counter}">1</td>
+                <td>
+                    <th:block th:if="${courseCounter.imageUuid != null}">
+                        <img th:src="@{/custom/image/{uuid}(uuid=${courseCounter.imageUuid})}" alt="Course counter image"
+                             class="img-thumbnail" style="max-width: 56px; max-height: 56px; object-fit: cover;">
+                    </th:block>
+                    <span class="badge text-bg-secondary" th:if="${courseCounter.imageUuid == null}">Missing</span>
+                </td>
+                <td>
+                    <th:block th:with="certs=${coursesByCourseCounter[courseCounter.uuid]}">
+                        <th:block th:if="${certs != null and !#lists.isEmpty(certs)}">
+                            <span th:each="cert : ${certs}"
+                                  class="badge text-bg-info me-1"
+                                  th:text="${cert.id}">ID</span>
+                        </th:block>
+                        <span th:if="${certs == null or #lists.isEmpty(certs)}" class="text-muted small">-</span>
+                    </th:block>
+                </td>
+                <td>
+                    <div class="d-flex justify-content-center gap-2 flex-wrap">
+                        <button
+                                type="button"
+                                class="btn btn-outline-info btn-sm details-course-counter-btn"
+                                th:attr="data-uuid=${courseCounter.uuid},data-counter=${courseCounter.counter},data-image=${courseCounter.imageUuid}">
+                            Details
+                        </button>
+                        <button
+                                type="button"
+                                class="btn btn-outline-warning btn-sm update-course-counter-btn"
+                                th:attr="data-uuid=${courseCounter.uuid},data-counter=${courseCounter.counter}">
+                            Update
+                        </button>
+                        <form method="post" th:action="@{/course-counter-service/delete/{uuid}(uuid=${courseCounter.uuid})}">
+                            <button type="submit" class="btn btn-outline-danger btn-sm"
+                                    onclick="return confirm('Are you sure you want to delete this item?');">
+                                Delete
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div th:replace="~{fragment :: pagination(${counterPage}, '/course-counter-service', ${pageSize})}"></div>
+
+    <div class="alert alert-info text-center" th:if="${#lists.isEmpty(courseCounters)}">
+        No course counters found.
+    </div>
+</div>
+<form id="pdfReportForm" method="post" th:action="@{/pdf/course-counter}" target="_blank" style="display:none;">
+    <input type="hidden" id="pdfReportIds" name="ids" value="">
+</form>
+<footer th:replace="~{fragment::footer}"></footer>
+<script th:src="@{/js/common/table-filter-sort.js}"></script>
+
+<div class="modal fade" id="courseCounterDetailsModal" tabindex="-1" aria-labelledby="courseCounterDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="courseCounterDetailsModalLabel">Course counter details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-2"><strong>ID:</strong> <span id="detailsCounter">-</span></p>
+                <p class="mb-1"><strong>Image:</strong></p>
+                <div id="detailsImage"></div>
+                <div id="detailsNoImage" class="small text-muted">No image assigned.</div>
+                <hr>
+                <p class="mb-1"><strong>Certificates:</strong></p>
+                <div id="detailsCertificates"></div>
+                <div id="detailsNoCertificates" class="small text-muted">No certificates assigned.</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const showAddFormBtn = document.getElementById('showAddFormBtn');
+    const hideAddFormBtn = document.getElementById('hideAddFormBtn');
+    const addCourseCounterFormContainer = document.getElementById('addCourseCounterFormContainer');
+    const updateCourseCounterFormContainer = document.getElementById('updateCourseCounterFormContainer');
+    const hideUpdateFormBtn = document.getElementById('hideUpdateFormBtn');
+    const updateButtons = document.querySelectorAll('.update-course-counter-btn');
+    const detailsButtons = document.querySelectorAll('.details-course-counter-btn');
+    const updateUuid = document.getElementById('updateUuid');
+    const updateCounter = document.getElementById('updateCounter');
+    const detailsCounter = document.getElementById('detailsCounter');
+    const detailsImage = document.getElementById('detailsImage');
+    const detailsNoImage = document.getElementById('detailsNoImage');
+    const detailsCertificates = document.getElementById('detailsCertificates');
+    const detailsNoCertificates = document.getElementById('detailsNoCertificates');
+    const courseCounterDetailsModal = document.getElementById('courseCounterDetailsModal');
+    const courseCounterDetailsModalInstance =
+        courseCounterDetailsModal && window.bootstrap && window.bootstrap.Modal
+            ? window.bootstrap.Modal.getOrCreateInstance(courseCounterDetailsModal)
+            : null;
+
+    if (showAddFormBtn && hideAddFormBtn && addCourseCounterFormContainer) {
+        showAddFormBtn.addEventListener('click', () => {
+            addCourseCounterFormContainer.classList.remove('d-none');
+            if (updateCourseCounterFormContainer) {
+                updateCourseCounterFormContainer.classList.add('d-none');
+            }
+            addCourseCounterFormContainer.scrollIntoView({behavior: 'smooth', block: 'start'});
+        });
+
+        hideAddFormBtn.addEventListener('click', () => {
+            addCourseCounterFormContainer.classList.add('d-none');
+        });
+    }
+
+    if (hideUpdateFormBtn && updateCourseCounterFormContainer) {
+        hideUpdateFormBtn.addEventListener('click', () => {
+            updateCourseCounterFormContainer.classList.add('d-none');
+        });
+    }
+
+    if (updateButtons.length > 0 && updateCourseCounterFormContainer) {
+        updateButtons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                updateUuid.value = btn.dataset.uuid || '';
+                updateCounter.value = btn.dataset.counter || '';
+                updateCourseCounterFormContainer.classList.remove('d-none');
+                if (addCourseCounterFormContainer) {
+                    addCourseCounterFormContainer.classList.add('d-none');
+                }
+                updateCourseCounterFormContainer.scrollIntoView({behavior: 'smooth', block: 'start'});
+            });
+        });
+    }
+
+    if (detailsButtons.length > 0 && courseCounterDetailsModalInstance) {
+        detailsButtons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const row = btn.closest('tr');
+                const cells = row.querySelectorAll('td');
+                // cells: [0]=ID, [1]=Image, [2]=Certificates, [3]=Actions
+
+                detailsCounter.textContent = btn.dataset.counter || '-';
+                detailsImage.innerHTML = '';
+                const imageUuid = btn.dataset.image;
+                if (imageUuid && imageUuid !== 'null' && imageUuid.trim() !== '') {
+                    detailsNoImage.classList.add('d-none');
+                    const img = document.createElement('img');
+                    img.src = `/custom/image/${imageUuid}`;
+                    img.alt = 'Course counter image';
+                    img.className = 'img-thumbnail';
+                    img.style.maxWidth = '180px';
+                    img.style.maxHeight = '180px';
+                    img.style.objectFit = 'cover';
+                    detailsImage.appendChild(img);
+                } else {
+                    detailsNoImage.classList.remove('d-none');
+                }
+
+                // Certificates – read from table cell
+                detailsCertificates.innerHTML = '';
+                const certsText = cells[3] ? cells[3].textContent.trim() : '';
+                if (certsText && certsText !== '-') {
+                    detailsNoCertificates.classList.add('d-none');
+                    const certBadges = cells[3].querySelectorAll('.badge');
+                    if (certBadges.length > 0) {
+                        certBadges.forEach(b => {
+                            const badge = document.createElement('span');
+                            badge.className = 'badge text-bg-info me-1';
+                            badge.textContent = b.textContent.trim();
+                            detailsCertificates.appendChild(badge);
+                        });
+                    } else {
+                        detailsCertificates.textContent = certsText;
+                    }
+                } else {
+                    detailsNoCertificates.classList.remove('d-none');
+                }
+
+                courseCounterDetailsModalInstance.show();
+            });
+        });
+    }
+
+    // ── PDF Report ──────────────────────────────────────────────────────────
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const rowCheckboxes = document.querySelectorAll('.row-select-checkbox');
+    const printReportBtn = document.getElementById('printReportBtn');
+    const pdfReportForm = document.getElementById('pdfReportForm');
+    const pdfReportIds = document.getElementById('pdfReportIds');
+
+    function updatePrintButton() {
+        const checkedBoxes = document.querySelectorAll('.row-select-checkbox:checked');
+        const total = rowCheckboxes.length;
+        const checked = checkedBoxes.length;
+        if (printReportBtn) {
+            printReportBtn.disabled = checked === 0;
+        }
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = checked === total && total > 0;
+            selectAllCheckbox.indeterminate = checked > 0 && checked < total;
+        }
+    }
+
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', () => {
+            rowCheckboxes.forEach(cb => { cb.checked = selectAllCheckbox.checked; });
+            updatePrintButton();
+        });
+    }
+
+    rowCheckboxes.forEach(cb => {
+        cb.addEventListener('change', updatePrintButton);
+    });
+
+    if (printReportBtn && pdfReportForm && pdfReportIds) {
+        printReportBtn.addEventListener('click', () => {
+            const checkedIds = Array.from(document.querySelectorAll('.row-select-checkbox:checked'))
+                .map(cb => cb.value)
+                .join(',');
+            pdfReportIds.value = checkedIds;
+            pdfReportForm.submit();
+        });
+    }
+</script>
+</body>
+</html>
