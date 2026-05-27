@@ -7,7 +7,7 @@
 - Build JAR (with tests): `.\mvnw.cmd clean package`
 - Build JAR (skip tests, same behavior as `build-jar.bat`): `.\mvnw.cmd clean package -Dmaven.test.skip=true`
 - Run locally from Maven: `.\mvnw.cmd spring-boot:run`
-- Run packaged app: `java -jar .\target\serial-protocol-1.9.jar`
+- Run packaged app: `java -jar .\target\serial-protocol-2.0.jar`
 - Docker stack (app + MariaDB): `docker compose up --build` (or `.\start_docker.sh` in bash environments)
 
 No dedicated lint command is configured in `pom.xml` (no Checkstyle/PMD/SpotBugs plugin execution).
