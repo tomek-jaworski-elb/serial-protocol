@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:insert="~{fragment::head}"></head>
 <head>
     <title th:text="${@environment.getProperty('spring.application.name')} + ' : DB Utils'">DB Utils</title>
+    <th:block th:replace="~{fragment::headContent}"></th:block>
 </head>
 <body>
 <header th:replace="~{fragment::header}"></header>

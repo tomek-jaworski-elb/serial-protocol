@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
-<head th:insert="~{fragment::head}"></head>
 <head>
     <title th:text="${@environment.getProperty('spring.application.name')} + ' : Names'">Serial port server</title>
+    <th:block th:replace="~{fragment::headContent}"></th:block>
 </head>
 <body>
 <header th:replace="~{fragment::header}"></header>
@@ -15,8 +15,7 @@
                 <form method="post" th:action="@{/name-service}">
                     <label class="form-label" for="password">Password:</label>
                     <input class="form-control mb-3" type="password" id="password" name="password"
-                           placeholder="Enter password"
-                           th:value="${password}"/>
+                           placeholder="Enter password"/>
                     <button class="btn btn-primary w-100" type="submit">Submit</button>
                 </form>
                 <p class="text-danger m-2" th:text="${error}">Error</p>

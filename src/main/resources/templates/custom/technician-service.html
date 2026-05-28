@@ -141,7 +141,7 @@
             <tbody>
             <tr th:each="technician, technicianStat : ${technicians}">
                 <td><input type="checkbox" class="form-check-input row-select-checkbox" th:value="${technician.id}"></td>
-                <th scope="row" th:text="${technicianStat.index + 1}">1</th>
+                <th scope="row" th:text="${technicianPage.number * pageSize + technicianStat.index + 1}">1</th>
                 <td th:text="${technician.name}">Jane</td>
                 <td th:text="${technician.surname}">Doe</td>
                 <td th:text="${technician.nickname != null ? technician.nickname : '—'}">janedoe</td>

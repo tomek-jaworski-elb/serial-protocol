@@ -86,7 +86,7 @@
             <tbody>
             <tr th:each="courseCounter, courseCounterStat : ${courseCounters}">
                 <td><input type="checkbox" class="form-check-input row-select-checkbox" th:value="${courseCounter.uuid}"></td>
-                <th scope="row" th:text="${courseCounterStat.index + 1}">1</th>
+                <th scope="row" th:text="${counterPage.number * pageSize + courseCounterStat.index + 1}">1</th>
                 <td th:text="${courseCounter.counter}">1</td>
                 <td>
                     <th:block th:if="${courseCounter.imageUuid != null}">

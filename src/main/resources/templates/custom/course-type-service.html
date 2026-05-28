@@ -40,7 +40,7 @@
                     </div>
                     <div class="col-12">
                         <label for="courseTypeLongDescription" class="form-label">Long Description</label>
-                        <textarea id="courseTypeLongDescription" name="longDescription" class="form-control" rows="3"></textarea>
+                        <textarea id="courseTypeLongDescription" name="longDescription" class="form-control" maxlength="5000" rows="3"></textarea>
                     </div>
                 </div>
                 <div class="d-flex gap-2 mt-3">
@@ -67,7 +67,7 @@
                     </div>
                     <div class="col-12">
                         <label for="updateCourseTypeLongDescription" class="form-label">Long Description</label>
-                        <textarea id="updateCourseTypeLongDescription" name="longDescription" class="form-control" rows="3"></textarea>
+                        <textarea id="updateCourseTypeLongDescription" name="longDescription" class="form-control" maxlength="5000" rows="3"></textarea>
                     </div>
                 </div>
                 <div class="d-flex gap-2 mt-3">
@@ -93,7 +93,7 @@
             <tbody>
             <tr th:each="courseType, courseTypeStat : ${courseTypes}">
                 <td><input type="checkbox" class="form-check-input row-select-checkbox" th:value="${courseType.id}"></td>
-                <th scope="row" th:text="${courseTypeStat.index + 1}">1</th>
+                <th scope="row" th:text="${courseTypePage.number * pageSize + courseTypeStat.index + 1}">1</th>
                 <td th:text="${courseType.code}">A1</td>
                 <td th:text="${courseType.description}">Description</td>
                 <td class="text-start" th:text="${courseType.longDescription}">Long description</td>
