@@ -72,6 +72,20 @@ public class CustomDBController {
   private final ImageService imageService;
   private static final int MAX_UPLOAD_IMAGES = 6;
   private static final int DEFAULT_PAGE_SIZE = 10;
+  private static final Set<String> ALLOWED_IMAGE_TYPES = Set.of(
+      "image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"
+  );
+
+  private static String sanitizeContentType(String rawContentType) {
+    if (rawContentType == null) {
+      return "application/octet-stream";
+    }
+    String normalized = rawContentType.trim().toLowerCase();
+    // strip parameters (e.g. "image/jpeg; charset=utf-8")
+    int semicolon = normalized.indexOf(';');
+    String base = semicolon >= 0 ? normalized.substring(0, semicolon).trim() : normalized;
+    return ALLOWED_IMAGE_TYPES.contains(base) ? base : "application/octet-stream";
+  }
 
   /**
    * Converts empty strings submitted from HTML forms to null,
@@ -629,12 +643,14 @@ public class CustomDBController {
 
     MediaType mediaType = MediaType.APPLICATION_OCTET_STREAM;
     if (image.getContentType() != null && !image.getContentType().isBlank()) {
-      mediaType = MediaType.parseMediaType(image.getContentType());
+      String safe = sanitizeContentType(image.getContentType());
+      mediaType = MediaType.parseMediaType(safe);
     }
 
     return ResponseEntity.ok()
         .contentType(mediaType)
         .header(HttpHeaders.CACHE_CONTROL, "no-store")
+        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment")
         .body(image.getData());
   }
 
@@ -655,7 +671,7 @@ public class CustomDBController {
       try {
         Image image = new Image();
         image.setData(file.getBytes());
-        image.setContentType(file.getContentType() == null ? "application/octet-stream" : file.getContentType());
+        image.setContentType(sanitizeContentType(file.getContentType()));
         return image;
       } catch (IOException e) {
         throw new UncheckedIOException("Failed to read uploaded photo", e);
@@ -671,7 +687,7 @@ public class CustomDBController {
     try {
       Image image = imageService.saveImage(
           file.getBytes(),
-          file.getContentType() == null ? "application/octet-stream" : file.getContentType()
+          sanitizeContentType(file.getContentType())
       );
       return image.getId();
     } catch (IOException e) {
