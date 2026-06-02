@@ -19,7 +19,9 @@ public class RSWebsocketHandler extends TextWebSocketHandler {
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-        LOG.info("Connection {} read {} bytes", session.getId(), message.getPayloadLength());
+        LOG.warn("Rejected inbound message from client {} ({} bytes) — endpoint is read-only",
+                session.getId(), message.getPayloadLength());
+        session.close(CloseStatus.POLICY_VIOLATION);
     }
 
     @Override

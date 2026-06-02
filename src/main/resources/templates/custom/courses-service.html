@@ -433,8 +433,9 @@
     }
 
     const detailButtons = document.querySelectorAll('.details-course-btn');
-    const detailsModal = document.getElementById('courseDetailsModal')
-        ? new bootstrap.Modal(document.getElementById('courseDetailsModal')) : null;
+    const courseDetailsModalEl = document.getElementById('courseDetailsModal');
+    const detailsModal = courseDetailsModalEl && window.bootstrap && window.bootstrap.Modal
+        ? window.bootstrap.Modal.getOrCreateInstance(courseDetailsModalEl) : null;
 
     detailButtons.forEach((btn) => {
         btn.addEventListener('click', () => {

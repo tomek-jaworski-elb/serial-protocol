@@ -4,6 +4,7 @@ import com.jaworski.serialprotocol.resources.Resources;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.userdetails.User;
@@ -50,6 +51,7 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests((authorizeHttpRequests) ->
                         authorizeHttpRequests
+                                .requestMatchers(HttpMethod.POST, "/tracks").hasRole(SecurityRoles.ROLE_USER.getName())
                                 .requestMatchers("/trainer-service/**").hasRole(SecurityRoles.ROLE_USER.getName())
                                 .requestMatchers("/lecturer-service/**").hasRole(SecurityRoles.ROLE_USER.getName())
                                 .requestMatchers("/technician-service/**").hasRole(SecurityRoles.ROLE_USER.getName())

@@ -3,6 +3,7 @@ package com.jaworski.serialprotocol.controller.web;
 import com.jaworski.serialprotocol.dto.CheckBoxOption;
 import com.jaworski.serialprotocol.dto.InstructorDto;
 import com.jaworski.serialprotocol.dto.LogItem;
+import com.jaworski.serialprotocol.dto.Models;
 import com.jaworski.serialprotocol.dto.StudentDTO;
 import com.jaworski.serialprotocol.mappers.InstructorMapper;
 import com.jaworski.serialprotocol.resources.Resources;
@@ -75,6 +76,7 @@ public class MapController {
         model.addAttribute(ATTRIBUTE_NAME, "chart");
         model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
         model.addAttribute("isTestEnabled", resources.isTestEnabled());
+        model.addAttribute("shipModels", Models.values());
         return "chart";
     }
 

@@ -1,8 +1,6 @@
 package com.jaworski.serialprotocol.configuration;
 
-import com.jaworski.serialprotocol.serial.SessionType;
 import com.jaworski.serialprotocol.service.WSSessionManager;
-import com.jaworski.serialprotocol.service.WebSocketPublisher;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,16 +15,14 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 public class JsonWebSocketHandler extends TextWebSocketHandler {
 
     private final WSSessionManager wsSessionManager;
-    private final WebSocketPublisher webSocketPublisher;
 
     private static final Logger LOG = LoggerFactory.getLogger(JsonWebSocketHandler.class);
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-        LOG.info("Connection {} read {} bytes", session.getId(), message.getPayloadLength());
-        // For testing purpose
-        LOG.info("Message: {}", message.getPayload());
-        webSocketPublisher.publishForAllClients(message.getPayload(), SessionType.JSON);
+        LOG.warn("Rejected inbound message from client {} ({} bytes) — endpoint is read-only",
+                session.getId(), message.getPayloadLength());
+        session.close(CloseStatus.POLICY_VIOLATION);
     }
 
     @Override

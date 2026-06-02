@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
-<head th:insert="~{fragment::head}"></head>
 <head>
     <title th:text="${@environment.getProperty('spring.application.name')} + ' : Instructors'">Serial port
         server</title>
+    <th:block th:replace="~{fragment::headContent}"></th:block>
     <style>
         .photo-wrapper {
             width: 50px;

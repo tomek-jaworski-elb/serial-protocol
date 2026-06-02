@@ -2,202 +2,34 @@
 <html lang="en">
 <head th:insert="~{fragment::head}"></head>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${@environment.getProperty('spring.application.name')} + ' : Chart'">Chart</title>
-    <link th:href="@{/bootstrap-5-3-3/css/bootstrap.css}" rel="stylesheet">
-    <style>
-        #main-div {
-            width: 2666px;
-            height: 4000px;
-            background-image: url('/img/MapaSilm_2666x4000.jpg');
-            background-size: cover; /* lub contain / 100% 100% */
-            background-position: center;
-        }
-        .canvas-container {
-            position: relative;
-            width: 2666px; /* 4000px;  Adjust as needed  ----- width: 1100px; / JW4000 / JW2000 */
-            height: 4000px; /* 6000px; Adjust as needed  ----- height: 2000px; /JW6000 /JW3000 */
-            border: 1px solid #555151;
-            padding-left: 0;
-            padding-right: 0;
-            margin-left: auto;
-            margin-right: auto;
-            display: block;
-        }
-
-        canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
-
-        #backgroundCanvas {
-            z-index: 0;
-        }
-
-        #overlayCanvas1 {
-            z-index: 1;
-            pointer-events: none; /* To make sure the background canvas can still receive events */
-        }
-        #overlayCanvas2 {
-            z-index: 2;
-            pointer-events: none; /* To make sure the background canvas can still receive events */
-        }
-
-        #overlayCanvas3 {
-            z-index: 3;
-            pointer-events: none; /* To make sure the background canvas can still receive events */
-        }
-
-        #overlayCanvas4 {
-            z-index: 4;
-            pointer-events: none; /* To make sure the background canvas can still receive events */
-        }
-
-        #overlayCanvas5 {
-            z-index: 5;
-            pointer-events: none; /* To make sure the background canvas can still receive events */
-        }
-
-        #overlayCanvas6 {
-            z-index: 6;
-            pointer-events: none; /* To make sure the background canvas can still receive events */
-        }
-
-        .form-control {
-            font-family: "Courier New", Times, Monospace,serif;
-            font-size: 12px;
-            text-align: left;
-        }
-
-        #bg-color-1, #bg-color-2, #bg-color-3, #bg-color-4, #bg-color-5, #bg-color-6 {
-           color: white;
-           text-shadow: black 0 0 8px; /* color offset-x offset-y blur-radius */
-        }
-        .box {
-            width: 210px;
-            height: 180px;
-            margin-bottom: 15px;
-            padding-bottom: 5px;
-            padding-top: 5px;
-            border: 1px solid black;
-            box-shadow: #1a1d20 0 0 12px;
-        }
-    </style>
+    <link th:href="@{/css/chart.css}" rel="stylesheet"/>
 </head>
 <body>
 <header th:replace="~{fragment::header}"></header>
 <div class="container-fluid">
     <div class="row justify-content-center">
-        <div class="col-auto text-center">
-            <div id="bg-color-1" class="box justify-content-center" style="background-color: orange">
+        <div class="col-auto text-center" th:each="ship : ${shipModels}">
+            <div th:id="'bg-color-' + ${ship.id}" class="box justify-content-center"
+                 th:style="'background-color: ' + ${ship.color}">
                 <div class="container justify-content-center pb-1">
-                    <img class="shadow " id="led1" th:src="@{/img/led_connection_1.bmp}" alt="Led indicator">
-                    <span id="rs_model1_no" class="text-center p-1 border-0">0</span>
+                    <img th:id="'led' + ${ship.id}" th:src="@{/img/led_connection_1.png}" alt="Led indicator">
+                    <span th:id="'rs_model' + ${ship.id} + '_no'" class="text-center p-1 border-0">0</span>
                 </div>
-                <h4 class="text-center">WARTA</h4>
+                <h4 class="text-center" th:text="${ship.name}">Ship Name</h4>
                 <p class="text-center"><b>Speed: </b>
-                    <span id="speed1" class="text-center p-1 border-0 h5">0.0</span>
+                    <span th:id="'speed' + ${ship.id}" class="text-center p-1 border-0 h5">0.0</span>
                 </p>
                 <p class="text-center"><b>Heading: </b>
-                    <span id="heading1" class="text-center p-1 border-0 h5">000.0</span>
-                </p>
-            </div>
-        </div>
-        <div class="col-auto text-center">
-            <div id="bg-color-2" class="box justify-content-center" style="background-color: blue">
-                <div class="container justify-content-center pb-1">
-                    <img id="led2" th:src="@{/img/led_connection_1.bmp}" alt="Led indicator">
-                    <span id="rs_model2_no" class="text-center p-1 border-0">0</span>
-                </div>
-                <h4 class="text-center">BLUE LADY</h4>
-                <p class="text-center"><b>Speed: </b>
-                    <span id="speed2" class="text-center p-1 border-0 h5">0.0</span>
-                </p>
-                <p class="text-center"><b>Heading: </b>
-                    <span id="heading2" class="text-center p-1 border-0 h5">000.0</span>
-                </p>
-            </div>
-        </div>
-        <div class="col-auto text-center">
-            <div id="bg-color-3" class="box justify-content-center" style="background-color: purple">
-                <div class="container justify-content-center pb-1">
-                    <img id="led4" th:src="@{/img/led_connection_1.bmp}" alt="Led indicator">
-                    <span id="rs_model4_no" class="text-center p-1 border-0">0</span>
-                </div>
-                <h4 class="text-center">CHERRY LADY</h4>
-                <p class="text-center"><b>Speed: </b>
-                    <span id="speed4" class="text-center p-1 border-0 h5">0.0</span>
-                </p>
-                <p class="text-center"><b>Heading: </b>
-                    <span id="heading4" class="text-center p-1 border-0 h5">000.0</span>
-                </p>
-            </div>
-        </div>
-        <div class="col-auto text-center">
-            <div id="bg-color-4" class="box justify-content-center" style="background-color: green">
-                <div class="container justify-content-center pb-1">
-                    <img id="led3" th:src="@{/img/led_connection_1.bmp}" alt="Led indicator">
-                    <span id="rs_model3_no" class="text-center p-1 border-0">0</span>
-                </div>
-                <h4 class="text-center">DORCHESTER LADY</h4>
-                <p class="text-center"><b>Speed: </b>
-                    <span id="speed3" class="text-center p-1 border-0 h5">0.0</span>
-                </p>
-                <p class="text-center"><b>Heading: </b>
-                    <span id="heading3" class="text-center p-1 border-0 h5">000.0</span>
-                </p>
-            </div>
-        </div>
-        <div class="col-auto text-center">
-            <div id="bg-color-6" class="box justify-content-center" style="background-color: darkblue">
-                <div class="container justify-content-center pb-1">
-                    <img id="led6" th:src="@{/img/led_connection_1.bmp}" alt="Led indicator">
-                    <span id="rs_model6_no" class="text-center p-1 border-0">0</span>
-                </div>
-                <h4 class="text-center">LADY MARIE</h4>
-                <p class="text-center"><b>Speed: </b>
-                    <span id="speed6" class="text-center p-1 border-0 h5">0.0</span>
-                </p>
-                <p class="text-center"><b>Heading: </b>
-                    <span id="heading6" class="text-center p-1 border-0 h5">000.0</span>
-                </p>
-            </div>
-        </div>
-        <div class="col-auto text-center">
-            <div id="bg-color-5" class="box justify-content-center" style="background-color: lightgray">
-                <div class="container justify-content-center pb-1">
-                    <img id="led5" th:src="@{/img/led_connection_1.bmp}" alt="Led indicator">
-                    <span id="rs_model5_no" class="text-center p-1 border-0">0</span>
-                </div>
-                <h4 class="text-center">KOŁOBRZEG</h4>
-                <p class="text-center"><b>Speed: </b>
-                    <span id="speed5" class="text-center p-1 border-0 h5">0.0</span>
-                </p>
-                <p class="text-center"><b>Heading: </b>
-                    <span id="heading5" class="text-center p-1 border-0 h5">000.0</span>
+                    <span th:id="'heading' + ${ship.id}" class="text-center p-1 border-0 h5">000.0</span>
                 </p>
             </div>
         </div>
     </div>
 </div>
 <div class="canvas-container" id="main-div">
-    <img id="backgroundCanvas" th:src="@{/img/MapaSilm_2666x4000.jpg}" width="2666" height="4000" alt="Silm Lake Chart should be here">
-    <canvas id="overlayCanvas1"></canvas>
-    <canvas id="overlayCanvas1_track"></canvas>
-    <canvas id="overlayCanvas2_track"></canvas>
-    <canvas id="overlayCanvas3_track"></canvas>
-    <canvas id="overlayCanvas4_track"></canvas>
-    <canvas id="overlayCanvas5_track"></canvas>
-    <canvas id="overlayCanvas6_track"></canvas>
-    <canvas id="overlayCanvas2"></canvas>
-    <canvas id="overlayCanvas3"></canvas>
-    <canvas id="overlayCanvas4"></canvas>
-    <canvas id="overlayCanvas5"></canvas>
-    <canvas id="overlayCanvas6"></canvas>
+    <img id="backgroundCanvas" th:src="@{/img/MapaSilm_2666x4000.jpg}" width="2666" height="4000"
+         alt="Silm Lake Chart should be here">
 </div>
 <div class="container-fluid mt-3">
     <p id="textField" class="form-control" style="white-space: normal; word-wrap: break-word;">Text</p>
@@ -206,8 +38,7 @@
 <script th:inline="javascript">
     const ENABLE_TEST_RUNS_VAR    = /*[[${isTestEnabled}]]*/ false;
 </script>
-<script type="text/javascript" th:src="@{/bootstrap-5-3-3/js/bootstrap.js}"></script>
-<script type="text/javascript" th:src="@{/js/konva-10_0_7/konva.js}"></script>
+<script type="text/javascript" th:src="@{/js/konva-10_0_7/konva.min.js}"></script>
 <script type="text/javascript" th:src="@{/js/chart-script.js}"></script>
 </body>
 </html>
