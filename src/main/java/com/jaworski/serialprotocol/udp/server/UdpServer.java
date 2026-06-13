@@ -3,6 +3,7 @@ package com.jaworski.serialprotocol.udp.server;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.stereotype.Component;
 
@@ -16,6 +17,7 @@ import java.time.Instant;
 
 @Component
 @RequiredArgsConstructor
+@ConditionalOnBooleanProperty(prefix = "udp.server", name = "enabled", havingValue = true, matchIfMissing = false)
 public class UdpServer implements SmartLifecycle {
 
     private final UdpProperties props;
