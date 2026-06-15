@@ -14,23 +14,36 @@ import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.DatagramChannel;
 import java.time.Instant;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 @Component
 @RequiredArgsConstructor
 @ConditionalOnBooleanProperty(prefix = "udp.server", name = "enabled", havingValue = true, matchIfMissing = false)
 public class UdpServer implements SmartLifecycle {
 
-    private final UdpProperties props;
-    private final UdpDispatcher dispatcher;
+    private static final int MAX_CONCURRENT_DISPATCHES = 256;
     private static final Logger LOG = LoggerFactory.getLogger(UdpServer.class);
 
+    private final UdpProperties props;
+    private final UdpDispatcher dispatcher;
+
     private volatile boolean running = false;
-    private DatagramChannel channel;
-    private Thread serverThread;
+    private volatile DatagramChannel channel;
+    private volatile Thread serverThread;
+    private ExecutorService dispatchExecutor;
+    private final Semaphore dispatchPermits = new Semaphore(MAX_CONCURRENT_DISPATCHES);
 
     @Override
     public void start() {
+        if (running) {
+            LOG.warn("UDP server already running, ignoring start()");
+            return;
+        }
         try {
+            dispatchExecutor = Executors.newVirtualThreadPerTaskExecutor();
             channel = DatagramChannel.open();
             channel.bind(new InetSocketAddress(props.getPort()));
             channel.configureBlocking(true);
@@ -59,8 +72,18 @@ public class UdpServer implements SmartLifecycle {
                 buf.get(raw);
 
 
-                DatagramPacket packet = new DatagramPacket(raw, sender, Instant.now());
-                Thread.ofVirtual().start(() -> dispatcher.dispatch(packet));
+                UdpPacket packet = new UdpPacket(raw, sender, Instant.now());
+                if (dispatchPermits.tryAcquire()) {
+                    dispatchExecutor.submit(() -> {
+                        try {
+                            dispatcher.dispatch(packet);
+                        } finally {
+                            dispatchPermits.release();
+                        }
+                    });
+                } else {
+                    LOG.warn("Packet from {} dropped – max concurrent dispatches ({}) reached", sender, MAX_CONCURRENT_DISPATCHES);
+                }
 
             } catch (AsynchronousCloseException e) {
                 // normalny shutdown
@@ -76,6 +99,12 @@ public class UdpServer implements SmartLifecycle {
         try {
             if (channel != null) channel.close();
             if (serverThread != null) serverThread.join(5_000);
+            if (dispatchExecutor != null) {
+                dispatchExecutor.shutdown();
+                if (!dispatchExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                    dispatchExecutor.shutdownNow();
+                }
+            }
         } catch (Exception e) {
             LOG.warn("Shutdown issue: {}", e.getMessage());
         }

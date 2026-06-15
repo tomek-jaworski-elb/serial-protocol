@@ -3,18 +3,20 @@ package com.jaworski.serialprotocol.udp.server;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
 @Component
 @RequiredArgsConstructor
+@ConditionalOnBooleanProperty(prefix = "udp.server", name = "enabled", havingValue = true, matchIfMissing = false)
 public class UdpDispatcher {
 
     private final List<UdpPacketHandler> handlers;
     private static final Logger LOG = LoggerFactory.getLogger(UdpDispatcher.class);
 
-    public void dispatch(DatagramPacket packet) {
+    public void dispatch(UdpPacket packet) {
         for (UdpPacketHandler handler : handlers) {
             if (handler.supports(packet)) {
                 try {

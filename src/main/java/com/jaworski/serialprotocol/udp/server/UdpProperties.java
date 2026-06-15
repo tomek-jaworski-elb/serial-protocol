@@ -5,23 +5,20 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
-@Component
+@ConfigurationProperties(prefix = "udp.server")
 @Validated
 @Getter
 @Setter
 public class UdpProperties {
 
-    @Value("${udp.server.port:1234}")
     @Min(1024)
     @Max(65535)
-    private int port;
+    private int port = 1234;
 
-    @Value("${udp.server.bufferSize:65535}")
     @Positive
-    private int bufferSize;
+    private int bufferSize = 65535;
 }
 

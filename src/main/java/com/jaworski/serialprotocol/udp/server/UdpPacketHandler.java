@@ -2,7 +2,7 @@ package com.jaworski.serialprotocol.udp.server;
 
 public interface UdpPacketHandler {
 
-    boolean supports(DatagramPacket packet);
+    boolean supports(UdpPacket packet);
 
-    void handle(DatagramPacket packet);
+    void handle(UdpPacket packet);
 }

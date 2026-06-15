@@ -168,8 +168,7 @@ class UdpServerTest {
         }
 
         // Then - verify dispatcher was called
-        verify(mockUdpDispatcher, timeout(1000).times(1)).dispatch(any(
-                com.jaworski.serialprotocol.udp.server.DatagramPacket.class));
+        verify(mockUdpDispatcher, timeout(1000).times(1)).dispatch(any(UdpPacket.class));
     }
 
     @Test
@@ -198,8 +197,7 @@ class UdpServerTest {
         }
 
         // Then - verify dispatcher was called for each packet
-        verify(mockUdpDispatcher, timeout(1000).times(3)).dispatch(any(
-                com.jaworski.serialprotocol.udp.server.DatagramPacket.class));
+        verify(mockUdpDispatcher, timeout(1000).times(3)).dispatch(any(UdpPacket.class));
     }
 
     @Test

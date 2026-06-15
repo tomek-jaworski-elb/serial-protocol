@@ -8,10 +8,14 @@ import com.jaworski.serialprotocol.service.utils.MessageTranslator;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.stereotype.Component;
+
+import java.nio.charset.StandardCharsets;
 
 @RequiredArgsConstructor
 @Component
+@ConditionalOnBooleanProperty(prefix = "udp.server", name = "enabled", havingValue = true, matchIfMissing = false)
 public class UdpPacketHandlerImpl implements UdpPacketHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(UdpPacketHandlerImpl.class);
@@ -20,22 +24,22 @@ public class UdpPacketHandlerImpl implements UdpPacketHandler {
     private final MessageTranslator messageTranslator;
 
     @Override
-    public boolean supports(DatagramPacket packet) {
+    public boolean supports(UdpPacket packet) {
         byte[] p = packet.payload();
         return p.length > 2;
     }
 
     @Override
-    public void handle(DatagramPacket packet) {
+    public void handle(UdpPacket packet) {
         try {
             byte[] payload = packet.payload();
-            String str = new String(payload);
+            String raw = new String(payload, StandardCharsets.UTF_8);
             ModelTrackDTO dto = messageTranslator.getDTO(payload);
             String jsonString = jsonMapperService.toJsonString(dto);
             webSocketPublisher.publishForAllClients(jsonString, SessionType.JSON);
-            LOG.info("gNMI from {}: {} updates", packet.sender(), str);
+            LOG.info("UDP packet from {}: {}", packet.sender(), raw);
         } catch (Exception e) {
-            LOG.warn("Bad protobuf from {}", packet.sender());
+            LOG.warn("Unprocessable UDP packet from {}: {}", packet.sender(), e.getMessage());
         }
     }
 }
