@@ -37,6 +37,23 @@ public class SchemaMigrationRunner {
     public void applyMigrations() {
         LOG.info("SchemaMigrationRunner: applying nullable column migrations...");
 
+        String product = "unknown";
+        try {
+            if (jdbcTemplate.getDataSource() != null) {
+                try (java.sql.Connection c = jdbcTemplate.getDataSource().getConnection()) {
+                    product = c.getMetaData().getDatabaseProductName();
+                }
+            }
+        } catch (Exception e) {
+            LOG.warn("SchemaMigrationRunner: unable to detect database product name: {}", e.getMessage());
+        }
+
+        // Skip MySQL-specific ALTERs on H2 (tests use in-memory H2 which does not accept `MODIFY COLUMN` syntax)
+        if (product != null && product.toLowerCase().contains("h2")) {
+            LOG.info("SchemaMigrationRunner: H2 detected ({}). Skipping MySQL-specific ALTER statements.", product);
+            return;
+        }
+
         // course_type — long_description was previously NOT NULL
         alter("course_type", "course_type_long_description", "VARCHAR(5000) NULL");
 
