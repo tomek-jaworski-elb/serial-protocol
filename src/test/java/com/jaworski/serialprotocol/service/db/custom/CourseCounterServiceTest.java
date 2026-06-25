@@ -1,6 +1,9 @@
 package com.jaworski.serialprotocol.service.db.custom;
 
 import com.jaworski.serialprotocol.dto.custom.CourseCounterDTO;
+import com.jaworski.serialprotocol.dto.custom.CourseTypeDTO;
+import com.jaworski.serialprotocol.dto.custom.CoursesDTO;
+import com.jaworski.serialprotocol.dto.custom.ParticipantDTO;
 import com.jaworski.serialprotocol.entity.custom.Image;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,19 +12,30 @@ import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 
+import java.time.LocalDate;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DataJpaTest
-@Import({CourseCounterService.class, ImageService.class})
+@Import({CourseCounterService.class, ImageService.class,
+        CoursesService.class, ParticipantService.class, CourseTypeService.class,
+        TrainerService.class, LecturerService.class, TechnicianService.class})
 class CourseCounterServiceTest {
 
   @Autowired
   private CourseCounterService courseCounterService;
+  @Autowired
+  private CoursesService coursesService;
+  @Autowired
+  private ParticipantService participantService;
+  @Autowired
+  private CourseTypeService courseTypeService;
 
   @Autowired
   private ImageService imageService;
@@ -147,5 +161,47 @@ class CourseCounterServiceTest {
     assertEquals(0, page.getTotalElements());
   }
 
+  @Test
+  void delete_shouldThrowWhenCourseCounterReferencedByCourse() {
+    Image image = imageService.saveImage(new byte[]{1, 2, 3}, "img");
+    CourseCounterDTO counter = courseCounterService.save(new CourseCounterDTO(99L, image.getId()));
+
+    ParticipantDTO participant = new ParticipantDTO();
+    participant.setName("Jan");
+    participant.setSurname("Kowalski");
+    participant.setBirthDate(LocalDate.of(1990, 1, 1));
+    participant = participantService.save(participant);
+
+    CourseTypeDTO courseType = new CourseTypeDTO();
+    courseType.setCode("CC-TEST");
+    courseType.setDescription("Test");
+    courseType.setLongDescription("Test course");
+    courseType = courseTypeService.save(courseType);
+
+    CoursesDTO course = new CoursesDTO();
+    course.setParticipantUuid(participant.getParticipantUuid());
+    course.setCourseTypeId(courseType.getId());
+    course.setStartDate(LocalDate.of(2025, 1, 1));
+    course.setEndDate(LocalDate.of(2025, 1, 31));
+    course.setCourseCounterUuid(counter.uuid());
+    coursesService.save(course);
+
+    UUID counterUuid = counter.uuid();
+    IllegalStateException exception = assertThrows(
+        IllegalStateException.class,
+        () -> courseCounterService.delete(counterUuid)
+    );
+    assertTrue(exception.getMessage().contains("referenced by existing courses"));
+  }
+
+  @Test
+  void delete_shouldSucceedWhenCourseCounterNotReferencedByCourse() {
+    Image image = imageService.saveImage(new byte[]{1, 2, 3}, "img");
+    CourseCounterDTO counter = courseCounterService.save(new CourseCounterDTO(77L, image.getId()));
+
+    courseCounterService.delete(counter.uuid());
+
+    assertTrue(courseCounterService.getByUuid(counter.uuid()).isEmpty());
+  }
 
 }
