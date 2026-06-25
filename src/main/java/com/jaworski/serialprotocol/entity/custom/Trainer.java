@@ -43,7 +43,7 @@ public class Trainer extends PersonBase {
   @JoinTable(
       name = TABLE_NAME + "_image",
       joinColumns = @JoinColumn(name = TABLE_NAME + "_uuid", referencedColumnName = TABLE_NAME + "_uuid"),
-      inverseJoinColumns = @JoinColumn(name = "image_uuid")
+      inverseJoinColumns = @JoinColumn(name = "image_uuid", referencedColumnName = "image_uuid")
   )
   @ToString.Exclude
   @EqualsAndHashCode.Exclude
