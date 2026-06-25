@@ -3,6 +3,7 @@
     <envs>
       <env name="DB_HOST_IP" value="192.168.65.89" />
       <env name="APP_RUNS_TEST_ENABLED" value="true" />
+      <env name="UDP_SERVER_ENABLED" value="true" />
     </envs>
     <option name="FRAME_DEACTIVATION_UPDATE_POLICY" value="UpdateClassesAndResources" />
     <module name="serial-protocol" />
