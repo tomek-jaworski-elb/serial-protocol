@@ -61,13 +61,15 @@ function clampStagePosition(pos, scale) {
     return {x, y};
 }
 
-// resize stage to container; resetView=true fits and centers the whole map
+// resize stage to container; resetView=true fits the map to the full container width
+// (initial view); zooming out further, down to the whole map, is still possible
 function fitStageToContainer(resetView) {
     if (!konvaStage) return;
     konvaStage.width(container.clientWidth);
     konvaStage.height(container.clientHeight);
     minScale = Math.min(konvaStage.width() / MAP_WIDTH, konvaStage.height() / MAP_HEIGHT);
-    const scale = resetView ? minScale : clampScale(konvaStage.scaleX());
+    const fitWidthScale = clampScale(konvaStage.width() / MAP_WIDTH);
+    const scale = resetView ? fitWidthScale : clampScale(konvaStage.scaleX());
     konvaStage.scale({x: scale, y: scale});
     konvaStage.position(clampStagePosition(konvaStage.position(), scale));
     konvaStage.batchDraw();

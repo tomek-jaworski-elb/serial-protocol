@@ -62,11 +62,14 @@ img.save('MapaSilm_2666x4000.webp', quality=75, method=6)
 | Mouse wheel | `bindStageZoom()` — zoom towards the cursor position |
 | Drag | stage `draggable: true` with `dragBoundFunc` clamping |
 | Pinch (mobile) | `bindStagePinch()` — two-finger `touchmove` handling |
-| Buttons `+` / `−` / reset | `bindMapControls()` — zoom to viewport center, reset fits the whole map |
-| Double click / double tap | resets the view to the whole map |
+| Buttons `+` / `−` / reset | `bindMapControls()` — zoom to viewport center, reset restores the initial view |
+| Double click / double tap | resets the view to the initial one |
 
 Rules enforced by `clampScale()` and `clampStagePosition()`:
 
+- initial view (and reset) = map fitted to the full container width; on
+  portrait screens this shows nearly the whole map, on landscape the top part
+  with vertical panning available;
 - minimum scale = "whole map fits in the viewport" (recomputed on resize),
   maximum scale = 3× native map resolution;
 - the map always covers the viewport when zoomed in, and is centered when
