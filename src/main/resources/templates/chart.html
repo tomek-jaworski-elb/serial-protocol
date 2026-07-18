@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
-<head th:insert="~{fragment::head}"></head>
 <head>
+    <th:block th:replace="~{fragment::headContent}"></th:block>
     <title th:text="${@environment.getProperty('spring.application.name')} + ' : Chart'">Chart</title>
     <link th:href="@{/css/chart.css}" rel="stylesheet"/>
+    <link rel="preload" as="image" type="image/avif" th:href="@{/img/MapaSilm_2666x4000.avif}"/>
 </head>
 <body>
 <header th:replace="~{fragment::header}"></header>
@@ -27,9 +28,14 @@
         </div>
     </div>
 </div>
-<div class="canvas-container" id="main-div">
-    <img id="backgroundCanvas" th:src="@{/img/MapaSilm_2666x4000.jpg}" width="2666" height="4000"
-         alt="Silm Lake Chart should be here">
+<!-- controls live outside #konvaContainer: Konva clears the stage container content on init -->
+<div class="map-wrapper">
+    <div class="canvas-container" id="konvaContainer"></div>
+    <div class="map-controls btn-group-vertical" role="group" aria-label="Map zoom controls">
+        <button type="button" id="zoomInBtn" class="btn btn-light border" title="Zoom in">+</button>
+        <button type="button" id="zoomOutBtn" class="btn btn-light border" title="Zoom out">&minus;</button>
+        <button type="button" id="zoomResetBtn" class="btn btn-light border" title="Reset view">&#8634;</button>
+    </div>
 </div>
 <div class="container-fluid mt-3">
     <p id="textField" class="form-control" style="white-space: normal; word-wrap: break-word;">Text</p>
@@ -38,7 +44,7 @@
 <script th:inline="javascript">
     const ENABLE_TEST_RUNS_VAR    = /*[[${isTestEnabled}]]*/ false;
 </script>
-<script type="text/javascript" th:src="@{/js/konva-10_0_7/konva.min.js}"></script>
+<script type="text/javascript" th:src="@{/js/konva-10_3_0/konva.min.js}"></script>
 <script type="text/javascript" th:src="@{/js/chart-script.js}"></script>
 </body>
 </html>

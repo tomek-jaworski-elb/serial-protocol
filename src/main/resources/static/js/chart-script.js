@@ -8,70 +8,193 @@ function isSamsungBrowser() {
     return navigator.userAgent.toLocaleLowerCase().includes('samsung');
 }
 
-const imgMap = document.getElementById("backgroundCanvas");
 const container = document.querySelector('.canvas-container');
 
-// --- tu dodajemy konvaContainer dynamicznie i stage ---
+// --- Konva stage: map as bottom layer + zoom/pan/pinch ---
 const konvaContainerId = 'konvaContainer';
+const MAP_WIDTH = 2666;
+const MAP_HEIGHT = 4000;
+// modern formats first, JPG as last-resort fallback
+const MAP_IMAGE_SOURCES = [
+    '/img/MapaSilm_2666x4000.avif',
+    '/img/MapaSilm_2666x4000.webp',
+    '/img/MapaSilm_2666x4000.jpg'
+];
+const SCALE_BY = 1.1;
+const MAX_SCALE = 3;
+let minScale = 0.1; // recomputed in fitStageToContainer() so the whole map always fits
+
 let konvaStage = null;
+let konvaMapLayer = null;
 let konvaTrackLayer = null;
 let konvaShipLayer = null;
 
-// init Konva stage as overlay (absolute) and create layers
-function initKonvaOverlay() {
-    // jeśli już istnieje, usuń
-    const existing = document.getElementById(konvaContainerId);
-    if (existing) existing.remove();
+// try each source in order, resolve with the first that loads
+function loadMapImage(sources) {
+    return new Promise((resolve, reject) => {
+        const tryNext = (index) => {
+            if (index >= sources.length) {
+                reject(new Error('Unable to load map image: ' + sources.join(', ')));
+                return;
+            }
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = () => tryNext(index + 1);
+            img.src = sources[index];
+        };
+        tryNext(0);
+    });
+}
 
-    // kontener wewnątrz .canvas-container
-    const konvaDiv = document.createElement('div');
-    konvaDiv.id = konvaContainerId;
-    konvaDiv.style.position = 'absolute';
-    konvaDiv.style.left = '0';
-    konvaDiv.style.top = '0';
-    konvaDiv.style.width = imgMap.width + 'px';
-    konvaDiv.style.height = imgMap.height + 'px';
-    // WAŻNE: musimy odbierać eventy, więc pointerEvents = 'auto'
-    konvaDiv.style.pointerEvents = 'auto';
-    konvaDiv.style.zIndex = '10';
-    container.appendChild(konvaDiv);
+function clampScale(scale) {
+    return Math.max(minScale, Math.min(MAX_SCALE, scale));
+}
 
-    // Stworzenie stage Konva
+// keep the map covering the viewport; center it when smaller than the viewport
+function clampStagePosition(pos, scale) {
+    const cw = konvaStage.width();
+    const ch = konvaStage.height();
+    const mapW = MAP_WIDTH * scale;
+    const mapH = MAP_HEIGHT * scale;
+    const x = mapW <= cw ? (cw - mapW) / 2 : Math.min(0, Math.max(cw - mapW, pos.x));
+    const y = mapH <= ch ? (ch - mapH) / 2 : Math.min(0, Math.max(ch - mapH, pos.y));
+    return {x, y};
+}
+
+// resize stage to container; resetView=true fits and centers the whole map
+function fitStageToContainer(resetView) {
+    if (!konvaStage) return;
+    konvaStage.width(container.clientWidth);
+    konvaStage.height(container.clientHeight);
+    minScale = Math.min(konvaStage.width() / MAP_WIDTH, konvaStage.height() / MAP_HEIGHT);
+    const scale = resetView ? minScale : clampScale(konvaStage.scaleX());
+    konvaStage.scale({x: scale, y: scale});
+    konvaStage.position(clampStagePosition(konvaStage.position(), scale));
+    konvaStage.batchDraw();
+}
+
+// zoom keeping the given viewport point fixed (mouse cursor / pinch center)
+function zoomStageAtPoint(pointer, newScaleRaw) {
+    const oldScale = konvaStage.scaleX();
+    const newScale = clampScale(newScaleRaw);
+    const mapPoint = {
+        x: (pointer.x - konvaStage.x()) / oldScale,
+        y: (pointer.y - konvaStage.y()) / oldScale
+    };
+    konvaStage.scale({x: newScale, y: newScale});
+    konvaStage.position(clampStagePosition({
+        x: pointer.x - mapPoint.x * newScale,
+        y: pointer.y - mapPoint.y * newScale
+    }, newScale));
+    konvaStage.batchDraw();
+    if (currentTooltipShipId !== null) {
+        updateTooltipContent(currentTooltipShipId);
+    }
+}
+
+function bindStageZoom() {
+    konvaStage.on('wheel', (e) => {
+        e.evt.preventDefault();
+        const pointer = konvaStage.getPointerPosition();
+        if (!pointer) return;
+        const oldScale = konvaStage.scaleX();
+        zoomStageAtPoint(pointer, e.evt.deltaY > 0 ? oldScale / SCALE_BY : oldScale * SCALE_BY);
+    });
+}
+
+// two-finger pinch zoom (mobile)
+let lastPinchDist = 0;
+
+function bindStagePinch() {
+    konvaStage.on('touchmove', (e) => {
+        const touch1 = e.evt.touches[0];
+        const touch2 = e.evt.touches[1];
+        if (!touch1 || !touch2) return;
+        e.evt.preventDefault();
+        if (konvaStage.isDragging()) {
+            konvaStage.stopDrag();
+        }
+        const dist = Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
+        if (!lastPinchDist) {
+            lastPinchDist = dist;
+            return;
+        }
+        const rect = container.getBoundingClientRect();
+        const pointer = {
+            x: (touch1.clientX + touch2.clientX) / 2 - rect.left,
+            y: (touch1.clientY + touch2.clientY) / 2 - rect.top
+        };
+        zoomStageAtPoint(pointer, konvaStage.scaleX() * (dist / lastPinchDist));
+        lastPinchDist = dist;
+    });
+    konvaStage.on('touchend', () => {
+        lastPinchDist = 0;
+    });
+}
+
+// init Konva stage with map image as bottom layer
+function initKonvaStage() {
+    // small mouse jitter on click must not start a stage drag (it would swallow ship clicks)
+    Konva.dragDistance = 3;
     konvaStage = new Konva.Stage({
         container: konvaContainerId,
-        width: imgMap.width,
-        height: imgMap.height
+        width: container.clientWidth,
+        height: container.clientHeight,
+        draggable: true
     });
+    konvaStage.dragBoundFunc((pos) => clampStagePosition(pos, konvaStage.scaleX()));
 
-    // warstwa tras i warstwa statków
-    konvaTrackLayer = new Konva.Layer();
+    konvaMapLayer = new Konva.Layer({listening: false});
+    konvaTrackLayer = new Konva.Layer({listening: false});
     konvaShipLayer = new Konva.Layer();
 
+    konvaStage.add(konvaMapLayer);
     konvaStage.add(konvaTrackLayer);
     konvaStage.add(konvaShipLayer);
+
+    loadMapImage(MAP_IMAGE_SOURCES)
+        .then((img) => {
+            konvaMapLayer.add(new Konva.Image({
+                image: img,
+                x: 0,
+                y: 0,
+                width: MAP_WIDTH,
+                height: MAP_HEIGHT,
+                listening: false
+            }));
+            konvaMapLayer.batchDraw();
+        })
+        .catch((err) => console.error('Map image loading failed:', err));
+
+    fitStageToContainer(true);
+    bindStageZoom();
+    bindStagePinch();
+    bindMapControls();
+
+    // double click / double tap resets the view to the whole map
+    konvaStage.on('dblclick dbltap', () => fitStageToContainer(true));
 }
 
-// resize konva gdy zmienia się rozmiar mapy
-function resizeKonvaOverlay() {
-    const konvaDiv = document.getElementById(konvaContainerId);
-    if (!konvaDiv || !konvaStage) return;
-    konvaDiv.style.width = imgMap.width + 'px';
-    konvaDiv.style.height = imgMap.height + 'px';
-    konvaStage.width(imgMap.width);
-    konvaStage.height(imgMap.height);
-    konvaStage.draw();
+// zoom buttons overlay (+ / - / reset)
+function bindMapControls() {
+    const zoomInBtn = document.getElementById('zoomInBtn');
+    const zoomOutBtn = document.getElementById('zoomOutBtn');
+    const zoomResetBtn = document.getElementById('zoomResetBtn');
+    const viewportCenter = () => ({x: konvaStage.width() / 2, y: konvaStage.height() / 2});
+    if (zoomInBtn) zoomInBtn.addEventListener('click', () => zoomStageAtPoint(viewportCenter(), konvaStage.scaleX() * 1.3));
+    if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => zoomStageAtPoint(viewportCenter(), konvaStage.scaleX() / 1.3));
+    if (zoomResetBtn) zoomResetBtn.addEventListener('click', () => fitStageToContainer(true));
 }
 
-// Throttling dla resizeKonvaOverlay
+// Throttling dla resize okna
 let resizeKonvaTimeout = null;
 function throttledResizeKonvaOverlay() {
     if (resizeKonvaTimeout) clearTimeout(resizeKonvaTimeout);
     resizeKonvaTimeout = setTimeout(() => {
-        resizeKonvaOverlay();
+        fitStageToContainer(false);
         resizeKonvaTimeout = null;
     }, 100);
 }
-// Przykład podpięcia do zdarzenia resize (jeśli nie było)
 window.addEventListener('resize', throttledResizeKonvaOverlay);
 
 // --- preload obrazków LED (bez zmian) ---
@@ -221,7 +344,7 @@ function createKonvaObjectsForModels() {
         konvaTrackLayer.add(trackLine);
 
         // utwórz prosty polygon statku
-        const initPoints = computeShipVerticesForKonva(0,0,cfg.scale, 0, ...cfg.shipParams);
+        const initPoints = computeShipVerticesForKonva(0, 0, cfg.scale, 0, ...cfg.shipParams);
         const shipShape = new Konva.Line({
             points: initPoints,
             fill: ModelsOfShips.getColorFromId(id),
@@ -278,28 +401,18 @@ function createKonvaObjectsForModels() {
     konvaShipLayer.draw();
 }
 
-// Liczniki do optymalizacji batchDraw
-const konvaDrawCounters = {
-    track: 0,
-    ship: 0
-};
-const KONVA_DRAW_INTERVAL = 5; // co ile aktualizacji rysować
-
 // Aktualizuje Konva-owy kształt statku (pozycja i rotacja)
+// batchDraw() koalescuje rysowanie przez requestAnimationFrame - licznik zbędny
 function updateKonvaShip(id, x, y, angle) {
     const obj = KonvaObjects[id];
     const cfg = modelsConfig[id];
     if (!obj || !cfg) return;
 
     // Zaktualizujemy punkty statku bazując na nowych x,y,angle
+    // cfg.scale is constant: silhouette size reflects the real ship size relative to the map at any zoom
     const points = computeShipVerticesForKonva(x, y, cfg.scale, angle, ...cfg.shipParams);
     obj.shipShape.points(points);
-
-    konvaDrawCounters.ship++;
-    if (konvaDrawCounters.ship % KONVA_DRAW_INTERVAL === 0) {
-        konvaShipLayer.batchDraw();
-        konvaDrawCounters.ship = 0;
-    }
+    konvaShipLayer.batchDraw();
     obj.lastPos = { x, y };
     obj.lastAngle = angle;
 
@@ -323,11 +436,7 @@ function updateKonvaTrack(id) {
         pts.push(p.y);
     }
     obj.trackLine.points(pts);
-    konvaDrawCounters.track++;
-    if (konvaDrawCounters.track % KONVA_DRAW_INTERVAL === 0) {
-        konvaTrackLayer.batchDraw();
-        konvaDrawCounters.track = 0;
-    }
+    konvaTrackLayer.batchDraw();
 }
 
 // ------------------------------------------------------------------
@@ -644,10 +753,15 @@ function updateTooltipContent(id) {
     tooltipBg.width(maxWidth + padding * 2);
     tooltipBg.height(totalHeight + padding * 2);
 
+    // counter-scale the tooltip layer so the tooltip keeps constant screen size at any zoom;
+    // layer coords = map coords * stageScale (net transform = 1:1 screen px + stage offset)
+    const stageScale = konvaStage.scaleX();
+    tooltipLayer.scale({x: 1 / stageScale, y: 1 / stageScale});
+
     // Aktualizuj pozycję tooltip na podstawie pozycji statku
     const shipPos = obj.lastPos;
-    const px = shipPos.x + 10;
-    const py = shipPos.y + 10;
+    const px = shipPos.x * stageScale + 10;
+    const py = shipPos.y * stageScale + 10;
 
     // Ustawianie pozycji dla każdego tekstu
     let currentY = py + padding;
@@ -739,7 +853,7 @@ function hideTooltip() {
 // ------------------------------------------------------------------
 (function initializeKonvaIfPossible() {
     try {
-        initKonvaOverlay();        // tworzy stage + warstwy
+        initKonvaStage();          // tworzy stage + warstwy + mapę + zoom/pan
         initTooltip();             // tooltip zanim podpinamy kliknięcia statków
         createKonvaObjectsForModels(); // teraz tworzymy statki (handlery mają dostęp do tooltip)
         // stage click => ukryj tooltip
