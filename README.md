@@ -38,6 +38,20 @@ java -jar .\target\serial-protocol-2.0.jar
 Aplikacja nasłuchuje na porcie **443** (HTTPS, SSL/PKCS12).
 W przeglądarce: `https://localhost:8081/` (przez Docker) lub `https://localhost:443/` (lokalnie).
 
+### Przekierowanie HTTP → HTTPS
+
+Gdy `server.http.redirect.enabled=true`, aplikacja uruchamia dodatkowe konektory HTTP, które przekierowują cały ruch na port HTTPS (`server.port`).
+
+| Właściwość | Domyślnie | Opis |
+|---|---|---|
+| `server.http.redirect.enabled` | `true` | Włącza przekierowanie HTTP → HTTPS |
+| `server.port` | `443` | Port HTTPS (cel przekierowania) |
+| `server.http.ports` | `80,8080` | Lista portów HTTP nasłuchujących i przekierowujących na `server.port` |
+
+- Przekierowanie działa **tylko** dla ruchu trafiającego na skonfigurowane porty HTTP (np. `http://host:80`, `http://host:8080`). Inne porty nie są nasłuchiwane → połączenie odrzucone.
+- Porty w `server.http.ports` muszą być unikalne i różne od `server.port`; w przeciwnym razie aplikacja zgłosi `IllegalStateException` przy starcie (walidacja w `TomcatServerConfiguration`).
+- Odpowiedzi HTTPS zawierają nagłówek `Strict-Transport-Security` (HSTS: `max-age=31536000; includeSubDomains; preload`) konfigurowany w `SecurityConfig`.
+
 ## Budowanie i testy
 
 | Polecenie | Opis |

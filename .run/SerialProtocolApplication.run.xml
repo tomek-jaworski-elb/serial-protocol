@@ -1,7 +1,7 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="SerialProtocolApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
     <envs>
-      <env name="DB_HOST_IP" value="192.168.65.89" />
+      <env name="DB_HOST_IP" value="172.25.19.212" />
       <env name="APP_RUNS_TEST_ENABLED" value="true" />
       <env name="UDP_SERVER_ENABLED" value="true" />
     </envs>
