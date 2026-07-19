@@ -91,6 +91,7 @@ Katalog [`docs/`](docs/) zawiera dodatkowe materiały opisujące implementację 
 
 | Dokument | Opis |
 |---|---|
+| [`chart-map-view.md`](docs/chart-map-view.md) | Implementacja interaktywnej mapy (`/chart`) – architektura warstw Konva, formaty obrazu mapy (AVIF/WebP/JPG), zoom/pan/pinch, kalibracja pozycji statków, optymalizacje transferu HTTP, wersje bibliotek |
 | [`custom-domain-analysis.md`](docs/custom-domain-analysis.md) | Pełna analiza domenowa modułu `custom` – hierarchia encji (`PersonBase`, `Lecturer`, `Trainer`, `Technician`, `Participant`, `Courses`, `CourseType`, `CourseCounter`, `Image`), mapowanie DTO, szablony Thymeleaf, lista naprawionych bugów i ostrzeżeń |
 | [`pdf-report-plan.md`](docs/pdf-report-plan.md) | Plan implementacji raportów PDF – porównanie bibliotek (OpenPDF, iText, PDFBox, Openhtmltopdf), architektura rozwiązania, API endpointów `/pdf/**`, layout i kolorystyka raportów |
 | [`Opis RS232.txt`](docs/Opis%20RS232.txt) | Przykładowe logi z transmisji szeregowej – format ramek, odkrywanie portów na Linux (Futro 720) i Windows 10, zdarzenia `serialEvent` |
