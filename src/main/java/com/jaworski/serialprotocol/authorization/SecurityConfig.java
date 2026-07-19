@@ -2,11 +2,13 @@ package com.jaworski.serialprotocol.authorization;
 
 import com.jaworski.serialprotocol.resources.Resources;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -24,6 +26,9 @@ public class SecurityConfig {
     private final CustomLogoutHandler customLogoutHandler;
     private final CustomLoginHandler customLoginHandler;
     private final Resources resources;
+
+    @Value("${server.ssl.enabled:false}")
+    private boolean sslEnabled;
 
     @Bean
     public UserDetailsService userDetailsService() {
@@ -69,6 +74,16 @@ public class SecurityConfig {
                                 .anyRequest().permitAll()
                 )
                 .httpBasic(withDefaults())
+                .headers(headers -> {
+                    if (sslEnabled) {
+                        headers.httpStrictTransportSecurity(hsts ->
+                                hsts.includeSubDomains(true)
+                                        .preload(true)
+                                        .maxAgeInSeconds(31536000));
+                    } else {
+                        headers.httpStrictTransportSecurity(HeadersConfigurer.HstsConfig::disable);
+                    }
+                })
                 .formLogin((formLogin) ->
                                 formLogin
                                         .usernameParameter("username")
