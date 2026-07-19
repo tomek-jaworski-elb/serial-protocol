@@ -5,6 +5,7 @@ import com.jaworski.serialprotocol.entity.custom.CourseCounter;
 import com.jaworski.serialprotocol.entity.custom.Image;
 import com.jaworski.serialprotocol.mappers.custom.CourseCounterMapper;
 import com.jaworski.serialprotocol.repository.custom.CourseCounterRepository;
+import com.jaworski.serialprotocol.repository.custom.CoursesRepository;
 import com.jaworski.serialprotocol.repository.custom.ImageRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -25,6 +26,7 @@ public class CourseCounterService {
 
   private final CourseCounterRepository courseCounterRepository;
   private final ImageRepository imageRepository;
+  private final CoursesRepository coursesRepository;
 
   public CourseCounterDTO save(CourseCounterDTO courseCounterDTO) {
     CourseCounter entity = CourseCounterMapper.toEntity(courseCounterDTO);
@@ -58,6 +60,9 @@ public class CourseCounterService {
   }
 
   public void delete(UUID uuid) {
+    if (coursesRepository.existsByCourseCounter_Uuid(uuid)) {
+      throw new IllegalStateException("Cannot delete course counter with uuid " + uuid + " because it is referenced by existing courses.");
+    }
     CourseCounter courseCounter = courseCounterRepository.findById(uuid)
             .orElseThrow(() -> new IllegalArgumentException("CourseCounter with id " + uuid + " not found"));
     Image image = courseCounter.getImage();

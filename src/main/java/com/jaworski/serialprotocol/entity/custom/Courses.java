@@ -60,29 +60,29 @@ public class Courses {
   @ManyToMany
   @JoinTable(
       name = TABLE_NAME + "_trainers",
-      joinColumns = @JoinColumn(name = TABLE_NAME + "_uuid"),
-      inverseJoinColumns = @JoinColumn(name = Trainer.TABLE_NAME + "_uuid")
+      joinColumns = @JoinColumn(name = TABLE_NAME + "_uuid", referencedColumnName = TABLE_NAME + "_uuid"),
+      inverseJoinColumns = @JoinColumn(name = Trainer.TABLE_NAME + "_uuid", referencedColumnName = Trainer.TABLE_NAME + "_uuid")
   )
   @NotNull
   private Set<Trainer> trainers = new HashSet<>();
-  
-  @ManyToMany
-  @JoinTable(
-      name = TABLE_NAME + "_lecturers",
-      joinColumns = @JoinColumn(name = TABLE_NAME + "_uuid"),
-      inverseJoinColumns = @JoinColumn(name = Lecturer.TABLE_NAME + "_uuid")
-  )
-  @NotNull
-  private Set<Lecturer> lecturers  = new HashSet<>();
 
   @ManyToMany
   @JoinTable(
-          name = TABLE_NAME + "_technicians",
-          joinColumns = @JoinColumn(name = TABLE_NAME + "_uuid"),
-          inverseJoinColumns = @JoinColumn(name = Technician.TABLE_NAME + "_uuid")
+      name = TABLE_NAME + "_lecturers",
+      joinColumns = @JoinColumn(name = TABLE_NAME + "_uuid", referencedColumnName = TABLE_NAME + "_uuid"),
+      inverseJoinColumns = @JoinColumn(name = Lecturer.TABLE_NAME + "_uuid", referencedColumnName = Lecturer.TABLE_NAME + "_uuid")
   )
   @NotNull
-  private Set<Technician> technicians  = new HashSet<>();
+  private Set<Lecturer> lecturers = new HashSet<>();
+
+  @ManyToMany
+  @JoinTable(
+      name = TABLE_NAME + "_technicians",
+      joinColumns = @JoinColumn(name = TABLE_NAME + "_uuid", referencedColumnName = TABLE_NAME + "_uuid"),
+      inverseJoinColumns = @JoinColumn(name = Technician.TABLE_NAME + "_uuid", referencedColumnName = Technician.TABLE_NAME + "_uuid")
+  )
+  @NotNull
+  private Set<Technician> technicians = new HashSet<>();
 
   @ManyToOne()
   @JoinColumn(name = CourseCounter.TABLE_NAME + "_uuid")
