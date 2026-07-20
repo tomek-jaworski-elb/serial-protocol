@@ -50,6 +50,18 @@ function clampScale(scale) {
     return Math.max(minScale, Math.min(MAX_SCALE, scale));
 }
 
+// tap target size for ship shapes, in screen pixels; hitStrokeWidth is expressed
+// in map units, so it must be rescaled on every zoom change to stay tappable
+const SHIP_HIT_SCREEN_PX = 25;
+
+function updateShipHitAreas() {
+    if (!konvaStage) return;
+    const scale = konvaStage.scaleX();
+    for (const id of Object.keys(KonvaObjects)) {
+        KonvaObjects[id].shipShape.hitStrokeWidth(SHIP_HIT_SCREEN_PX / scale);
+    }
+}
+
 // keep the map covering the viewport; center it when smaller than the viewport
 function clampStagePosition(pos, scale) {
     const cw = konvaStage.width();
@@ -72,6 +84,7 @@ function fitStageToContainer(resetView) {
     const scale = resetView ? fitWidthScale : clampScale(konvaStage.scaleX());
     konvaStage.scale({x: scale, y: scale});
     konvaStage.position(clampStagePosition(konvaStage.position(), scale));
+    updateShipHitAreas();
     konvaStage.batchDraw();
 }
 
@@ -88,6 +101,7 @@ function zoomStageAtPoint(pointer, newScaleRaw) {
         x: pointer.x - mapPoint.x * newScale,
         y: pointer.y - mapPoint.y * newScale
     }, newScale));
+    updateShipHitAreas();
     konvaStage.batchDraw();
     if (currentTooltipShipId !== null) {
         updateTooltipContent(currentTooltipShipId);
@@ -354,7 +368,7 @@ function createKonvaObjectsForModels() {
             stroke: 'black',
             strokeWidth: 1,
             listening: true, // od razu pozwalamy na eventy
-            hitStrokeWidth: 25 // zwiększamy obszar klikalny
+            hitStrokeWidth: SHIP_HIT_SCREEN_PX / konvaStage.scaleX() // constant screen-size tap target
         });
 
         // handler kliknięcia statku
