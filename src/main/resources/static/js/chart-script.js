@@ -122,11 +122,21 @@ function bindStageZoom() {
 let lastPinchDist = 0;
 
 function bindStagePinch() {
-    konvaStage.on('touchmove', (e) => {
-        const touch1 = e.evt.touches[0];
-        const touch2 = e.evt.touches[1];
+    // Native DOM listeners on `container`, not konvaStage.on(): Konva does not reliably
+    // dispatch its own 'touchstart'/'touchmove' bus events while a drag is active, so relying
+    // on the Konva event bus here silently drops every pinch gesture that starts as (or
+    // overlaps with) a single-finger drag — the normal way real pinch gestures begin.
+    container.addEventListener('touchstart', (e) => {
+        if (e.touches.length >= 2 && konvaStage.isDragging()) {
+            konvaStage.stopDrag();
+        }
+    }, {passive: true});
+
+    container.addEventListener('touchmove', (e) => {
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
         if (!touch1 || !touch2) return;
-        e.evt.preventDefault();
+        e.preventDefault();
         if (konvaStage.isDragging()) {
             konvaStage.stopDrag();
         }
@@ -142,10 +152,11 @@ function bindStagePinch() {
         };
         zoomStageAtPoint(pointer, konvaStage.scaleX() * (dist / lastPinchDist));
         lastPinchDist = dist;
-    });
-    konvaStage.on('touchend', () => {
+    }, {passive: false});
+
+    container.addEventListener('touchend', () => {
         lastPinchDist = 0;
-    });
+    }, {passive: true});
 }
 
 // init Konva stage with map image as bottom layer
