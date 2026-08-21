@@ -10,18 +10,18 @@ permissions:
 
 jobs:
   test:
-    name: Test (Java 21)
+    name: Test (Java 25)
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 21 with Maven cache
+      - name: Set up JDK 25 with Maven cache
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '25'
           cache: maven
 
       - name: Ensure Maven wrapper is executable
@@ -47,11 +47,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 21 with Maven cache
+      - name: Set up JDK 25 with Maven cache
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '25'
           cache: maven
 
       - name: Ensure Maven wrapper is executable

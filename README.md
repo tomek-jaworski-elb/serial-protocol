@@ -1,10 +1,10 @@
 # Serial Protocol – Simple AIS
 
-Aplikacja Spring Boot (Java 21) do odbioru i wizualizacji danych AIS z portów szeregowych (RS-232) w czasie rzeczywistym przez WebSocket.
+Aplikacja Spring Boot (Java 25) do odbioru i wizualizacji danych AIS z portów szeregowych (RS-232) w czasie rzeczywistym przez WebSocket.
 
 ## Wymagania
 
-- Java 21+
+- Java 25+
 - Maven 3.9+ (lub wrapper `mvnw` / `mvnw.cmd`)
 - MariaDB 11.7 (lub Docker)
 
@@ -32,7 +32,7 @@ Docker Compose podnosi dwa kontenery:
 
 ```bash
 .\mvnw.cmd clean package -Dmaven.test.skip=true
-java -jar .\target\serial-protocol-2.0.jar
+java -jar .\target\serial-protocol-3.0.jar
 ```
 
 Aplikacja nasłuchuje na porcie **443** (HTTPS, SSL/PKCS12).
