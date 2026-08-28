@@ -1,8 +1,3 @@
-/*
- * Copyright 2026 Adtran Networks SE. All rights reserved.
- *
- * Owner: tomaszja
- */
 package com.jaworski.serialprotocol.configuration;
 
 import org.slf4j.Logger;

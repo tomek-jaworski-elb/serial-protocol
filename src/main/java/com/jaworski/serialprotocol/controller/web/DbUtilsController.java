@@ -1,8 +1,3 @@
-/*
- * Copyright 2026 Adtran Networks SE. All rights reserved.
- *
- * Owner: tomaszja
- */
 package com.jaworski.serialprotocol.controller.web;
 
 import com.jaworski.serialprotocol.service.WebSocketPublisher;

@@ -8,26 +8,6 @@
 </head>
 <body>
 <header th:replace="~{fragment::header}"></header>
-<div class="container-fluid">
-    <div class="row justify-content-center">
-        <div class="col-auto text-center" th:each="ship : ${shipModels}">
-            <div th:id="'bg-color-' + ${ship.id}" class="box justify-content-center"
-                 th:style="'background-color: ' + ${ship.color}">
-                <div class="container justify-content-center pb-1">
-                    <img th:id="'led' + ${ship.id}" th:src="@{/img/led_connection_1.png}" alt="Led indicator">
-                    <span th:id="'rs_model' + ${ship.id} + '_no'" class="text-center p-1 border-0">0</span>
-                </div>
-                <h4 class="text-center" th:text="${ship.name}">Ship Name</h4>
-                <p class="text-center"><b>Speed: </b>
-                    <span th:id="'speed' + ${ship.id}" class="text-center p-1 border-0 h5">0.0</span>
-                </p>
-                <p class="text-center"><b>Heading: </b>
-                    <span th:id="'heading' + ${ship.id}" class="text-center p-1 border-0 h5">000.0</span>
-                </p>
-            </div>
-        </div>
-    </div>
-</div>
 <!-- controls live outside #konvaContainer: Konva clears the stage container content on init -->
 <div class="map-wrapper">
     <div class="canvas-container" id="konvaContainer"></div>
@@ -36,15 +16,59 @@
         <button type="button" id="zoomOutBtn" class="btn btn-light border" title="Zoom out">&minus;</button>
         <button type="button" id="zoomResetBtn" class="btn btn-light border" title="Reset view">&#8634;</button>
     </div>
+    <button type="button" class="ship-list-trigger d-lg-none" id="shipListTriggerBtn" aria-controls="shipListPanel" aria-expanded="false">
+        Statki
+    </button>
+
+    <!--
+      Ship list: ONE list in the DOM (th:id values led{id}/speed{id}/heading{id}/rs_model{id}_no
+      are unchanged from the old legend panel, so chart-script.js needs no id changes). CSS turns
+      it into a bottom sheet on mobile (fixed, off-screen until .open — toggled by bindShipListToggle()
+      in chart-script.js, no Bootstrap offcanvas here on purpose: two separate offcanvas/sidebar
+      copies would each need their own ids, and getElementById only ever finds the first one) and a
+      static sidebar next to the map on desktop (chart.css, >= lg).
+      heading{id} starts as "—": no ship has sent a message yet (offline). The first
+      fillFieldValues() call for that ship overwrites it with a real value and it never
+      reverts, matching the "online ships always show a course" rule even at speed ~0.
+    -->
+    <div class="ship-list-backdrop d-lg-none" id="shipListBackdrop"></div>
+    <aside class="ship-list-panel" id="shipListPanel" aria-label="Lista statków">
+        <div class="ship-list-panel-header d-lg-none">
+            <h5 class="m-0">Statki</h5>
+            <button type="button" class="btn-close" id="shipListCloseBtn" aria-label="Zamknij"></button>
+        </div>
+        <ul class="ship-list list-unstyled m-0">
+            <li th:each="ship : ${shipModels}" class="ship-row" th:style="'--ship-color: ' + ${ship.color}">
+                <span class="ship-chip"></span>
+                <div class="ship-info">
+                    <div class="ship-name" th:text="${ship.name}">Ship Name</div>
+                    <div class="ship-course">
+                        <svg th:id="'arrow' + ${ship.id}" class="ship-arrow" viewBox="0 0 24 24" style="visibility:hidden">
+                            <path d="M12 2 L18 20 L12 16 L6 20 Z"/>
+                        </svg>
+                        <span th:id="'heading' + ${ship.id}" class="course-deg">&mdash;</span>
+                        <span class="course-sep">&middot;</span>
+                        <span th:id="'speed' + ${ship.id}" class="course-speed">0.0</span><span class="course-unit"> kn</span>
+                    </div>
+                </div>
+                <span th:id="'led' + ${ship.id}" class="led-dot"></span>
+                <span th:id="'rs_model' + ${ship.id} + '_no'" class="visually-hidden">0</span>
+            </li>
+        </ul>
+    </aside>
 </div>
-<div class="container-fluid mt-3">
+<!-- Raw per-message debug line (last ship only) — off by default, not part of the Fleet Board UI -->
+<div class="container-fluid mt-3 d-flex justify-content-end">
+    <button type="button" class="btn btn-link btn-sm text-muted p-0" id="diagnosticsToggleBtn">Diagnostyka</button>
+</div>
+<div class="container-fluid mt-1 d-none" id="textFieldWrapper">
     <p id="textField" class="form-control" style="white-space: normal; word-wrap: break-word;">Text</p>
 </div>
 <footer th:replace="~{fragment::footer}"></footer>
 <script th:inline="javascript">
     const ENABLE_TEST_RUNS_VAR    = /*[[${isTestEnabled}]]*/ false;
 </script>
-<script type="text/javascript" th:src="@{/js/konva-10_3_0/konva.min.js}"></script>
+<script type="text/javascript" th:src="@{/js/konva-10_3_2/konva.min.js}"></script>
 <script type="text/javascript" th:src="@{/js/chart-script.js}"></script>
 </body>
 </html>
