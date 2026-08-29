@@ -4,17 +4,22 @@
     <title th:text="${@environment.getProperty('spring.application.name')} + ' : Courses'">Serial port server</title>
     <link rel="stylesheet" th:href="@{/flatpickr/flatpickr.min.css}">
     <th:block th:replace="~{fragment::headContent}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/custom-crud.css}">
 </head>
 <body>
 <header th:replace="~{fragment::header}"></header>
 <div class="container mb-4">
     <th:block th:replace="~{fragment::toastNotifications}"></th:block>
 
-    <div class="d-flex justify-content-between align-items-center my-3">
-        <h4 class="mb-0">Certificates</h4>
-        <div class="d-flex align-items-center gap-2">
-            <input id="tableFilterInput" type="text" class="form-control form-control-sm" placeholder="Filter..." style="width: 180px;">
+    <div class="crud-toolbar">
+        <h4 class="mb-0" id="coursesTableHeading">Certificates</h4>
+        <div class="crud-toolbar-actions">
+            <input id="tableFilterInput" type="text" class="form-control form-control-sm crud-filter"
+                   placeholder="Filter on this page" aria-label="Filter rows on this page"
+                   title="Filters only the rows shown on the current page">
+            <span id="crudFilterScope" class="crud-filter-scope" aria-live="polite"></span>
             <span class="badge bg-secondary" th:text="${coursesPage.totalElements}" th:if="${coursesPage != null && coursesPage.totalElements > 0}">0</span>
+            <span id="crudSelectionCount" class="crud-selection-count" aria-live="polite"></span>
             <button id="printReportBtn" type="button" class="btn btn-outline-secondary btn-sm" disabled>
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-printer me-1" viewBox="0 0 16 16">
                     <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1"/>
@@ -70,31 +75,58 @@
                                placeholder="dd/MM/yyyy" pattern="\d{2}/\d{2}/\d{4}" title="Format: dd/MM/yyyy" required>
                     </div>
                     <div class="col-md-6">
-                        <label for="addTrainerIds" class="form-label">Trainers <span class="text-muted small">(optional, Ctrl+click for multiple)</span></label>
-                        <select id="addTrainerIds" name="trainerIds" class="form-select" multiple size="4">
-                            <option th:if="${#lists.isEmpty(trainers)}" value="" disabled>No trainers available</option>
-                            <option th:each="t : ${trainers}"
-                                    th:value="${t.id}"
-                                    th:text="${t.name + ' ' + t.surname}">Trainer</option>
-                        </select>
+                        <div class="form-label" id="addTrainersLabel">Trainers <span class="text-muted small">(optional)</span></div>
+                        <!-- Never wrap this container in th:if. A hidden control submits no
+                             trainerIds parameter at all, and the backend reads a missing
+                             parameter as "clear every association" (BUG-02). The empty case
+                             is a message inside the container, not a missing container. -->
+                        <div id="addTrainerIds" class="checkbox-group" role="group" aria-labelledby="addTrainersLabel">
+                            <p class="checkbox-group-empty mb-0" th:if="${#lists.isEmpty(trainers)}">No trainers available</p>
+                            <label class="checkbox-group-item" th:each="t : ${trainers}">
+                                <input class="form-check-input" type="checkbox" name="trainerIds" th:value="${t.id}">
+                                <span class="checkbox-group-text">
+                                    <span class="checkbox-group-name" th:text="${t.name + ' ' + t.surname}">Trainer</span>
+                                    <span class="checkbox-group-nick" th:unless="${#strings.isEmpty(t.nickname)}"
+                                          th:text="${t.nickname}">nickname</span>
+                                </span>
+                            </label>
+                        </div>
                     </div>
                     <div class="col-md-6">
-                        <label for="addLecturerIds" class="form-label">Lecturers <span class="text-muted small">(optional, Ctrl+click for multiple)</span></label>
-                        <select id="addLecturerIds" name="lecturerIds" class="form-select" multiple size="4">
-                            <option th:if="${#lists.isEmpty(lecturers)}" value="" disabled>No lecturers available</option>
-                            <option th:each="l : ${lecturers}"
-                                    th:value="${l.id}"
-                                    th:text="${l.name + ' ' + l.surname}">Lecturer</option>
-                        </select>
+                        <div class="form-label" id="addLecturersLabel">Lecturers <span class="text-muted small">(optional)</span></div>
+                        <!-- Never wrap this container in th:if. A hidden control submits no
+                             lecturerIds parameter at all, and the backend reads a missing
+                             parameter as "clear every association" (BUG-02). The empty case
+                             is a message inside the container, not a missing container. -->
+                        <div id="addLecturerIds" class="checkbox-group" role="group" aria-labelledby="addLecturersLabel">
+                            <p class="checkbox-group-empty mb-0" th:if="${#lists.isEmpty(lecturers)}">No lecturers available</p>
+                            <label class="checkbox-group-item" th:each="l : ${lecturers}">
+                                <input class="form-check-input" type="checkbox" name="lecturerIds" th:value="${l.id}">
+                                <span class="checkbox-group-text">
+                                    <span class="checkbox-group-name" th:text="${l.name + ' ' + l.surname}">Lecturer</span>
+                                    <span class="checkbox-group-nick" th:unless="${#strings.isEmpty(l.nickname)}"
+                                          th:text="${l.nickname}">nickname</span>
+                                </span>
+                            </label>
+                        </div>
                     </div>
                     <div class="col-md-6">
-                        <label for="addTechnicianIds" class="form-label">Technicians <span class="text-muted small">(optional, Ctrl+click for multiple)</span></label>
-                        <select id="addTechnicianIds" name="technicianIds" class="form-select" multiple size="4">
-                            <option th:if="${#lists.isEmpty(technicians)}" value="" disabled>No technicians available</option>
-                            <option th:each="tech : ${technicians}"
-                                    th:value="${tech.id}"
-                                    th:text="${tech.name + ' ' + tech.surname}">Technician</option>
-                        </select>
+                        <div class="form-label" id="addTechniciansLabel">Technicians <span class="text-muted small">(optional)</span></div>
+                        <!-- Never wrap this container in th:if. A hidden control submits no
+                             technicianIds parameter at all, and the backend reads a missing
+                             parameter as "clear every association" (BUG-02). The empty case
+                             is a message inside the container, not a missing container. -->
+                        <div id="addTechnicianIds" class="checkbox-group" role="group" aria-labelledby="addTechniciansLabel">
+                            <p class="checkbox-group-empty mb-0" th:if="${#lists.isEmpty(technicians)}">No technicians available</p>
+                            <label class="checkbox-group-item" th:each="tech : ${technicians}">
+                                <input class="form-check-input" type="checkbox" name="technicianIds" th:value="${tech.id}">
+                                <span class="checkbox-group-text">
+                                    <span class="checkbox-group-name" th:text="${tech.name + ' ' + tech.surname}">Technician</span>
+                                    <span class="checkbox-group-nick" th:unless="${#strings.isEmpty(tech.nickname)}"
+                                          th:text="${tech.nickname}">nickname</span>
+                                </span>
+                            </label>
+                        </div>
                     </div>
                 </div>
                 <div class="d-flex gap-2 mt-3">
@@ -151,31 +183,58 @@
                                placeholder="dd/MM/yyyy" pattern="\d{2}/\d{2}/\d{4}" title="Format: dd/MM/yyyy" required>
                     </div>
                     <div class="col-md-6">
-                        <label for="updateTrainerIds" class="form-label">Trainers <span class="text-muted small">(optional, Ctrl+click for multiple)</span></label>
-                        <select id="updateTrainerIds" name="trainerIds" class="form-select" multiple size="4">
-                            <option th:if="${#lists.isEmpty(trainers)}" value="" disabled>No trainers available</option>
-                            <option th:each="t : ${trainers}"
-                                    th:value="${t.id}"
-                                    th:text="${t.name + ' ' + t.surname}">Trainer</option>
-                        </select>
+                        <div class="form-label" id="updateTrainersLabel">Trainers <span class="text-muted small">(optional)</span></div>
+                        <!-- Never wrap this container in th:if. A hidden control submits no
+                             trainerIds parameter at all, and the backend reads a missing
+                             parameter as "clear every association" (BUG-02). The empty case
+                             is a message inside the container, not a missing container. -->
+                        <div id="updateTrainerIds" class="checkbox-group" role="group" aria-labelledby="updateTrainersLabel">
+                            <p class="checkbox-group-empty mb-0" th:if="${#lists.isEmpty(trainers)}">No trainers available</p>
+                            <label class="checkbox-group-item" th:each="t : ${trainers}">
+                                <input class="form-check-input" type="checkbox" name="trainerIds" th:value="${t.id}">
+                                <span class="checkbox-group-text">
+                                    <span class="checkbox-group-name" th:text="${t.name + ' ' + t.surname}">Trainer</span>
+                                    <span class="checkbox-group-nick" th:unless="${#strings.isEmpty(t.nickname)}"
+                                          th:text="${t.nickname}">nickname</span>
+                                </span>
+                            </label>
+                        </div>
                     </div>
                     <div class="col-md-6">
-                        <label for="updateLecturerIds" class="form-label">Lecturers <span class="text-muted small">(optional, Ctrl+click for multiple)</span></label>
-                        <select id="updateLecturerIds" name="lecturerIds" class="form-select" multiple size="4">
-                            <option th:if="${#lists.isEmpty(lecturers)}" value="" disabled>No lecturers available</option>
-                            <option th:each="l : ${lecturers}"
-                                    th:value="${l.id}"
-                                    th:text="${l.name + ' ' + l.surname}">Lecturer</option>
-                        </select>
+                        <div class="form-label" id="updateLecturersLabel">Lecturers <span class="text-muted small">(optional)</span></div>
+                        <!-- Never wrap this container in th:if. A hidden control submits no
+                             lecturerIds parameter at all, and the backend reads a missing
+                             parameter as "clear every association" (BUG-02). The empty case
+                             is a message inside the container, not a missing container. -->
+                        <div id="updateLecturerIds" class="checkbox-group" role="group" aria-labelledby="updateLecturersLabel">
+                            <p class="checkbox-group-empty mb-0" th:if="${#lists.isEmpty(lecturers)}">No lecturers available</p>
+                            <label class="checkbox-group-item" th:each="l : ${lecturers}">
+                                <input class="form-check-input" type="checkbox" name="lecturerIds" th:value="${l.id}">
+                                <span class="checkbox-group-text">
+                                    <span class="checkbox-group-name" th:text="${l.name + ' ' + l.surname}">Lecturer</span>
+                                    <span class="checkbox-group-nick" th:unless="${#strings.isEmpty(l.nickname)}"
+                                          th:text="${l.nickname}">nickname</span>
+                                </span>
+                            </label>
+                        </div>
                     </div>
                     <div class="col-md-6">
-                        <label for="updateTechnicianIds" class="form-label">Technicians <span class="text-muted small">(optional, Ctrl+click for multiple)</span></label>
-                        <select id="updateTechnicianIds" name="technicianIds" class="form-select" multiple size="4">
-                            <option th:if="${#lists.isEmpty(technicians)}" value="" disabled>No technicians available</option>
-                            <option th:each="tech : ${technicians}"
-                                    th:value="${tech.id}"
-                                    th:text="${tech.name + ' ' + tech.surname}">Technician</option>
-                        </select>
+                        <div class="form-label" id="updateTechniciansLabel">Technicians <span class="text-muted small">(optional)</span></div>
+                        <!-- Never wrap this container in th:if. A hidden control submits no
+                             technicianIds parameter at all, and the backend reads a missing
+                             parameter as "clear every association" (BUG-02). The empty case
+                             is a message inside the container, not a missing container. -->
+                        <div id="updateTechnicianIds" class="checkbox-group" role="group" aria-labelledby="updateTechniciansLabel">
+                            <p class="checkbox-group-empty mb-0" th:if="${#lists.isEmpty(technicians)}">No technicians available</p>
+                            <label class="checkbox-group-item" th:each="tech : ${technicians}">
+                                <input class="form-check-input" type="checkbox" name="technicianIds" th:value="${tech.id}">
+                                <span class="checkbox-group-text">
+                                    <span class="checkbox-group-name" th:text="${tech.name + ' ' + tech.surname}">Technician</span>
+                                    <span class="checkbox-group-nick" th:unless="${#strings.isEmpty(tech.nickname)}"
+                                          th:text="${tech.nickname}">nickname</span>
+                                </span>
+                            </label>
+                        </div>
                     </div>
                 </div>
                 <div class="d-flex gap-2 mt-3">
@@ -186,12 +245,13 @@
         </div>
     </div>
 
-    <div class="table-responsive" th:if="${!#lists.isEmpty(courses)}">
-        <table class="table table-striped table-hover align-middle text-center filterable-table">
+    <div class="table-responsive" th:if="${!#lists.isEmpty(courses)}"
+         role="region" aria-labelledby="coursesTableHeading" tabindex="0">
+        <table class="table table-striped table-hover align-middle filterable-table crud-table">
             <thead class="table-light">
             <tr>
                 <th scope="col"><input type="checkbox" class="form-check-input" id="selectAllCheckbox" title="Select all"></th>
-                <th scope="col" data-sort="number">ID</th>
+                <th scope="col" class="col-num" data-sort="number">ID</th>
                 <th scope="col" data-sort="text">Participant</th>
                 <th scope="col" data-sort="text">Course Type</th>
                 <th scope="col" data-sort="date">Start Date</th>
@@ -206,7 +266,7 @@
             <tbody>
             <tr th:each="course, courseStat : ${courses}">
                 <td><input type="checkbox" class="form-check-input row-select-checkbox" th:value="${course.uuid}"></td>
-                <td th:text="${course.id}">1</td>
+                <td class="col-num" th:text="${course.id}">1</td>
                 <td>
                     <span th:each="p : ${participants}" th:if="${p.participantUuid == course.participantUuid}"
                           th:text="${p.name + ' ' + p.surname}">Participant</span>
@@ -237,7 +297,7 @@
                     <span th:if="${course.technicianIds.isEmpty()}" class="text-muted small">-</span>
                 </td>
                 <td>
-                    <div class="d-flex justify-content-center gap-2 flex-wrap">
+                    <div class="crud-row-actions">
                         <button
                                 type="button"
                                 class="btn btn-outline-info btn-sm details-course-btn"
@@ -245,21 +305,30 @@
                                 th:attr="data-uuid=${course.uuid},data-id=${course.id},data-start-date=${course.startDate},data-end-date=${course.endDate},data-course-type-desc=${ct != null ? ct.description : ''},data-course-type-long-desc=${ct != null ? ct.longDescription : ''},data-counter=${course.counter}">
                             Details
                         </button>
-                        <button
-                                type="button"
-                                class="btn btn-outline-warning btn-sm update-course-btn"
-                                th:attr="data-uuid=${course.uuid},data-id=${course.id},data-participant-uuid=${course.participantUuid},data-course-type-id=${course.courseTypeId},data-start-date=${course.startDate},data-end-date=${course.endDate},data-counter=${course.counter}"
-                                th:data-trainer-ids="${course.trainerIdsString}"
-                                th:data-lecturer-ids="${course.lecturerIdsString}"
-                                th:data-technician-ids="${course.technicianIdsString}">
-                            Update
-                        </button>
-                        <form method="post" th:action="@{/courses-service/delete/{uuid}(uuid=${course.uuid})}">
-                            <button type="submit" class="btn btn-outline-danger btn-sm"
-                                    onclick="return confirm('Are you sure you want to delete this course?');">
-                                Delete
+                        <div class="dropdown">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="dropdown"
+                                    aria-expanded="false"
+                                    th:attr="aria-label='More actions for certificate ' + ${course.id}">
+                                &#8942;
                             </button>
-                        </form>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <button type="button" class="dropdown-item update-course-btn"
+                                            th:attr="data-uuid=${course.uuid},data-id=${course.id},data-participant-uuid=${course.participantUuid},data-course-type-id=${course.courseTypeId},data-start-date=${course.startDate},data-end-date=${course.endDate},data-counter=${course.counter}"
+                                            th:data-trainer-ids="${course.trainerIdsString}"
+                                            th:data-lecturer-ids="${course.lecturerIdsString}"
+                                            th:data-technician-ids="${course.technicianIdsString}">
+                                        Update
+                                    </button>
+                                </li>
+                                <li>
+                                    <form method="post" class="m-0" th:action="@{/courses-service/delete/{uuid}(uuid=${course.uuid})}">
+                                        <button type="submit" class="dropdown-item text-danger"
+                                                onclick="return confirm('Are you sure you want to delete this course?');">Delete</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
                 </td>
             </tr>
@@ -333,6 +402,7 @@
 </form>
 <footer th:replace="~{fragment::footer}"></footer>
 <script th:src="@{/js/common/table-filter-sort.js}"></script>
+<script th:src="@{/js/common/crud-table-actions.js}"></script>
 <script th:src="@{/flatpickr/flatpickr.min.js}"></script>
 <script>
     function isoToEu(dateStr) {
@@ -415,15 +485,21 @@
                 fpUpdateStartDate.setDate(btn.dataset.startDate || '', false, 'Y-m-d');
                 fpUpdateEndDate.setDate(btn.dataset.endDate || '', false, 'Y-m-d');
 
-                const trainerSelect = document.getElementById('updateTrainerIds');
-                const lecturerSelect = document.getElementById('updateLecturerIds');
-                const technicianSelect = document.getElementById('updateTechnicianIds');
+                // The three person pickers are checkbox groups now, not <select multiple>,
+                // so tick by value instead of setting opt.selected. Values not in the list
+                // are explicitly unticked, which clears whatever the previous row left.
+                const checkByValue = (groupId, ids) => {
+                    const group = document.getElementById(groupId);
+                    if (!group) return;
+                    group.querySelectorAll('input[type="checkbox"]')
+                        .forEach((cb) => { cb.checked = ids.includes(cb.value); });
+                };
                 const trainerIds = (btn.dataset.trainerIds || '').split(',').filter(Boolean);
                 const lecturerIds = (btn.dataset.lecturerIds || '').split(',').filter(Boolean);
                 const technicianIds = (btn.dataset.technicianIds || '').split(',').filter(Boolean);
-                if (trainerSelect) for (let opt of trainerSelect.options) opt.selected = trainerIds.includes(opt.value);
-                if (lecturerSelect) for (let opt of lecturerSelect.options) opt.selected = lecturerIds.includes(opt.value);
-                if (technicianSelect) for (let opt of technicianSelect.options) opt.selected = technicianIds.includes(opt.value);
+                checkByValue('updateTrainerIds', trainerIds);
+                checkByValue('updateLecturerIds', lecturerIds);
+                checkByValue('updateTechnicianIds', technicianIds);
 
                 updateCourseFormContainer.classList.remove('d-none');
                 if (addCourseFormContainer) addCourseFormContainer.classList.add('d-none');
@@ -458,46 +534,11 @@
         });
     });
 
-    // ── PDF Report ──────────────────────────────────────────────────────────
-    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-    const rowCheckboxes = document.querySelectorAll('.row-select-checkbox');
-    const printReportBtn = document.getElementById('printReportBtn');
-    const pdfReportForm = document.getElementById('pdfReportForm');
-    const pdfReportIds = document.getElementById('pdfReportIds');
-
-    function updatePrintButton() {
-        const checkedBoxes = document.querySelectorAll('.row-select-checkbox:checked');
-        const total = rowCheckboxes.length;
-        const checked = checkedBoxes.length;
-        if (printReportBtn) {
-            printReportBtn.disabled = checked === 0;
-        }
-        if (selectAllCheckbox) {
-            selectAllCheckbox.checked = checked === total && total > 0;
-            selectAllCheckbox.indeterminate = checked > 0 && checked < total;
-        }
-    }
-
-    if (selectAllCheckbox) {
-        selectAllCheckbox.addEventListener('change', () => {
-            rowCheckboxes.forEach(cb => { cb.checked = selectAllCheckbox.checked; });
-            updatePrintButton();
-        });
-    }
-
-    rowCheckboxes.forEach(cb => {
-        cb.addEventListener('change', updatePrintButton);
-    });
-
-    if (printReportBtn && pdfReportForm && pdfReportIds) {
-        printReportBtn.addEventListener('click', () => {
-            const checkedIds = Array.from(document.querySelectorAll('.row-select-checkbox:checked'))
-                .map(cb => cb.value)
-                .join(',');
-            pdfReportIds.value = checkedIds;
-            pdfReportForm.submit();
-        });
-    }
+    // Row selection and PDF report wiring now live in
+    // /js/common/crud-table-actions.js, shared by all custom/* pages. That
+    // version also excludes rows hidden by the filter, which this one did not:
+    // select-all used to tick filtered-away rows too, so the report could
+    // contain records the user had filtered out and never saw.
 </script>
 </body>
 </html>

@@ -10,11 +10,18 @@
 <header th:replace="~{fragment::header}"></header>
 <!-- controls live outside #konvaContainer: Konva clears the stage container content on init -->
 <div class="map-wrapper">
-    <div class="canvas-container" id="konvaContainer"></div>
-    <div class="map-controls btn-group-vertical" role="group" aria-label="Map zoom controls">
-        <button type="button" id="zoomInBtn" class="btn btn-light border" title="Zoom in">+</button>
-        <button type="button" id="zoomOutBtn" class="btn btn-light border" title="Zoom out">&minus;</button>
-        <button type="button" id="zoomResetBtn" class="btn btn-light border" title="Reset view">&#8634;</button>
+    <!--
+      .map-pane is the positioning context for .map-controls. Without it the controls
+      anchor to .map-wrapper, which on desktop is a flex row that also spans the ship
+      list, so right:10px placed the zoom buttons over the sidebar instead of the map.
+    -->
+    <div class="map-pane">
+        <div class="canvas-container" id="konvaContainer"></div>
+        <div class="map-controls btn-group-vertical" role="group" aria-label="Map zoom controls">
+            <button type="button" id="zoomInBtn" class="btn btn-light border" title="Zoom in">+</button>
+            <button type="button" id="zoomOutBtn" class="btn btn-light border" title="Zoom out">&minus;</button>
+            <button type="button" id="zoomResetBtn" class="btn btn-light border" title="Reset view">&#8634;</button>
+        </div>
     </div>
     <button type="button" class="ship-list-trigger d-lg-none" id="shipListTriggerBtn" aria-controls="shipListPanel" aria-expanded="false">
         Statki

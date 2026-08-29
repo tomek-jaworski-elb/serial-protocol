@@ -139,8 +139,12 @@ body {
     right: 0;
     z-index: 1030; /* below Bootstrap .offcanvas (1045) */
     display: flex;
-    height: var(--fb-bottom-nav-height);
-    padding-bottom: env(safe-area-inset-bottom);
+    /* The safe-area inset must ADD to the bar, not eat into it: with
+       box-sizing:border-box a plain height would squeeze the link row to
+       56px minus the home-indicator inset (~22px on an iPhone). This keeps the
+       content 56px tall and matches what body reserves as padding-bottom. */
+    height: calc(var(--fb-bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     background: var(--fb-surface);
     border-top: 1px solid var(--fb-border);
     box-shadow: 0 -2px 8px rgba(21, 26, 34, 0.06);
@@ -163,10 +167,15 @@ body {
     font-weight: 700;
 }
 
+/* The 0px fallback is not cosmetic: without it, an engine that does not know
+   safe-area-inset-bottom drops the whole calc() as invalid, padding-bottom falls
+   back to 0 and the fixed bottom nav covers the last row of page content.
+   Verified in Chrome: calc(56px + env(unknown-name)) computes to 0px, while
+   calc(56px + env(unknown-name, 0px)) computes to 56px. */
 /* reserve space so the fixed bottom nav never covers page content (all pages) */
 @media (max-width: 991.98px) {
     body {
-        padding-bottom: calc(var(--fb-bottom-nav-height) + env(safe-area-inset-bottom));
+        padding-bottom: calc(var(--fb-bottom-nav-height) + env(safe-area-inset-bottom, 0px));
     }
 }
 

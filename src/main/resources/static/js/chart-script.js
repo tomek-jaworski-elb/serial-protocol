@@ -90,8 +90,16 @@ function updateShipRenderMode() {
             // ship" at the map origin. Keep both hidden until the first message.
             obj.shipShape.opacity(0);
             obj.arrowShape.opacity(0);
+            // Opacity 0 does not remove a shape from Konva's hit graph, so without
+            // this a tap on the map origin would open a tooltip for a ship that has
+            // never reported, showing 0.0 kn / 0.0 deg / No update.
+            obj.shipShape.listening(false);
+            obj.arrowShape.listening(false);
             continue;
         }
+        // re-arm hit testing: this ship has reported, so it is on the map now
+        obj.shipShape.listening(true);
+        obj.arrowShape.listening(true);
         obj.shipShape.opacity(t);
         obj.arrowShape.opacity(1 - t);
         obj.arrowShape.points(computeShipArrowVerticesForKonva(obj.lastPos.x, obj.lastPos.y, obj.lastAngle, arrowSize));

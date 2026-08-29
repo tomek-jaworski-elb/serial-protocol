@@ -1,0 +1,191 @@
+/*
+ * Fleet Board — shared styles for the custom/* CRUD pages
+ * (trainer, technician, lecturer, participant, courses, course-type, course-counter).
+ *
+ * Consumes the design tokens declared in fleet-board-nav.css, with literal
+ * fallbacks so this file still renders sanely on its own. Type scale is
+ * deliberately the same as the Etap 1 ship list in chart.css: 0.85rem/700 for a
+ * primary label, 0.75rem/muted for the secondary line under it.
+ */
+
+/* ---- page toolbar: title + filter + count + buttons -------------------- */
+
+/*
+ * Replaces the old ad-hoc `d-flex justify-content-between align-items-center`
+ * header row, which had no flex-wrap at either level and a hard 180px filter —
+ * on a ~375px phone the title, filter, badge and two buttons overflowed.
+ */
+.crud-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 1rem 0;
+}
+
+.crud-toolbar-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.crud-toolbar .crud-filter {
+    flex: 1 1 160px;
+    max-width: 240px;
+}
+
+/* Scope hint for the filter: it only ever searches the rows on the current
+   page, and without saying so a filtered table looks identical to an
+   unfiltered one. */
+.crud-filter-scope {
+    font-size: 0.75rem;
+    color: var(--fb-muted, #5b6270);
+    white-space: nowrap;
+}
+
+.crud-selection-count {
+    font-size: 0.8rem;
+    color: var(--fb-muted, #5b6270);
+    white-space: nowrap;
+}
+
+.crud-selection-count.over-limit {
+    color: #b02a37;
+    font-weight: 600;
+}
+
+/* ---- table --------------------------------------------------------------
+ * `text-center` was removed from the <table> class list in the templates: it is
+ * a Bootstrap utility carrying !important, so it cannot be overridden from
+ * here. Alignment now follows the usual convention — text left, numbers right,
+ * only checkbox-like cells centred.
+ * ------------------------------------------------------------------------ */
+
+/* first column is the row-select checkbox in all 7 tables */
+.crud-table > :not(caption) > * > *:first-child {
+    text-align: center;
+}
+
+.crud-table .col-num {
+    text-align: right;
+    font-variant-numeric: tabular-nums lining-nums;
+}
+
+/*
+ * Keep the action column reachable on a narrow screen without scrolling the
+ * full table width. Inert when the table fits: sticky only engages once the
+ * container actually scrolls.
+ *
+ * The first shadow is copied verbatim from Bootstrap's own cell rule — it is
+ * how .table-striped and :hover paint their backgrounds, so declaring our edge
+ * shadow alone would silently disable striping on this column.
+ */
+.crud-table > :not(caption) > * > *:last-child {
+    position: sticky;
+    right: 0;
+    z-index: 2;
+    box-shadow:
+        inset 0 0 0 9999px var(--bs-table-bg-state, var(--bs-table-bg-type, var(--bs-table-accent-bg))),
+        -6px 0 6px -6px rgba(21, 26, 34, 0.28);
+}
+
+/* Sortable headers are real buttons so they can be reached by keyboard. The
+   button fills its cell, otherwise the click target would shrink from the whole
+   header to just the text and mouse users would read that as a regression. */
+.crud-table th .sort-btn {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    color: inherit;
+    text-align: inherit;
+    cursor: pointer;
+}
+
+.crud-table th .sort-btn:focus-visible {
+    outline: 2px solid var(--fb-accent, #2f7de0);
+    outline-offset: 2px;
+}
+
+.crud-table .sort-indicator {
+    font-size: 0.7em;
+    opacity: 0.75;
+}
+
+/* ---- row actions -------------------------------------------------------- */
+
+.crud-row-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+/* ---- checkbox group (replaces <select multiple>) ------------------------
+ * A native multi-select needs Ctrl+click, which is poor on desktop and
+ * unusable by touch. A checkbox label also accepts real markup, which is what
+ * lets each row carry a nickname under the name — an <option> is plain text
+ * only.
+ * ------------------------------------------------------------------------ */
+
+.checkbox-group {
+    max-height: 12rem;
+    overflow-y: auto;
+    padding: 0.25rem 0;
+    border: 1px solid var(--fb-border, #dde1e8);
+    border-radius: 8px;
+    background: var(--fb-surface, #ffffff);
+}
+
+/* the whole row is the label, so the touch target is the full width */
+.checkbox-group-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    margin: 0;
+    padding: 0.45rem 0.75rem;
+    cursor: pointer;
+}
+
+.checkbox-group-item:hover {
+    background: rgba(47, 125, 224, 0.06);
+}
+
+.checkbox-group-item .form-check-input {
+    flex-shrink: 0;
+    margin-top: 0.15rem;
+}
+
+/* The row lays out as: input | text column. Both lines must be block-level,
+   otherwise they become sibling flex items and sit side by side. */
+.checkbox-group-text {
+    min-width: 0;
+}
+
+.checkbox-group-name {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.checkbox-group-nick {
+    display: block;
+    font-size: 0.75rem;
+    line-height: 1.25;
+    color: var(--fb-muted, #5b6270);
+}
+
+/* Rendered when the source list is empty. The container itself must always be
+   present — hiding the whole control with th:if once caused the browser to send
+   no value at all, which the backend read as "clear every association". */
+.checkbox-group-empty {
+    padding: 0.75rem;
+    font-size: 0.8rem;
+    color: var(--fb-muted, #5b6270);
+}
