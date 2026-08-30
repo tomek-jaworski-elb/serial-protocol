@@ -39,7 +39,7 @@
 
             <div class="dropdown">
                 <button class="fb-link dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    Więcej
+                    More
                 </button>
                 <ul class="dropdown-menu">
                     <th:block th:replace="~{fragment::moreMenuItems}"></th:block>
@@ -100,14 +100,14 @@
         <a class="fb-link" th:classappend="${name == 'chart'} ? 'active'" th:href="@{/chart}">Chart</a>
         <a class="fb-link" th:classappend="${name == 'about'} ? 'active'" th:href="@{/about}">About</a>
         <button class="fb-more-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#fbMoreOffcanvas" aria-controls="fbMoreOffcanvas">
-            Więcej
+            More
         </button>
     </nav>
 
-    <!-- Mobile "Więcej" offcanvas: same items as desktop dropdown, plus login/user (no separate top-right slot on mobile) -->
+    <!-- Mobile "More" offcanvas: same items as desktop dropdown, plus login/user (no separate top-right slot on mobile) -->
     <div class="offcanvas offcanvas-bottom d-lg-none" tabindex="-1" id="fbMoreOffcanvas" aria-labelledby="fbMoreOffcanvasLabel">
         <div class="offcanvas-header">
-            <h5 class="offcanvas-title" id="fbMoreOffcanvasLabel">Więcej</h5>
+            <h5 class="offcanvas-title" id="fbMoreOffcanvasLabel">More</h5>
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
         <div class="offcanvas-body p-0">
@@ -143,7 +143,7 @@
 </footer>
 
 <!--
-  "Więcej" menu items, shared by the desktop dropdown and the mobile offcanvas
+  "More" menu items, shared by the desktop dropdown and the mobile offcanvas
   (fragment::header). Tracks is intentionally absent — stays fully out of navigation.
 -->
 <th:block th:fragment="moreMenuItems">

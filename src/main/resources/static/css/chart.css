@@ -205,6 +205,10 @@
 @media (min-width: 992px) {
     .ship-list-panel {
         position: static;
+        /* Dropped together with position: 1032 is the mobile sheet's level and does nothing
+           while the element is static — but it would come back to life, and outrank the
+           header bar, the moment anyone gave this a position again. */
+        z-index: auto;
         max-height: none;
         transform: none;
         flex: 0 0 280px;

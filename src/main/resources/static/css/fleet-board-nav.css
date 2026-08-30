@@ -106,6 +106,22 @@ body {
     color: var(--fb-accent);
 }
 
+/*
+ * Desktop only, deliberately. The bar and the page content below it are both
+ * position:relative with z-index:auto and the content comes later in the DOM, so the
+ * "More" dropdown was painted under the ship list inside .map-wrapper (measured on
+ * /chart). An explicit level fixes that.
+ *
+ * Not applied on mobile: there "More" is an offcanvas (Bootstrap 1045), so it needs
+ * nothing — while the ship sheet's backdrop sits at 1031 and is meant to dim the bar
+ * too. Raising the bar globally would leave the header undimmed behind the sheet.
+ */
+@media (min-width: 992px) {
+    .fb-topbar {
+        z-index: 1040;
+    }
+}
+
 /* ---- desktop top nav (>= lg) ---- */
 .fb-top-nav {
     align-items: center;

@@ -24,7 +24,7 @@
         </div>
     </div>
     <button type="button" class="ship-list-trigger d-lg-none" id="shipListTriggerBtn" aria-controls="shipListPanel" aria-expanded="false">
-        Statki
+        Ships
     </button>
 
     <!--
@@ -39,9 +39,9 @@
       reverts, matching the "online ships always show a course" rule even at speed ~0.
     -->
     <div class="ship-list-backdrop d-lg-none" id="shipListBackdrop"></div>
-    <aside class="ship-list-panel" id="shipListPanel" aria-label="Lista statków">
+    <aside class="ship-list-panel" id="shipListPanel" aria-label="Ship list">
         <div class="ship-list-panel-header d-lg-none">
-            <h5 class="m-0">Statki</h5>
+            <h5 class="m-0">Ships</h5>
             <button type="button" class="btn-close" id="shipListCloseBtn" aria-label="Zamknij"></button>
         </div>
         <ul class="ship-list list-unstyled m-0">
@@ -66,7 +66,7 @@
 </div>
 <!-- Raw per-message debug line (last ship only) — off by default, not part of the Fleet Board UI -->
 <div class="container-fluid mt-3 d-flex justify-content-end">
-    <button type="button" class="btn btn-link btn-sm text-muted p-0" id="diagnosticsToggleBtn">Diagnostyka</button>
+    <button type="button" class="btn btn-link btn-sm text-muted p-0" id="diagnosticsToggleBtn">Diagnostics</button>
 </div>
 <div class="container-fluid mt-1 d-none" id="textFieldWrapper">
     <p id="textField" class="form-control" style="white-space: normal; word-wrap: break-word;">Text</p>

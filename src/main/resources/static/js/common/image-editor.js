@@ -66,7 +66,7 @@
         primary.type = 'button';
         primary.className = 'image-primary btn btn-sm';
         primary.dataset.uuid = uuid;
-        primary.textContent = 'Główne';
+        primary.textContent = 'Main';
         primary.setAttribute('aria-pressed', 'false');
         primary.setAttribute('aria-label', `Set ${label} as the main photo`);
         primary.addEventListener('click', () => choosePrimary(describe, uuid));
