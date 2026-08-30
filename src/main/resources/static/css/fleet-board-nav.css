@@ -1,6 +1,6 @@
 /*
  * Fleet Board — shared navigation styles (all pages, via fragment.html).
- * Bottom nav on mobile (< lg), top nav on desktop (>= lg), "Więcej" panel.
+ * Bottom nav on mobile (< lg), top nav on desktop (>= lg), "More" panel.
  * Page-specific styles (e.g. the ship map) live in their own CSS files.
  */
 
@@ -195,7 +195,7 @@ body {
     }
 }
 
-/* ---- "Więcej" content shared by desktop dropdown and mobile offcanvas ---- */
+/* ---- "More" content shared by desktop dropdown and mobile offcanvas ---- */
 .fb-more-list {
     margin: 0;
     padding: 0.25rem 0;

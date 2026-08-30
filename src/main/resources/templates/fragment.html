@@ -150,6 +150,12 @@
     <li>
         <a class="dropdown-item" th:classappend="${name == 'terminal'} ? 'active'" th:href="@{/terminal}">Terminal</a>
     </li>
+    <!--
+      Separators carry the same visibility as the group they introduce. A divider with its own
+      (or no) condition would hang under Terminal for a logged-out visitor, who sees nothing
+      below it, and above a missing DB Utils for a non-admin.
+    -->
+    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}"><hr class="dropdown-divider"/></li>
     <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
         <a class="dropdown-item" th:classappend="${name == 'courses-service'} ? 'active'" th:href="@{/courses-service}">Certificates</a>
     </li>
@@ -177,6 +183,7 @@
     <li sec:authorize="isAuthenticated()">
         <a class="dropdown-item" th:classappend="${name == 'instructor-service'} ? 'active'" th:href="@{/instructor-service}">Instructors</a>
     </li>
+    <li sec:authorize="hasRole('ADMIN')" th:if="${@environment.getProperty('web.ui.extended') == 'true'}"><hr class="dropdown-divider"/></li>
     <li sec:authorize="hasRole('ADMIN')">
         <a class="dropdown-item" th:classappend="${name == 'db-utils'} ? 'active'" th:href="@{/db-utils}">DB Utils</a>
     </li>
