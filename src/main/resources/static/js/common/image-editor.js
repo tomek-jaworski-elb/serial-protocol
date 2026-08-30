@@ -113,6 +113,12 @@
      * user has not chosen anything, so the server stays free to decide.
      */
     function paintPrimary(describe) {
+        // Single-image editors have no primary button to paint — buildTile only creates it when
+        // describe.multiple is true. Without this guard every tile lookup below dereferences
+        // null, render() aborts half-way, and the participant editor silently stops working.
+        if (!describe.multiple) {
+            return;
+        }
         const kept = tilesIn(describe).filter((t) => !t.classList.contains('is-removed'));
         const keptUuids = kept.map((t) => t.querySelector('.image-primary').dataset.uuid);
         let current = describe.chosen;

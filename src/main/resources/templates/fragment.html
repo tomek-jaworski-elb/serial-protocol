@@ -327,13 +327,18 @@
 -->
 <div th:fragment="imageEditor(multiple, helpText)" class="image-editor"
      th:attr="data-multiple=${multiple}">
-    <label class="form-label" th:text="${multiple} ? 'Images' : 'Image'">Images</label>
+    <!-- The label wraps its control instead of using for/id: this fragment renders twice per
+         page (Add and Update), so an id would be duplicated and the association would break. -->
+    <label class="form-label image-label" th:text="${multiple} ? 'Images' : 'Image'">Images</label>
     <div class="image-grid"></div>
     <p class="image-empty text-muted small mb-2 d-none"
        th:text="${multiple} ? 'No images yet.' : 'No image yet.'">No images yet.</p>
-    <input type="file" class="form-control" name="imageFile" accept="image/*"
-           th:name="${multiple} ? 'imageFiles' : 'imageFile'"
-           th:attr="multiple=${multiple} ? 'multiple' : null">
+    <label class="d-block mb-0">
+        <span class="visually-hidden" th:text="${multiple} ? 'Images' : 'Image'">Images</span>
+        <input type="file" class="form-control" name="imageFile" accept="image/*"
+               th:name="${multiple} ? 'imageFiles' : 'imageFile'"
+               th:attr="multiple=${multiple} ? 'multiple' : null">
+    </label>
     <div class="form-text">
         <span th:text="${helpText}">Optional.</span>
         <span class="image-count ms-1"></span>
