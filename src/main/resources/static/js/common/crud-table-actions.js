@@ -20,6 +20,22 @@
  * menu is open lifts it above the rows below for as long as the menu is shown.
  */
 (function () {
+    // .table-responsive is overflow-x:auto, and CSS then computes overflow-y as auto
+    // too, so the container clips in BOTH directions. A menu that has no room to flip
+    // upwards — a table with one or two rows — is cut off at the container's bottom
+    // edge. Positioning it with strategy:'fixed' takes it out of that clip; it does
+    // NOT escape the sticky cell's stacking context, which is what the z-index bump
+    // below is for. Both are needed.
+    function useFixedPositioning() {
+        if (!window.bootstrap || !window.bootstrap.Dropdown) return;
+        document.querySelectorAll('.crud-table [data-bs-toggle="dropdown"]').forEach((toggle) => {
+            window.bootstrap.Dropdown.getOrCreateInstance(toggle, {
+                popperConfig: (defaults) => ({ ...defaults, strategy: 'fixed' })
+            });
+        });
+    }
+    document.addEventListener('DOMContentLoaded', useFixedPositioning);
+
     const cellOf = (el) => el.closest('.crud-table td:last-child, .crud-table th:last-child');
     document.addEventListener('show.bs.dropdown', (e) => {
         const cell = cellOf(e.target);

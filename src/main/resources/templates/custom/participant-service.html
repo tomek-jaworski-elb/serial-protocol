@@ -74,9 +74,7 @@
                         <input id="addParticipantAddress" name="address" type="text" class="form-control" maxlength="300">
                     </div>
                     <div class="col-md-4">
-                        <label for="addParticipantImageFile" class="form-label">Image</label>
-                        <input id="addParticipantImageFile" name="imageFile" type="file" class="form-control" accept="image/*">
-                        <div class="form-text">Optional. JPG or PNG, 10&nbsp;MB max.</div>
+                        <div th:replace="~{fragment::imageEditor(false, 'Optional. JPG or PNG, 10&nbsp;MB max.')}"></div>
                     </div>
                     <div class="col-12">
                         <label for="addParticipantNotes" class="form-label">Notes</label>
@@ -134,9 +132,7 @@
                         <input id="updateParticipantAddress" name="address" type="text" class="form-control" maxlength="300">
                     </div>
                     <div class="col-md-4">
-                        <label for="updateParticipantImageFile" class="form-label">Image</label>
-                        <input id="updateParticipantImageFile" name="imageFile" type="file" class="form-control" accept="image/*">
-                        <div class="form-text">Leave blank to keep the current image. Uploading replaces it &mdash; JPG or PNG, 10&nbsp;MB max.</div>
+                        <div th:replace="~{fragment::imageEditor(false, 'Uploading a new photo replaces the current one. JPG or PNG, 10&nbsp;MB max.')}"></div>
                     </div>
                     <div class="col-12">
                         <label for="updateParticipantNotes" class="form-label">Notes</label>
@@ -248,8 +244,8 @@
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li>
-                                    <button type="button" class="dropdown-item update-participant-btn"
-                                            th:attr="data-uuid=${participant.participantUuid},data-id=${participant.id},data-name=${participant.name},data-surname=${participant.surname},data-birthdate=${participant.birthDate},data-nickname=${participant.nickname},data-email=${participant.email},data-phone=${participant.phoneNumber},data-address=${participant.address},data-notes=${participant.notes}">
+                                    <button type="button" class="dropdown-item update-participant-btn" data-image-source
+                                            th:attr="data-uuid=${participant.participantUuid},data-image=${participant.image},data-id=${participant.id},data-name=${participant.name},data-surname=${participant.surname},data-birthdate=${participant.birthDate},data-nickname=${participant.nickname},data-email=${participant.email},data-phone=${participant.phoneNumber},data-address=${participant.address},data-notes=${participant.notes}">
                                         Update
                                     </button>
                                 </li>
@@ -286,6 +282,7 @@
 <footer th:replace="~{fragment::footer}"></footer>
 <script th:src="@{/js/common/table-filter-sort.js}"></script>
 <script th:src="@{/js/common/crud-table-actions.js}"></script>
+<script th:src="@{/js/common/image-editor.js}"></script>
 
 <div class="modal fade" id="participantDetailsModal" tabindex="-1" aria-labelledby="participantDetailsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">

@@ -1,0 +1,205 @@
+package com.jaworski.serialprotocol.controller.web;
+
+import com.jaworski.serialprotocol.entity.custom.Image;
+import com.jaworski.serialprotocol.repository.custom.ImageRepository;
+import com.jaworski.serialprotocol.service.db.custom.ImageService;
+import com.jaworski.serialprotocol.service.db.custom.ThumbnailGenerator;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.HttpHeaders;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+
+import javax.imageio.ImageIO;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.util.Base64;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+/**
+ * Covers {@code GET /custom/image/{uuid}} — the endpoint had no controller test at all
+ * before the thumbnail and caching work.
+ */
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@AutoConfigureMockMvc
+class ImageEndpointTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+    @Autowired
+    private ImageService imageService;
+    @Autowired
+    private ImageRepository imageRepository;
+
+    @Test
+    void original_isServedWithItsContentType() throws Exception {
+        UUID id = storePng(400, 300);
+
+        mockMvc.perform(get("/custom/image/{uuid}", id).header(HttpHeaders.AUTHORIZATION, auth()))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, "image/png"))
+                .andExpect(header().exists(HttpHeaders.ETAG));
+    }
+
+    @Test
+    void unknownUuid_is404() throws Exception {
+        mockMvc.perform(get("/custom/image/{uuid}", UUID.randomUUID())
+                        .header(HttpHeaders.AUTHORIZATION, auth()))
+                .andExpect(status().isNotFound());
+    }
+
+    /**
+     * private, but revalidated every time: a deleted photo must stop being reachable
+     * at once, which max-age would not guarantee — the browser would keep serving it
+     * from disk while the server already answers 404.
+     */
+    @Test
+    void cacheControlIsPrivateAndAlwaysRevalidated() throws Exception {
+        UUID id = storePng(400, 300);
+
+        // Spring Security would otherwise stamp no-store on every response; it backs
+        // off because the controller sets Cache-Control itself.
+        mockMvc.perform(get("/custom/image/{uuid}", id).header(HttpHeaders.AUTHORIZATION, auth()))
+                .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "private, no-cache"));
+    }
+
+    @Test
+    void matchingIfNoneMatch_returns304() throws Exception {
+        UUID id = storePng(400, 300);
+        String etag = mockMvc.perform(get("/custom/image/{uuid}", id)
+                        .header(HttpHeaders.AUTHORIZATION, auth()))
+                .andReturn().getResponse().getHeader(HttpHeaders.ETAG);
+
+        mockMvc.perform(get("/custom/image/{uuid}", id)
+                        .header(HttpHeaders.IF_NONE_MATCH, etag)
+                        .header(HttpHeaders.AUTHORIZATION, auth()))
+                .andExpect(status().isNotModified());
+    }
+
+    @Test
+    void thumbAndOriginal_haveDifferentEtags() throws Exception {
+        UUID id = storePng(400, 300);
+        String original = etagOf(get("/custom/image/{uuid}", id));
+        String thumb = etagOf(get("/custom/image/{uuid}", id).param("size", "thumb"));
+
+        assertThat(thumb).isNotEqualTo(original);
+        assertThat(thumb).contains(ThumbnailGenerator.VERSION);
+    }
+
+    @Test
+    void thumb_isSmallerThanTheOriginalAndIsStoredOnce() throws Exception {
+        UUID id = storePng(600, 450);
+        int originalSize = imageService.getImageById(id).getData().length;
+
+        byte[] first = body(get("/custom/image/{uuid}", id).param("size", "thumb"));
+
+        assertThat(first.length).isLessThan(originalSize);
+        Image stored = imageRepository.findById(id).orElseThrow();
+        assertThat(stored.getThumbData())
+                .as("generated once and kept, not rebuilt per request")
+                .isNotNull();
+
+        byte[] second = body(get("/custom/image/{uuid}", id).param("size", "thumb"));
+        assertThat(second).isEqualTo(first);
+    }
+
+    @Test
+    void thumb_ofAnAlreadySmallImage_fallsBackToTheOriginal() throws Exception {
+        UUID id = storePng(80, 60);
+        byte[] original = imageService.getImageById(id).getData();
+
+        byte[] thumb = body(get("/custom/image/{uuid}", id).param("size", "thumb"));
+
+        assertThat(thumb).isEqualTo(original);
+    }
+
+    /** ImageIO in JDK 21 has no reader for these, so the original must come back intact. */
+    @Test
+    void thumb_ofUnsupportedFormat_servesTheOriginal() throws Exception {
+        byte[] svg = "<svg xmlns='http://www.w3.org/2000/svg'><rect width='10' height='10'/></svg>"
+                .getBytes();
+        UUID id = imageService.saveImage(svg, "image/svg+xml").getId();
+
+        byte[] served = body(get("/custom/image/{uuid}", id).param("size", "thumb"));
+
+        assertThat(served).isEqualTo(svg);
+    }
+
+    /**
+     * Regression: the ETag is derived from the uuid alone, so answering a conditional
+     * request purely by comparing tags told browsers "unchanged" about a photo that
+     * had already been deleted — and they kept serving it from cache. Deleting a photo
+     * has to be visible immediately, so a conditional request for a gone image is 404,
+     * not 304.
+     */
+    @Test
+    void conditionalRequestForADeletedImage_is404NotNotModified() throws Exception {
+        UUID id = storePng(400, 300);
+        String etag = mockMvc.perform(get("/custom/image/{uuid}", id)
+                        .header(HttpHeaders.AUTHORIZATION, auth()))
+                .andReturn().getResponse().getHeader(HttpHeaders.ETAG);
+
+        imageRepository.deleteById(id);
+
+        mockMvc.perform(get("/custom/image/{uuid}", id)
+                        .header(HttpHeaders.IF_NONE_MATCH, etag)
+                        .header(HttpHeaders.AUTHORIZATION, auth()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void unknownSizeValue_is400() throws Exception {
+        UUID id = storePng(400, 300);
+
+        mockMvc.perform(get("/custom/image/{uuid}", id)
+                        .param("size", "huge")
+                        .header(HttpHeaders.AUTHORIZATION, auth()))
+                .andExpect(status().isBadRequest());
+    }
+
+    // --- helpers ---
+
+    private UUID storePng(int width, int height) throws Exception {
+        BufferedImage img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = img.createGraphics();
+        // Noise, not a flat fill: a uniform image compresses to almost nothing and the
+        // "thumbnail is smaller" assertion would stop meaning anything.
+        for (int x = 0; x < width; x += 3) {
+            for (int y = 0; y < height; y += 3) {
+                g.setColor(new Color((x * 7) % 255, (y * 13) % 255, ((x + y) * 3) % 255));
+                g.fillRect(x, y, 3, 3);
+            }
+        }
+        g.dispose();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ImageIO.write(img, "png", out);
+        return imageService.saveImage(out.toByteArray(), "image/png").getId();
+    }
+
+    private byte[] body(org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder request)
+            throws Exception {
+        MvcResult result = mockMvc.perform(request.header(HttpHeaders.AUTHORIZATION, auth()))
+                .andExpect(status().isOk())
+                .andReturn();
+        return result.getResponse().getContentAsByteArray();
+    }
+
+    private String etagOf(org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder request)
+            throws Exception {
+        return mockMvc.perform(request.header(HttpHeaders.AUTHORIZATION, auth()))
+                .andReturn().getResponse().getHeader(HttpHeaders.ETAG);
+    }
+
+    private String auth() {
+        return "Basic " + Base64.getEncoder().encodeToString("user:user".getBytes());
+    }
+}

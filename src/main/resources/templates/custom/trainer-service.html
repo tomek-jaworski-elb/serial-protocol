@@ -63,12 +63,7 @@
                         <input id="trainerPhoneNumber" name="phoneNumber" type="text" class="form-control" maxlength="26">
                     </div>
                     <div class="col-md-4">
-                        <label for="trainerImages" class="form-label">Images</label>
-                        <input id="trainerImages" name="imageFiles" type="file" class="form-control" accept="image/*" multiple>
-                        <!-- State every restriction before the upload starts, not after it fails.
-                             10MB is spring.servlet.multipart.max-request-size and covers the request
-                             as a whole, so it is the ceiling for all selected files together. -->
-                        <div class="form-text">Optional. Up to 6 images, JPG or PNG, 10&nbsp;MB total.</div>
+                        <div th:replace="~{fragment::imageEditor(true, 'Optional. Up to 6 photos, JPG or PNG, 10&nbsp;MB total.')}"></div>
                     </div>
                     <div class="col-md-8">
                         <label for="trainerAddress" class="form-label">Address</label>
@@ -115,9 +110,7 @@
                         <input id="updateTrainerPhoneNumber" name="phoneNumber" type="text" class="form-control" maxlength="26">
                     </div>
                     <div class="col-md-4">
-                        <label for="updateTrainerImages" class="form-label">Images</label>
-                        <input id="updateTrainerImages" name="imageFiles" type="file" class="form-control" accept="image/*" multiple>
-                        <div class="form-text">Leave blank to keep the current images. Uploading replaces the whole set — up to 6, JPG or PNG, 10&nbsp;MB total.</div>
+                        <div th:replace="~{fragment::imageEditor(true, 'Add more photos, up to 6 in total. JPG or PNG, 10&nbsp;MB per upload.')}"></div>
                     </div>
                     <div class="col-md-8">
                         <label for="updateTrainerAddress" class="form-label">Address</label>
@@ -187,8 +180,8 @@
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li>
-                                    <button type="button" class="dropdown-item update-trainer-btn"
-                                            th:attr="data-id=${trainer.id},data-name=${trainer.name},data-surname=${trainer.surname},data-nickname=${trainer.nickname},data-email=${trainer.email},data-phone=${trainer.phoneNumber},data-address=${trainer.address},data-notes=${trainer.notes}">
+                                    <button type="button" class="dropdown-item update-trainer-btn" data-image-source
+                                            th:attr="data-id=${trainer.id},data-images=${trainer.imagesUuid},data-name=${trainer.name},data-surname=${trainer.surname},data-nickname=${trainer.nickname},data-email=${trainer.email},data-phone=${trainer.phoneNumber},data-address=${trainer.address},data-notes=${trainer.notes}">
                                         Update
                                     </button>
                                 </li>
@@ -252,6 +245,7 @@
 <footer th:replace="~{fragment::footer}"></footer>
 <script th:src="@{/js/common/table-filter-sort.js}"></script>
 <script th:src="@{/js/common/crud-table-actions.js}"></script>
+<script th:src="@{/js/common/image-editor.js}"></script>
 <script>
     const showAddFormBtn = document.getElementById('showAddFormBtn');
     const hideAddFormBtn = document.getElementById('hideAddFormBtn');

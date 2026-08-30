@@ -189,3 +189,97 @@
     font-size: 0.8rem;
     color: var(--fb-muted, #5b6270);
 }
+
+/* ---- photo editor in the update forms ----------------------------------
+ * Thumbnails are added by /js/common/image-editor.js. Marking a tile does not
+ * delete anything on the spot — it dims the tile and swaps the button to "Undo";
+ * the removal happens on Save, which is the only point at which the rest of the
+ * form is committed too.
+ * ---------------------------------------------------------------------- */
+
+.image-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.image-grid:empty {
+    margin-bottom: 0;
+}
+
+.image-tile {
+    position: relative;
+    width: 96px;
+    height: 96px;
+    border: 1px solid var(--fb-border, #dde1e8);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--fb-surface, #ffffff);
+}
+
+.image-tile img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* Dimmed and desaturated rather than hidden: the photo stays recognisable, so
+   "Undo" is a decision about something still visible. */
+.image-tile.is-removed img {
+    opacity: 0.35;
+    filter: grayscale(1);
+}
+
+.image-tile.is-removed {
+    border-color: var(--bs-danger, #dc3545);
+}
+
+.image-remove {
+    position: absolute;
+    right: 4px;
+    bottom: 4px;
+    min-width: 32px;
+    min-height: 32px; /* comfortably above the 24px minimum target size */
+    padding: 0 0.4rem;
+    line-height: 1;
+    border: 1px solid var(--fb-border, #dde1e8);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--fb-ink, #151a22);
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.image-remove:hover {
+    background: #ffffff;
+}
+
+.image-tile.is-removed .image-remove {
+    background: var(--fb-accent, #2f7de0);
+    border-color: var(--fb-accent, #2f7de0);
+    color: var(--fb-accent-ink, #ffffff);
+}
+
+.image-count {
+    color: var(--fb-muted, #5b6270);
+}
+
+/* Files picked but not yet uploaded, so they read differently from stored photos. */
+.image-tile.is-new {
+    border-style: dashed;
+    border-color: var(--fb-accent, #2f7de0);
+}
+
+.image-new-badge {
+    position: absolute;
+    left: 4px;
+    top: 4px;
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+    background: var(--fb-accent, #2f7de0);
+    color: var(--fb-accent-ink, #ffffff);
+    font-size: 0.65rem;
+    font-weight: 700;
+}

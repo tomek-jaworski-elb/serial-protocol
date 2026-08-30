@@ -15,6 +15,7 @@ import com.jaworski.serialprotocol.service.db.custom.ImageService;
 import com.jaworski.serialprotocol.service.db.custom.LecturerService;
 import com.jaworski.serialprotocol.service.db.custom.ParticipantService;
 import com.jaworski.serialprotocol.service.db.custom.TechnicianService;
+import com.jaworski.serialprotocol.service.db.custom.ThumbnailGenerator;
 import com.jaworski.serialprotocol.service.db.custom.TrainerService;
 import jakarta.validation.ConstraintViolationException;
 import com.jaworski.serialprotocol.service.WebSocketPublisher;
@@ -29,6 +30,7 @@ import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -225,20 +227,15 @@ public class CustomDBController {
   @PostMapping("/trainer-service/update")
   public String updateTrainer(@ModelAttribute TrainerDTO trainerDTO,
                               @RequestParam(value = "imageFiles", required = false) MultipartFile[] imageFiles,
+                              @RequestParam(value = "removeImageUuids", required = false) List<UUID> removeImageUuids,
                               RedirectAttributes redirectAttributes) {
     try {
       if (trainerDTO.getId() == null) {
         throw new IllegalArgumentException("Trainer id is required for update");
       }
-      Set<UUID> uploadedImages = uploadImages(imageFiles, MAX_UPLOAD_IMAGES);
-      if (uploadedImages.isEmpty()) {
-        TrainerDTO existingTrainer = trainerService.findById(trainerDTO.getId());
-        if (existingTrainer != null) {
-          trainerDTO.setImagesUuid(existingTrainer.getImagesUuid());
-        }
-      } else {
-        trainerDTO.setImagesUuid(uploadedImages);
-      }
+      TrainerDTO existingTrainer = trainerService.findById(trainerDTO.getId());
+      Set<UUID> existingImages = existingTrainer != null ? existingTrainer.getImagesUuid() : null;
+      trainerDTO.setImagesUuid(mergeImages(existingImages, removeImageUuids, imageFiles));
       trainerService.update(trainerDTO);
       redirectAttributes.addFlashAttribute("successMessage", "Trainer updated successfully.");
     } catch (RuntimeException e) {
@@ -295,20 +292,15 @@ public class CustomDBController {
   @PostMapping("/lecturer-service/update")
   public String updateLecturer(@ModelAttribute LecturerDTO lecturerDTO,
                                @RequestParam(value = "imageFiles", required = false) MultipartFile[] imageFiles,
+                               @RequestParam(value = "removeImageUuids", required = false) List<UUID> removeImageUuids,
                                RedirectAttributes redirectAttributes) {
     try {
       if (lecturerDTO.getId() == null) {
         throw new IllegalArgumentException("Lecturer id is required for update");
       }
-      Set<UUID> uploadedImages = uploadImages(imageFiles, MAX_UPLOAD_IMAGES);
-      if (uploadedImages.isEmpty()) {
-        LecturerDTO existingLecturer = lecturerService.findById(lecturerDTO.getId());
-        if (existingLecturer != null) {
-          lecturerDTO.setImagesUuid(existingLecturer.getImagesUuid());
-        }
-      } else {
-        lecturerDTO.setImagesUuid(uploadedImages);
-      }
+      LecturerDTO existingLecturer = lecturerService.findById(lecturerDTO.getId());
+      Set<UUID> existingImages = existingLecturer != null ? existingLecturer.getImagesUuid() : null;
+      lecturerDTO.setImagesUuid(mergeImages(existingImages, removeImageUuids, imageFiles));
       lecturerService.updateById(lecturerDTO);
       redirectAttributes.addFlashAttribute("successMessage", "Lecturer updated successfully.");
     } catch (RuntimeException e) {
@@ -365,20 +357,15 @@ public class CustomDBController {
   @PostMapping("/technician-service/update")
   public String updateTechnician(@ModelAttribute TechnicianDTO technicianDTO,
                                  @RequestParam(value = "imageFiles", required = false) MultipartFile[] imageFiles,
+                                 @RequestParam(value = "removeImageUuids", required = false) List<UUID> removeImageUuids,
                                  RedirectAttributes redirectAttributes) {
     try {
       if (technicianDTO.getId() == null) {
         throw new IllegalArgumentException("Technician id is required for update");
       }
-      Set<UUID> uploadedImages = uploadImages(imageFiles, MAX_UPLOAD_IMAGES);
-      if (uploadedImages.isEmpty()) {
-        TechnicianDTO existing = technicianService.findById(technicianDTO.getId());
-        if (existing != null) {
-          technicianDTO.setImagesUuid(existing.getImagesUuid());
-        }
-      } else {
-        technicianDTO.setImagesUuid(uploadedImages);
-      }
+      TechnicianDTO existing = technicianService.findById(technicianDTO.getId());
+      Set<UUID> existingImages = existing != null ? existing.getImagesUuid() : null;
+      technicianDTO.setImagesUuid(mergeImages(existingImages, removeImageUuids, imageFiles));
       technicianService.updateById(technicianDTO);
       redirectAttributes.addFlashAttribute("successMessage", "Technician updated successfully.");
     } catch (RuntimeException e) {
@@ -508,19 +495,24 @@ public class CustomDBController {
   @PostMapping("/participant-service/update")
   public String updateParticipant(@ModelAttribute ParticipantDTO participantDTO,
                                   @RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
+                                  @RequestParam(value = "removeImage", required = false) boolean removeImage,
                                   RedirectAttributes redirectAttributes) {
     try {
       if (participantDTO.getParticipantUuid() == null) {
         throw new IllegalArgumentException("UUID is required for update");
       }
       UUID uploadedImage = uploadSingleImage(imageFile);
-      if (uploadedImage == null) {
+      if (uploadedImage != null) {
+        // A newly uploaded file outranks the remove checkbox: it is the more
+        // explicit intent, and the form should not offer both at once anyway.
+        participantDTO.setImage(uploadedImage);
+      } else if (removeImage) {
+        participantDTO.setImage(null);
+      } else {
         ParticipantDTO existingParticipant = participantService.findByUuid(participantDTO.getParticipantUuid());
         if (existingParticipant != null) {
           participantDTO.setImage(existingParticipant.getImage());
         }
-      } else {
-        participantDTO.setImage(uploadedImage);
       }
       participantService.updateByUuid(participantDTO);
       redirectAttributes.addFlashAttribute("successMessage", "Participant updated successfully.");
@@ -596,6 +588,7 @@ public class CustomDBController {
   @PostMapping("/course-counter-service/update")
   public String updateCourseCounter(@ModelAttribute CourseCounterDTO courseCounterDTO,
                                     @RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
+                                    @RequestParam(value = "removeImage", required = false) boolean removeImage,
                                     RedirectAttributes redirectAttributes) {
     try {
       if (courseCounterDTO.uuid() == null) {
@@ -603,7 +596,9 @@ public class CustomDBController {
       }
       UUID uploadedImage = uploadSingleImage(imageFile);
       UUID imageUuid = uploadedImage;
-      if (uploadedImage == null) {
+      if (uploadedImage == null && !removeImage) {
+        // Same precedence as elsewhere: an uploaded file wins, then an explicit
+        // remove, and only a request that asks for neither keeps what is there.
         CourseCounterDTO existing = courseCounterService.getByUuid(courseCounterDTO.uuid())
                 .orElseThrow(() -> new IllegalArgumentException("CourseCounter with id " + courseCounterDTO.uuid() + " not found"));
         imageUuid = existing.imageUuid();
@@ -634,34 +629,157 @@ public class CustomDBController {
     return "redirect:/course-counter-service";
   }
 
+  private static final String THUMB_VARIANT = "thumb";
+  /**
+   * Revalidate every time rather than trusting a copy for N minutes.
+   *
+   * <p>These are photos of people and deleting one has to mean it is gone. With
+   * max-age the browser keeps serving a deleted photo from disk until the age
+   * expires — the server answers 404 while the cache still hands out the image.
+   * "no-cache" still caches; it just asks first, and an unchanged image comes back
+   * as an empty 304, so nearly all of the bandwidth saving remains.</p>
+   */
+  private static final String IMAGE_CACHE_CONTROL = "private, no-cache";
+
+  /**
+   * Serves a stored image, optionally downscaled via {@code ?size=thumb}.
+   *
+   * <p>Caching note that looks wrong until you check it: Spring Security's
+   * CacheControlHeadersWriter would normally stamp {@code no-store} on every response,
+   * but it skips whenever Cache-Control is already set, and skips 304s outright. The
+   * header set here therefore survives.</p>
+   */
   @GetMapping("/custom/image/{uuid}")
-  public ResponseEntity<byte[]> imageByUuid(@PathVariable UUID uuid) {
-    Image image = imageService.getImageById(uuid);
-    if (image == null || image.getData() == null || image.getData().length == 0) {
-      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Image not found");
+  public ResponseEntity<byte[]> imageByUuid(
+      @PathVariable UUID uuid,
+      @RequestParam(required = false) String size,
+      @RequestHeader(value = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch) {
+
+    // Only one variant is offered. Accepting arbitrary values would let a single url
+    // spawn unbounded resize work.
+    boolean wantsThumb = THUMB_VARIANT.equals(size);
+    if (size != null && !wantsThumb) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported size: " + size);
+    }
+
+    // The bytes behind a uuid never change — replacing a photo creates a new Image row —
+    // so the tag needs only the uuid, the variant and the generator version.
+    String etag = "\"" + uuid + "-" + (wantsThumb ? THUMB_VARIANT : "orig")
+        + "-" + ThumbnailGenerator.VERSION + "\"";
+
+    // Answered without reading the blob or generating a thumbnail — but existence is
+    // still checked, and that check is not optional. The tag is derived from the uuid
+    // alone, so a purely tag-based 304 would keep telling browsers "unchanged" about
+    // a photo that has since been deleted, and they would go on serving it from cache
+    // forever. existsById is a primary-key lookup, so the saving is preserved.
+    if (ifNoneMatch != null && matchesEtag(ifNoneMatch, etag)) {
+      if (!imageService.exists(uuid)) {
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Image not found");
+      }
+      return ResponseEntity.status(HttpStatus.NOT_MODIFIED)
+          .eTag(etag)
+          .header(HttpHeaders.CACHE_CONTROL, IMAGE_CACHE_CONTROL)
+          .build();
+    }
+
+    byte[] data;
+    String contentType;
+    if (wantsThumb) {
+      ImageService.ImageContent thumbnail = imageService.getThumbnail(uuid);
+      if (thumbnail == null) {
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Image not found");
+      }
+      data = thumbnail.data();
+      contentType = thumbnail.contentType();
+    } else {
+      Image image = imageService.getImageById(uuid);
+      if (image == null || image.getData() == null || image.getData().length == 0) {
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Image not found");
+      }
+      data = image.getData();
+      contentType = image.getContentType();
     }
 
     MediaType mediaType = MediaType.APPLICATION_OCTET_STREAM;
-    if (image.getContentType() != null && !image.getContentType().isBlank()) {
-      String safe = sanitizeContentType(image.getContentType());
-      mediaType = MediaType.parseMediaType(safe);
+    if (contentType != null && !contentType.isBlank()) {
+      mediaType = MediaType.parseMediaType(sanitizeContentType(contentType));
     }
 
     return ResponseEntity.ok()
         .contentType(mediaType)
-        .header(HttpHeaders.CACHE_CONTROL, "no-store")
+        .eTag(etag)
+        .header(HttpHeaders.CACHE_CONTROL, IMAGE_CACHE_CONTROL)
+        // Ignored by <img>, but it stops an uploaded SVG being opened as a top-level
+        // document, which is the XSS vector for image/svg+xml. Do not remove.
         .header(HttpHeaders.CONTENT_DISPOSITION, "attachment")
-        .body(image.getData());
+        .body(data);
   }
 
-  private Set<UUID> uploadImages(MultipartFile[] files, int maxFiles) {
-    if (files == null || files.length == 0) {
-      return new HashSet<>();
+  private static boolean matchesEtag(String ifNoneMatch, String etag) {
+    for (String candidate : ifNoneMatch.split(",")) {
+      String trimmed = candidate.trim();
+      if ("*".equals(trimmed) || trimmed.equals(etag) || trimmed.equals("W/" + etag)) {
+        return true;
+      }
     }
-    List<MultipartFile> nonEmpty = java.util.Arrays.stream(files)
+    return false;
+  }
+
+  /**
+   * Builds the image set an update should end up with: what survives the user's
+   * removals, plus whatever was newly uploaded.
+   *
+   * <p>The request carries the images to <em>remove</em>, never the ones to keep.
+   * That direction matters. The edit form builds its thumbnails in JavaScript, so
+   * a "keep these" list would turn any rendering failure into data loss — an empty
+   * editor would submit an empty keep-list and wipe every photo. With removals, a
+   * broken editor simply removes nothing. It also makes a missing parameter mean
+   * "leave the images alone", which is exactly how the form behaved before.</p>
+   *
+   * <p>Set difference already ignores ids that are not in {@code existing}, so a
+   * forged uuid is a no-op: the client can only ever subtract from the entity's
+   * own set, never attach someone else's photo.</p>
+   */
+  private Set<UUID> mergeImages(Set<UUID> existing, List<UUID> removeUuids, MultipartFile[] imageFiles) {
+    Set<UUID> kept = existing == null ? new HashSet<>() : new HashSet<>(existing);
+    if (removeUuids != null) {
+      kept.removeAll(removeUuids);
+    }
+
+    // Clamped at 0 so a record that somehow holds more than the limit (data from
+    // before the cap existed) can still have images removed — that is the only
+    // way back under the limit. Adding to such a record stays blocked.
+    int budget = Math.max(0, MAX_UPLOAD_IMAGES - kept.size());
+
+    // Checked before uploadImages() runs, because that method persists each image
+    // through ImageService, which commits on its own. Controllers here are not
+    // transactional, so throwing after the upload would leave orphaned rows in the
+    // image table that nothing ever cleans up.
+    if (usableFiles(imageFiles).size() > budget) {
+      throw new IllegalArgumentException(
+          "Maximum " + MAX_UPLOAD_IMAGES + " images allowed (" + kept.size() + " already in use)");
+    }
+
+    Set<UUID> merged = new HashSet<>(kept);
+    merged.addAll(uploadImages(imageFiles, budget));
+    return merged;
+  }
+
+  private static List<MultipartFile> usableFiles(MultipartFile[] files) {
+    if (files == null || files.length == 0) {
+      return List.of();
+    }
+    return java.util.Arrays.stream(files)
         .filter(Objects::nonNull)
         .filter(f -> !f.isEmpty())
         .toList();
+  }
+
+  private Set<UUID> uploadImages(MultipartFile[] files, int maxFiles) {
+    List<MultipartFile> nonEmpty = usableFiles(files);
+    if (nonEmpty.isEmpty()) {
+      return new HashSet<>();
+    }
 
     if (nonEmpty.size() > maxFiles) {
       throw new IllegalArgumentException("Maximum " + maxFiles + " images allowed");

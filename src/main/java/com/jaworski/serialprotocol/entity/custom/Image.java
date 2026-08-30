@@ -42,4 +42,22 @@ public class Image {
   @Size(max = 100)
   private String contentType;
 
+  /**
+   * Downscaled copy, generated on first request and stored so it is produced once.
+   * Nullable on purpose: rows created before this column existed, and formats
+   * ImageIO cannot read (webp, svg), simply never get one and fall back to the
+   * original. ddl-auto=update adds a nullable column on its own, so this needs no
+   * entry in SchemaMigrationRunner.
+   */
+  @Lob
+  @Column(name = TABLE_NAME + "_thumb_data", columnDefinition = "LONGBLOB")
+  @Basic(fetch = FetchType.LAZY)
+  @ToString.Exclude
+  @EqualsAndHashCode.Exclude
+  private byte[] thumbData;
+
+  @Column(name = TABLE_NAME + "_thumb_content_type", length = 100)
+  @Size(max = 100)
+  private String thumbContentType;
+
 }

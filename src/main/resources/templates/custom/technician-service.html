@@ -57,9 +57,7 @@
                         <input id="technicianPhoneNumber" name="phoneNumber" type="text" class="form-control" maxlength="26">
                     </div>
                     <div class="col-md-4">
-                        <label for="technicianImages" class="form-label">Images</label>
-                        <input id="technicianImages" name="imageFiles" type="file" class="form-control" accept="image/*" multiple>
-                        <div class="form-text">Optional. Up to 6 images, JPG or PNG, 10&nbsp;MB total.</div>
+                        <div th:replace="~{fragment::imageEditor(true, 'Optional. Up to 6 photos, JPG or PNG, 10&nbsp;MB total.')}"></div>
                     </div>
                     <div class="col-md-8">
                         <label for="technicianAddress" class="form-label">Address</label>
@@ -106,9 +104,7 @@
                         <input id="updateTechnicianPhoneNumber" name="phoneNumber" type="text" class="form-control" maxlength="26">
                     </div>
                     <div class="col-md-4">
-                        <label for="updateTechnicianImages" class="form-label">Images</label>
-                        <input id="updateTechnicianImages" name="imageFiles" type="file" class="form-control" accept="image/*" multiple>
-                        <div class="form-text">Leave blank to keep the current images. Uploading replaces the whole set &mdash; up to 6, JPG or PNG, 10&nbsp;MB total.</div>
+                        <div th:replace="~{fragment::imageEditor(true, 'Add more photos, up to 6 in total. JPG or PNG, 10&nbsp;MB per upload.')}"></div>
                     </div>
                     <div class="col-md-8">
                         <label for="updateTechnicianAddress" class="form-label">Address</label>
@@ -171,8 +167,8 @@
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li>
-                                    <button type="button" class="dropdown-item update-technician-btn"
-                                            th:attr="data-id=${technician.id},data-name=${technician.name},data-surname=${technician.surname},data-nickname=${technician.nickname},data-email=${technician.email},data-phone=${technician.phoneNumber},data-address=${technician.address},data-notes=${technician.notes},data-images=${technician.imagesUuid}">
+                                    <button type="button" class="dropdown-item update-technician-btn" data-image-source
+                                            th:attr="data-id=${technician.id},data-images=${technician.imagesUuid},data-name=${technician.name},data-surname=${technician.surname},data-nickname=${technician.nickname},data-email=${technician.email},data-phone=${technician.phoneNumber},data-address=${technician.address},data-notes=${technician.notes},data-images=${technician.imagesUuid}">
                                         Update
                                     </button>
                                 </li>
@@ -236,6 +232,7 @@
 <footer th:replace="~{fragment::footer}"></footer>
 <script th:src="@{/js/common/table-filter-sort.js}"></script>
 <script th:src="@{/js/common/crud-table-actions.js}"></script>
+<script th:src="@{/js/common/image-editor.js}"></script>
 <script>
     const showAddFormBtn = document.getElementById('showAddFormBtn');
     const hideAddFormBtn = document.getElementById('hideAddFormBtn');
