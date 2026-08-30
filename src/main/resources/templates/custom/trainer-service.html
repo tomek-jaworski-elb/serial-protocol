@@ -169,7 +169,7 @@
                          mutating actions sit behind a deliberate second step. -->
                     <div class="crud-row-actions">
                         <button type="button" class="btn btn-outline-info btn-sm details-trainer-btn"
-                                th:attr="data-id=${trainer.id},data-name=${trainer.name},data-surname=${trainer.surname},data-nickname=${trainer.nickname},data-email=${trainer.email},data-phone=${trainer.phoneNumber},data-address=${trainer.address},data-notes=${trainer.notes},data-images=${trainer.imagesUuid}">
+                                th:attr="data-id=${trainer.id},data-name=${trainer.name},data-surname=${trainer.surname},data-nickname=${trainer.nickname},data-email=${trainer.email},data-phone=${trainer.phoneNumber},data-address=${trainer.address},data-notes=${trainer.notes},data-images=${trainer.imagesUuidString}">
                             Details
                         </button>
                         <div class="dropdown">
@@ -181,7 +181,7 @@
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li>
                                     <button type="button" class="dropdown-item update-trainer-btn" data-image-source
-                                            th:attr="data-id=${trainer.id},data-images=${trainer.imagesUuid},data-name=${trainer.name},data-surname=${trainer.surname},data-nickname=${trainer.nickname},data-email=${trainer.email},data-phone=${trainer.phoneNumber},data-address=${trainer.address},data-notes=${trainer.notes}">
+                                            th:attr="data-id=${trainer.id},data-images=${trainer.imagesUuidString},data-name=${trainer.name},data-surname=${trainer.surname},data-nickname=${trainer.nickname},data-email=${trainer.email},data-phone=${trainer.phoneNumber},data-address=${trainer.address},data-notes=${trainer.notes}">
                                         Update
                                     </button>
                                 </li>
@@ -278,9 +278,6 @@
         trainerDetailsModal && window.bootstrap && window.bootstrap.Modal
             ? window.bootstrap.Modal.getOrCreateInstance(trainerDetailsModal) : null;
 
-    const parseUuidList = (value) =>
-        (value || '').replace(/^\[/, '').replace(/\]$/, '').split(',').map(s => s.trim()).filter(Boolean);
-
     const nullOrDash = (v) => (v && v !== 'null' ? v : '-');
 
 
@@ -327,7 +324,9 @@
                 detailsTrainerAddress.textContent = nullOrDash(btn.dataset.address);
                 detailsTrainerNotes.textContent = nullOrDash(btn.dataset.notes);
                 detailsTrainerImages.innerHTML = '';
-                const imageUuids = parseUuidList(btn.dataset.images);
+                // The DTO hands over a plain comma-separated list now, so there is
+                // nothing to unwrap.
+                const imageUuids = (btn.dataset.images || '').split(',').filter(Boolean);
                 if (imageUuids.length > 0) {
                     detailsTrainerNoImages.classList.add('d-none');
                     imageUuids.forEach((uuid) => {

@@ -156,7 +156,7 @@
                 <td>
                     <div class="crud-row-actions">
                         <button type="button" class="btn btn-outline-info btn-sm details-lecturer-btn"
-                                th:attr="data-id=${lecturer.id},data-name=${lecturer.name},data-surname=${lecturer.surname},data-nickname=${lecturer.nickname},data-email=${lecturer.email},data-phone=${lecturer.phoneNumber},data-address=${lecturer.address},data-notes=${lecturer.notes},data-images=${lecturer.imagesUuid}">
+                                th:attr="data-id=${lecturer.id},data-name=${lecturer.name},data-surname=${lecturer.surname},data-nickname=${lecturer.nickname},data-email=${lecturer.email},data-phone=${lecturer.phoneNumber},data-address=${lecturer.address},data-notes=${lecturer.notes},data-images=${lecturer.imagesUuidString}">
                             Details
                         </button>
                         <div class="dropdown">
@@ -168,7 +168,7 @@
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li>
                                     <button type="button" class="dropdown-item update-lecturer-btn" data-image-source
-                                            th:attr="data-id=${lecturer.id},data-images=${lecturer.imagesUuid},data-name=${lecturer.name},data-surname=${lecturer.surname},data-nickname=${lecturer.nickname},data-email=${lecturer.email},data-phone=${lecturer.phoneNumber},data-address=${lecturer.address},data-notes=${lecturer.notes},data-images=${lecturer.imagesUuid}">
+                                            th:attr="data-id=${lecturer.id},data-images=${lecturer.imagesUuidString},data-name=${lecturer.name},data-surname=${lecturer.surname},data-nickname=${lecturer.nickname},data-email=${lecturer.email},data-phone=${lecturer.phoneNumber},data-address=${lecturer.address},data-notes=${lecturer.notes}">
                                         Update
                                     </button>
                                 </li>
@@ -265,9 +265,6 @@
         lecturerDetailsModal && window.bootstrap && window.bootstrap.Modal
             ? window.bootstrap.Modal.getOrCreateInstance(lecturerDetailsModal) : null;
 
-    const parseUuidList = (value) =>
-        (value || '').replace(/^\[/, '').replace(/\]$/, '').split(',').map(s => s.trim()).filter(Boolean);
-
     const nullOrDash = (v) => (v && v !== 'null' ? v : '-');
 
 
@@ -314,7 +311,9 @@
                 detailsLecturerAddress.textContent = nullOrDash(btn.dataset.address);
                 detailsLecturerNotes.textContent = nullOrDash(btn.dataset.notes);
                 detailsLecturerImages.innerHTML = '';
-                const imageUuids = parseUuidList(btn.dataset.images);
+                // The DTO hands over a plain comma-separated list now, so there is
+                // nothing to unwrap.
+                const imageUuids = (btn.dataset.images || '').split(',').filter(Boolean);
                 if (imageUuids.length > 0) {
                     detailsLecturerNoImages.classList.add('d-none');
                     imageUuids.forEach((uuid) => {

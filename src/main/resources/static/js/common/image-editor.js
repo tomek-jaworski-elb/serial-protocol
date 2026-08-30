@@ -13,11 +13,13 @@
 (function () {
     const MAX_IMAGES = 6;
 
-    /** Set.toString() renders as "[uuid, uuid]" — the same format the details modal reads. */
-    function parseUuidList(value) {
+    /**
+     * data-images is a plain comma-separated list: the DTOs expose imagesUuidString
+     * rather than the Set itself, whose toString form "[a, b]" every consumer used to
+     * have to unwrap with its own copy of a bracket-stripping helper.
+     */
+    function uuidList(value) {
         return (value || '')
-            .replace(/^\[/, '')
-            .replace(/\]$/, '')
             .split(',')
             .map((s) => s.trim())
             .filter((s) => s && s !== 'null');
@@ -185,7 +187,7 @@
         document.querySelectorAll('[data-image-source]').forEach((btn) => {
             btn.addEventListener('click', () => {
                 const raw = btn.dataset.images !== undefined ? btn.dataset.images : btn.dataset.image;
-                const uuids = describe.multiple ? parseUuidList(raw) : singleUuid(raw);
+                const uuids = describe.multiple ? uuidList(raw) : singleUuid(raw);
                 render(describe, uuids);
             });
         });
