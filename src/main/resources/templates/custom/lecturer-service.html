@@ -319,7 +319,9 @@
                     detailsLecturerNoImages.classList.add('d-none');
                     imageUuids.forEach((uuid) => {
                         const img = document.createElement('img');
-                        img.src = `/custom/image/${uuid}`;
+                        // Displayed at 110px, so the 160px thumbnail is more than enough;
+                        // the original is a full-size camera photo.
+                        img.src = `/custom/image/${uuid}?size=thumb`;
                         // Descriptive alt: standalone in the modal rather than beside
                         // the name, so "Lecturer image" would carry no information.
                         img.alt = `Photo of ${nullOrDash(btn.dataset.name)} ${nullOrDash(btn.dataset.surname)}`.trim();

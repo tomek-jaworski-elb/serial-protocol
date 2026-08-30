@@ -469,7 +469,8 @@
                 if (imageUuid && imageUuid !== 'null' && imageUuid.trim() !== '') {
                     detailsParticipantNoImage.classList.add('d-none');
                     const img = document.createElement('img');
-                    img.src = `/custom/image/${imageUuid}`;
+                    // Displayed at 150px, still comfortably under the 160px thumbnail.
+                    img.src = `/custom/image/${imageUuid}?size=thumb`;
                     // Descriptive alt: the image stands alone in the modal rather
                     // than beside the name, so "Participant image" would say nothing.
                     img.alt = `Photo of ${nullOrDash(btn.dataset.name)} ${nullOrDash(btn.dataset.surname)}`.trim();

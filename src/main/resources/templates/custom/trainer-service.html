@@ -332,7 +332,9 @@
                     detailsTrainerNoImages.classList.add('d-none');
                     imageUuids.forEach((uuid) => {
                         const img = document.createElement('img');
-                        img.src = `/custom/image/${uuid}`;
+                        // Displayed at 110px, so the 160px thumbnail is more than enough;
+                        // the original is a full-size camera photo.
+                        img.src = `/custom/image/${uuid}?size=thumb`;
                         // Descriptive alt: this image stands on its own in the modal
                         // rather than sitting beside the name, so "Trainer image"
                         // would carry no information at all.

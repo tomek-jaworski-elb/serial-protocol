@@ -95,8 +95,8 @@
                     <th:block th:if="${courseCounter.imageUuid != null}">
                         <!-- width/height reserve the square before the image loads (no layout shift);
                              img-thumbnail keeps height:auto, so they act as an aspect ratio. -->
-                        <img th:src="@{/custom/image/{uuid}(uuid=${courseCounter.imageUuid})}"
-                             th:attr="alt=\x27Photo of course counter \x27 + ${courseCounter.counter}"
+                        <img th:src="@{/custom/image/{uuid}(uuid=${courseCounter.imageUuid},size='thumb')}"
+                             th:attr="alt='Photo of course counter ' + ${courseCounter.counter}"
                              width="56" height="56" loading="lazy"
                              class="img-thumbnail" style="object-fit: cover;">
                     </th:block>
@@ -254,6 +254,8 @@
                 if (imageUuid && imageUuid !== 'null' && imageUuid.trim() !== '') {
                     detailsNoImage.classList.add('d-none');
                     const img = document.createElement('img');
+                    // The one place the original is right: this modal shows 180px, above
+                    // the 160px thumbnail, so a thumbnail would be upscaled.
                     img.src = `/custom/image/${imageUuid}`;
                     // A counter is identified by its number, and the photo itself
                     // cannot be described from here, so name the record instead.

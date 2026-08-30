@@ -1,9 +1,11 @@
 package com.jaworski.serialprotocol.controller.web;
 
+import com.jaworski.serialprotocol.dto.custom.CourseCounterDTO;
 import com.jaworski.serialprotocol.dto.custom.ParticipantDTO;
 import com.jaworski.serialprotocol.dto.custom.TrainerDTO;
 import com.jaworski.serialprotocol.entity.custom.Image;
 import com.jaworski.serialprotocol.repository.custom.ImageRepository;
+import com.jaworski.serialprotocol.service.db.custom.CourseCounterService;
 import com.jaworski.serialprotocol.service.db.custom.ImageService;
 import com.jaworski.serialprotocol.service.db.custom.ParticipantService;
 import com.jaworski.serialprotocol.service.db.custom.TrainerService;
@@ -23,6 +25,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
@@ -43,6 +46,8 @@ class CustomDBControllerImageTest {
     private TrainerService trainerService;
     @Autowired
     private ParticipantService participantService;
+    @Autowired
+    private CourseCounterService courseCounterService;
     @Autowired
     private ImageService imageService;
     @Autowired
@@ -171,6 +176,40 @@ class CustomDBControllerImageTest {
 
         UUID after = reload(participant).getImage();
         assertThat(after).isNotNull().isNotEqualTo(original);
+    }
+
+    // --- rendered pages ---
+
+    /**
+     * The counter table is the one place an image is rendered straight into a cell, and
+     * it went untested because no fixture ever gave a counter a photo. That gap hid a
+     * broken alt expression for a whole release: a migration script had written the
+     * literal characters {@code '} where an apostrophe belonged, and Thymeleaf
+     * responded by dumping an entire HTML page into the cell. It only ever ran when a
+     * counter actually had an image.
+     */
+    @Test
+    void courseCounterTable_rendersAThumbnailWithARealAltText() throws Exception {
+        UUID image = imageService.saveImage(new byte[]{1, 2, 3}, "image/jpeg").getId();
+        Long counter = System.nanoTime() % 100000;
+        courseCounterService.save(new CourseCounterDTO(null, counter, image));
+
+        String html = mockMvc.perform(get("/course-counter-service")
+                        .header(HttpHeaders.AUTHORIZATION, auth()))
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(html)
+                .as("the cell renders a 56px image, so it must ask for the thumbnail")
+                .contains("/custom/image/" + image + "?size=thumb");
+        assertThat(html)
+                .as("alt must name the record, not leak an escape sequence")
+                .contains("alt=\"Photo of course counter " + counter + "\"");
+        assertThat(html)
+                .as("no escape sequence written out literally by a migration script")
+                .doesNotContain("x27");
+        assertThat(html)
+                .as("a broken attribute expression made Thymeleaf nest a whole page in the cell")
+                .containsOnlyOnce("<!DOCTYPE html>");
     }
 
     // --- fixtures ---
