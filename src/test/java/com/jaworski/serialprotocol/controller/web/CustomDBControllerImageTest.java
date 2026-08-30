@@ -157,6 +157,26 @@ class CustomDBControllerImageTest {
     }
 
     /**
+     * Only the limit message is written for a person. Service-layer messages carry uuids and
+     * internal phrasing ("Trainer with id <uuid> not found", "One or more image ids do not
+     * exist") and must fall through to the generic text instead of reaching a toast.
+     */
+    @Test
+    void update_ofAMissingRecord_doesNotLeakTheInternalMessage() throws Exception {
+        TrainerDTO trainer = trainerWithImages(1);
+        trainerService.deleteById(trainer.getId());
+
+        var result = mockMvc.perform(updateTrainer(trainer)).andReturn();
+
+        String message = String.valueOf(result.getFlashMap().get("errorMessage"));
+        assertThat(message)
+                .as("no uuid, no internal phrasing")
+                .doesNotContain(trainer.getId().toString())
+                .doesNotContain("not found")
+                .contains("Please verify your input");
+    }
+
+    /**
      * uploadImages() commits through ImageService, which has its own transaction, while
      * the controller does not. A failure between the upload and the entity save would
      * otherwise leave the new rows in the table referenced by nothing.

@@ -244,9 +244,10 @@ public class CustomDBController {
         throw e;
       }
       redirectAttributes.addFlashAttribute("successMessage", "Trainer updated successfully.");
-    } catch (IllegalArgumentException e) {
-      // Surfaced verbatim: this is where the image-count limit is reported, and the
-      // generic message below would leave the user guessing which field was at fault.
+    } catch (ImageLimitExceededException e) {
+      // Only this type is surfaced verbatim. The generic message below would leave the user
+      // guessing which field was at fault, but service-layer messages carry uuids and internal
+      // phrasing and are not written for a toast.
       LOG.warn("Cannot update trainer. payload={}: {}", trainerDTO, e.getMessage());
       redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (RuntimeException e) {
@@ -320,9 +321,10 @@ public class CustomDBController {
         throw e;
       }
       redirectAttributes.addFlashAttribute("successMessage", "Lecturer updated successfully.");
-    } catch (IllegalArgumentException e) {
-      // Surfaced verbatim: this is where the image-count limit is reported, and the
-      // generic message below would leave the user guessing which field was at fault.
+    } catch (ImageLimitExceededException e) {
+      // Only this type is surfaced verbatim. The generic message below would leave the user
+      // guessing which field was at fault, but service-layer messages carry uuids and internal
+      // phrasing and are not written for a toast.
       LOG.warn("Cannot update lecturer. payload={}: {}", lecturerDTO, e.getMessage());
       redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (RuntimeException e) {
@@ -396,9 +398,10 @@ public class CustomDBController {
         throw e;
       }
       redirectAttributes.addFlashAttribute("successMessage", "Technician updated successfully.");
-    } catch (IllegalArgumentException e) {
-      // Surfaced verbatim: this is where the image-count limit is reported, and the
-      // generic message below would leave the user guessing which field was at fault.
+    } catch (ImageLimitExceededException e) {
+      // Only this type is surfaced verbatim. The generic message below would leave the user
+      // guessing which field was at fault, but service-layer messages carry uuids and internal
+      // phrasing and are not written for a toast.
       LOG.warn("Cannot update technician. payload={}: {}", technicianDTO, e.getMessage());
       redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (RuntimeException e) {
@@ -697,8 +700,12 @@ public class CustomDBController {
 
     // The bytes behind a uuid never change — replacing a photo creates a new Image row —
     // so the tag needs only the uuid, the variant and the generator version.
-    String etag = "\"" + uuid + "-" + (wantsThumb ? THUMB_VARIANT : "orig")
-        + "-" + ThumbnailGenerator.VERSION + "\"";
+    // The generator version belongs to the thumbnail only. Including it in the tag for the
+    // original would make a thumbnail-size tweak invalidate every cached full-size photo,
+    // whose bytes did not change — every details modal would refetch for nothing.
+    String etag = wantsThumb
+        ? "\"" + uuid + "-" + THUMB_VARIANT + "-" + ThumbnailGenerator.VERSION + "\""
+        : "\"" + uuid + "-orig\"";
 
     // Answered without reading the blob or generating a thumbnail — but existence is
     // still checked, and that check is not optional. The tag is derived from the uuid
@@ -773,6 +780,20 @@ public class CustomDBController {
    * forged uuid is a no-op: the client can only ever subtract from the entity's
    * own set, never attach someone else's photo.</p>
    */
+  /**
+   * Raised when a request would push a record past its photo limit.
+   *
+   * <p>Its own type so the handlers can surface its message verbatim without also leaking
+   * internal ones — {@code "Trainer with id <uuid> not found"} or {@code "One or more image
+   * ids do not exist"} come out of the service layer as plain IllegalArgumentException and
+   * are not written for the person reading the toast.</p>
+   */
+  static class ImageLimitExceededException extends IllegalArgumentException {
+    ImageLimitExceededException(String message) {
+      super(message);
+    }
+  }
+
   /** The set the entity should end up with, plus the rows this request created. */
   private record MergedImages(Set<UUID> merged, Set<UUID> uploaded) {
   }
@@ -827,7 +848,7 @@ public class CustomDBController {
     // transactional, so throwing after the upload would leave orphaned rows in the
     // image table that nothing ever cleans up.
     if (usableFiles(imageFiles).size() > budget) {
-      throw new IllegalArgumentException(
+      throw new ImageLimitExceededException(
           "Maximum " + MAX_UPLOAD_IMAGES + " images allowed (" + kept.size() + " already in use)");
     }
 

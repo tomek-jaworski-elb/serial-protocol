@@ -39,6 +39,13 @@ public final class ThumbnailGenerator {
   private static final Set<String> READABLE = Set.of("image/jpeg", "image/png", "image/gif");
   private static final String PNG = "image/png";
 
+  /** Raised when scaling fails for a reason that may not repeat. */
+  public static class ThumbnailFailedException extends RuntimeException {
+    public ThumbnailFailedException(Throwable cause) {
+      super(cause);
+    }
+  }
+
   private ThumbnailGenerator() {
   }
 
@@ -52,8 +59,12 @@ public final class ThumbnailGenerator {
   }
 
   /**
-   * @return the scaled bytes, or {@code null} if the source could not be read or is
-   *     already small enough to be worth serving as-is.
+   * @return the scaled bytes, or {@code null} when a thumbnail cannot or need not be produced
+   *     for this image — an unreadable format, bytes that do not match their content type, or
+   *     an image already under the target size. That is a permanent verdict the caller may
+   *     record.
+   * @throws ThumbnailFailedException when scaling failed unexpectedly, which says nothing
+   *     about the image and must not be recorded.
    */
   public static byte[] scale(byte[] source, String contentType) {
     if (source == null || source.length == 0 || !supports(contentType)) {
@@ -98,9 +109,12 @@ public final class ThumbnailGenerator {
       }
       return out.toByteArray();
     } catch (IOException | RuntimeException e) {
-      // Never fail the request over a thumbnail — the caller serves the original.
+      // Signalled, not returned as null. A null from this method means "cannot or need not
+      // be done" and the caller records that verdict permanently; an unexpected failure —
+      // a truncated read, a plugin blowing up under load — is not a verdict about the image
+      // and must not pin it to serving the full-size original forever.
       LOG.warn("Thumbnail generation failed for contentType={}", contentType, e);
-      return null;
+      throw new ThumbnailFailedException(e);
     }
   }
 }

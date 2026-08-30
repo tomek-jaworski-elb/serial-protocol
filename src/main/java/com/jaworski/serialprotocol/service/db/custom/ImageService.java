@@ -3,6 +3,8 @@ package com.jaworski.serialprotocol.service.db.custom;
 import com.jaworski.serialprotocol.entity.custom.Image;
 import com.jaworski.serialprotocol.repository.custom.ImageRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +17,8 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 public class ImageService {
+
+  private static final Logger LOG = LoggerFactory.getLogger(ImageService.class);
 
   private final ImageRepository imageRepository;
 
@@ -82,10 +86,21 @@ public class ImageService {
     // A current version with no data records "tried, and it cannot be done" — webp and
     // svg have no ImageIO reader, and an image already under the target size gains
     // nothing. Without it every request would re-run a conversion known to fail.
-    byte[] scaled = current ? null
-        : ThumbnailGenerator.scale(image.getData(), image.getContentType());
+    byte[] scaled = null;
+    boolean verdict = current;   // whether the outcome is worth recording
+    if (!current) {
+      try {
+        scaled = ThumbnailGenerator.scale(image.getData(), image.getContentType());
+        verdict = true;
+      } catch (ThumbnailGenerator.ThumbnailFailedException e) {
+        // Serve the original this time and try again next time. Recording the version here
+        // would pin a perfectly good photo to the full-size path until someone bumps VERSION,
+        // which rebuilds every thumbnail in the table.
+        LOG.warn("Thumbnail generation failed for image {}, leaving it unrecorded", id);
+      }
+    }
     if (scaled == null) {
-      if (!current) {
+      if (!current && verdict) {
         // Record the attempt, not a copy of the original: duplicating a 10 MB blob to
         // avoid a cheap failed read would be a poor trade.
         image.setThumbData(null);

@@ -205,6 +205,41 @@ class ImageEndpointTest {
                 .isEqualTo(ThumbnailGenerator.VERSION);
     }
 
+    /**
+     * The generator version describes the thumbnail, not the original. Embedding it in the
+     * original's tag would make a thumbnail-size tweak invalidate every cached full-size photo,
+     * whose bytes never changed.
+     */
+    @Test
+    void theOriginalEtagDoesNotDependOnTheThumbnailVersion() throws Exception {
+        UUID id = storePng(400, 300);
+
+        String original = etagOf(get("/custom/image/{uuid}", id));
+        String thumb = etagOf(get("/custom/image/{uuid}", id).param("size", "thumb"));
+
+        assertThat(original).doesNotContain(ThumbnailGenerator.VERSION);
+        assertThat(thumb).contains(ThumbnailGenerator.VERSION);
+        assertThat(original).isNotEqualTo(thumb);
+    }
+
+    /**
+     * A transient failure — a truncated read, a decoder blowing up under load — says nothing
+     * about the image. Recording the version would pin a perfectly good photo to the full-size
+     * path until somebody bumps VERSION, which rebuilds every thumbnail in the table.
+     */
+    @Test
+    void aFailedGenerationIsNotRecordedAsAVerdict() throws Exception {
+        // Declares itself as a PNG, but the bytes are not one: ImageIO.read returns null,
+        // which is a genuine verdict about these bytes and IS recorded.
+        UUID unreadable = imageService.saveImage("not really a png".getBytes(), "image/png").getId();
+
+        body(get("/custom/image/{uuid}", unreadable).param("size", "thumb"));
+
+        assertThat(imageRepository.findById(unreadable).orElseThrow().getThumbVersion())
+                .as("unreadable bytes are a permanent verdict, so they stay recorded")
+                .isEqualTo(ThumbnailGenerator.VERSION);
+    }
+
     @Test
     void unknownSizeValue_is400() throws Exception {
         UUID id = storePng(400, 300);
