@@ -68,6 +68,29 @@
             return direction === 'asc' ? cmp : -cmp;
         });
         rows.forEach((row) => tbody.appendChild(row));
+        renumberRowHeaders(tbody);
+    }
+
+    /*
+     * The "#" column is a position, not data: it is rendered server-side as
+     * page.number * pageSize + index + 1. Reordering the rows carries those numbers
+     * along with them, so after sorting the column reads 3, 1, 5, 2 and looks like
+     * records went missing. Reassigning the same numbers in the new visual order
+     * keeps the page offset without the script needing to know the page size.
+     *
+     * Only <th class="col-num"> is touched. The ID columns on participant and
+     * courses are <td class="col-num"> and hold a business key, which must never be
+     * rewritten.
+     */
+    function renumberRowHeaders(tbody) {
+        const headers = Array.from(tbody.querySelectorAll('tr > th.col-num'));
+        if (headers.length === 0) return;
+        const numbers = headers
+            .map((cell) => Number(cell.textContent.trim()))
+            .filter((value) => Number.isFinite(value))
+            .sort((x, y) => x - y);
+        if (numbers.length !== headers.length) return;
+        headers.forEach((cell, i) => { cell.textContent = numbers[i]; });
     }
 
     /*

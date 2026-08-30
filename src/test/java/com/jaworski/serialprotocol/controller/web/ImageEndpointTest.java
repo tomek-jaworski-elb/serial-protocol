@@ -156,6 +156,29 @@ class ImageEndpointTest {
                 .andExpect(status().isNotFound());
     }
 
+    /**
+     * An image ImageIO cannot read must be marked as "tried and cannot be done", or
+     * every single request re-runs the conversion that is guaranteed to fail. The
+     * marker is a content type with no data — deliberately not a copy of the original,
+     * which for a 10 MB upload would be a poor trade.
+     */
+    @Test
+    void thumb_ofUnsupportedFormat_isNotRegeneratedOnEveryRequest() throws Exception {
+        byte[] svg = "<svg xmlns='http://www.w3.org/2000/svg'><rect width='9' height='9'/></svg>"
+                .getBytes();
+        UUID id = imageService.saveImage(svg, "image/svg+xml").getId();
+
+        body(get("/custom/image/{uuid}", id).param("size", "thumb"));
+
+        Image stored = imageRepository.findById(id).orElseThrow();
+        assertThat(stored.getThumbContentType()).as("attempt recorded").isNotNull();
+        assertThat(stored.getThumbData()).as("original not duplicated").isNull();
+
+        assertThat(body(get("/custom/image/{uuid}", id).param("size", "thumb")))
+                .as("still serves the original")
+                .isEqualTo(svg);
+    }
+
     @Test
     void unknownSizeValue_is400() throws Exception {
         UUID id = storePng(400, 300);

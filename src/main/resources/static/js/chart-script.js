@@ -94,12 +94,16 @@ function updateShipRenderMode() {
             // this a tap on the map origin would open a tooltip for a ship that has
             // never reported, showing 0.0 kn / 0.0 deg / No update.
             obj.shipShape.listening(false);
-            obj.arrowShape.listening(false);
             continue;
         }
-        // re-arm hit testing: this ship has reported, so it is on the map now
+        // Re-arm hit testing: this ship has reported, so it is on the map now.
+        // Only the hull — the arrow is deliberately created with listening:false and
+        // must stay that way. It is added to the layer after the hull, so it sits on
+        // top of the hit graph, and opacity does not remove a shape from that graph.
+        // Making it listen would swallow taps (it has no click handler, so the event
+        // reaches the stage handler that HIDES the tooltip) — at low zoom, where the
+        // arrow covers the whole ship, tapping a ship would never open its tooltip.
         obj.shipShape.listening(true);
-        obj.arrowShape.listening(true);
         obj.shipShape.opacity(t);
         obj.arrowShape.opacity(1 - t);
         obj.arrowShape.points(computeShipArrowVerticesForKonva(obj.lastPos.x, obj.lastPos.y, obj.lastAngle, arrowSize));

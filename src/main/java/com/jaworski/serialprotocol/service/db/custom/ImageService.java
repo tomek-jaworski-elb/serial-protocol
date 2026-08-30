@@ -68,14 +68,26 @@ public class ImageService {
     if (stored.getThumbData() != null && stored.getThumbData().length > 0) {
       return new ImageContent(stored.getThumbData(), stored.getThumbContentType());
     }
+    // A content type with no data means generation was already tried and cannot
+    // succeed for this image (webp/svg have no ImageIO reader, and an image already
+    // under the target size gains nothing). Without this marker every request would
+    // re-run the failing conversion.
+    boolean alreadyAttempted = stored.getThumbContentType() != null;
 
     Image image = imageRepository.findById(id).orElse(null);
     if (image == null || image.getData() == null || image.getData().length == 0) {
       return null;
     }
 
-    byte[] scaled = ThumbnailGenerator.scale(image.getData(), image.getContentType());
+    byte[] scaled = alreadyAttempted ? null
+        : ThumbnailGenerator.scale(image.getData(), image.getContentType());
     if (scaled == null) {
+      if (!alreadyAttempted) {
+        // Record the attempt, not a copy of the original: duplicating a 10 MB blob
+        // to avoid a cheap failed read would be a poor trade.
+        image.setThumbContentType(image.getContentType());
+        imageRepository.save(image);
+      }
       return new ImageContent(image.getData(), image.getContentType());
     }
 

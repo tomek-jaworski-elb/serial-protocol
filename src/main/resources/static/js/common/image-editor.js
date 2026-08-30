@@ -103,6 +103,15 @@
      * previously opened row would otherwise linger.
      */
     function render(describe, uuids) {
+        // The update form is shared by every row, so a file the user picked for one
+        // record would otherwise still be attached when another record is saved —
+        // silently, because the preview tiles are rebuilt below. Clearing the input
+        // is what makes "open a different row" mean a clean slate.
+        const fileInput = describe.root.querySelector('input[type=file]');
+        if (fileInput) fileInput.value = '';
+        describe.grid.querySelectorAll('.image-tile.is-new img').forEach((img) => {
+            URL.revokeObjectURL(img.src);
+        });
         describe.grid.replaceChildren();
         uuids.forEach((uuid, i) => {
             describe.grid.appendChild(buildTile(uuid, i, uuids.length, describe));
@@ -113,6 +122,7 @@
 
     function describeEditor(root) {
         return {
+            root,
             grid: root.querySelector('.image-grid'),
             empty: root.querySelector('.image-empty'),
             counter: root.querySelector('.image-count'),
