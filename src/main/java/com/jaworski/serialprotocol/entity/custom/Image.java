@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Size;
+import org.hibernate.annotations.DynamicUpdate;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -20,6 +21,13 @@ import java.util.UUID;
 @Entity
 @Data
 @NoArgsConstructor
+/*
+ * Without this, storing a thumbnail rewrites every column of the row — including the
+ * full-size LONGBLOB, which was loaded anyway because field-level laziness is inactive
+ * (no hibernate-enhance-maven-plugin). First render of a table of large photos would
+ * issue a full-blob UPDATE per image just to record two small columns.
+ */
+@DynamicUpdate
 @Table(name = Image.TABLE_NAME)
 public class Image {
 

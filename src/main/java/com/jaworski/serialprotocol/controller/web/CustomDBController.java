@@ -215,7 +215,7 @@ public class CustomDBController {
       trainerDTO.setId(null);
       Set<UUID> uploadedImages = uploadImages(imageFiles, MAX_UPLOAD_IMAGES);
       trainerDTO.setImagesUuid(uploadedImages);
-      trainerService.save(trainerDTO);
+      persistOrDiscard(uploadedImages, () -> trainerService.save(trainerDTO));
       redirectAttributes.addFlashAttribute("successMessage", "Trainer added successfully.");
     } catch (RuntimeException e) {
       LOG.error("Cannot add trainer. payload={}", trainerDTO, e);
@@ -291,7 +291,7 @@ public class CustomDBController {
       lecturerDTO.setId(null);
       Set<UUID> uploadedImages = uploadImages(imageFiles, MAX_UPLOAD_IMAGES);
       lecturerDTO.setImagesUuid(uploadedImages);
-      lecturerService.save(lecturerDTO);
+      persistOrDiscard(uploadedImages, () -> lecturerService.save(lecturerDTO));
       redirectAttributes.addFlashAttribute("successMessage", "Lecturer added successfully.");
     } catch (RuntimeException e) {
       LOG.error("Cannot add lecturer. payload={}", lecturerDTO, e);
@@ -367,7 +367,7 @@ public class CustomDBController {
       technicianDTO.setId(null);
       Set<UUID> uploadedImages = uploadImages(imageFiles, MAX_UPLOAD_IMAGES);
       technicianDTO.setImagesUuid(uploadedImages);
-      technicianService.save(technicianDTO);
+      persistOrDiscard(uploadedImages, () -> technicianService.save(technicianDTO));
       redirectAttributes.addFlashAttribute("successMessage", "Technician added successfully.");
     } catch (RuntimeException e) {
       LOG.error("Cannot add technician. payload={}", technicianDTO, e);
@@ -506,7 +506,7 @@ public class CustomDBController {
       participantDTO.setParticipantUuid(null);
       UUID uploadedImage = uploadSingleImage(imageFile);
       participantDTO.setImage(uploadedImage);
-      participantService.save(participantDTO);
+      persistOrDiscard(justUploaded(uploadedImage), () -> participantService.save(participantDTO));
       redirectAttributes.addFlashAttribute("successMessage", "Participant added successfully.");
     } catch (IllegalArgumentException e) {
       LOG.error("Cannot add participant. payload={}", participantDTO, e);
@@ -547,7 +547,7 @@ public class CustomDBController {
           participantDTO.setImage(existingParticipant.getImage());
         }
       }
-      participantService.updateByUuid(participantDTO);
+      persistOrDiscard(justUploaded(uploadedImage), () -> participantService.updateByUuid(participantDTO));
       redirectAttributes.addFlashAttribute("successMessage", "Participant updated successfully.");
     } catch (IllegalArgumentException e) {
       LOG.error("Cannot update participant. payload={}", participantDTO, e);
@@ -606,7 +606,7 @@ public class CustomDBController {
     try {
       UUID uploadedImage = uploadSingleImage(imageFile);
       CourseCounterDTO toSave = new CourseCounterDTO(null, courseCounterDTO.counter(), uploadedImage);
-      courseCounterService.save(toSave);
+      persistOrDiscard(justUploaded(uploadedImage), () -> courseCounterService.save(toSave));
       redirectAttributes.addFlashAttribute("successMessage", "Course counter added successfully.");
     } catch (IllegalArgumentException e) {
       LOG.error("Cannot add course counter. payload={}", courseCounterDTO, e);
@@ -638,7 +638,7 @@ public class CustomDBController {
       }
 
       CourseCounterDTO toUpdate = new CourseCounterDTO(courseCounterDTO.uuid(), courseCounterDTO.counter(), imageUuid);
-      courseCounterService.update(toUpdate);
+      persistOrDiscard(justUploaded(uploadedImage), () -> courseCounterService.update(toUpdate));
       redirectAttributes.addFlashAttribute("successMessage", "Course counter updated successfully.");
     } catch (IllegalArgumentException e) {
       LOG.error("Cannot update course counter. payload={}", courseCounterDTO, e);
@@ -784,6 +784,23 @@ public class CustomDBController {
    * validation error), the images are already in the table, referenced by nothing and
    * with no other cleanup path.
    */
+  /**
+   * Runs the persist step and removes anything this request had just uploaded if it fails.
+   *
+   * <p>Every upload path needs it, not only the ones that merge image sets: the upload commits
+   * through ImageService in its own transaction while the controller is not transactional, so
+   * any later failure — a duplicate participant id, a name over its length limit — would leave
+   * the blob in the table with nothing pointing at it.</p>
+   */
+  private void persistOrDiscard(Set<UUID> uploaded, Runnable persist) {
+    try {
+      persist.run();
+    } catch (RuntimeException e) {
+      discardUploaded(uploaded);
+      throw e;
+    }
+  }
+
   private void discardUploaded(Set<UUID> uploaded) {
     for (UUID id : uploaded) {
       try {
@@ -851,6 +868,11 @@ public class CustomDBController {
       }
     }).toList();
     return imageService.saveAllImages(images);
+  }
+
+  /** The single-image counterpart of MergedImages.uploaded(): empty when nothing was uploaded. */
+  private static Set<UUID> justUploaded(UUID uploaded) {
+    return uploaded == null ? Set.of() : Set.of(uploaded);
   }
 
   private UUID uploadSingleImage(MultipartFile file) {

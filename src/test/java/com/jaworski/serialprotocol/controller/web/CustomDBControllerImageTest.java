@@ -176,6 +176,47 @@ class CustomDBControllerImageTest {
                 .isEqualTo(before - 1);
     }
 
+    /**
+     * The add endpoints upload before they persist, exactly like the update ones, so the same
+     * cleanup is needed. A name over its column length is an ordinary user mistake, not an edge
+     * case — without this the user retries and leaks another set of blobs each time.
+     */
+    @Test
+    void add_failingAfterTheUpload_discardsTheNewImages() throws Exception {
+        long before = imageRepository.count();
+        String tooLong = "x".repeat(150);   // trainer_name is VARCHAR(100)
+
+        mockMvc.perform(multipart("/trainer-service/add")
+                .file(jpeg("doomed.jpg"))
+                .param("name", tooLong)
+                .param("surname", "Test")
+                .with(csrf())
+                .header(HttpHeaders.AUTHORIZATION, auth()));
+
+        assertThat(imageRepository.count())
+                .as("a rejected add must not leave its upload behind")
+                .isEqualTo(before);
+    }
+
+    /** Same protection on the single-image path, where a duplicate business id is routine. */
+    @Test
+    void addParticipant_failingAfterTheUpload_discardsTheNewImage() throws Exception {
+        ParticipantDTO existing = participantWithImage();
+        long before = imageRepository.count();
+
+        mockMvc.perform(multipart("/participant-service/add")
+                .file(new MockMultipartFile("imageFile", "new.jpg", "image/jpeg", new byte[]{9, 9, 9}))
+                .param("id", String.valueOf(existing.getId()))   // already taken
+                .param("name", "Duplicate")
+                .param("surname", "Participant")
+                .with(csrf())
+                .header(HttpHeaders.AUTHORIZATION, auth()));
+
+        assertThat(imageRepository.count())
+                .as("a rejected participant must not leave its photo behind")
+                .isEqualTo(before);
+    }
+
     // --- single-image entities ---
 
     @Test

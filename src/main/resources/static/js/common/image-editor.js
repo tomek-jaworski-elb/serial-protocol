@@ -55,6 +55,10 @@
         // Declared before both buttons: each of them names the tile in its aria-label.
         const label = total > 1 ? `photo ${index + 1} of ${total}` : 'photo';
 
+        // Only where there is something to choose between. Participant and course counter hold
+        // exactly one image and their DTOs carry no pointer at all, so the button there would be
+        // a visible no-op that announces success while Spring silently drops the parameter.
+        if (describe.multiple) {
         // Marks this photo as the one shown in tables. Disabled while the tile is marked for
         // removal: the server would refuse a pointer to a photo that is about to go, so an
         // enabled button would promise something it cannot deliver.
@@ -67,6 +71,7 @@
         primary.setAttribute('aria-label', `Set ${label} as the main photo`);
         primary.addEventListener('click', () => choosePrimary(describe, uuid));
         tile.appendChild(primary);
+        }
 
         const button = document.createElement('button');
         button.type = 'button';
