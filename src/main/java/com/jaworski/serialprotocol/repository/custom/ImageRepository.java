@@ -21,13 +21,15 @@ public interface ImageRepository extends JpaRepository<Image, UUID> {
    * Without this projection a thumbnail request would still read the original from
    * the database and only the network transfer would shrink.</p>
    */
-  @Query("select i.thumbData as thumbData, i.thumbContentType as thumbContentType "
-      + "from Image i where i.id = :id")
+  @Query("select i.thumbData as thumbData, i.thumbContentType as thumbContentType, "
+      + "i.thumbVersion as thumbVersion from Image i where i.id = :id")
   Optional<ThumbnailView> findThumbnailById(@Param("id") UUID id);
 
   interface ThumbnailView {
     byte[] getThumbData();
 
     String getThumbContentType();
+
+    String getThumbVersion();
   }
 }

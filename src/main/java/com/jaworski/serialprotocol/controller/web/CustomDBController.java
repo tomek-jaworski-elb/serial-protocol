@@ -235,9 +235,20 @@ public class CustomDBController {
       }
       TrainerDTO existingTrainer = trainerService.findById(trainerDTO.getId());
       Set<UUID> existingImages = existingTrainer != null ? existingTrainer.getImagesUuid() : null;
-      trainerDTO.setImagesUuid(mergeImages(existingImages, removeImageUuids, imageFiles));
-      trainerService.update(trainerDTO);
+      MergedImages images = mergeImages(existingImages, removeImageUuids, imageFiles);
+      trainerDTO.setImagesUuid(images.merged());
+      try {
+        trainerService.update(trainerDTO);
+      } catch (RuntimeException e) {
+        discardUploaded(images.uploaded());
+        throw e;
+      }
       redirectAttributes.addFlashAttribute("successMessage", "Trainer updated successfully.");
+    } catch (IllegalArgumentException e) {
+      // Surfaced verbatim: this is where the image-count limit is reported, and the
+      // generic message below would leave the user guessing which field was at fault.
+      LOG.warn("Cannot update trainer. payload={}: {}", trainerDTO, e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (RuntimeException e) {
       LOG.error("Cannot update trainer. payload={}", trainerDTO, e);
       redirectAttributes.addFlashAttribute("errorMessage", "Failed to update trainer. Please verify your input.");
@@ -300,9 +311,20 @@ public class CustomDBController {
       }
       LecturerDTO existingLecturer = lecturerService.findById(lecturerDTO.getId());
       Set<UUID> existingImages = existingLecturer != null ? existingLecturer.getImagesUuid() : null;
-      lecturerDTO.setImagesUuid(mergeImages(existingImages, removeImageUuids, imageFiles));
-      lecturerService.updateById(lecturerDTO);
+      MergedImages images = mergeImages(existingImages, removeImageUuids, imageFiles);
+      lecturerDTO.setImagesUuid(images.merged());
+      try {
+        lecturerService.updateById(lecturerDTO);
+      } catch (RuntimeException e) {
+        discardUploaded(images.uploaded());
+        throw e;
+      }
       redirectAttributes.addFlashAttribute("successMessage", "Lecturer updated successfully.");
+    } catch (IllegalArgumentException e) {
+      // Surfaced verbatim: this is where the image-count limit is reported, and the
+      // generic message below would leave the user guessing which field was at fault.
+      LOG.warn("Cannot update lecturer. payload={}: {}", lecturerDTO, e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (RuntimeException e) {
       LOG.error("Cannot update lecturer. payload={}", lecturerDTO, e);
       redirectAttributes.addFlashAttribute("errorMessage", "Failed to update lecturer. Please verify your input.");
@@ -365,9 +387,20 @@ public class CustomDBController {
       }
       TechnicianDTO existing = technicianService.findById(technicianDTO.getId());
       Set<UUID> existingImages = existing != null ? existing.getImagesUuid() : null;
-      technicianDTO.setImagesUuid(mergeImages(existingImages, removeImageUuids, imageFiles));
-      technicianService.updateById(technicianDTO);
+      MergedImages images = mergeImages(existingImages, removeImageUuids, imageFiles);
+      technicianDTO.setImagesUuid(images.merged());
+      try {
+        technicianService.updateById(technicianDTO);
+      } catch (RuntimeException e) {
+        discardUploaded(images.uploaded());
+        throw e;
+      }
       redirectAttributes.addFlashAttribute("successMessage", "Technician updated successfully.");
+    } catch (IllegalArgumentException e) {
+      // Surfaced verbatim: this is where the image-count limit is reported, and the
+      // generic message below would leave the user guessing which field was at fault.
+      LOG.warn("Cannot update technician. payload={}: {}", technicianDTO, e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (RuntimeException e) {
       LOG.error("Cannot update technician. payload={}", technicianDTO, e);
       redirectAttributes.addFlashAttribute("errorMessage", "Failed to update technician. Please verify your input.");
@@ -740,7 +773,28 @@ public class CustomDBController {
    * forged uuid is a no-op: the client can only ever subtract from the entity's
    * own set, never attach someone else's photo.</p>
    */
-  private Set<UUID> mergeImages(Set<UUID> existing, List<UUID> removeUuids, MultipartFile[] imageFiles) {
+  /** The set the entity should end up with, plus the rows this request created. */
+  private record MergedImages(Set<UUID> merged, Set<UUID> uploaded) {
+  }
+
+  /**
+   * Deletes rows this request had just created. Needed because uploadImages() commits
+   * through ImageService, which runs its own transaction, while the controller does
+   * not — so if the entity update then fails (another admin deleted the record, a
+   * validation error), the images are already in the table, referenced by nothing and
+   * with no other cleanup path.
+   */
+  private void discardUploaded(Set<UUID> uploaded) {
+    for (UUID id : uploaded) {
+      try {
+        imageService.delete(id);
+      } catch (RuntimeException e) {
+        LOG.warn("Could not discard orphaned upload. uuid={}", id, e);
+      }
+    }
+  }
+
+  private MergedImages mergeImages(Set<UUID> existing, List<UUID> removeUuids, MultipartFile[] imageFiles) {
     Set<UUID> kept = existing == null ? new HashSet<>() : new HashSet<>(existing);
     if (removeUuids != null) {
       kept.removeAll(removeUuids);
@@ -760,9 +814,10 @@ public class CustomDBController {
           "Maximum " + MAX_UPLOAD_IMAGES + " images allowed (" + kept.size() + " already in use)");
     }
 
+    Set<UUID> uploaded = uploadImages(imageFiles, budget);
     Set<UUID> merged = new HashSet<>(kept);
-    merged.addAll(uploadImages(imageFiles, budget));
-    return merged;
+    merged.addAll(uploaded);
+    return new MergedImages(merged, uploaded);
   }
 
   private static List<MultipartFile> usableFiles(MultipartFile[] files) {

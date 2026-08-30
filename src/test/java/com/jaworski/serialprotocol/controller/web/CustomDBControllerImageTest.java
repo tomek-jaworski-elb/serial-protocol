@@ -136,6 +136,46 @@ class CustomDBControllerImageTest {
         assertThat(imagesOf(trainer)).hasSize(5);
     }
 
+    /**
+     * The cap message has to reach the user. These handlers used to catch only
+     * RuntimeException and replace it with "Please verify your input.", so hitting the
+     * photo limit rejected the whole edit — name and e-mail included — while saying
+     * nothing about photos.
+     */
+    @Test
+    void update_exceedingTheCap_tellsTheUserWhy() throws Exception {
+        TrainerDTO trainer = trainerWithImages(6);
+
+        var result = mockMvc.perform(multipartUpdateTrainer(trainer).file(jpeg("seventh.jpg")))
+                .andReturn();
+
+        Object message = result.getFlashMap().get("errorMessage");
+        assertThat(String.valueOf(message))
+                .as("names the real cause and how full the record already is")
+                .contains("6")
+                .doesNotContain("Please verify your input");
+    }
+
+    /**
+     * uploadImages() commits through ImageService, which has its own transaction, while
+     * the controller does not. A failure between the upload and the entity save would
+     * otherwise leave the new rows in the table referenced by nothing.
+     */
+    @Test
+    void update_failingAfterTheUpload_discardsTheNewImages() throws Exception {
+        TrainerDTO trainer = trainerWithImages(1);
+        long before = imageRepository.count();
+
+        // the record disappears between loading it and saving it
+        trainerService.deleteById(trainer.getId());
+
+        mockMvc.perform(multipartUpdateTrainer(trainer).file(jpeg("doomed.jpg")));
+
+        assertThat(imageRepository.count())
+                .as("the freshly uploaded image must not survive the failed update")
+                .isEqualTo(before - 1);
+    }
+
     // --- single-image entities ---
 
     @Test

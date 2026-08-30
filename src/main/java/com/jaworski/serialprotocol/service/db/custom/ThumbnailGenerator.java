@@ -28,7 +28,9 @@ public final class ThumbnailGenerator {
   public static final int MAX_EDGE = 160;
 
   /**
-   * Bump when the output changes in any way — size, format, quality. The ETag embeds
+   * Bump when the output changes in any way — size, format, quality. Stored thumbnails
+   * record the version that produced them and are rebuilt when it no longer matches, so
+   * a bump both invalidates client caches and regenerates. The ETag embeds
    * this, so without a bump clients would keep a stale thumbnail forever: their
    * If-None-Match would keep matching and every response would be a 304.
    */

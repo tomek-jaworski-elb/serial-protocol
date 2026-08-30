@@ -60,4 +60,17 @@ public class Image {
   @Size(max = 100)
   private String thumbContentType;
 
+  /**
+   * Which generator version produced the current thumbnail state.
+   *
+   * <p>Its own column rather than a meaning piggy-backed onto {@code thumbContentType}:
+   * it has to record "already tried and it cannot be done" for formats ImageIO cannot
+   * read, which is a state with no content type of its own. It also makes a version
+   * bump actually take effect — otherwise raising the target size would change every
+   * ETag, make every client refetch, and hand them back the identical old bytes.</p>
+   */
+  @Column(name = TABLE_NAME + "_thumb_version", length = 16)
+  @Size(max = 16)
+  private String thumbVersion;
+
 }

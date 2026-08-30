@@ -65,27 +65,32 @@ public class ImageService {
     if (stored == null) {
       return null;
     }
-    if (stored.getThumbData() != null && stored.getThumbData().length > 0) {
+    // Only a state produced by the CURRENT generator can be reused. Anything older is
+    // rebuilt, which is what makes bumping ThumbnailGenerator.VERSION mean something:
+    // without this the bump would change every ETag, make every client refetch, and
+    // return the identical old bytes.
+    boolean current = ThumbnailGenerator.VERSION.equals(stored.getThumbVersion());
+    if (current && stored.getThumbData() != null && stored.getThumbData().length > 0) {
       return new ImageContent(stored.getThumbData(), stored.getThumbContentType());
     }
-    // A content type with no data means generation was already tried and cannot
-    // succeed for this image (webp/svg have no ImageIO reader, and an image already
-    // under the target size gains nothing). Without this marker every request would
-    // re-run the failing conversion.
-    boolean alreadyAttempted = stored.getThumbContentType() != null;
 
     Image image = imageRepository.findById(id).orElse(null);
     if (image == null || image.getData() == null || image.getData().length == 0) {
       return null;
     }
 
-    byte[] scaled = alreadyAttempted ? null
+    // A current version with no data records "tried, and it cannot be done" — webp and
+    // svg have no ImageIO reader, and an image already under the target size gains
+    // nothing. Without it every request would re-run a conversion known to fail.
+    byte[] scaled = current ? null
         : ThumbnailGenerator.scale(image.getData(), image.getContentType());
     if (scaled == null) {
-      if (!alreadyAttempted) {
-        // Record the attempt, not a copy of the original: duplicating a 10 MB blob
-        // to avoid a cheap failed read would be a poor trade.
-        image.setThumbContentType(image.getContentType());
+      if (!current) {
+        // Record the attempt, not a copy of the original: duplicating a 10 MB blob to
+        // avoid a cheap failed read would be a poor trade.
+        image.setThumbData(null);
+        image.setThumbContentType(null);
+        image.setThumbVersion(ThumbnailGenerator.VERSION);
         imageRepository.save(image);
       }
       return new ImageContent(image.getData(), image.getContentType());
@@ -94,6 +99,7 @@ public class ImageService {
     String thumbType = ThumbnailGenerator.outputContentType(image.getContentType());
     image.setThumbData(scaled);
     image.setThumbContentType(thumbType);
+    image.setThumbVersion(ThumbnailGenerator.VERSION);
     // Concurrent requests may both generate; the bytes are equivalent, so the second
     // write simply overwrites the first with the same result.
     imageRepository.save(image);

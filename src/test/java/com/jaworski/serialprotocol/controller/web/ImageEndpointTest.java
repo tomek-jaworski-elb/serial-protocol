@@ -171,12 +171,38 @@ class ImageEndpointTest {
         body(get("/custom/image/{uuid}", id).param("size", "thumb"));
 
         Image stored = imageRepository.findById(id).orElseThrow();
-        assertThat(stored.getThumbContentType()).as("attempt recorded").isNotNull();
+        assertThat(stored.getThumbVersion())
+                .as("attempt recorded against the generator version, not a borrowed field")
+                .isEqualTo(ThumbnailGenerator.VERSION);
         assertThat(stored.getThumbData()).as("original not duplicated").isNull();
 
         assertThat(body(get("/custom/image/{uuid}", id).param("size", "thumb")))
                 .as("still serves the original")
                 .isEqualTo(svg);
+    }
+
+    /**
+     * A version bump must actually rebuild the stored bytes. Before the version was
+     * recorded per image, bumping it changed every ETag — so every client refetched —
+     * and the server handed back the identical old thumbnail: full cache invalidation
+     * with no effect.
+     */
+    @Test
+    void thumb_producedByAnOlderVersion_isRegenerated() throws Exception {
+        UUID id = storePng(600, 450);
+        body(get("/custom/image/{uuid}", id).param("size", "thumb"));
+
+        Image stored = imageRepository.findById(id).orElseThrow();
+        assertThat(stored.getThumbVersion()).isEqualTo(ThumbnailGenerator.VERSION);
+        stored.setThumbData(new byte[]{1, 2, 3});
+        stored.setThumbVersion("v0");
+        imageRepository.save(stored);
+
+        byte[] served = body(get("/custom/image/{uuid}", id).param("size", "thumb"));
+
+        assertThat(served).as("stale bytes must not be served").isNotEqualTo(new byte[]{1, 2, 3});
+        assertThat(imageRepository.findById(id).orElseThrow().getThumbVersion())
+                .isEqualTo(ThumbnailGenerator.VERSION);
     }
 
     @Test
