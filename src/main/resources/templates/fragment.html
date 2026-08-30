@@ -338,6 +338,13 @@
         <span th:text="${helpText}">Optional.</span>
         <span class="image-count ms-1"></span>
     </div>
+    <!--
+      Carries a change of primary photo, nothing else. Starts disabled, so it is not submitted:
+      opening and saving the form without clicking "Set as primary" must leave the pointer alone,
+      exactly like an absent removeImageUuids means "remove nothing". image-editor.js enables it
+      on an explicit click and disables it again whenever the form is filled for another row.
+    -->
+    <input type="hidden" name="primaryImageUuid" class="image-primary-field" disabled>
     <p class="image-live visually-hidden" aria-live="polite"></p>
 </div>
 

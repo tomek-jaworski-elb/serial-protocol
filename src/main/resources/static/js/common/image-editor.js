@@ -52,11 +52,26 @@
         input.disabled = true;
         tile.appendChild(input);
 
+        // Declared before both buttons: each of them names the tile in its aria-label.
+        const label = total > 1 ? `photo ${index + 1} of ${total}` : 'photo';
+
+        // Marks this photo as the one shown in tables. Disabled while the tile is marked for
+        // removal: the server would refuse a pointer to a photo that is about to go, so an
+        // enabled button would promise something it cannot deliver.
+        const primary = document.createElement('button');
+        primary.type = 'button';
+        primary.className = 'image-primary btn btn-sm';
+        primary.dataset.uuid = uuid;
+        primary.textContent = 'Główne';
+        primary.setAttribute('aria-pressed', 'false');
+        primary.setAttribute('aria-label', `Set ${label} as the main photo`);
+        primary.addEventListener('click', () => choosePrimary(describe, uuid));
+        tile.appendChild(primary);
+
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'image-remove btn btn-sm';
         button.setAttribute('aria-pressed', 'false');
-        const label = total > 1 ? `photo ${index + 1} of ${total}` : 'photo';
         button.setAttribute('aria-label', `Remove ${label}`);
         // A plain multiplication sign, not a wastebasket emoji: the page ships no icon
         // font, and U+1F5D1 rendered as tofu in Chrome on Windows.
@@ -67,6 +82,48 @@
         return tile;
     }
 
+    /** Same order the server falls back to, so the preview matches the outcome. */
+    function minByString(uuids) {
+        return uuids.slice().sort()[0];
+    }
+
+    function tilesIn(describe) {
+        return Array.from(describe.grid.querySelectorAll('.image-tile:not(.is-new)'));
+    }
+
+    /** Records an explicit choice: this is the only thing that enables the hidden field. */
+    function choosePrimary(describe, uuid) {
+        describe.chosen = uuid;
+        if (describe.primaryField) {
+            describe.primaryField.value = uuid;
+            describe.primaryField.disabled = false;
+        }
+        paintPrimary(describe);
+        announce(describe, 'main photo changed');
+    }
+
+    /**
+     * Moves the marker when the current one is marked for removal, using the server's rule so
+     * the preview cannot disagree with what is saved. Does NOT enable the hidden field — the
+     * user has not chosen anything, so the server stays free to decide.
+     */
+    function paintPrimary(describe) {
+        const kept = tilesIn(describe).filter((t) => !t.classList.contains('is-removed'));
+        const keptUuids = kept.map((t) => t.querySelector('.image-primary').dataset.uuid);
+        let current = describe.chosen;
+        if (!current || keptUuids.indexOf(current) === -1) {
+            current = minByString(keptUuids);
+        }
+        tilesIn(describe).forEach((tile) => {
+            const btn = tile.querySelector('.image-primary');
+            const isPrimary = btn.dataset.uuid === current;
+            const removed = tile.classList.contains('is-removed');
+            tile.classList.toggle('is-primary', isPrimary && !removed);
+            btn.setAttribute('aria-pressed', isPrimary && !removed ? 'true' : 'false');
+            btn.disabled = removed;
+        });
+    }
+
     function toggle(tile, button, input, label, describe) {
         const marked = tile.classList.toggle('is-removed');
         input.disabled = !marked;
@@ -74,6 +131,9 @@
         button.setAttribute('aria-label', marked ? `Undo removing ${label}` : `Remove ${label}`);
         button.innerHTML = marked ? 'Undo' : '&times;';
         announce(describe, marked ? `${label} marked for removal` : `${label} kept`);
+        // Undo restores the previous marker rather than leaving it moved: cancelling the only
+        // action that changed anything must leave the record as it was found.
+        paintPrimary(describe);
         refreshCount(describe);
     }
 
@@ -104,13 +164,25 @@
      * it must clear first: the form is shared between rows and stale tiles from a
      * previously opened row would otherwise linger.
      */
-    function render(describe, uuids) {
+    function render(describe, uuids, currentPrimary) {
         // The update form is shared by every row, so a file the user picked for one
         // record would otherwise still be attached when another record is saved —
         // silently, because the preview tiles are rebuilt below. Clearing the input
         // is what makes "open a different row" mean a clean slate.
         const fileInput = describe.root.querySelector('input[type=file]');
         if (fileInput) fileInput.value = '';
+        // Same reason as the file input above, with a nastier failure: a pointer left over from
+        // another row would be submitted for this one, the server would find it outside the set
+        // and fall back — wiping a choice the user never touched on a record they only meant to
+        // edit the phone number of.
+        // Shows what the server currently considers primary, so the marker agrees with the
+        // avatar in the table. Displaying it does not make it an explicit choice — the field
+        // below stays disabled until the user actually clicks.
+        describe.chosen = currentPrimary || null;
+        if (describe.primaryField) {
+            describe.primaryField.value = '';
+            describe.primaryField.disabled = true;
+        }
         describe.grid.querySelectorAll('.image-tile.is-new img').forEach((img) => {
             URL.revokeObjectURL(img.src);
         });
@@ -119,6 +191,7 @@
             describe.grid.appendChild(buildTile(uuid, i, uuids.length, describe));
         });
         describe.empty.classList.toggle('d-none', uuids.length > 0);
+        paintPrimary(describe);
         refreshCount(describe);
     }
 
@@ -129,6 +202,11 @@
             empty: root.querySelector('.image-empty'),
             counter: root.querySelector('.image-count'),
             live: root.querySelector('.image-live'),
+            // Named primaryField, not field: describeEditor already uses `field` for the NAME
+            // of the removal input. Reusing the key silently overwrote this element with that
+            // string, and the pointer was never submitted.
+            primaryField: root.querySelector('.image-primary-field'),
+            chosen: null,
             multiple: root.dataset.multiple === 'true',
             field: root.dataset.multiple === 'true' ? 'removeImageUuids' : 'removeImage'
         };
@@ -188,7 +266,7 @@
             btn.addEventListener('click', () => {
                 const raw = btn.dataset.images !== undefined ? btn.dataset.images : btn.dataset.image;
                 const uuids = describe.multiple ? uuidList(raw) : singleUuid(raw);
-                render(describe, uuids);
+                render(describe, uuids, btn.dataset.primaryImage);
             });
         });
     });

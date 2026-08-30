@@ -31,5 +31,23 @@ public class ParticipantDTO {
   @EqualsAndHashCode.Exclude
   private UUID image;
 
+  /**
+   * The photo to show as the avatar. A participant holds exactly one image ({@code @OneToOne}),
+   * so unlike the multi-image people there is nothing to choose between and no pointer to keep.
+   */
+  public UUID getAvatarImageUuid() {
+    return image;
+  }
+
+  /** See {@code TrainerDTO#getInitials()} — same contract, same null- and blank-safety. */
+  public String getInitials() {
+    String initials = firstLetter(name) + firstLetter(surname);
+    return initials.isEmpty() ? "·" : initials;
+  }
+
+  private static String firstLetter(String value) {
+    return value == null || value.isBlank() ? "" : value.trim().substring(0, 1).toUpperCase();
+  }
+
 }
 

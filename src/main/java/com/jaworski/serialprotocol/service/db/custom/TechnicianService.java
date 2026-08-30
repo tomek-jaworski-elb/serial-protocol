@@ -1,6 +1,7 @@
 package com.jaworski.serialprotocol.service.db.custom;
 
 import com.jaworski.serialprotocol.dto.custom.TechnicianDTO;
+import com.jaworski.serialprotocol.dto.custom.PrimaryImage;
 import com.jaworski.serialprotocol.entity.custom.Image;
 import com.jaworski.serialprotocol.entity.custom.Technician;
 import com.jaworski.serialprotocol.mappers.custom.TechnicianMapper;
@@ -52,6 +53,10 @@ public class TechnicianService {
   public TechnicianDTO save(TechnicianDTO dto) {
     Technician technician = TechnicianMapper.mapToEntity(dto);
     technician.setImages(resolveImages(dto.getImagesUuid()));
+    // A new record gets a pointer too, and a value arriving from the form is validated
+    // here rather than trusted — the add endpoint binds the whole DTO.
+    technician.setPrimaryImageUuid(PrimaryImage.resolve(
+        dto.getPrimaryImageUuid(), null, java.util.Set.of(), dto.getImagesUuid()));
     Technician saved = technicianRepository.save(technician);
     return TechnicianMapper.mapToDTO(saved);
   }
@@ -86,6 +91,13 @@ public class TechnicianService {
     existing.setPhoneNumber(dto.getPhoneNumber());
     existing.setAddress(dto.getAddress());
     existing.setImages(requestedImages);
+    // Resolved after the merge: the pointer may have just been removed, and the
+    // fallback has to prefer photos that were already here (see PrimaryImage.resolve).
+    existing.setPrimaryImageUuid(PrimaryImage.resolve(
+        dto.getPrimaryImageUuid(),
+        existing.getPrimaryImageUuid(),
+        previousImages.stream().map(Image::getId).collect(java.util.stream.Collectors.toSet()),
+        requestedImages.stream().map(Image::getId).collect(java.util.stream.Collectors.toSet())));
 
     Technician updated = technicianRepository.save(existing);
 

@@ -211,7 +211,23 @@
             <tr th:each="participant, participantStat : ${participants}">
                 <td><input type="checkbox" class="form-check-input row-select-checkbox" th:value="${participant.participantUuid}"></td>
                 <td class="col-num" th:text="${participant.id}">1</td>
-                <td th:text="${participant.name}">John</td>
+                <!-- Avatar goes INSIDE the existing Name cell: adding a column would shift
+                     cells[cellIndex], which table-filter-sort.js reads when sorting. -->
+                <td>
+                    <span class="avatar-wrap">
+                        <img th:if="${participant.avatarImageUuid != null}"
+                             th:src="@{/custom/image/{uuid}(uuid=${participant.avatarImageUuid},size='thumb')}"
+                             width="32" height="32" loading="lazy" alt="" class="avatar">
+                        <!-- Initials come from CSS generated content, not a text node: the filter
+                             matches on row.textContent and sorting reads cell.textContent, so a
+                             text node here would sort "Zofia" under "ZD" and make "ZD" match the
+                             row. Hidden from screen readers because the Images column still
+                             renders a "Missing" badge - if that badge ever goes, this must too. -->
+                        <span th:unless="${participant.avatarImageUuid != null}" class="avatar avatar-initials"
+                              th:attr="data-initials=${participant.initials}" aria-hidden="true"></span>
+                        <span th:text="${participant.name}">John</span>
+                    </span>
+                </td>
                 <td th:text="${participant.surname}">Doe</td>
                 <td th:text="${participant.birthDate != null ? #temporals.format(participant.birthDate, 'dd/MM/yyyy') : '-'}">2026-03-15</td>
                 <td>

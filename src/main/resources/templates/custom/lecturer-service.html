@@ -144,7 +144,23 @@
             <tr th:each="lecturer, lecturerStat : ${lecturers}">
                 <td><input type="checkbox" class="form-check-input row-select-checkbox" th:value="${lecturer.id}"></td>
                 <th scope="row" class="col-num" th:text="${lecturerPage.number * pageSize + lecturerStat.index + 1}">1</th>
-                <td th:text="${lecturer.name}">Jane</td>
+                <!-- Avatar goes INSIDE the existing Name cell: adding a column would shift
+                     cells[cellIndex], which table-filter-sort.js reads when sorting. -->
+                <td>
+                    <span class="avatar-wrap">
+                        <img th:if="${lecturer.avatarImageUuid != null}"
+                             th:src="@{/custom/image/{uuid}(uuid=${lecturer.avatarImageUuid},size='thumb')}"
+                             width="32" height="32" loading="lazy" alt="" class="avatar">
+                        <!-- Initials come from CSS generated content, not a text node: the filter
+                             matches on row.textContent and sorting reads cell.textContent, so a
+                             text node here would sort "Zofia" under "ZD" and make "ZD" match the
+                             row. Hidden from screen readers because the Images column still
+                             renders a "Missing" badge - if that badge ever goes, this must too. -->
+                        <span th:unless="${lecturer.avatarImageUuid != null}" class="avatar avatar-initials"
+                              th:attr="data-initials=${lecturer.initials}" aria-hidden="true"></span>
+                        <span th:text="${lecturer.name}">Jane</span>
+                    </span>
+                </td>
                 <td th:text="${lecturer.surname}">Doe</td>
                 <td th:text="${lecturer.nickname != null ? lecturer.nickname : '—'}">janedoe</td>
                 <td th:text="${lecturer.email != null ? lecturer.email : '—'}">jane@example.com</td>
@@ -168,7 +184,7 @@
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li>
                                     <button type="button" class="dropdown-item update-lecturer-btn" data-image-source
-                                            th:attr="data-id=${lecturer.id},data-images=${lecturer.imagesUuidString},data-name=${lecturer.name},data-surname=${lecturer.surname},data-nickname=${lecturer.nickname},data-email=${lecturer.email},data-phone=${lecturer.phoneNumber},data-address=${lecturer.address},data-notes=${lecturer.notes}">
+                                            th:attr="data-id=${lecturer.id},data-images=${lecturer.imagesUuidString},data-primary-image=${lecturer.avatarImageUuid},data-name=${lecturer.name},data-surname=${lecturer.surname},data-nickname=${lecturer.nickname},data-email=${lecturer.email},data-phone=${lecturer.phoneNumber},data-address=${lecturer.address},data-notes=${lecturer.notes}">
                                         Update
                                     </button>
                                 </li>

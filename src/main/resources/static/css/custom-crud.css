@@ -283,3 +283,76 @@
     font-size: 0.65rem;
     font-weight: 700;
 }
+
+/* ---- main photo marker -------------------------------------------------
+ * The Add form never shows this control: its tiles come from previewSelection(),
+ * which renders freshly picked files with no uuid to point at yet.
+ * ---------------------------------------------------------------------- */
+
+.image-primary {
+    position: absolute;
+    left: 4px;
+    bottom: 4px;
+    min-height: 32px; /* above the 24px minimum target size */
+    padding: 0 0.4rem;
+    line-height: 1;
+    border: 1px solid var(--fb-border, #dde1e8);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--fb-muted, #5b6270);
+    font-size: 0.7rem;
+}
+
+.image-tile.is-primary {
+    border-color: var(--fb-accent, #2f7de0);
+    box-shadow: 0 0 0 2px var(--fb-accent, #2f7de0);
+}
+
+.image-tile.is-primary .image-primary {
+    background: var(--fb-accent, #2f7de0);
+    border-color: var(--fb-accent, #2f7de0);
+    color: var(--fb-accent-ink, #ffffff);
+    font-weight: 700;
+}
+
+.image-primary:disabled {
+    opacity: 0.4;
+}
+
+/* ---- avatar in the table ------------------------------------------------ */
+
+.avatar-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.avatar {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 999px; /* circular = a person */
+    object-fit: cover;
+    border: 1px solid var(--fb-border, #dde1e8);
+}
+
+/* One neutral tone rather than a per-person palette: a colour tied to a name would
+   imply a meaning the data does not carry. Flat fill plus initials is already enough
+   to tell a generated avatar from an uploaded photo. */
+.avatar-initials {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--fb-border, #dde1e8);
+    color: var(--fb-muted, #5b6270);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+/* Generated content, deliberately: textContent does not see pseudo-elements, so the
+   initials cannot leak into the filter or into sort keys. Measured — a text node here
+   turns "Zofia" into "ZDZofia" for sorting and makes "ZD" match the row in the filter. */
+.avatar-initials::before {
+    content: attr(data-initials);
+}

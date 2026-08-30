@@ -75,7 +75,7 @@ Key conventions:
 - Person-like DTOs use `id` for UUID in `LecturerDTO`/`TrainerDTO`/`TechnicianDTO`; `ParticipantDTO` uses `participantUuid` (avoids collision with `Long id`).
 - All `@AttributeOverride` for UUID includes `nullable=false, updatable=false, unique=true`.
 - Date format is `dd/MM/yyyy` (EU). HTML forms use Flatpickr on `type="text"` — never `type="date"`.
-- `@InitBinder` in `CustomDBController` registers `StringTrimmerEditor(true)` — required for optional field validation.
+- `@InitBinder` in `CustomDBController` registers an anonymous `PropertyEditorSupport` for `String.class` only, turning blank input into `null` — required for optional field validation. (It is *not* `StringTrimmerEditor`; that class appears nowhere in the code. Non-`String` types such as `UUID` go through Spring's default converters.)
 - `CoursesMapper.mapToEntity()` is deprecated; use `CoursesService.buildCourses()` with `repository.getReferenceById()`.
 - `CoursesDTO` has dual counter fields: `courseCounterUuid` (read-only, set by mapper) and `counter` (Long, from forms). `resolveCourseCounter()` prefers UUID.
 - Participant deletion is guarded: throws `IllegalStateException` if linked courses exist.

@@ -25,6 +25,7 @@ public class TechnicianMapper {
     dto.setEmail(technician.getEmail());
     dto.setPhoneNumber(technician.getPhoneNumber());
     dto.setAddress(technician.getAddress());
+    dto.setPrimaryImageUuid(technician.getPrimaryImageUuid());
     dto.setImagesUuid(technician.getImages() == null
             ? new HashSet<>()
             : technician.getImages().stream().map(Image::getId).collect(Collectors.toSet()));
@@ -46,6 +47,7 @@ public class TechnicianMapper {
     technician.setEmail(dto.getEmail());
     technician.setPhoneNumber(dto.getPhoneNumber());
     technician.setAddress(dto.getAddress());
+    technician.setPrimaryImageUuid(dto.getPrimaryImageUuid());
     // Images are resolved and set by the service layer — not mapped here
     return technician;
   }

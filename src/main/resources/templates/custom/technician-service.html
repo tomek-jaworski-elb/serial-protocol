@@ -144,7 +144,23 @@
             <tr th:each="technician, technicianStat : ${technicians}">
                 <td><input type="checkbox" class="form-check-input row-select-checkbox" th:value="${technician.id}"></td>
                 <th scope="row" class="col-num" th:text="${technicianPage.number * pageSize + technicianStat.index + 1}">1</th>
-                <td th:text="${technician.name}">Jane</td>
+                <!-- Avatar goes INSIDE the existing Name cell: adding a column would shift
+                     cells[cellIndex], which table-filter-sort.js reads when sorting. -->
+                <td>
+                    <span class="avatar-wrap">
+                        <img th:if="${technician.avatarImageUuid != null}"
+                             th:src="@{/custom/image/{uuid}(uuid=${technician.avatarImageUuid},size='thumb')}"
+                             width="32" height="32" loading="lazy" alt="" class="avatar">
+                        <!-- Initials come from CSS generated content, not a text node: the filter
+                             matches on row.textContent and sorting reads cell.textContent, so a
+                             text node here would sort "Zofia" under "ZD" and make "ZD" match the
+                             row. Hidden from screen readers because the Images column still
+                             renders a "Missing" badge - if that badge ever goes, this must too. -->
+                        <span th:unless="${technician.avatarImageUuid != null}" class="avatar avatar-initials"
+                              th:attr="data-initials=${technician.initials}" aria-hidden="true"></span>
+                        <span th:text="${technician.name}">Jane</span>
+                    </span>
+                </td>
                 <td th:text="${technician.surname}">Doe</td>
                 <td th:text="${technician.nickname != null ? technician.nickname : '—'}">janedoe</td>
                 <td th:text="${technician.email != null ? technician.email : '—'}">jane@example.com</td>
@@ -168,7 +184,7 @@
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li>
                                     <button type="button" class="dropdown-item update-technician-btn" data-image-source
-                                            th:attr="data-id=${technician.id},data-images=${technician.imagesUuidString},data-name=${technician.name},data-surname=${technician.surname},data-nickname=${technician.nickname},data-email=${technician.email},data-phone=${technician.phoneNumber},data-address=${technician.address},data-notes=${technician.notes}">
+                                            th:attr="data-id=${technician.id},data-images=${technician.imagesUuidString},data-primary-image=${technician.avatarImageUuid},data-name=${technician.name},data-surname=${technician.surname},data-nickname=${technician.nickname},data-email=${technician.email},data-phone=${technician.phoneNumber},data-address=${technician.address},data-notes=${technician.notes}">
                                         Update
                                     </button>
                                 </li>
