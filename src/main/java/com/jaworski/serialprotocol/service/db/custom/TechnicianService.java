@@ -1,7 +1,6 @@
 package com.jaworski.serialprotocol.service.db.custom;
 
 import com.jaworski.serialprotocol.dto.custom.TechnicianDTO;
-import com.jaworski.serialprotocol.dto.custom.PrimaryImage;
 import com.jaworski.serialprotocol.entity.custom.Image;
 import com.jaworski.serialprotocol.entity.custom.Technician;
 import com.jaworski.serialprotocol.mappers.custom.TechnicianMapper;
@@ -28,6 +27,7 @@ import java.util.UUID;
 public class TechnicianService {
 
   private final ImageRepository imageRepository;
+  private final ImageService imageService;
   private final TechnicianRepository technicianRepository;
   private final CoursesRepository coursesRepository;
   private static final Logger LOGGER = LoggerFactory.getLogger(TechnicianService.class);
@@ -52,11 +52,11 @@ public class TechnicianService {
 
   public TechnicianDTO save(TechnicianDTO dto) {
     Technician technician = TechnicianMapper.mapToEntity(dto);
-    technician.setImages(resolveImages(dto.getImagesUuid()));
+    technician.setImages(imageService.resolveImages(dto.getImagesUuid()));
     // A new record gets a pointer too, and a value arriving from the form is validated
     // here rather than trusted — the add endpoint binds the whole DTO.
-    technician.setPrimaryImageUuid(PrimaryImage.resolve(
-        dto.getPrimaryImageUuid(), null, java.util.Set.of(), dto.getImagesUuid()));
+    technician.setPrimaryImageUuid(
+        imageService.resolveNewPrimaryImage(dto.getPrimaryImageUuid(), dto.getImagesUuid()));
     Technician saved = technicianRepository.save(technician);
     return TechnicianMapper.mapToDTO(saved);
   }
@@ -81,7 +81,7 @@ public class TechnicianService {
         .orElseThrow(() -> new IllegalArgumentException("Technician with id " + dto.getId() + " not found"));
 
     Set<Image> previousImages = new HashSet<>(existing.getImages());
-    Set<Image> requestedImages = resolveImages(dto.getImagesUuid());
+    Set<Image> requestedImages = imageService.resolveImages(dto.getImagesUuid());
 
     existing.setName(dto.getName());
     existing.setSurname(dto.getSurname());
@@ -93,32 +93,14 @@ public class TechnicianService {
     existing.setImages(requestedImages);
     // Resolved after the merge: the pointer may have just been removed, and the
     // fallback has to prefer photos that were already here (see PrimaryImage.resolve).
-    existing.setPrimaryImageUuid(PrimaryImage.resolve(
-        dto.getPrimaryImageUuid(),
-        existing.getPrimaryImageUuid(),
-        previousImages.stream().map(Image::getId).collect(java.util.stream.Collectors.toSet()),
-        requestedImages.stream().map(Image::getId).collect(java.util.stream.Collectors.toSet())));
+    existing.setPrimaryImageUuid(imageService.resolveUpdatedPrimaryImage(
+        dto.getPrimaryImageUuid(), existing.getPrimaryImageUuid(),
+        previousImages, requestedImages));
 
     Technician updated = technicianRepository.save(existing);
 
-    Set<Image> imagesToDelete = previousImages.stream()
-        .filter(image -> !requestedImages.contains(image))
-        .collect(java.util.stream.Collectors.toSet());
-    if (!imagesToDelete.isEmpty()) {
-      imageRepository.deleteAll(imagesToDelete);
-    }
+    imageService.deleteRemovedImages(previousImages, requestedImages);
     return TechnicianMapper.mapToDTO(updated);
-  }
-
-  private Set<Image> resolveImages(Set<UUID> imageIds) {
-    if (imageIds == null || imageIds.isEmpty()) {
-      return new HashSet<>();
-    }
-    List<Image> images = imageRepository.findAllById(imageIds);
-    if (images.size() != imageIds.size()) {
-      throw new IllegalArgumentException("One or more image ids do not exist");
-    }
-    return new HashSet<>(images);
   }
 }
 

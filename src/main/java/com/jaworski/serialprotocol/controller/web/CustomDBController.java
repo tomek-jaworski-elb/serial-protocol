@@ -7,15 +7,12 @@ import com.jaworski.serialprotocol.dto.custom.LecturerDTO;
 import com.jaworski.serialprotocol.dto.custom.ParticipantDTO;
 import com.jaworski.serialprotocol.dto.custom.TechnicianDTO;
 import com.jaworski.serialprotocol.dto.custom.TrainerDTO;
-import com.jaworski.serialprotocol.entity.custom.Image;
 import com.jaworski.serialprotocol.service.db.custom.CourseTypeService;
 import com.jaworski.serialprotocol.service.db.custom.CourseCounterService;
 import com.jaworski.serialprotocol.service.db.custom.CoursesService;
-import com.jaworski.serialprotocol.service.db.custom.ImageService;
 import com.jaworski.serialprotocol.service.db.custom.LecturerService;
 import com.jaworski.serialprotocol.service.db.custom.ParticipantService;
 import com.jaworski.serialprotocol.service.db.custom.TechnicianService;
-import com.jaworski.serialprotocol.service.db.custom.ThumbnailGenerator;
 import com.jaworski.serialprotocol.service.db.custom.TrainerService;
 import jakarta.validation.ConstraintViolationException;
 import com.jaworski.serialprotocol.service.WebSocketPublisher;
@@ -30,24 +27,14 @@ import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
 import java.beans.PropertyEditorSupport;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -71,23 +58,8 @@ public class CustomDBController {
   private final LecturerService lecturerService;
   private final TechnicianService technicianService;
   private final ParticipantService participantService;
-  private final ImageService imageService;
-  private static final int MAX_UPLOAD_IMAGES = 6;
+  private final ImageUploadCoordinator imageUploads;
   private static final int DEFAULT_PAGE_SIZE = 10;
-  private static final Set<String> ALLOWED_IMAGE_TYPES = Set.of(
-      "image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"
-  );
-
-  private static String sanitizeContentType(String rawContentType) {
-    if (rawContentType == null) {
-      return "application/octet-stream";
-    }
-    String normalized = rawContentType.trim().toLowerCase();
-    // strip parameters (e.g. "image/jpeg; charset=utf-8")
-    int semicolon = normalized.indexOf(';');
-    String base = semicolon >= 0 ? normalized.substring(0, semicolon).trim() : normalized;
-    return ALLOWED_IMAGE_TYPES.contains(base) ? base : "application/octet-stream";
-  }
 
   /**
    * Converts empty strings submitted from HTML forms to null,
@@ -213,9 +185,9 @@ public class CustomDBController {
                            RedirectAttributes redirectAttributes) {
     try {
       trainerDTO.setId(null);
-      Set<UUID> uploadedImages = uploadImages(imageFiles, MAX_UPLOAD_IMAGES);
+      Set<UUID> uploadedImages = imageUploads.uploadImages(imageFiles, ImageUploadCoordinator.MAX_UPLOAD_IMAGES);
       trainerDTO.setImagesUuid(uploadedImages);
-      persistOrDiscard(uploadedImages, () -> trainerService.save(trainerDTO));
+      imageUploads.persistOrDiscard(uploadedImages, () -> trainerService.save(trainerDTO));
       redirectAttributes.addFlashAttribute("successMessage", "Trainer added successfully.");
     } catch (RuntimeException e) {
       LOG.error("Cannot add trainer. payload={}", trainerDTO, e);
@@ -235,16 +207,11 @@ public class CustomDBController {
       }
       TrainerDTO existingTrainer = trainerService.findById(trainerDTO.getId());
       Set<UUID> existingImages = existingTrainer != null ? existingTrainer.getImagesUuid() : null;
-      MergedImages images = mergeImages(existingImages, removeImageUuids, imageFiles);
+      ImageUploadCoordinator.MergedImages images = imageUploads.mergeImages(existingImages, removeImageUuids, imageFiles);
       trainerDTO.setImagesUuid(images.merged());
-      try {
-        trainerService.update(trainerDTO);
-      } catch (RuntimeException e) {
-        discardUploaded(images.uploaded());
-        throw e;
-      }
+      imageUploads.persistOrDiscard(images.uploaded(), () -> trainerService.update(trainerDTO));
       redirectAttributes.addFlashAttribute("successMessage", "Trainer updated successfully.");
-    } catch (ImageLimitExceededException e) {
+    } catch (ImageUploadCoordinator.ImageLimitExceededException e) {
       // Only this type is surfaced verbatim. The generic message below would leave the user
       // guessing which field was at fault, but service-layer messages carry uuids and internal
       // phrasing and are not written for a toast.
@@ -290,9 +257,9 @@ public class CustomDBController {
                             RedirectAttributes redirectAttributes) {
     try {
       lecturerDTO.setId(null);
-      Set<UUID> uploadedImages = uploadImages(imageFiles, MAX_UPLOAD_IMAGES);
+      Set<UUID> uploadedImages = imageUploads.uploadImages(imageFiles, ImageUploadCoordinator.MAX_UPLOAD_IMAGES);
       lecturerDTO.setImagesUuid(uploadedImages);
-      persistOrDiscard(uploadedImages, () -> lecturerService.save(lecturerDTO));
+      imageUploads.persistOrDiscard(uploadedImages, () -> lecturerService.save(lecturerDTO));
       redirectAttributes.addFlashAttribute("successMessage", "Lecturer added successfully.");
     } catch (RuntimeException e) {
       LOG.error("Cannot add lecturer. payload={}", lecturerDTO, e);
@@ -312,16 +279,11 @@ public class CustomDBController {
       }
       LecturerDTO existingLecturer = lecturerService.findById(lecturerDTO.getId());
       Set<UUID> existingImages = existingLecturer != null ? existingLecturer.getImagesUuid() : null;
-      MergedImages images = mergeImages(existingImages, removeImageUuids, imageFiles);
+      ImageUploadCoordinator.MergedImages images = imageUploads.mergeImages(existingImages, removeImageUuids, imageFiles);
       lecturerDTO.setImagesUuid(images.merged());
-      try {
-        lecturerService.updateById(lecturerDTO);
-      } catch (RuntimeException e) {
-        discardUploaded(images.uploaded());
-        throw e;
-      }
+      imageUploads.persistOrDiscard(images.uploaded(), () -> lecturerService.updateById(lecturerDTO));
       redirectAttributes.addFlashAttribute("successMessage", "Lecturer updated successfully.");
-    } catch (ImageLimitExceededException e) {
+    } catch (ImageUploadCoordinator.ImageLimitExceededException e) {
       // Only this type is surfaced verbatim. The generic message below would leave the user
       // guessing which field was at fault, but service-layer messages carry uuids and internal
       // phrasing and are not written for a toast.
@@ -367,9 +329,9 @@ public class CustomDBController {
                               RedirectAttributes redirectAttributes) {
     try {
       technicianDTO.setId(null);
-      Set<UUID> uploadedImages = uploadImages(imageFiles, MAX_UPLOAD_IMAGES);
+      Set<UUID> uploadedImages = imageUploads.uploadImages(imageFiles, ImageUploadCoordinator.MAX_UPLOAD_IMAGES);
       technicianDTO.setImagesUuid(uploadedImages);
-      persistOrDiscard(uploadedImages, () -> technicianService.save(technicianDTO));
+      imageUploads.persistOrDiscard(uploadedImages, () -> technicianService.save(technicianDTO));
       redirectAttributes.addFlashAttribute("successMessage", "Technician added successfully.");
     } catch (RuntimeException e) {
       LOG.error("Cannot add technician. payload={}", technicianDTO, e);
@@ -389,16 +351,11 @@ public class CustomDBController {
       }
       TechnicianDTO existing = technicianService.findById(technicianDTO.getId());
       Set<UUID> existingImages = existing != null ? existing.getImagesUuid() : null;
-      MergedImages images = mergeImages(existingImages, removeImageUuids, imageFiles);
+      ImageUploadCoordinator.MergedImages images = imageUploads.mergeImages(existingImages, removeImageUuids, imageFiles);
       technicianDTO.setImagesUuid(images.merged());
-      try {
-        technicianService.updateById(technicianDTO);
-      } catch (RuntimeException e) {
-        discardUploaded(images.uploaded());
-        throw e;
-      }
+      imageUploads.persistOrDiscard(images.uploaded(), () -> technicianService.updateById(technicianDTO));
       redirectAttributes.addFlashAttribute("successMessage", "Technician updated successfully.");
-    } catch (ImageLimitExceededException e) {
+    } catch (ImageUploadCoordinator.ImageLimitExceededException e) {
       // Only this type is surfaced verbatim. The generic message below would leave the user
       // guessing which field was at fault, but service-layer messages carry uuids and internal
       // phrasing and are not written for a toast.
@@ -507,9 +464,9 @@ public class CustomDBController {
                                RedirectAttributes redirectAttributes) {
     try {
       participantDTO.setParticipantUuid(null);
-      UUID uploadedImage = uploadSingleImage(imageFile);
+      UUID uploadedImage = imageUploads.uploadSingleImage(imageFile);
       participantDTO.setImage(uploadedImage);
-      persistOrDiscard(justUploaded(uploadedImage), () -> participantService.save(participantDTO));
+      imageUploads.persistOrDiscard(ImageUploadCoordinator.justUploaded(uploadedImage), () -> participantService.save(participantDTO));
       redirectAttributes.addFlashAttribute("successMessage", "Participant added successfully.");
     } catch (IllegalArgumentException e) {
       LOG.error("Cannot add participant. payload={}", participantDTO, e);
@@ -537,7 +494,7 @@ public class CustomDBController {
       if (participantDTO.getParticipantUuid() == null) {
         throw new IllegalArgumentException("UUID is required for update");
       }
-      UUID uploadedImage = uploadSingleImage(imageFile);
+      UUID uploadedImage = imageUploads.uploadSingleImage(imageFile);
       if (uploadedImage != null) {
         // A newly uploaded file outranks the remove checkbox: it is the more
         // explicit intent, and the form should not offer both at once anyway.
@@ -550,7 +507,7 @@ public class CustomDBController {
           participantDTO.setImage(existingParticipant.getImage());
         }
       }
-      persistOrDiscard(justUploaded(uploadedImage), () -> participantService.updateByUuid(participantDTO));
+      imageUploads.persistOrDiscard(ImageUploadCoordinator.justUploaded(uploadedImage), () -> participantService.updateByUuid(participantDTO));
       redirectAttributes.addFlashAttribute("successMessage", "Participant updated successfully.");
     } catch (IllegalArgumentException e) {
       LOG.error("Cannot update participant. payload={}", participantDTO, e);
@@ -607,9 +564,9 @@ public class CustomDBController {
                                  @RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
                                  RedirectAttributes redirectAttributes) {
     try {
-      UUID uploadedImage = uploadSingleImage(imageFile);
+      UUID uploadedImage = imageUploads.uploadSingleImage(imageFile);
       CourseCounterDTO toSave = new CourseCounterDTO(null, courseCounterDTO.counter(), uploadedImage);
-      persistOrDiscard(justUploaded(uploadedImage), () -> courseCounterService.save(toSave));
+      imageUploads.persistOrDiscard(ImageUploadCoordinator.justUploaded(uploadedImage), () -> courseCounterService.save(toSave));
       redirectAttributes.addFlashAttribute("successMessage", "Course counter added successfully.");
     } catch (IllegalArgumentException e) {
       LOG.error("Cannot add course counter. payload={}", courseCounterDTO, e);
@@ -630,7 +587,7 @@ public class CustomDBController {
       if (courseCounterDTO.uuid() == null) {
         throw new IllegalArgumentException("UUID is required for update");
       }
-      UUID uploadedImage = uploadSingleImage(imageFile);
+      UUID uploadedImage = imageUploads.uploadSingleImage(imageFile);
       UUID imageUuid = uploadedImage;
       if (uploadedImage == null && !removeImage) {
         // Same precedence as elsewhere: an uploaded file wins, then an explicit
@@ -641,7 +598,7 @@ public class CustomDBController {
       }
 
       CourseCounterDTO toUpdate = new CourseCounterDTO(courseCounterDTO.uuid(), courseCounterDTO.counter(), imageUuid);
-      persistOrDiscard(justUploaded(uploadedImage), () -> courseCounterService.update(toUpdate));
+      imageUploads.persistOrDiscard(ImageUploadCoordinator.justUploaded(uploadedImage), () -> courseCounterService.update(toUpdate));
       redirectAttributes.addFlashAttribute("successMessage", "Course counter updated successfully.");
     } catch (IllegalArgumentException e) {
       LOG.error("Cannot update course counter. payload={}", courseCounterDTO, e);
@@ -663,252 +620,6 @@ public class CustomDBController {
       redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete course counter.");
     }
     return "redirect:/course-counter-service";
-  }
-
-  private static final String THUMB_VARIANT = "thumb";
-  /**
-   * Revalidate every time rather than trusting a copy for N minutes.
-   *
-   * <p>These are photos of people and deleting one has to mean it is gone. With
-   * max-age the browser keeps serving a deleted photo from disk until the age
-   * expires — the server answers 404 while the cache still hands out the image.
-   * "no-cache" still caches; it just asks first, and an unchanged image comes back
-   * as an empty 304, so nearly all of the bandwidth saving remains.</p>
-   */
-  private static final String IMAGE_CACHE_CONTROL = "private, no-cache";
-
-  /**
-   * Serves a stored image, optionally downscaled via {@code ?size=thumb}.
-   *
-   * <p>Caching note that looks wrong until you check it: Spring Security's
-   * CacheControlHeadersWriter would normally stamp {@code no-store} on every response,
-   * but it skips whenever Cache-Control is already set, and skips 304s outright. The
-   * header set here therefore survives.</p>
-   */
-  @GetMapping("/custom/image/{uuid}")
-  public ResponseEntity<byte[]> imageByUuid(
-      @PathVariable UUID uuid,
-      @RequestParam(required = false) String size,
-      @RequestHeader(value = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch) {
-
-    // Only one variant is offered. Accepting arbitrary values would let a single url
-    // spawn unbounded resize work.
-    boolean wantsThumb = THUMB_VARIANT.equals(size);
-    if (size != null && !wantsThumb) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported size: " + size);
-    }
-
-    // The bytes behind a uuid never change — replacing a photo creates a new Image row —
-    // so the tag needs only the uuid, the variant and the generator version.
-    // The generator version belongs to the thumbnail only. Including it in the tag for the
-    // original would make a thumbnail-size tweak invalidate every cached full-size photo,
-    // whose bytes did not change — every details modal would refetch for nothing.
-    String etag = wantsThumb
-        ? "\"" + uuid + "-" + THUMB_VARIANT + "-" + ThumbnailGenerator.VERSION + "\""
-        : "\"" + uuid + "-orig\"";
-
-    // Answered without reading the blob or generating a thumbnail — but existence is
-    // still checked, and that check is not optional. The tag is derived from the uuid
-    // alone, so a purely tag-based 304 would keep telling browsers "unchanged" about
-    // a photo that has since been deleted, and they would go on serving it from cache
-    // forever. existsById is a primary-key lookup, so the saving is preserved.
-    if (ifNoneMatch != null && matchesEtag(ifNoneMatch, etag)) {
-      if (!imageService.exists(uuid)) {
-        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Image not found");
-      }
-      return ResponseEntity.status(HttpStatus.NOT_MODIFIED)
-          .eTag(etag)
-          .header(HttpHeaders.CACHE_CONTROL, IMAGE_CACHE_CONTROL)
-          .build();
-    }
-
-    byte[] data;
-    String contentType;
-    if (wantsThumb) {
-      ImageService.ImageContent thumbnail = imageService.getThumbnail(uuid);
-      if (thumbnail == null) {
-        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Image not found");
-      }
-      data = thumbnail.data();
-      contentType = thumbnail.contentType();
-    } else {
-      Image image = imageService.getImageById(uuid);
-      if (image == null || image.getData() == null || image.getData().length == 0) {
-        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Image not found");
-      }
-      data = image.getData();
-      contentType = image.getContentType();
-    }
-
-    MediaType mediaType = MediaType.APPLICATION_OCTET_STREAM;
-    if (contentType != null && !contentType.isBlank()) {
-      mediaType = MediaType.parseMediaType(sanitizeContentType(contentType));
-    }
-
-    return ResponseEntity.ok()
-        .contentType(mediaType)
-        .eTag(etag)
-        .header(HttpHeaders.CACHE_CONTROL, IMAGE_CACHE_CONTROL)
-        // Ignored by <img>, but it stops an uploaded SVG being opened as a top-level
-        // document, which is the XSS vector for image/svg+xml. Do not remove.
-        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment")
-        .body(data);
-  }
-
-  private static boolean matchesEtag(String ifNoneMatch, String etag) {
-    for (String candidate : ifNoneMatch.split(",")) {
-      String trimmed = candidate.trim();
-      if ("*".equals(trimmed) || trimmed.equals(etag) || trimmed.equals("W/" + etag)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /**
-   * Builds the image set an update should end up with: what survives the user's
-   * removals, plus whatever was newly uploaded.
-   *
-   * <p>The request carries the images to <em>remove</em>, never the ones to keep.
-   * That direction matters. The edit form builds its thumbnails in JavaScript, so
-   * a "keep these" list would turn any rendering failure into data loss — an empty
-   * editor would submit an empty keep-list and wipe every photo. With removals, a
-   * broken editor simply removes nothing. It also makes a missing parameter mean
-   * "leave the images alone", which is exactly how the form behaved before.</p>
-   *
-   * <p>Set difference already ignores ids that are not in {@code existing}, so a
-   * forged uuid is a no-op: the client can only ever subtract from the entity's
-   * own set, never attach someone else's photo.</p>
-   */
-  /**
-   * Raised when a request would push a record past its photo limit.
-   *
-   * <p>Its own type so the handlers can surface its message verbatim without also leaking
-   * internal ones — {@code "Trainer with id <uuid> not found"} or {@code "One or more image
-   * ids do not exist"} come out of the service layer as plain IllegalArgumentException and
-   * are not written for the person reading the toast.</p>
-   */
-  static class ImageLimitExceededException extends IllegalArgumentException {
-    ImageLimitExceededException(String message) {
-      super(message);
-    }
-  }
-
-  /** The set the entity should end up with, plus the rows this request created. */
-  private record MergedImages(Set<UUID> merged, Set<UUID> uploaded) {
-  }
-
-  /**
-   * Deletes rows this request had just created. Needed because uploadImages() commits
-   * through ImageService, which runs its own transaction, while the controller does
-   * not — so if the entity update then fails (another admin deleted the record, a
-   * validation error), the images are already in the table, referenced by nothing and
-   * with no other cleanup path.
-   */
-  /**
-   * Runs the persist step and removes anything this request had just uploaded if it fails.
-   *
-   * <p>Every upload path needs it, not only the ones that merge image sets: the upload commits
-   * through ImageService in its own transaction while the controller is not transactional, so
-   * any later failure — a duplicate participant id, a name over its length limit — would leave
-   * the blob in the table with nothing pointing at it.</p>
-   */
-  private void persistOrDiscard(Set<UUID> uploaded, Runnable persist) {
-    try {
-      persist.run();
-    } catch (RuntimeException e) {
-      discardUploaded(uploaded);
-      throw e;
-    }
-  }
-
-  private void discardUploaded(Set<UUID> uploaded) {
-    for (UUID id : uploaded) {
-      try {
-        imageService.delete(id);
-      } catch (RuntimeException e) {
-        LOG.warn("Could not discard orphaned upload. uuid={}", id, e);
-      }
-    }
-  }
-
-  private MergedImages mergeImages(Set<UUID> existing, List<UUID> removeUuids, MultipartFile[] imageFiles) {
-    Set<UUID> kept = existing == null ? new HashSet<>() : new HashSet<>(existing);
-    if (removeUuids != null) {
-      kept.removeAll(removeUuids);
-    }
-
-    // Clamped at 0 so a record that somehow holds more than the limit (data from
-    // before the cap existed) can still have images removed — that is the only
-    // way back under the limit. Adding to such a record stays blocked.
-    int budget = Math.max(0, MAX_UPLOAD_IMAGES - kept.size());
-
-    // Checked before uploadImages() runs, because that method persists each image
-    // through ImageService, which commits on its own. Controllers here are not
-    // transactional, so throwing after the upload would leave orphaned rows in the
-    // image table that nothing ever cleans up.
-    if (usableFiles(imageFiles).size() > budget) {
-      throw new ImageLimitExceededException(
-          "Maximum " + MAX_UPLOAD_IMAGES + " images allowed (" + kept.size() + " already in use)");
-    }
-
-    Set<UUID> uploaded = uploadImages(imageFiles, budget);
-    Set<UUID> merged = new HashSet<>(kept);
-    merged.addAll(uploaded);
-    return new MergedImages(merged, uploaded);
-  }
-
-  private static List<MultipartFile> usableFiles(MultipartFile[] files) {
-    if (files == null || files.length == 0) {
-      return List.of();
-    }
-    return java.util.Arrays.stream(files)
-        .filter(Objects::nonNull)
-        .filter(f -> !f.isEmpty())
-        .toList();
-  }
-
-  private Set<UUID> uploadImages(MultipartFile[] files, int maxFiles) {
-    List<MultipartFile> nonEmpty = usableFiles(files);
-    if (nonEmpty.isEmpty()) {
-      return new HashSet<>();
-    }
-
-    if (nonEmpty.size() > maxFiles) {
-      throw new IllegalArgumentException("Maximum " + maxFiles + " images allowed");
-    }
-
-    List<Image> images = nonEmpty.stream().map(file -> {
-      try {
-        Image image = new Image();
-        image.setData(file.getBytes());
-        image.setContentType(sanitizeContentType(file.getContentType()));
-        return image;
-      } catch (IOException e) {
-        throw new UncheckedIOException("Failed to read uploaded photo", e);
-      }
-    }).toList();
-    return imageService.saveAllImages(images);
-  }
-
-  /** The single-image counterpart of MergedImages.uploaded(): empty when nothing was uploaded. */
-  private static Set<UUID> justUploaded(UUID uploaded) {
-    return uploaded == null ? Set.of() : Set.of(uploaded);
-  }
-
-  private UUID uploadSingleImage(MultipartFile file) {
-    if (file == null || file.isEmpty()) {
-      return null;
-    }
-    try {
-      Image image = imageService.saveImage(
-          file.getBytes(),
-          sanitizeContentType(file.getContentType())
-      );
-      return image.getId();
-    } catch (IOException e) {
-      throw new UncheckedIOException("Failed to read uploaded photo", e);
-    }
   }
 
 }

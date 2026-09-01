@@ -39,14 +39,9 @@ public class ParticipantDTO {
     return image;
   }
 
-  /** See {@code TrainerDTO#getInitials()} — same contract, same null- and blank-safety. */
+  /** See {@link PrimaryImage#initials(String, String)} — same contract, same null-/blank-safety. */
   public String getInitials() {
-    String initials = firstLetter(name) + firstLetter(surname);
-    return initials.isEmpty() ? "·" : initials;
-  }
-
-  private static String firstLetter(String value) {
-    return value == null || value.isBlank() ? "" : value.trim().substring(0, 1).toUpperCase();
+    return PrimaryImage.initials(name, surname);
   }
 
 }

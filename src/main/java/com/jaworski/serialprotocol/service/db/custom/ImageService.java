@@ -1,5 +1,6 @@
 package com.jaworski.serialprotocol.service.db.custom;
 
+import com.jaworski.serialprotocol.dto.custom.PrimaryImage;
 import com.jaworski.serialprotocol.entity.custom.Image;
 import com.jaworski.serialprotocol.repository.custom.ImageRepository;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -20,7 +22,30 @@ public class ImageService {
 
   private static final Logger LOG = LoggerFactory.getLogger(ImageService.class);
 
+  private static final Set<String> ALLOWED_IMAGE_TYPES = Set.of(
+      "image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"
+  );
+
   private final ImageRepository imageRepository;
+
+  /**
+   * Normalizes an uploaded or stored content type to one of the allowed image types,
+   * or {@code application/octet-stream} otherwise.
+   *
+   * <p>Shared by the upload path (what a new photo is allowed to claim to be) and the
+   * serving path (defensive re-check of what is already stored) — both need the same
+   * allowlist, or a value written under one rule could be served under a looser one.</p>
+   */
+  public static String sanitizeContentType(String rawContentType) {
+    if (rawContentType == null) {
+      return "application/octet-stream";
+    }
+    String normalized = rawContentType.trim().toLowerCase();
+    // strip parameters (e.g. "image/jpeg; charset=utf-8")
+    int semicolon = normalized.indexOf(';');
+    String base = semicolon >= 0 ? normalized.substring(0, semicolon).trim() : normalized;
+    return ALLOWED_IMAGE_TYPES.contains(base) ? base : "application/octet-stream";
+  }
 
   public Image getImageById(UUID id) {
     return imageRepository.findById(id).orElse(null);
@@ -54,6 +79,56 @@ public class ImageService {
 
   /** Bytes plus the content type they should be served with. */
   public record ImageContent(byte[] data, String contentType) {
+  }
+
+  /**
+   * Fetches images by id, validating every id exists.
+   *
+   * <p>Shared by {@code LecturerService}/{@code TrainerService}/{@code TechnicianService}
+   * when resolving the image set a create/update request asked for.</p>
+   *
+   * @throws IllegalArgumentException if any id has no matching image
+   */
+  public Set<Image> resolveImages(Set<UUID> imageIds) {
+    if (imageIds == null || imageIds.isEmpty()) {
+      return new HashSet<>();
+    }
+    List<Image> images = imageRepository.findAllById(imageIds);
+    if (images.size() != imageIds.size()) {
+      throw new IllegalArgumentException("One or more image ids do not exist");
+    }
+    return new HashSet<>(images);
+  }
+
+  /** Primary-image pointer for a person being created for the first time. */
+  public UUID resolveNewPrimaryImage(UUID requestedPrimaryImage, Set<UUID> imageIds) {
+    return PrimaryImage.resolve(requestedPrimaryImage, null, Set.of(), imageIds);
+  }
+
+  /**
+   * Primary-image pointer for a person whose image set just changed.
+   *
+   * <p>Resolved from the before/after {@link Image} sets rather than raw ids so callers
+   * can pass what they already have on hand after {@link #resolveImages}.</p>
+   */
+  public UUID resolveUpdatedPrimaryImage(UUID requestedPrimaryImage, UUID storedPrimaryImage,
+      Set<Image> previousImages, Set<Image> requestedImages) {
+    return PrimaryImage.resolve(requestedPrimaryImage, storedPrimaryImage,
+        toIds(previousImages), toIds(requestedImages));
+  }
+
+  /** Deletes images that were dropped from the set (present before the update, absent after). */
+  public void deleteRemovedImages(Set<Image> previousImages, Set<Image> requestedImages) {
+    Set<Image> imagesToDelete = previousImages.stream()
+        .filter(image -> !requestedImages.contains(image))
+        .collect(Collectors.toSet());
+    if (!imagesToDelete.isEmpty()) {
+      imageRepository.deleteAll(imagesToDelete);
+    }
+  }
+
+  private static Set<UUID> toIds(Set<Image> images) {
+    return images.stream().map(Image::getId).collect(Collectors.toSet());
   }
 
   /**

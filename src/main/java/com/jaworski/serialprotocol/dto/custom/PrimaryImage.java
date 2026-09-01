@@ -3,6 +3,7 @@ package com.jaworski.serialprotocol.dto.custom;
 import java.util.Comparator;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Decides which photo represents a person.
@@ -68,5 +69,51 @@ public final class PrimaryImage {
     Set<UUID> carriedOver = previousImages == null ? Set.of()
         : previousImages.stream().filter(mergedImages::contains).collect(java.util.stream.Collectors.toSet());
     return minByString(carriedOver.isEmpty() ? mergedImages : carriedOver);
+  }
+
+  /**
+   * The photo to show as the avatar for a person with multiple images: the stored pointer
+   * when it still belongs to the set, otherwise the deterministic fallback.
+   *
+   * <p>Shared by {@code LecturerDTO}/{@code TrainerDTO}/{@code TechnicianDTO} — see their
+   * {@code getAvatarImageUuid()} javadoc for the full rationale.</p>
+   */
+  public static UUID avatarImageUuid(Set<UUID> imagesUuid, UUID primaryImageUuid) {
+    if (imagesUuid == null || imagesUuid.isEmpty()) {
+      return null;
+    }
+    if (primaryImageUuid != null && imagesUuid.contains(primaryImageUuid)) {
+      return primaryImageUuid;
+    }
+    return minByString(imagesUuid);
+  }
+
+  /**
+   * Initials for the avatar placeholder shown when there is no photo.
+   *
+   * <p>Null- and blank-safe on both parts: the columns are NOT NULL in the database, but a
+   * record can still reach here through a restore or a hand-made request, and an exception
+   * raised during Thymeleaf rendering would take down the whole page rather than one avatar.</p>
+   */
+  public static String initials(String name, String surname) {
+    String initials = firstLetter(name) + firstLetter(surname);
+    // A blank disc is indistinguishable from an image that failed to load.
+    return initials.isEmpty() ? "·" : initials;
+  }
+
+  private static String firstLetter(String value) {
+    return value == null || value.isBlank() ? "" : value.trim().substring(0, 1).toUpperCase();
+  }
+
+  /**
+   * The image ids as a plain comma-separated list, for templates to hand to JavaScript.
+   *
+   * <p>Rendering the Set itself yields its toString form, {@code [a, b]}, which every
+   * consumer then had to strip brackets from and split. Mirrors
+   * {@code CoursesDTO.getTrainerIdsString()}.</p>
+   */
+  public static String imagesUuidString(Set<UUID> imagesUuid) {
+    return imagesUuid == null ? ""
+        : imagesUuid.stream().map(String::valueOf).collect(Collectors.joining(","));
   }
 }
