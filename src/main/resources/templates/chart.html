@@ -42,7 +42,7 @@
     <aside class="ship-list-panel" id="shipListPanel" aria-label="Ship list">
         <div class="ship-list-panel-header d-lg-none">
             <h5 class="m-0">Ships</h5>
-            <button type="button" class="btn-close" id="shipListCloseBtn" aria-label="Zamknij"></button>
+            <button type="button" class="btn-close" id="shipListCloseBtn" aria-label="Close"></button>
         </div>
         <ul class="ship-list list-unstyled m-0">
             <li th:each="ship : ${shipModels}" class="ship-row" th:style="'--ship-color: ' + ${ship.color}">
@@ -58,8 +58,35 @@
                         <span th:id="'speed' + ${ship.id}" class="course-speed">0.0</span><span class="course-unit"> kn</span>
                     </div>
                 </div>
+                <!--/*
+                  A parser-level comment: Thymeleaf strips it, so this sits inside th:each
+                  without being shipped once per ship -- and its text cannot satisfy the
+                  markup assertions in ChartShipListTest, which search the rendered HTML.
+
+                  Counter before the dot so every dot lands on the row's outer edge and the six
+                  of them line up vertically -- the point of the indicator is being seen without
+                  looking straight at it. chart-script.js addresses both by id, so their DOM
+                  order is nothing to it.
+
+                  The counter must not be given Bootstrap's sight-hiding utility class, which is
+                  how it spent the first release: that class clips content away with !important,
+                  which no other rule can undo, while the element keeps its full measured width.
+                  It looks correct to everything except the eye.
+
+                  The bare number is named by the visually-hidden text in front of it, not by its
+                  title. title on a non-interactive span never appears on touch -- and the mobile
+                  bottom sheet is the whole mobile UI -- and because the span has text of its own
+                  a title becomes the accessible DESCRIPTION, which readers routinely skip at
+                  default verbosity. The title stays only for the hover it does serve.
+                  aria-label is not an option either: on an element with text it REPLACES that
+                  text, so a reader would hear the label and never the count. And the counter must
+                  never be announced on change -- at ~1 message/s per ship that is six numbers a
+                  second.
+                */-->
+                <span class="visually-hidden" th:text="'Packets received from ' + ${ship.name} + ':'">Packets received:</span>
+                <span th:id="'rs_model' + ${ship.id} + '_no'" class="rx-count"
+                      th:title="'Packets received from ' + ${ship.name}">000</span>
                 <span th:id="'led' + ${ship.id}" class="led-dot"></span>
-                <span th:id="'rs_model' + ${ship.id} + '_no'" class="visually-hidden">0</span>
             </li>
         </ul>
     </aside>

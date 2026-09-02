@@ -76,6 +76,12 @@
     --fb-muted: #5b6270;
     --fb-border: #dde1e8;
     --fb-surface: #ffffff;
+    /* Ship activity indicator. Both values clear the 3:1 an indicator needs against
+       --fb-surface (3.06:1 and 3.30:1); the pair they replaced measured 1.58:1 and 2.10:1.
+       The lit dot's halo is derived from --fb-led-on with color-mix rather than stored as a
+       third token, which would have restated these same channels and needed changing with it. */
+    --fb-led-off: #8a94a6;
+    --fb-led-on: #16a34a;
     --fb-font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     --fb-bottom-nav-height: 56px;
 }

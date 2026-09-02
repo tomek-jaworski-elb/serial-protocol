@@ -576,12 +576,12 @@ function updateKonvaTrack(id) {
 // ------------------------------------------------------------------
 // Funkcja do aktualizacji wyświetlania modelu
 // ------------------------------------------------------------------
-function updateModelDisplay(config, modelId, positionX, positionY, angle, speed, blinkDuration = 250) {
+function updateModelDisplay(config, modelId, positionX, positionY, angle, speed) {
     fillFieldValues(config.headingField, angle);
     fillFieldValues(config.speedField, speed);
     renderShipListArrow('arrow' + modelId, angle);
-    ledBlink(config.led, blinkDuration);
-    fillFieldValues0(config.rsField, ShipCounter.incrementIntMap(modelId));
+    ledBlink(config.led);
+    fillPacketCounter(config.rsField, ShipCounter.incrementIntMap(modelId));
 
     if (KonvaObjects[modelId]) {
         KonvaObjects[modelId].lastSpeed = speed;
@@ -709,19 +709,78 @@ function renderShipListArrow(elementId, angleDeg) {
     el.style.transform = `rotate(${angleDeg}deg)`;
 }
 
-function fillFieldValues0(elementId, value) {
+/**
+ * Zero-padded to three characters so the value always fills the 3ch box .rx-count reserves --
+ * ShipCounter wraps at 999, so three is also the maximum.
+ *
+ * <p>Anything that is not a number becomes "---" rather than its text. ShipCounter.incrementIntMap
+ * returns undefined for an id its own map does not hold, and String(undefined) is nine characters
+ * -- which would spill straight out of a box sized for three and across the row. The two id lists
+ * agree today, but they are declared independently and hundreds of lines apart.</p>
+ */
+function fillPacketCounter(elementId, value) {
     const spanElement = getCachedElement(elementId);
     if (!spanElement) return;
-    spanElement.innerHTML = value;
+    spanElement.textContent = Number.isInteger(value)
+        ? String(value).padStart(3, '0')
+        : '---';
 }
 
-function ledBlink(elementId, duration) {
+function dropLedOn(event) {
+    const element = event.currentTarget;
+    if (element.getAnimations().length > 0) {
+        // animationend is queued, not delivered instantly. A message that arrived in the gap
+        // between the animation ending and this handler running has already restarted the blink,
+        // and stripping the class now would cancel it -- that message's blink would simply never
+        // appear. Leave it on and hand the tidying to the restarted animation's own event.
+        element.addEventListener('animationend', dropLedOn, {once: true});
+        return;
+    }
+    element.classList.remove('led-on');
+}
+
+/**
+ * Reports that a message arrived. How the dot then behaves -- and for how long -- belongs to
+ * the fb-led-blink keyframes in chart.css; nothing here knows a duration.
+ *
+ * <p>The ordinary paths force no layout. The obvious way to replay a CSS animation -- drop the
+ * class, read offsetWidth, add it back -- buys the restart with a synchronous full-document
+ * layout flush, and at six ships sending about once a second that is six flushes per second next
+ * to the Konva stage redraw. Only the recovery branch below still pays it, and it is not reached
+ * in normal operation.</p>
+ */
+function ledBlink(elementId) {
     const element = getCachedElement(elementId);
     if (!element) return;
-    element.classList.add('led-on');
-    setTimeout(() => {
+
+    const running = element.getAnimations();
+    if (running.length > 0) {
+        // A message landed mid-blink: seek back to the start so it is shown rather than
+        // swallowed by the tail of the one before -- which is what a burst of frames buffered
+        // during a WebSocket outage delivers.
+        running.forEach(animation => {
+            animation.currentTime = 0;
+        });
+        return;
+    }
+
+    if (element.classList.contains('led-on')) {
+        // The class is still on but nothing is animating behind it: the animation was cancelled,
+        // or never began because CSS was not animating this element when it was added. Adding a
+        // class that is already there is not a change, so the dot would stay dark for good --
+        // the setTimeout this replaced could not get stuck like that, because its timer always
+        // took the class back off. Forcing a layout read between the remove and the add is what
+        // makes the browser see two states instead of none. Recovery only; the ordinary path
+        // below never reaches it.
         element.classList.remove('led-on');
-    }, duration);
+        void element.offsetWidth;
+    }
+
+    // Stable function reference, so removing first keeps this to one listener however often the
+    // recovery path runs.
+    element.removeEventListener('animationend', dropLedOn);
+    element.addEventListener('animationend', dropLedOn, {once: true});
+    element.classList.add('led-on');
 }
 
 // ------------------------------------------------------------------
