@@ -38,9 +38,14 @@ SerialController (jSerialComm discovery, filtered by rs.comports)
 | `/rs` | raw serial frame as byte-array string |
 | `/json` | `ModelTrackDTO` as JSON |
 | `/heartbeat` | heartbeat tick |
-| `/session` | active session count |
+| `/session` | open-page count (one connection per loaded page, from the footer) |
 
-`SessionType` enum is the shared contract between Java and JS. `WSSessionManager` stores sessions globally; `WebSocketPublisherImpl` fans out via `ThreadPoolExecutorConfig` thread pool.
+`SessionType` enum is the shared contract between Java and JS. `WSSessionManager` stores connections globally; `WebSocketPublisherImpl` fans out via `ThreadPoolExecutorConfig` thread pool.
+
+Ask for the open-page count with `WebSocketPublisher.openPageCount()`, never by counting the whole registry: a page holds one to three connections depending on what it displays, so counting all of them counted subscriptions and showed two tabs as three. `OpenPageBroadcast` resends the number every `ws.session.count.interval`, which is also what stops those connections being closed as idle.
+
+### Domain vocabulary
+[`CONTEXT.md`](CONTEXT.md) is the glossary. It exists because "session" has meant four different things here at once — a channel, a connection, a login session and an open page. The footer still says "Active sessions"; the glossary records what that number actually is.
 
 ### Persistence
 - **Main profile**: MariaDB (`jdbc:mariadb://${DB_HOST_IP:mariadb}:3306/certificates`), credentials via env vars `DB_USER`/`DB_PASSWORD`.

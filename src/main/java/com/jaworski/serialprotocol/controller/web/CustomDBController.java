@@ -98,7 +98,7 @@ public class CustomDBController {
     model.addAttribute("lecturers", lecturerService.findAll());
     model.addAttribute("technicians", technicianService.findAll());
     model.addAttribute("courseCounters", courseCounterService.findAll());
-    model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
+    model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
     return "custom/courses-service";
   }
 
@@ -175,7 +175,7 @@ public class CustomDBController {
     model.addAttribute("trainerPage", trainerPage);
     model.addAttribute("currentPage", page);
     model.addAttribute("pageSize", size);
-    model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
+    model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
     return "custom/trainer-service";
   }
 
@@ -247,7 +247,7 @@ public class CustomDBController {
     model.addAttribute("lecturerPage", lecturerPage);
     model.addAttribute("currentPage", page);
     model.addAttribute("pageSize", size);
-    model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
+    model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
     return "custom/lecturer-service";
   }
 
@@ -319,7 +319,7 @@ public class CustomDBController {
     model.addAttribute("technicianPage", technicianPage);
     model.addAttribute("currentPage", page);
     model.addAttribute("pageSize", size);
-    model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
+    model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
     return "custom/technician-service";
   }
 
@@ -391,7 +391,7 @@ public class CustomDBController {
     model.addAttribute("courseTypePage", courseTypePage);
     model.addAttribute("currentPage", page);
     model.addAttribute("pageSize", size);
-    model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
+    model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
     return "custom/course-type-service";
   }
 
@@ -454,7 +454,7 @@ public class CustomDBController {
     Map<UUID, List<CoursesDTO>> coursesByParticipant = new HashMap<>();
     participants.forEach(p -> coursesByParticipant.put(p.getParticipantUuid(), coursesService.findByParticipantUuid(p.getParticipantUuid())));
     model.addAttribute("coursesByParticipant", coursesByParticipant);
-    model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
+    model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
     return "custom/participant-service";
   }
 
@@ -555,7 +555,7 @@ public class CustomDBController {
     Map<UUID, List<CoursesDTO>> coursesByCourseCounter = new HashMap<>();
     counters.forEach(cc -> coursesByCourseCounter.put(cc.uuid(), coursesService.findByCourseCounterUuid(cc.uuid())));
     model.addAttribute("coursesByCourseCounter", coursesByCourseCounter);
-    model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
+    model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
     return "custom/course-counter-service";
   }
 

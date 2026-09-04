@@ -47,7 +47,7 @@ public class DbUtilsController {
     @GetMapping
     public String dbUtils(Model model) {
         model.addAttribute("name", "db-utils");
-        model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
+        model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
         model.addAttribute("schemaVersion", DatabaseBackupService.SCHEMA_VERSION);
         return "db-utils";
     }

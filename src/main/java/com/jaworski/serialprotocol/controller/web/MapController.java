@@ -46,35 +46,35 @@ public class MapController {
     @GetMapping(path = {"/", "/index.html", "/index", "/index.htm"})
     public String index(Model model) {
         model.addAttribute(ATTRIBUTE_NAME, "home");
-        model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
+        model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
         return "index";
     }
 
     @GetMapping("/terminal")
     public String terminal(Model model) {
         model.addAttribute(ATTRIBUTE_NAME, "terminal");
-        model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
+        model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
         return "terminal";
     }
 
     @GetMapping("/about")
     public String about(Model model) {
         model.addAttribute(ATTRIBUTE_NAME, "about");
-        model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
+        model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
         return "about";
     }
 
     @GetMapping("/greeting")
     public String greeting(@RequestParam(name = ATTRIBUTE_NAME, required = false, defaultValue = "World") String name, Model model) {
         model.addAttribute(ATTRIBUTE_NAME, name);
-        model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
+        model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
         return "greetings";
     }
 
     @GetMapping("/chart")
     public String chart(Model model) {
         model.addAttribute(ATTRIBUTE_NAME, "chart");
-        model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
+        model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
         model.addAttribute("isTestEnabled", resources.isTestEnabled());
         model.addAttribute("shipModels", Models.values());
         return "chart";
@@ -84,7 +84,7 @@ public class MapController {
     public String tracks(Model model) {
         model.addAttribute(ATTRIBUTE_NAME, "track");
         model.addAttribute(ATTRIBUTE_TRACK_MAP, Collections.emptyMap());
-        model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
+        model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
         return "tracks";
     }
 
@@ -103,7 +103,7 @@ public class MapController {
         }
         model.addAttribute(ATTRIBUTE_NAME, "track");
         model.addAttribute("checkboxForm", checkBoxOption);
-        model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
+        model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
         return "tracks";
     }
     @PreAuthorize("hasRole(T(com.jaworski.serialprotocol.authorization.SecurityRoles).ROLE_USER.getRole()) or " +
@@ -135,14 +135,14 @@ public class MapController {
         if (error != null) {
             model.addAttribute("error", "Invalid username or password");
         }
-        model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
+        model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
         return "login";
     }
 
     @PostMapping("/logout")
     public String logout(Model model) {
         model.addAttribute(ATTRIBUTE_NAME, "logout");
-        model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
+        model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
         return "redirect:/";
     }
 
@@ -160,7 +160,7 @@ public class MapController {
         model.addAttribute("totalPages", instructorsPage.getTotalPages());
         model.addAttribute("totalElements", instructorsPage.getTotalElements());
         model.addAttribute("pageSize", size);
-        model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
+        model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
         return "instructor-service";
     }
 }
