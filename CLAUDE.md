@@ -44,8 +44,19 @@ SerialController (jSerialComm discovery, filtered by rs.comports)
 
 Ask for the open-page count with `WebSocketPublisher.openPageCount()`, never by counting the whole registry: a page holds one to three connections depending on what it displays, so counting all of them counted subscriptions and showed two tabs as three. `OpenPageBroadcast` resends the number every `ws.session.count.interval`, which is also what stops those connections being closed as idle.
 
-### Domain vocabulary
-[`CONTEXT.md`](CONTEXT.md) is the glossary. It exists because "session" has meant four different things here at once — a channel, a connection, a login session and an open page. The footer still says "Active sessions"; the glossary records what that number actually is.
+### "Session" means four different things here
+Be precise about which one you mean, because conflating them is what broke the footer:
+
+| Term | What it is |
+|---|---|
+| **channel** | a named stream (`/rs`, `/json`, `/heartbeat`, `/session`) — `SessionType` calls these "session types", which is a misnomer |
+| **connection** | one page subscribed to one channel; `WSSessionManager` holds all of them |
+| **login session** | a signed-in user's server-side session, `server.servlet.session.timeout` |
+| **open page** | one loaded page, from load until its tab closes |
+
+The footer's **"Active sessions"** is a count of **open pages** — the label predates this note and is kept deliberately. It works because the footer is on every page and opens exactly one `/session` connection, so counting that channel counts pages. Counting connections instead counted subscriptions, and a page holds one to three of them depending on what it displays: two tabs on the chart used to report three.
+
+A page also sends a keep-alive on that connection every 30s. It has to come from the page, not the server: a window killed by a crash never sends a close frame, and silence is the only thing that gives it away. Writing to it from here would reset the very clock that notices (`ws.session.silence-limit`), and the count would only ever climb.
 
 ### Persistence
 - **Main profile**: MariaDB (`jdbc:mariadb://${DB_HOST_IP:mariadb}:3306/certificates`), credentials via env vars `DB_USER`/`DB_PASSWORD`.
