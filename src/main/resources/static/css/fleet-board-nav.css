@@ -1,0 +1,216 @@
+/*
+ * Fleet Board — shared navigation styles (all pages, via fragment.html).
+ * Bottom nav on mobile (< lg), top nav on desktop (>= lg), "More" panel.
+ * Page-specific styles (e.g. the ship map) live in their own CSS files.
+ */
+
+@font-face {
+    font-family: "Inter";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url("/fonts/inter/inter-400-latin.woff2") format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+    font-family: "Inter";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url("/fonts/inter/inter-400-ext.woff2") format("woff2");
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+    font-family: "Inter";
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url("/fonts/inter/inter-500-latin.woff2") format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+    font-family: "Inter";
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url("/fonts/inter/inter-500-ext.woff2") format("woff2");
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+    font-family: "Inter";
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url("/fonts/inter/inter-600-latin.woff2") format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+    font-family: "Inter";
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url("/fonts/inter/inter-600-ext.woff2") format("woff2");
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+    font-family: "Inter";
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url("/fonts/inter/inter-700-latin.woff2") format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+    font-family: "Inter";
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url("/fonts/inter/inter-700-ext.woff2") format("woff2");
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+:root {
+    --fb-accent: #2f7de0;
+    --fb-accent-ink: #ffffff;
+    --fb-ink: #151a22;
+    --fb-muted: #5b6270;
+    --fb-border: #dde1e8;
+    --fb-surface: #ffffff;
+    /* Ship activity indicator. Both values clear the 3:1 an indicator needs against
+       --fb-surface (3.06:1 and 3.30:1); the pair they replaced measured 1.58:1 and 2.10:1.
+       The lit dot's halo is derived from --fb-led-on with color-mix rather than stored as a
+       third token, which would have restated these same channels and needed changing with it. */
+    --fb-led-off: #8a94a6;
+    --fb-led-on: #16a34a;
+    --fb-font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --fb-bottom-nav-height: 56px;
+}
+
+body {
+    font-family: var(--fb-font);
+}
+
+/* ---- top bar: brand + desktop nav ---- */
+.fb-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.6rem 1rem;
+    background: var(--fb-surface);
+    border-bottom: 1px solid var(--fb-border);
+    position: relative;
+}
+.fb-brand {
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--fb-ink);
+    text-decoration: none;
+    white-space: nowrap;
+}
+.fb-brand:hover {
+    color: var(--fb-accent);
+}
+
+/*
+ * Desktop only, deliberately. The bar and the page content below it are both
+ * position:relative with z-index:auto and the content comes later in the DOM, so the
+ * "More" dropdown was painted under the ship list inside .map-wrapper (measured on
+ * /chart). An explicit level fixes that.
+ *
+ * Not applied on mobile: there "More" is an offcanvas (Bootstrap 1045), so it needs
+ * nothing — while the ship sheet's backdrop sits at 1031 and is meant to dim the bar
+ * too. Raising the bar globally would leave the header undimmed behind the sheet.
+ */
+@media (min-width: 992px) {
+    .fb-topbar {
+        z-index: 1040;
+    }
+}
+
+/* ---- desktop top nav (>= lg) ---- */
+.fb-top-nav {
+    align-items: center;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+}
+.fb-top-nav .fb-link {
+    padding: 0.45rem 0.85rem;
+    border-radius: 8px;
+    color: var(--fb-ink);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.92rem;
+}
+.fb-top-nav .fb-link:hover {
+    background: var(--fb-border);
+}
+.fb-top-nav .fb-link.active {
+    color: var(--fb-accent-ink);
+    background: var(--fb-accent);
+}
+.fb-top-nav .dropdown-menu {
+    font-family: var(--fb-font);
+}
+
+/* ---- mobile bottom nav (< lg), fixed ---- */
+.fb-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1030; /* below Bootstrap .offcanvas (1045) */
+    display: flex;
+    /* The safe-area inset must ADD to the bar, not eat into it: with
+       box-sizing:border-box a plain height would squeeze the link row to
+       56px minus the home-indicator inset (~22px on an iPhone). This keeps the
+       content 56px tall and matches what body reserves as padding-bottom. */
+    height: calc(var(--fb-bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--fb-surface);
+    border-top: 1px solid var(--fb-border);
+    box-shadow: 0 -2px 8px rgba(21, 26, 34, 0.06);
+}
+.fb-bottom-nav .fb-link,
+.fb-bottom-nav .fb-more-btn {
+    flex: 1 1 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--fb-muted);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.78rem;
+    background: none;
+    border: none;
+}
+.fb-bottom-nav .fb-link.active {
+    color: var(--fb-accent);
+    font-weight: 700;
+}
+
+/* The 0px fallback is not cosmetic: without it, an engine that does not know
+   safe-area-inset-bottom drops the whole calc() as invalid, padding-bottom falls
+   back to 0 and the fixed bottom nav covers the last row of page content.
+   Verified in Chrome: calc(56px + env(unknown-name)) computes to 0px, while
+   calc(56px + env(unknown-name, 0px)) computes to 56px. */
+/* reserve space so the fixed bottom nav never covers page content (all pages) */
+@media (max-width: 991.98px) {
+    body {
+        padding-bottom: calc(var(--fb-bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+    }
+}
+
+/* ---- "More" content shared by desktop dropdown and mobile offcanvas ---- */
+.fb-more-list {
+    margin: 0;
+    padding: 0.25rem 0;
+}
+.fb-more-list .dropdown-item {
+    font-family: var(--fb-font);
+}
+
+/* Note: .fb-top-nav / .fb-bottom-nav show/hide is handled entirely by the
+   Bootstrap d-lg-none / d-none d-lg-flex utility classes already on those
+   elements in fragment.html — no separate breakpoint rule needed here, so
+   there's only one lg-breakpoint mechanism to keep in sync. */

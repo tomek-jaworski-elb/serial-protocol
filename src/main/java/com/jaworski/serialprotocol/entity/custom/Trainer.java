@@ -15,6 +15,7 @@ import lombok.ToString;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 import static com.jaworski.serialprotocol.entity.custom.Trainer.TABLE_NAME;
 
@@ -48,5 +49,17 @@ public class Trainer extends PersonBase {
   @ToString.Exclude
   @EqualsAndHashCode.Exclude
   private Set<Image> images = new HashSet<>();
+
+  /**
+   * Which of {@link #images} represents this person in table listings.
+   *
+   * <p>A plain uuid, deliberately not a second {@code @OneToOne} to {@code Image}: a real
+   * association would force the orphan-image cleanup in the services to clear this FK first,
+   * in the right order, in three separate places — and that cleanup is exactly where the last
+   * two review rounds found bugs. Readers fall back when the value no longer belongs to the
+   * set, so a stale uuid degrades to another photo instead of breaking the page.</p>
+   */
+  @Column(name = TABLE_NAME + "_primary_image_uuid")
+  private UUID primaryImageUuid;
 
 }

@@ -27,6 +27,7 @@ import java.util.UUID;
 public class LecturerService {
 
   private final ImageRepository imageRepository;
+  private final ImageService imageService;
   private final LecturerRepository lecturerRepository;
   private final CoursesRepository coursesRepository;
   private static final Logger LOGGER = LoggerFactory.getLogger(LecturerService.class);
@@ -51,7 +52,11 @@ public class LecturerService {
 
   public LecturerDTO save(LecturerDTO dto) {
     Lecturer lecturer = LecturerMapper.mapToEntity(dto);
-    lecturer.setImages(resolveImages(dto.getImagesUuid()));
+    lecturer.setImages(imageService.resolveImages(dto.getImagesUuid()));
+    // A new record gets a pointer too, and a value arriving from the form is validated
+    // here rather than trusted — the add endpoint binds the whole DTO.
+    lecturer.setPrimaryImageUuid(
+        imageService.resolveNewPrimaryImage(dto.getPrimaryImageUuid(), dto.getImagesUuid()));
     Lecturer savedLecturer = lecturerRepository.save(lecturer);
     return LecturerMapper.mapToDTO(savedLecturer);
   }
@@ -76,7 +81,7 @@ public class LecturerService {
         .orElseThrow(() -> new IllegalArgumentException("Lecturer with id " + dto.getId() + " not found"));
 
     Set<Image> previousImages = new HashSet<>(existingLecturer.getImages());
-    Set<Image> requestedImages = resolveImages(dto.getImagesUuid());
+    Set<Image> requestedImages = imageService.resolveImages(dto.getImagesUuid());
 
     existingLecturer.setName(dto.getName());
     existingLecturer.setSurname(dto.getSurname());
@@ -86,26 +91,15 @@ public class LecturerService {
     existingLecturer.setPhoneNumber(dto.getPhoneNumber());
     existingLecturer.setAddress(dto.getAddress());
     existingLecturer.setImages(requestedImages);
+    // Resolved after the merge: the pointer may have just been removed, and the
+    // fallback has to prefer photos that were already here (see PrimaryImage.resolve).
+    existingLecturer.setPrimaryImageUuid(imageService.resolveUpdatedPrimaryImage(
+        dto.getPrimaryImageUuid(), existingLecturer.getPrimaryImageUuid(),
+        previousImages, requestedImages));
 
     Lecturer updatedLecturer = lecturerRepository.save(existingLecturer);
 
-    Set<Image> imagesToDelete = previousImages.stream()
-        .filter(image -> !requestedImages.contains(image))
-        .collect(java.util.stream.Collectors.toSet());
-    if (!imagesToDelete.isEmpty()) {
-      imageRepository.deleteAll(imagesToDelete);
-    }
+    imageService.deleteRemovedImages(previousImages, requestedImages);
     return LecturerMapper.mapToDTO(updatedLecturer);
-  }
-
-  private Set<Image> resolveImages(Set<UUID> imageIds) {
-    if (imageIds == null || imageIds.isEmpty()) {
-      return new HashSet<>();
-    }
-    List<Image> images = imageRepository.findAllById(imageIds);
-    if (images.size() != imageIds.size()) {
-      throw new IllegalArgumentException("One or more image ids do not exist");
-    }
-    return new HashSet<>(images);
   }
 }

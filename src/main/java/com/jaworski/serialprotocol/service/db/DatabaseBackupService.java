@@ -1,8 +1,3 @@
-/*
- * Copyright 2026 Adtran Networks SE. All rights reserved.
- *
- * Owner: tomaszja
- */
 package com.jaworski.serialprotocol.service.db;
 
 import tools.jackson.core.JacksonException;
@@ -628,6 +623,10 @@ public class DatabaseBackupService {
             trainer.setPhoneNumber(dto.getPhoneNumber());
             trainer.setAddress(dto.getAddress());
             trainer.setImages(resolveImageRefs(dto.getImagesUuid()));
+            // Copied by hand here, deliberately outside the mappers — so a field added
+            // to the mappers alone would be written to the backup file and silently
+            // dropped on restore.
+            trainer.setPrimaryImageUuid(dto.getPrimaryImageUuid());
             entityManager.persist(trainer);
         }
         entityManager.flush();
@@ -666,6 +665,10 @@ public class DatabaseBackupService {
             lecturer.setPhoneNumber(dto.getPhoneNumber());
             lecturer.setAddress(dto.getAddress());
             lecturer.setImages(resolveImageRefs(dto.getImagesUuid()));
+            // Copied by hand here, deliberately outside the mappers — so a field added
+            // to the mappers alone would be written to the backup file and silently
+            // dropped on restore.
+            lecturer.setPrimaryImageUuid(dto.getPrimaryImageUuid());
             entityManager.persist(lecturer);
         }
         entityManager.flush();
@@ -704,6 +707,10 @@ public class DatabaseBackupService {
             technician.setPhoneNumber(dto.getPhoneNumber());
             technician.setAddress(dto.getAddress());
             technician.setImages(resolveImageRefs(dto.getImagesUuid()));
+            // Copied by hand here, deliberately outside the mappers — so a field added
+            // to the mappers alone would be written to the backup file and silently
+            // dropped on restore.
+            technician.setPrimaryImageUuid(dto.getPrimaryImageUuid());
             entityManager.persist(technician);
         }
         entityManager.flush();

@@ -117,7 +117,7 @@ first visit; the 7-day cache eliminates repeat downloads.
 
 | Library | Version | Location |
 |---|---|---|
-| Konva | 10.3.0 | `static/js/konva-10_3_0/konva.min.js` |
+| Konva | 10.3.2 | `static/js/konva-10_3_2/konva.min.js` |
 | Bootstrap | 5.3.8 | `static/bootstrap-5-3-8/` |
 
 Only the minified Konva build is shipped. When upgrading, download from

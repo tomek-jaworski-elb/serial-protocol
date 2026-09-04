@@ -25,6 +25,7 @@ public class TrainerMapper {
     dto.setEmail(trainer.getEmail());
     dto.setPhoneNumber(trainer.getPhoneNumber());
     dto.setAddress(trainer.getAddress());
+    dto.setPrimaryImageUuid(trainer.getPrimaryImageUuid());
     dto.setImagesUuid(trainer.getImages() == null
             ? new HashSet<>()
             : trainer.getImages().stream().map(Image::getId).collect(Collectors.toSet()));
@@ -46,6 +47,7 @@ public class TrainerMapper {
     trainer.setEmail(dto.getEmail());
     trainer.setPhoneNumber(dto.getPhoneNumber());
     trainer.setAddress(dto.getAddress());
+    trainer.setPrimaryImageUuid(dto.getPrimaryImageUuid());
     // Images are resolved and set by the service layer — not mapped here
     return trainer;
   }

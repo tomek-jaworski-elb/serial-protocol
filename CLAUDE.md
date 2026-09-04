@@ -38,9 +38,25 @@ SerialController (jSerialComm discovery, filtered by rs.comports)
 | `/rs` | raw serial frame as byte-array string |
 | `/json` | `ModelTrackDTO` as JSON |
 | `/heartbeat` | heartbeat tick |
-| `/session` | active session count |
+| `/session` | open-page count (one connection per loaded page, from the footer) |
 
-`SessionType` enum is the shared contract between Java and JS. `WSSessionManager` stores sessions globally; `WebSocketPublisherImpl` fans out via `ThreadPoolExecutorConfig` thread pool.
+`SessionType` enum is the shared contract between Java and JS. `WSSessionManager` stores connections globally; `WebSocketPublisherImpl` fans out via `ThreadPoolExecutorConfig` thread pool.
+
+Ask for the open-page count with `WebSocketPublisher.openPageCount()`, never by counting the whole registry: a page holds one to three connections depending on what it displays, so counting all of them counted subscriptions and showed two tabs as three. `OpenPageBroadcast` resends the number every `ws.session.count.interval`, which is also what stops those connections being closed as idle.
+
+### "Session" means four different things here
+Be precise about which one you mean, because conflating them is what broke the footer:
+
+| Term | What it is |
+|---|---|
+| **channel** | a named stream (`/rs`, `/json`, `/heartbeat`, `/session`) — `SessionType` calls these "session types", which is a misnomer |
+| **connection** | one page subscribed to one channel; `WSSessionManager` holds all of them |
+| **login session** | a signed-in user's server-side session, `server.servlet.session.timeout` |
+| **open page** | one loaded page, from load until its tab closes |
+
+The footer's **"Active sessions"** is a count of **open pages** — the label predates this note and is kept deliberately. It works because the footer is on every page and opens exactly one `/session` connection, so counting that channel counts pages. Counting connections instead counted subscriptions, and a page holds one to three of them depending on what it displays: two tabs on the chart used to report three.
+
+A page also sends a keep-alive on that connection every 30s. It has to come from the page, not the server: a window killed by a crash never sends a close frame, and silence is the only thing that gives it away. Writing to it from here would reset the very clock that notices (`ws.session.silence-limit`), and the count would only ever climb.
 
 ### Persistence
 - **Main profile**: MariaDB (`jdbc:mariadb://${DB_HOST_IP:mariadb}:3306/certificates`), credentials via env vars `DB_USER`/`DB_PASSWORD`.
@@ -75,7 +91,7 @@ Key conventions:
 - Person-like DTOs use `id` for UUID in `LecturerDTO`/`TrainerDTO`/`TechnicianDTO`; `ParticipantDTO` uses `participantUuid` (avoids collision with `Long id`).
 - All `@AttributeOverride` for UUID includes `nullable=false, updatable=false, unique=true`.
 - Date format is `dd/MM/yyyy` (EU). HTML forms use Flatpickr on `type="text"` — never `type="date"`.
-- `@InitBinder` in `CustomDBController` registers `StringTrimmerEditor(true)` — required for optional field validation.
+- `@InitBinder` in `CustomDBController` registers an anonymous `PropertyEditorSupport` for `String.class` only, turning blank input into `null` — required for optional field validation. (It is *not* `StringTrimmerEditor`; that class appears nowhere in the code. Non-`String` types such as `UUID` go through Spring's default converters.)
 - `CoursesMapper.mapToEntity()` is deprecated; use `CoursesService.buildCourses()` with `repository.getReferenceById()`.
 - `CoursesDTO` has dual counter fields: `courseCounterUuid` (read-only, set by mapper) and `counter` (Long, from forms). `resolveCourseCounter()` prefers UUID.
 - Participant deletion is guarded: throws `IllegalStateException` if linked courses exist.

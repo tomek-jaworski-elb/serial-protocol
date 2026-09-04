@@ -36,7 +36,18 @@ public class WebSocketConfiguration implements WebSocketConfigurer {
     @Bean
     public ServletServerContainerFactoryBean createWebSocketContainer() {
         ServletServerContainerFactoryBean container = new ServletServerContainerFactoryBean();
-        container.setMaxSessionIdleTimeout(Duration.ofSeconds(60).toMillis());
+        /*
+         * Raised from 60s to leave room for keep-alives from a page whose tab is in the background:
+         * browsers throttle its timers to about once a minute, which at 60s would have been exactly
+         * on the boundary.
+         *
+         * The timeout is what notices a page that went away without saying so -- a crash, a forced
+         * quit, a suspended laptop. Nothing else does. That is why the keep-alive is sent by the
+         * page and not by the server: a page that stops existing stops sending, and this closes its
+         * connection. Sending from the server instead would reset this clock for the dead page too,
+         * and it would sit in the count for ever.
+         */
+        container.setMaxSessionIdleTimeout(Duration.ofMinutes(3).toMillis());
         container.setMaxTextMessageBufferSize(60_000);
         return container;
     }

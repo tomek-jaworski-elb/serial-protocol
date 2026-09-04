@@ -31,5 +31,18 @@ public class ParticipantDTO {
   @EqualsAndHashCode.Exclude
   private UUID image;
 
+  /**
+   * The photo to show as the avatar. A participant holds exactly one image ({@code @OneToOne}),
+   * so unlike the multi-image people there is nothing to choose between and no pointer to keep.
+   */
+  public UUID getAvatarImageUuid() {
+    return image;
+  }
+
+  /** See {@link PrimaryImage#initials(String, String)} — same contract, same null-/blank-safety. */
+  public String getInitials() {
+    return PrimaryImage.initials(name, surname);
+  }
+
 }
 
