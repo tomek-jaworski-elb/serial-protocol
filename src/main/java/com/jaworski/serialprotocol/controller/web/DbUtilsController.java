@@ -1,8 +1,3 @@
-/*
- * Copyright 2026 Adtran Networks SE. All rights reserved.
- *
- * Owner: tomaszja
- */
 package com.jaworski.serialprotocol.controller.web;
 
 import com.jaworski.serialprotocol.service.WebSocketPublisher;
@@ -52,7 +47,7 @@ public class DbUtilsController {
     @GetMapping
     public String dbUtils(Model model) {
         model.addAttribute("name", "db-utils");
-        model.addAttribute(ACTIVE_SESSION, webSockerService.sessionsCount());
+        model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
         model.addAttribute("schemaVersion", DatabaseBackupService.SCHEMA_VERSION);
         return "db-utils";
     }

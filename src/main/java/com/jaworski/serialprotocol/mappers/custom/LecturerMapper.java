@@ -25,6 +25,7 @@ public class LecturerMapper {
     dto.setEmail(lecturer.getEmail());
     dto.setPhoneNumber(lecturer.getPhoneNumber());
     dto.setAddress(lecturer.getAddress());
+    dto.setPrimaryImageUuid(lecturer.getPrimaryImageUuid());
     dto.setImagesUuid(lecturer.getImages() == null
             ? new HashSet<>()
             : lecturer.getImages().stream().map(Image::getId).collect(Collectors.toSet()));
@@ -46,6 +47,7 @@ public class LecturerMapper {
     lecturer.setEmail(dto.getEmail());
     lecturer.setPhoneNumber(dto.getPhoneNumber());
     lecturer.setAddress(dto.getAddress());
+    lecturer.setPrimaryImageUuid(dto.getPrimaryImageUuid());
     // Images are resolved and set by the service layer — not mapped here
     return lecturer;
   }

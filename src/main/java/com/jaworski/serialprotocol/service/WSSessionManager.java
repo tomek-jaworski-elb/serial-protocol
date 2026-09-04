@@ -1,6 +1,5 @@
 package com.jaworski.serialprotocol.service;
 
-import com.jaworski.serialprotocol.service.impl.WSSessionCountService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -22,12 +21,15 @@ public class WSSessionManager {
     private static final Logger LOG = LoggerFactory.getLogger(WSSessionManager.class);
     @Getter
     private final ConcurrentHashMap<String ,WebSocketSession> webSocketSessions = new ConcurrentHashMap<>();
-    private final WSSessionCountService countService;
 
     /**
-     * Dodaje sesję i zwraca aktualną liczbę sesji.
-     * @param session sesja WebSocket
-     * @return aktualna liczba sesji
+     * Registers a connection and returns how many are now open.
+     *
+     * <p>The number returned counts every channel. It is not the open-page count — ask
+     * {@code WebSocketPublisher.openPageCount()} for that.</p>
+     *
+     * @param session the WebSocket connection
+     * @return the number of open connections across all channels
      */
     public int addSession(WebSocketSession session) {
       WebSocketSession webSocketSession = webSocketSessions.put(session.getId(), session);
@@ -41,7 +43,6 @@ public class WSSessionManager {
                 size,
                 session.getRemoteAddress(),
                 agent);
-        countService.setCounter(size);
       } else {
         LOG.warn("Session already exists. Session count: {}", size);
       }
@@ -49,16 +50,16 @@ public class WSSessionManager {
     }
 
     /**
-     * Usuwa sesję i zwraca aktualną liczbę sesji.
-     * @param session sesja WebSocket
-     * @return aktualna liczba sesji
+     * Removes a connection and returns how many are left.
+     *
+     * @param session the WebSocket connection
+     * @return the number of open connections across all channels
      */
     public int removeSession(WebSocketSession session) {
       WebSocketSession removed = webSocketSessions.remove(session.getId());
       int size = webSocketSessions.size();
       if (removed != null) {
         LOG.info("Session removed. Session count: {}", size);
-        countService.setCounter(size);
       } else {
         LOG.warn("Session not found. Session count: {}", size);
       }

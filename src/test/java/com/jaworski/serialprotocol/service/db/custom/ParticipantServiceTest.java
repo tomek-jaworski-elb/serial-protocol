@@ -19,7 +19,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
-@Import({ParticipantService.class, CoursesService.class, CourseTypeService.class, TrainerService.class, LecturerService.class})
+@Import({ParticipantService.class, CoursesService.class, CourseTypeService.class, TrainerService.class, LecturerService.class, ImageService.class})
 class ParticipantServiceTest {
 
     @Autowired

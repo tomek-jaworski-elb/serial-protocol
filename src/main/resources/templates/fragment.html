@@ -2,8 +2,9 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head th:fragment="head">
     <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
     <link th:href="@{/bootstrap-5-3-8/css/bootstrap.css}" rel="stylesheet"/>
+    <link th:href="@{/css/fleet-board-nav.css}" rel="stylesheet"/>
     <script type="text/javascript" th:src="@{/bootstrap-5-3-8/js/bootstrap.bundle.js}"></script>
     <style>
         body {
@@ -14,8 +15,9 @@
 </head>
 <th:block th:fragment="headContent">
     <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
     <link th:href="@{/bootstrap-5-3-8/css/bootstrap.css}" rel="stylesheet"/>
+    <link th:href="@{/css/fleet-board-nav.css}" rel="stylesheet"/>
     <script type="text/javascript" th:src="@{/bootstrap-5-3-8/js/bootstrap.bundle.js}"></script>
     <style>
         body {
@@ -25,144 +27,109 @@
     </style>
 </th:block>
 <body>
-<header th:fragment="header" class="header p-3">
-    <p class="text-center h4">Simple AIS server</p>
-    <div class="d-flex justify-content-center">
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <!-- Container wrapper -->
-        <div class="container-fluid">
-            <a class="navbar-brand" href="#">Menu</a>
-            <!-- Toggle button -->
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <!-- Collapsible wrapper -->
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <!-- Left links -->
-                <ul class="navbar-nav">
-                    <!-- Public items -->
-                    <li class="nav-item">
-                        <a th:if="${name == 'home'}" class="nav-link active" aria-current="page" th:href="@{/}">Home</a>
-                        <a th:unless="${name == 'home'}" class="nav-link" aria-current="page" th:href="@{/}">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a th:if="${name == 'chart'}" class="nav-link active" th:href="@{/chart}">Chart</a>
-                        <a th:unless="${name == 'chart'}" class="nav-link" th:href="@{/chart}">Chart</a>
-                    </li>
-                    <li hidden class="nav-item">
-                        <a hidden th:if="${name == 'track'}" class="nav-link active" th:href="@{/tracks}">Tracks</a>
-                        <a hidden th:unless="${name == 'track'}" class="nav-link" th:href="@{/tracks}">Tracks</a>
-                    </li>
-                    <li class="nav-item">
-                        <a th:if="${name == 'about'}" class="nav-link active" th:href="@{/about}">About</a>
-                        <a th:unless="${name == 'about'}" class="nav-link" th:href="@{/about}">About</a>
-                    </li>
-                    <li class="nav-item">
-                        <a th:if="${name == 'terminal'}" class="nav-link active" th:href="@{/terminal}">Terminal</a>
-                        <a th:unless="${name == 'terminal'}" class="nav-link" th:href="@{/terminal}">Terminal</a>
-                    </li>
+<header th:fragment="header">
+    <div class="fb-topbar">
+        <a class="fb-brand" th:href="@{/}">Simple AIS server</a>
 
-                    <!-- Authenticated items -->
-                    <li sec:authorize="isAuthenticated()" class="nav-item">
-                        <a th:if="${name == 'name-service'}" class="nav-link active" th:href="@{/name-service}">Names</a>
-                        <a th:unless="${name == 'name-service'}" class="nav-link" th:href="@{/name-service}">Names</a>
-                    </li>
-                    <li sec:authorize="isAuthenticated()" class="nav-item">
-                        <a th:if="${name == 'instructor-service'}" class="nav-link active" th:href="@{/instructor-service}">Instructors</a>
-                        <a th:unless="${name == 'instructor-service'}" class="nav-link" th:href="@{/instructor-service}">Instructors</a>
-                    </li>
+        <!-- Desktop top nav (>= lg) -->
+        <nav class="fb-top-nav d-none d-lg-flex" aria-label="Main navigation">
+            <a class="fb-link" th:classappend="${name == 'home'} ? 'active'" th:href="@{/}">Home</a>
+            <a class="fb-link" th:classappend="${name == 'chart'} ? 'active'" th:href="@{/chart}">Chart</a>
+            <a class="fb-link" th:classappend="${name == 'about'} ? 'active'" th:href="@{/about}">About</a>
 
-                    <!-- Extended UI items (authenticated + web.ui.extended) -->
-                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}" class="nav-item">
-                        <a th:if="${name == 'courses-service'}" class="nav-link active" th:href="@{/courses-service}">Certificates</a>
-                        <a th:unless="${name == 'courses-service'}" class="nav-link" th:href="@{/courses-service}">Certificates</a>
-                    </li>
-                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}" class="nav-item">
-                        <a th:if="${name == 'trainer-service'}" class="nav-link active" th:href="@{/trainer-service}">Trainer</a>
-                        <a th:unless="${name == 'trainer-service'}" class="nav-link" th:href="@{/trainer-service}">Trainer</a>
-                    </li>
-                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}" class="nav-item">
-                        <a th:if="${name == 'lecturer-service'}" class="nav-link active" th:href="@{/lecturer-service}">Lecturer</a>
-                        <a th:unless="${name == 'lecturer-service'}" class="nav-link" th:href="@{/lecturer-service}">Lecturer</a>
-                    </li>
-                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}" class="nav-item">
-                        <a th:if="${name == 'technician-service'}" class="nav-link active" th:href="@{/technician-service}">Technician</a>
-                        <a th:unless="${name == 'technician-service'}" class="nav-link" th:href="@{/technician-service}">Technician</a>
-                    </li>
-                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}" class="nav-item">
-                        <a th:if="${name == 'course-type-service'}" class="nav-link active" th:href="@{/course-type-service}">Course Type</a>
-                        <a th:unless="${name == 'course-type-service'}" class="nav-link" th:href="@{/course-type-service}">Course Type</a>
-                    </li>
-                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}" class="nav-item">
-                        <a th:if="${name == 'participant-service'}" class="nav-link active" th:href="@{/participant-service}">Participant</a>
-                        <a th:unless="${name == 'participant-service'}" class="nav-link" th:href="@{/participant-service}">Participant</a>
-                    </li>
-                    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}" class="nav-item">
-                        <a th:if="${name == 'course-counter-service'}" class="nav-link active" th:href="@{/course-counter-service}">Course Counter</a>
-                        <a th:unless="${name == 'course-counter-service'}" class="nav-link" th:href="@{/course-counter-service}">Course Counter</a>
-                    </li>
-
-                    <!-- Admin items -->
-                    <li sec:authorize="hasRole('ADMIN')" class="nav-item">
-                        <a th:if="${name == 'db-utils'}" class="nav-link active" th:href="@{/db-utils}">DB Utils</a>
-                        <a th:unless="${name == 'db-utils'}" class="nav-link" th:href="@{/db-utils}">DB Utils</a>
-                    </li>
-                </ul>
-
-                <!-- Right side: Login / User dropdown -->
-                <ul class="navbar-nav ms-auto">
-                    <!-- Login button (visible when NOT authenticated) -->
-                    <li sec:authorize="!isAuthenticated()" class="nav-item">
-                        <a class="nav-link" th:href="@{/login}"
-                           th:classappend="${name == 'login'} ? 'active'">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
-                                 class="bi bi-box-arrow-in-right me-1" viewBox="0 0 16 16">
-                                <path fill-rule="evenodd" d="M6 3.5a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-2a.5.5 0 0 0-1 0v2A1.5 1.5 0 0 0 6.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-8A1.5 1.5 0 0 0 5 3.5v2a.5.5 0 0 0 1 0z"/>
-                                <path fill-rule="evenodd" d="M11.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 1 0-.708.708L10.293 7.5H1.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708z"/>
-                            </svg>
-                            Login
-                        </a>
-                    </li>
-
-                    <!-- User dropdown (visible when authenticated) -->
-                    <li sec:authorize="isAuthenticated()" class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button"
-                           data-bs-toggle="dropdown" aria-expanded="false">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
-                                 class="bi bi-person-circle me-1" viewBox="0 0 16 16">
-                                <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0"/>
-                                <path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1"/>
-                            </svg>
-                            <span sec:authentication="name">User</span>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li>
-                                <span class="dropdown-item-text text-muted small">
-                                    <span sec:authorize="hasRole('ADMIN')">Role: Admin</span>
-                                    <span sec:authorize="!hasRole('ADMIN')">Role: User</span>
-                                </span>
-                            </li>
-                            <li><hr class="dropdown-divider"/></li>
-                            <li>
-                                <form th:action="@{/logout}" method="post" class="m-0 p-0">
-                                    <button type="submit" class="dropdown-item text-danger" style="border: none; background: none; cursor: pointer;">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
-                                             class="bi bi-box-arrow-right me-1" viewBox="0 0 16 16">
-                                            <path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0z"/>
-                                            <path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708z"/>
-                                        </svg>
-                                        Logout
-                                    </button>
-                                </form>
-                            </li>
-                        </ul>
-                    </li>
+            <div class="dropdown">
+                <button class="fb-link dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    More
+                </button>
+                <ul class="dropdown-menu">
+                    <th:block th:replace="~{fragment::moreMenuItems}"></th:block>
                 </ul>
             </div>
-            <!-- Collapsible wrapper -->
-        </div>
-        <!-- Container wrapper -->
+
+            <!-- Login / User dropdown -->
+            <ul class="navbar-nav flex-row ms-2">
+                <li sec:authorize="!isAuthenticated()" class="nav-item">
+                    <a class="fb-link" th:href="@{/login}" th:classappend="${name == 'login'} ? 'active'">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                             class="bi bi-box-arrow-in-right me-1" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M6 3.5a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-2a.5.5 0 0 0-1 0v2A1.5 1.5 0 0 0 6.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-8A1.5 1.5 0 0 0 5 3.5v2a.5.5 0 0 0 1 0z"/>
+                            <path fill-rule="evenodd" d="M11.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 1 0-.708.708L10.293 7.5H1.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708z"/>
+                        </svg>
+                        Login
+                    </a>
+                </li>
+                <li sec:authorize="isAuthenticated()" class="nav-item dropdown">
+                    <a class="fb-link dropdown-toggle" href="#" role="button"
+                       data-bs-toggle="dropdown" aria-expanded="false">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                             class="bi bi-person-circle me-1" viewBox="0 0 16 16">
+                            <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0"/>
+                            <path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1"/>
+                        </svg>
+                        <span sec:authentication="name">User</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <span class="dropdown-item-text text-muted small">
+                                <span sec:authorize="hasRole('ADMIN')">Role: Admin</span>
+                                <span sec:authorize="!hasRole('ADMIN')">Role: User</span>
+                            </span>
+                        </li>
+                        <li><hr class="dropdown-divider"/></li>
+                        <li>
+                            <form th:action="@{/logout}" method="post" class="m-0 p-0">
+                                <button type="submit" class="dropdown-item text-danger" style="border: none; background: none; cursor: pointer;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                         class="bi bi-box-arrow-right me-1" viewBox="0 0 16 16">
+                                        <path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0z"/>
+                                        <path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708z"/>
+                                    </svg>
+                                    Logout
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
+    <!-- Mobile bottom nav (< lg), fixed -->
+    <nav class="fb-bottom-nav d-lg-none" aria-label="Main navigation">
+        <a class="fb-link" th:classappend="${name == 'home'} ? 'active'" th:href="@{/}">Home</a>
+        <a class="fb-link" th:classappend="${name == 'chart'} ? 'active'" th:href="@{/chart}">Chart</a>
+        <a class="fb-link" th:classappend="${name == 'about'} ? 'active'" th:href="@{/about}">About</a>
+        <button class="fb-more-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#fbMoreOffcanvas" aria-controls="fbMoreOffcanvas">
+            More
+        </button>
     </nav>
+
+    <!-- Mobile "More" offcanvas: same items as desktop dropdown, plus login/user (no separate top-right slot on mobile) -->
+    <div class="offcanvas offcanvas-bottom d-lg-none" tabindex="-1" id="fbMoreOffcanvas" aria-labelledby="fbMoreOffcanvasLabel">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="fbMoreOffcanvasLabel">More</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body p-0">
+            <ul class="fb-more-list list-unstyled">
+                <th:block th:replace="~{fragment::moreMenuItems}"></th:block>
+                <li><hr class="dropdown-divider"/></li>
+                <li sec:authorize="!isAuthenticated()">
+                    <a class="dropdown-item" th:classappend="${name == 'login'} ? 'active'" th:href="@{/login}">Login</a>
+                </li>
+                <li sec:authorize="isAuthenticated()">
+                    <span class="dropdown-item-text text-muted small">
+                        <span sec:authentication="name">User</span> —
+                        <span sec:authorize="hasRole('ADMIN')">Admin</span><span sec:authorize="!hasRole('ADMIN')">User</span>
+                    </span>
+                </li>
+                <li sec:authorize="isAuthenticated()">
+                    <form th:action="@{/logout}" method="post" class="m-0 p-0">
+                        <button type="submit" class="dropdown-item text-danger" style="border: none; background: none; cursor: pointer;">Logout</button>
+                    </form>
+                </li>
+            </ul>
+        </div>
     </div>
 </header>
 
@@ -174,6 +141,53 @@
         Application version</p>
     <script type="text/javascript"  th:src="@{/js/ws-session-count.js}"></script>
 </footer>
+
+<!--
+  "More" menu items, shared by the desktop dropdown and the mobile offcanvas
+  (fragment::header). Tracks is intentionally absent — stays fully out of navigation.
+-->
+<th:block th:fragment="moreMenuItems">
+    <li>
+        <a class="dropdown-item" th:classappend="${name == 'terminal'} ? 'active'" th:href="@{/terminal}">Terminal</a>
+    </li>
+    <!--
+      Separators carry the same visibility as the group they introduce. A divider with its own
+      (or no) condition would hang under Terminal for a logged-out visitor, who sees nothing
+      below it, and above a missing DB Utils for a non-admin.
+    -->
+    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}"><hr class="dropdown-divider"/></li>
+    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
+        <a class="dropdown-item" th:classappend="${name == 'courses-service'} ? 'active'" th:href="@{/courses-service}">Certificates</a>
+    </li>
+    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
+        <a class="dropdown-item" th:classappend="${name == 'trainer-service'} ? 'active'" th:href="@{/trainer-service}">Trainer</a>
+    </li>
+    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
+        <a class="dropdown-item" th:classappend="${name == 'lecturer-service'} ? 'active'" th:href="@{/lecturer-service}">Lecturer</a>
+    </li>
+    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
+        <a class="dropdown-item" th:classappend="${name == 'technician-service'} ? 'active'" th:href="@{/technician-service}">Technician</a>
+    </li>
+    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
+        <a class="dropdown-item" th:classappend="${name == 'course-type-service'} ? 'active'" th:href="@{/course-type-service}">Course Type</a>
+    </li>
+    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
+        <a class="dropdown-item" th:classappend="${name == 'participant-service'} ? 'active'" th:href="@{/participant-service}">Participant</a>
+    </li>
+    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
+        <a class="dropdown-item" th:classappend="${name == 'course-counter-service'} ? 'active'" th:href="@{/course-counter-service}">Course Counter</a>
+    </li>
+    <li sec:authorize="isAuthenticated()">
+        <a class="dropdown-item" th:classappend="${name == 'name-service'} ? 'active'" th:href="@{/name-service}">Names</a>
+    </li>
+    <li sec:authorize="isAuthenticated()">
+        <a class="dropdown-item" th:classappend="${name == 'instructor-service'} ? 'active'" th:href="@{/instructor-service}">Instructors</a>
+    </li>
+    <li sec:authorize="hasRole('ADMIN')" th:if="${@environment.getProperty('web.ui.extended') == 'true'}"><hr class="dropdown-divider"/></li>
+    <li sec:authorize="hasRole('ADMIN')">
+        <a class="dropdown-item" th:classappend="${name == 'db-utils'} ? 'active'" th:href="@{/db-utils}">DB Utils</a>
+    </li>
+</th:block>
 
 <!--
   Reusable pagination fragment for server-side paging.
@@ -309,6 +323,42 @@
         });
     </script>
 </th:block>
+
+<!--
+  Photo editor for the update forms. Renders only the shell: the thumbnails are added
+  by /js/common/image-editor.js when the form is opened, because each page has ONE
+  update form shared by every row.
+
+  multiple = true  -> up to 6 photos, each tile submits its uuid in removeImageUuids
+  multiple = false -> a single photo, the tile submits removeImage=true
+-->
+<div th:fragment="imageEditor(multiple, helpText)" class="image-editor"
+     th:attr="data-multiple=${multiple}">
+    <!-- The label wraps its control instead of using for/id: this fragment renders twice per
+         page (Add and Update), so an id would be duplicated and the association would break. -->
+    <label class="form-label image-label" th:text="${multiple} ? 'Images' : 'Image'">Images</label>
+    <div class="image-grid"></div>
+    <p class="image-empty text-muted small mb-2 d-none"
+       th:text="${multiple} ? 'No images yet.' : 'No image yet.'">No images yet.</p>
+    <label class="d-block mb-0">
+        <span class="visually-hidden" th:text="${multiple} ? 'Images' : 'Image'">Images</span>
+        <input type="file" class="form-control" name="imageFile" accept="image/*"
+               th:name="${multiple} ? 'imageFiles' : 'imageFile'"
+               th:attr="multiple=${multiple} ? 'multiple' : null">
+    </label>
+    <div class="form-text">
+        <span th:text="${helpText}">Optional.</span>
+        <span class="image-count ms-1"></span>
+    </div>
+    <!--
+      Carries a change of primary photo, nothing else. Starts disabled, so it is not submitted:
+      opening and saving the form without clicking "Set as primary" must leave the pointer alone,
+      exactly like an absent removeImageUuids means "remove nothing". image-editor.js enables it
+      on an explicit click and disables it again whenever the form is filled for another row.
+    -->
+    <input type="hidden" name="primaryImageUuid" class="image-primary-field" disabled>
+    <p class="image-live visually-hidden" aria-live="polite"></p>
+</div>
 
 </body>
 </html>

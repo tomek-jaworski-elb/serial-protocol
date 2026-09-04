@@ -54,11 +54,59 @@ function clampScale(scale) {
 // in map units, so it must be rescaled on every zoom change to stay tappable
 const SHIP_HIT_SCREEN_PX = 25;
 
+// LOD arrow target size, in screen pixels — same "constant on-screen size" trick
+// as SHIP_HIT_SCREEN_PX, recomputed on every zoom change (updateShipRenderMode)
+const SHIP_ARROW_SCREEN_PX = 16;
+
+// crossfade band, in stage scale: below LOD_ARROW_SCALE = pure arrow, above
+// LOD_HULL_SCALE = pure hull. Picked empirically against minScale/MAX_SCALE.
+const LOD_ARROW_SCALE = 0.4;
+const LOD_HULL_SCALE = 0.9;
+
 function updateShipHitAreas() {
     if (!konvaStage) return;
     const scale = konvaStage.scaleX();
     for (const id of Object.keys(KonvaObjects)) {
         KonvaObjects[id].shipShape.hitStrokeWidth(SHIP_HIT_SCREEN_PX / scale);
+    }
+}
+
+// LOD crossfade: hull silhouette at high zoom, direction arrow at low zoom, so
+// ships stay legible however far out the map is zoomed. Called on every zoom
+// change (fitStageToContainer, zoomStageAtPoint) — also the only place that
+// recomputes the arrow's points on a zoom-only change (no position update), so
+// it keeps its constant on-screen size (SHIP_ARROW_SCREEN_PX) instead of
+// shrinking/growing with the map like the hull does.
+function updateShipRenderMode() {
+    if (!konvaStage) return;
+    const scale = konvaStage.scaleX();
+    const t = Math.max(0, Math.min(1, (scale - LOD_ARROW_SCALE) / (LOD_HULL_SCALE - LOD_ARROW_SCALE)));
+    const arrowSize = SHIP_ARROW_SCREEN_PX / scale;
+    for (const id of Object.keys(KonvaObjects)) {
+        const obj = KonvaObjects[id];
+        if (obj.lastUpdateTime === null) {
+            // no message received yet for this ship — lastPos/lastAngle are still
+            // the {0,0}/0 defaults, so drawing either shape would show a "ghost
+            // ship" at the map origin. Keep both hidden until the first message.
+            obj.shipShape.opacity(0);
+            obj.arrowShape.opacity(0);
+            // Opacity 0 does not remove a shape from Konva's hit graph, so without
+            // this a tap on the map origin would open a tooltip for a ship that has
+            // never reported, showing 0.0 kn / 0.0 deg / No update.
+            obj.shipShape.listening(false);
+            continue;
+        }
+        // Re-arm hit testing: this ship has reported, so it is on the map now.
+        // Only the hull — the arrow is deliberately created with listening:false and
+        // must stay that way. It is added to the layer after the hull, so it sits on
+        // top of the hit graph, and opacity does not remove a shape from that graph.
+        // Making it listen would swallow taps (it has no click handler, so the event
+        // reaches the stage handler that HIDES the tooltip) — at low zoom, where the
+        // arrow covers the whole ship, tapping a ship would never open its tooltip.
+        obj.shipShape.listening(true);
+        obj.shipShape.opacity(t);
+        obj.arrowShape.opacity(1 - t);
+        obj.arrowShape.points(computeShipArrowVerticesForKonva(obj.lastPos.x, obj.lastPos.y, obj.lastAngle, arrowSize));
     }
 }
 
@@ -85,6 +133,7 @@ function fitStageToContainer(resetView) {
     konvaStage.scale({x: scale, y: scale});
     konvaStage.position(clampStagePosition(konvaStage.position(), scale));
     updateShipHitAreas();
+    updateShipRenderMode();
     konvaStage.batchDraw();
 }
 
@@ -102,6 +151,7 @@ function zoomStageAtPoint(pointer, newScaleRaw) {
         y: pointer.y - mapPoint.y * newScale
     }, newScale));
     updateShipHitAreas();
+    updateShipRenderMode();
     konvaStage.batchDraw();
     if (currentTooltipShipId !== null) {
         updateTooltipContent(currentTooltipShipId);
@@ -224,29 +274,44 @@ function throttledResizeKonvaOverlay() {
 }
 window.addEventListener('resize', throttledResizeKonvaOverlay);
 
-// --- preload obrazków LED (bez zmian) ---
-let mapa_x = 2.407; /// było 2.4   = kalibracja mapy
-
-function preloadImage(src) {
-    return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => resolve(img);
-        img.onerror = reject;
-        img.src = src;
-    });
+// Ship list bottom sheet (mobile) / sidebar (desktop) toggle. Deliberately not
+// Bootstrap's offcanvas component: that would need its own copy of the list
+// with its own ids, and getElementById() only ever finds the first of two
+// duplicate ids — chart.html renders the ship list once, this just shows/hides it.
+function bindShipListToggle() {
+    const panel = document.getElementById('shipListPanel');
+    const trigger = document.getElementById('shipListTriggerBtn');
+    const closeBtn = document.getElementById('shipListCloseBtn');
+    const backdrop = document.getElementById('shipListBackdrop');
+    if (!panel || !trigger) return;
+    const open = () => {
+        panel.classList.add('open');
+        backdrop?.classList.add('open');
+        trigger.setAttribute('aria-expanded', 'true');
+    };
+    const close = () => {
+        panel.classList.remove('open');
+        backdrop?.classList.remove('open');
+        trigger.setAttribute('aria-expanded', 'false');
+    };
+    trigger.addEventListener('click', open);
+    closeBtn?.addEventListener('click', close);
+    backdrop?.addEventListener('click', close);
 }
+bindShipListToggle();
 
-// Ensure images are fully loaded before using them
-const imagesLoaded = Promise.all([
-    preloadImage("/img/led_connection_green.png"),
-    preloadImage("/img/led_connection_1.png")
-]);
+// Raw diagnostics line (#textField) — hidden by default (Faza 5), shown on demand.
+// Its content is still updated regardless of visibility (see ws.onmessage), this
+// only toggles whether it's on screen.
+function bindDiagnosticsToggle() {
+    const btn = document.getElementById('diagnosticsToggleBtn');
+    const wrapper = document.getElementById('textFieldWrapper');
+    if (!btn || !wrapper) return;
+    btn.addEventListener('click', () => wrapper.classList.toggle('d-none'));
+}
+bindDiagnosticsToggle();
 
-let imgLedOn, imgLedOff;
-imagesLoaded.then(([on, off]) => {
-    imgLedOn = on;
-    imgLedOff = off;
-}).catch(err => console.error("Błąd ładowania obrazków:", err));
+let mapa_x = 2.407; /// było 2.4   = kalibracja mapy
 
 const path = '/json';
 // Set up the text field
@@ -318,6 +383,22 @@ const ANGLE_CORRECTION = 9; // zgodnie z Twoim oryginalnym kodem
 // obiekt przechowujący instancje Konva dla każdego modelu
 const KonvaObjects = {};
 
+// Shared rotate+translate+flatten step for both the hull and the LOD arrow:
+// rotates by (angle + ANGLE_CORRECTION), translates to (x,y), then flattens to
+// Konva's [x1,y1,x2,y2,...] point format. Kept in one place so a future change
+// to that convention only has to happen once — the ship-list arrow
+// (renderShipListArrow) deliberately does NOT use this helper, see the
+// comment there for why.
+function rotateTranslateFlatten(vertices, angle, x, y) {
+    const radians = (angle + ANGLE_CORRECTION) * Math.PI / 180;
+    const flat = [];
+    for (const v of vertices) {
+        flat.push(v.x * Math.cos(radians) - v.y * Math.sin(radians) + x);
+        flat.push(v.x * Math.sin(radians) + v.y * Math.cos(radians) + y);
+    }
+    return flat;
+}
+
 // funkcja obliczająca wierzchołki statku (używana dla Konva)
 function computeShipVerticesForKonva(x, y, scale, angle, yy, xx, pp) {
     // Twój oryginalny zbiór wierzchołków (bez kopiowania ctx)
@@ -332,20 +413,23 @@ function computeShipVerticesForKonva(x, y, scale, angle, yy, xx, pp) {
     // Scale
     vertices = vertices.map(vertex => ({ x: vertex.x * scale * 1.1, y: vertex.y * scale }));
 
-    // Rotate
-    const radians = (angle + ANGLE_CORRECTION) * Math.PI / 180;
-    vertices = vertices.map(vertex => ({
-        x: vertex.x * Math.cos(radians) - vertex.y * Math.sin(radians),
-        y: vertex.x * Math.sin(radians) + vertex.y * Math.cos(radians)
-    }));
+    return rotateTranslateFlatten(vertices, angle, x, y);
+}
 
-    // Translate
-    vertices = vertices.map(vertex => ({ x: vertex.x + x, y: vertex.y + y }));
-
-    // Konva chce płaską tablicę [x1,y1,x2,y2,...]
-    const flat = [];
-    vertices.forEach(v => { flat.push(v.x); flat.push(v.y); });
-    return flat;
+// LOD arrow shown instead of the hull silhouette at low zoom — same triangle as
+// the ship-list arrow (chart.html), M12 2 L18 20 L12 16 L6 20 Z, viewBox 24x24,
+// vertices taken relative to the center (12,12) then normalized to `size`.
+// `size` is expected in SCREEN pixels, not map units (see SHIP_ARROW_SCREEN_PX) —
+// unlike the hull, this arrow must stay a constant, legible size at any zoom,
+// which is the whole point of falling back to it when the map is zoomed out.
+function computeShipArrowVerticesForKonva(x, y, angle, size) {
+    const vertices = [
+        { x: 0, y: -10 }, { x: 6, y: 8 }, { x: 0, y: 4 }, { x: -6, y: 8 }
+    ].map(v => ({ x: v.x * size / 24, y: v.y * size / 24 }));
+    // SAME correction as the hull (computeShipVerticesForKonva, via the shared
+    // rotateTranslateFlatten helper) — this arrow replaces the hull in place
+    // during the crossfade, so it must point the same way.
+    return rotateTranslateFlatten(vertices, angle, x, y);
 }
 
 // Tworzymy obiekty Konva dla wszystkich modeli (linie tras + kształty statków)
@@ -414,9 +498,22 @@ function createKonvaObjectsForModels() {
 
         konvaShipLayer.add(shipShape);
 
+        // LOD arrow: replaces shipShape at low zoom (updateShipRenderMode crossfades
+        // opacity between the two). Not clickable — shipShape keeps that job even
+        // while faded out, so tap targets don't change as the user zooms.
+        const arrowShape = new Konva.Line({
+            points: computeShipArrowVerticesForKonva(0, 0, 0, SHIP_ARROW_SCREEN_PX / konvaStage.scaleX()),
+            fill: ModelsOfShips.getColorFromId(id),
+            closed: true,
+            listening: false,
+            opacity: 0
+        });
+        konvaShipLayer.add(arrowShape);
+
         KonvaObjects[id] = {
             trackLine,
             shipShape,
+            arrowShape,
             lastPos: { x: 0, y: 0 },
             lastAngle: 0,
             lastSpeed: 0,
@@ -426,6 +523,10 @@ function createKonvaObjectsForModels() {
     }
     konvaTrackLayer.draw();
     konvaShipLayer.draw();
+    // fitStageToContainer() already ran (initKonvaStage, before this function) with
+    // an empty KonvaObjects — its updateShipRenderMode() call was a no-op then, so
+    // ships need this one to start with correct opacity for the current zoom level.
+    updateShipRenderMode();
 }
 
 // Aktualizuje Konva-owy kształt statku (pozycja i rotacja)
@@ -439,9 +540,15 @@ function updateKonvaShip(id, x, y, angle) {
     // cfg.scale is constant: silhouette size reflects the real ship size relative to the map at any zoom
     const points = computeShipVerticesForKonva(x, y, cfg.scale, angle, ...cfg.shipParams);
     obj.shipShape.points(points);
-    konvaShipLayer.batchDraw();
     obj.lastPos = { x, y };
     obj.lastAngle = angle;
+    // Recomputes this ship's arrow points (needs the fresh lastPos/lastAngle set
+    // just above) and its hull/arrow opacity for the current zoom — a position
+    // update is also how a previously-offline ship (opacity forced to 0 in
+    // updateShipRenderMode) becomes visible for the first time, so this can't
+    // be skipped even though zoom changes already call it separately.
+    updateShipRenderMode();
+    konvaShipLayer.batchDraw();
 
     // Jeśli tooltip jest widoczny dla tego statku, zaktualizuj jego zawartość i pozycję natychmiast
     if (currentTooltipShipId === id && tooltipTexts && tooltipTexts.length > 0 && tooltipBg && tooltipLayer) {
@@ -469,11 +576,12 @@ function updateKonvaTrack(id) {
 // ------------------------------------------------------------------
 // Funkcja do aktualizacji wyświetlania modelu
 // ------------------------------------------------------------------
-function updateModelDisplay(config, modelId, positionX, positionY, angle, speed, blinkDuration = 250) {
+function updateModelDisplay(config, modelId, positionX, positionY, angle, speed) {
     fillFieldValues(config.headingField, angle);
     fillFieldValues(config.speedField, speed);
-    ledBlink(config.led, blinkDuration);
-    fillFieldValues0(config.rsField, ShipCounter.incrementIntMap(modelId));
+    renderShipListArrow('arrow' + modelId, angle);
+    ledBlink(config.led);
+    fillPacketCounter(config.rsField, ShipCounter.incrementIntMap(modelId));
 
     if (KonvaObjects[modelId]) {
         KonvaObjects[modelId].lastSpeed = speed;
@@ -583,26 +691,96 @@ function fillFieldValues(elementId, value) {
     const spanElement = getCachedElement(elementId);
     if (!spanElement) return;
     if (String(elementId).includes("heading")) {
-        spanElement.innerHTML = value.toFixed(1).padStart(4, '0');
+        // '°' only appears once a real value has arrived — the initial "—" placeholder
+        // (ship list, offline) stays suffix-free until this overwrites it.
+        spanElement.innerHTML = value.toFixed(1).padStart(4, '0') + '°';
     } else {
         spanElement.innerHTML = value.toFixed(1);
     }
 }
 
-function fillFieldValues0(elementId, value) {
-    const spanElement = getCachedElement(elementId);
-    if (!spanElement) return;
-    spanElement.innerHTML = value;
+// Rotates the ship-list course arrow (chart.html, compact format: "↗ 214° · 8.2 kn").
+// No ANGLE_CORRECTION here: unlike the map hull silhouette, this arrow has no
+// companion shape it needs to visually match, so it shows the raw compass heading.
+function renderShipListArrow(elementId, angleDeg) {
+    const el = getCachedElement(elementId);
+    if (!el) return;
+    el.style.visibility = 'visible';
+    el.style.transform = `rotate(${angleDeg}deg)`;
 }
 
-function ledBlink(elementId, duration) {
-    if (!imgLedOn || !imgLedOff) return;
+/**
+ * Zero-padded to three characters so the value always fills the 3ch box .rx-count reserves --
+ * ShipCounter wraps at 999, so three is also the maximum.
+ *
+ * <p>Anything that is not a number becomes "---" rather than its text. ShipCounter.incrementIntMap
+ * returns undefined for an id its own map does not hold, and String(undefined) is nine characters
+ * -- which would spill straight out of a box sized for three and across the row. The two id lists
+ * agree today, but they are declared independently and hundreds of lines apart.</p>
+ */
+function fillPacketCounter(elementId, value) {
+    const spanElement = getCachedElement(elementId);
+    if (!spanElement) return;
+    spanElement.textContent = Number.isInteger(value)
+        ? String(value).padStart(3, '0')
+        : '---';
+}
+
+function dropLedOn(event) {
+    const element = event.currentTarget;
+    if (element.getAnimations().length > 0) {
+        // animationend is queued, not delivered instantly. A message that arrived in the gap
+        // between the animation ending and this handler running has already restarted the blink,
+        // and stripping the class now would cancel it -- that message's blink would simply never
+        // appear. Leave it on and hand the tidying to the restarted animation's own event.
+        element.addEventListener('animationend', dropLedOn, {once: true});
+        return;
+    }
+    element.classList.remove('led-on');
+}
+
+/**
+ * Reports that a message arrived. How the dot then behaves -- and for how long -- belongs to
+ * the fb-led-blink keyframes in chart.css; nothing here knows a duration.
+ *
+ * <p>The ordinary paths force no layout. The obvious way to replay a CSS animation -- drop the
+ * class, read offsetWidth, add it back -- buys the restart with a synchronous full-document
+ * layout flush, and at six ships sending about once a second that is six flushes per second next
+ * to the Konva stage redraw. Only the recovery branch below still pays it, and it is not reached
+ * in normal operation.</p>
+ */
+function ledBlink(elementId) {
     const element = getCachedElement(elementId);
     if (!element) return;
-    element.src = imgLedOn.src;
-    setTimeout(() => {
-        element.src = imgLedOff.src;
-    }, duration);
+
+    const running = element.getAnimations();
+    if (running.length > 0) {
+        // A message landed mid-blink: seek back to the start so it is shown rather than
+        // swallowed by the tail of the one before -- which is what a burst of frames buffered
+        // during a WebSocket outage delivers.
+        running.forEach(animation => {
+            animation.currentTime = 0;
+        });
+        return;
+    }
+
+    if (element.classList.contains('led-on')) {
+        // The class is still on but nothing is animating behind it: the animation was cancelled,
+        // or never began because CSS was not animating this element when it was added. Adding a
+        // class that is already there is not a change, so the dot would stay dark for good --
+        // the setTimeout this replaced could not get stuck like that, because its timer always
+        // took the class back off. Forcing a layout read between the remove and the add is what
+        // makes the browser see two states instead of none. Recovery only; the ordinary path
+        // below never reaches it.
+        element.classList.remove('led-on');
+        void element.offsetWidth;
+    }
+
+    // Stable function reference, so removing first keeps this to one listener however often the
+    // recovery path runs.
+    element.removeEventListener('animationend', dropLedOn);
+    element.addEventListener('animationend', dropLedOn, {once: true});
+    element.classList.add('led-on');
 }
 
 // ------------------------------------------------------------------
@@ -740,14 +918,14 @@ function updateTooltipContent(id) {
 
     // Pobieramy aktualne dane z obiektu Konva (zawsze świeże wartości)
     const lastAngle = obj.lastAngle ?? 0;
-    const lastSpeed = document.getElementById(cfg.speedField)?.textContent ?? "0";
+    const lastSpeed = obj.lastSpeed ?? 0;
     const lastUpdateTime = obj.lastUpdateTime;
     const updateStr = lastUpdateTime ? `Updated: ${getTimeAgo(lastUpdateTime)}` : 'No update';
 
     // Dane do wyświetlenia - teraz każdy element to tablica [tekst, czyBold]
     const contentData = [
         [{ text: modelName, isBold: true }],  // nazwa statku - jeden element
-        [{ text: "Speed:", isBold: false }, { text: `${parseFloat(lastSpeed).toFixed(1)} kn`, isBold: true }],  // Speed: etykieta normalna + wartość pogrubiona
+        [{ text: "Speed:", isBold: false }, { text: `${Number(lastSpeed).toFixed(1)} kn`, isBold: true }],  // Speed: etykieta normalna + wartość pogrubiona
         [{ text: "Heading:", isBold: false }, { text: `${parseFloat(lastAngle).toFixed(1)}°`, isBold: true }],  // Heading: etykieta normalna + wartość pogrubiona
         [{ text: "Updated:", isBold: false }, { text: lastUpdateTime ? getTimeAgo(lastUpdateTime) : 'No update', isBold: true }]  // Updated: etykieta normalna + wartość pogrubiona
     ];

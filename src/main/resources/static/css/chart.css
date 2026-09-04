@@ -2,7 +2,7 @@
     position: relative;
     z-index: 0;
     width: 100%;
-    height: 85vh;
+    height: 85vh; /* fallback for engines without dvh/svh */
     border: 1px solid #555151;
     padding-left: 0;
     padding-right: 0;
@@ -15,9 +15,47 @@
     touch-action: none;
 }
 
+/* small viewport height: stays stable while the mobile address bar shows/hides,
+   so the map never grows taller than what's actually visible (85vh alone would,
+   since vh is computed against the "address bar hidden" height) */
+@supports (height: 100svh) {
+    .canvas-container {
+        height: 85svh;
+    }
+}
+
 .map-wrapper {
     position: relative;
 }
+
+/* The map and its overlay controls form one pane, so the controls anchor to the
+   map rather than to the whole desktop row (which also holds the ship list). */
+.map-pane {
+    position: relative;
+}
+
+/* desktop: map + ship list side by side; .ship-list-panel stretches to the
+   map's height via the default flex align-items:stretch (no duplicate height rule needed) */
+@media (min-width: 992px) {
+    .map-wrapper {
+        display: flex;
+        gap: 0.75rem;
+    }
+    .map-pane {
+        flex: 1 1 auto;
+        min-width: 0; /* let the map shrink instead of overflowing the row */
+    }
+}
+
+/*
+ * JS resizing note (chart-script.js): fitStageToContainer() reacts to
+ * window 'resize', which covers width changes (including the mobile/desktop
+ * nav breakpoint) because those change the viewport width. It would NOT
+ * catch container.clientWidth changing while the window stays the same width
+ * (e.g. a future collapsible desktop sidebar) — that needs a ResizeObserver
+ * on .canvas-container instead. Not needed today: the ship list sidebar is
+ * always visible at a fixed width once introduced.
+ */
 
 .map-controls {
     position: absolute;
@@ -40,17 +78,207 @@
     text-align: left;
 }
 
-#bg-color-1, #bg-color-2, #bg-color-3, #bg-color-4, #bg-color-5, #bg-color-6 {
-    color: white;
-    text-shadow: black 0 0 8px;
+/* ---- ship list: rows shared by the mobile bottom sheet and the desktop sidebar ---- */
+.ship-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--fb-border, #dde1e8);
 }
 
-.box {
-    width: 210px;
-    height: 180px;
-    margin-bottom: 15px;
-    padding-bottom: 5px;
-    padding-top: 5px;
-    border: 1px solid black;
-    box-shadow: #1a1d20 0 0 12px;
+.ship-chip {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    background-color: var(--ship-color, #888);
+}
+
+.ship-info {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.ship-name {
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.ship-course {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--fb-muted, #5b6270);
+}
+
+.ship-arrow {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+    fill: var(--ship-color, currentColor);
+}
+
+.course-sep {
+    opacity: 0.7;
+}
+
+.led-dot {
+    /* 10px matches .ship-chip, so the row keeps one dot scale. The old 7px was 49px2
+       against the 595px2 of the <img> indicator it replaced. */
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background-color: var(--fb-led-off, #8a94a6);
+    /* Read by the keyframes below so the reduced-motion rule can flatten the halo without
+       restating them. The spread is the one part of the blink that changes SIZE. */
+    --fb-led-halo: 3px;
+}
+
+/*
+ * The whole blink, start to finish, in one declaration. It was briefly split -- time at full
+ * colour as a constant in chart-script.js, the fade as a duration here -- which left two numbers
+ * that only mean anything together living in two languages.
+ *
+ * Shape: full colour immediately, held to 25% (150ms of 600ms), then dimming over the remaining
+ * 450ms. A real LED lights instantly and dims slowly; fading evenly in both directions reads as a
+ * smudge, which is exactly how the first attempt at this looked. Messages arrive about once a
+ * second, so 600ms leaves a beat of dark that keeps each arrival separately visible -- push the
+ * total past ~1s and consecutive blinks start running together.
+ */
+@keyframes fb-led-blink {
+    0%, 25% {
+        background-color: var(--fb-led-on, #16a34a);
+        /* Perceived brightness without darkening the core; box-shadow costs no layout. */
+        box-shadow: 0 0 0 var(--fb-led-halo, 3px)
+            color-mix(in srgb, var(--fb-led-on, #16a34a) 30%, transparent);
+    }
+    100% {
+        background-color: var(--fb-led-off, #8a94a6);
+        /* Same colour, collapsed spread: interpolating to transparent can travel through grey. */
+        box-shadow: 0 0 0 0 color-mix(in srgb, var(--fb-led-on, #16a34a) 30%, transparent);
+    }
+}
+
+.led-dot.led-on {
+    animation: fb-led-blink 600ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    /*
+     * Collapse the halo and keep everything else. The colour cross-fade is not the part a
+     * motion-sensitive reader is shielded from -- the growing and shrinking ring is -- so the
+     * signal survives at full strength and full length.
+     *
+     * Note what the two obvious alternatives do here. Shortening the animation makes the flash
+     * SHARPER, not gentler: the keyframes hold full colour to 25%, so at 200ms that is 50ms of
+     * hard-on and a 150ms snap to grey, six times a second across the list. And `animation:
+     * none` would remove the indicator altogether, because .led-on carries no colour of its own
+     * any more -- every value the lit dot has comes from the keyframes.
+     */
+    .led-dot {
+        --fb-led-halo: 0;
+    }
+}
+
+/* Packets received from this ship since the page was opened, 000-999 then wrapping.
+   At ~1 message/s a frozen number is the clearest sign a ship went quiet, since the
+   course and speed it last sent look identical whether they are fresh or minutes old. */
+.rx-count {
+    /* A FIXED width, never min-width: .ship-info is flex: 1 1 auto, so a counter that grew
+       with its digit count stole space and shifted the led dot left, breaking the vertical
+       line the dots form down the list. 3ch fits the widest value exactly. */
+    flex: 0 0 auto;
+    width: 3ch;
+    /* 3ch is the advance of "0", measured without regard to the tabular-nums feature below. If
+       a font's tnum advance were wider, or rounding left the box a fraction short, "000" would
+       wrap and every row in the list would grow a line at once. */
+    white-space: nowrap;
+    text-align: right;
+    font-size: 0.7rem;
+    color: var(--fb-muted, #5b6270);
+    /* Equal-width digits, so the value does not twitch as it counts. */
+    font-variant-numeric: tabular-nums;
+}
+
+.ship-list-trigger {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 20;
+    border: 1px solid var(--fb-border, #dde1e8);
+    border-radius: 999px;
+    background: var(--fb-surface, #ffffff);
+    padding: 0.4rem 0.9rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+/* ---- ship list panel: one DOM copy, mobile styling is the default here,
+   overridden for desktop (>= lg) in the media block above ---- */
+.ship-list-panel {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    /* explicitly above .fb-bottom-nav (fleet-board-nav.css, z-index:1030) so the
+       open sheet always paints over the nav regardless of DOM order between them */
+    z-index: 1032;
+    max-height: 65vh;
+    overflow-y: auto;
+    background: var(--fb-surface, #ffffff);
+    border-top: 1px solid var(--fb-border, #dde1e8);
+    border-radius: 12px 12px 0 0;
+    transform: translateY(100%);
+    transition: transform 0.25s ease;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.ship-list-panel.open {
+    transform: translateY(0);
+}
+
+.ship-list-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--fb-border, #dde1e8);
+}
+
+.ship-list-backdrop {
+    position: fixed;
+    inset: 0;
+    /* below .ship-list-panel (1032), above .fb-bottom-nav (1030) — dims the nav too */
+    z-index: 1031;
+    background: rgba(21, 26, 34, 0.35);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.ship-list-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Desktop (>= lg): static sidebar next to the map instead of a fixed bottom sheet.
+   Placed AFTER the base .ship-list-panel rule above on purpose — a media query
+   does not add specificity, so if this came first in the file the later
+   unconditional rule would win the cascade and silently undo it at any width. */
+@media (min-width: 992px) {
+    .ship-list-panel {
+        position: static;
+        /* Dropped together with position: 1032 is the mobile sheet's level and does nothing
+           while the element is static — but it would come back to life, and outrank the
+           header bar, the moment anyone gave this a position again. */
+        z-index: auto;
+        max-height: none;
+        transform: none;
+        flex: 0 0 280px;
+        border-radius: 8px;
+        border: 1px solid var(--fb-border, #dde1e8);
+    }
 }

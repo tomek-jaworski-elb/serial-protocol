@@ -62,11 +62,8 @@ public class WebSocketPublisherImpl implements WebSocketPublisher {
     }
 
     @Override
-    public long sessionsCount() {
-        return wsSessionManager.getWebSocketSessions().values().stream()
-                .filter(Objects::nonNull)
-                .filter(WebSocketSession::isOpen)
-                .count();
+    public long openPageCount() {
+        return sessionsCount(SessionType.SESSION_COUNT);
     }
 
   @Override

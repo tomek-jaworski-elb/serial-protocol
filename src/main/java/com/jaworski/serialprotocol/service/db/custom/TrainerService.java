@@ -27,6 +27,7 @@ import java.util.UUID;
 public class TrainerService {
 
   private final ImageRepository imageRepository;
+  private final ImageService imageService;
   private final TrainerRepository trainerRepository;
   private final CoursesRepository coursesRepository;
   private final static Logger LOGGER = LoggerFactory.getLogger(TrainerService.class);
@@ -50,7 +51,11 @@ public class TrainerService {
 
   public TrainerDTO save(TrainerDTO trainerDTO) {
     Trainer entityToSave = TrainerMapper.mapToEntity(trainerDTO);
-    entityToSave.setImages(resolveImages(trainerDTO.getImagesUuid()));
+    entityToSave.setImages(imageService.resolveImages(trainerDTO.getImagesUuid()));
+    // A new record gets a pointer too, and a value arriving from the form is validated
+    // here rather than trusted — the add endpoint binds the whole DTO.
+    entityToSave.setPrimaryImageUuid(imageService.resolveNewPrimaryImage(
+        trainerDTO.getPrimaryImageUuid(), trainerDTO.getImagesUuid()));
     Trainer trainer = trainerRepository.save(entityToSave);
     return TrainerMapper.mapToDTO(trainer);
   }
@@ -78,7 +83,7 @@ public class TrainerService {
         .orElseThrow(() -> new IllegalArgumentException("Trainer with id " + trainerDTO.getId() + " not found"));
 
     Set<Image> previousImages = new HashSet<>(existingTrainer.getImages());
-    Set<Image> requestedImages = resolveImages(trainerDTO.getImagesUuid());
+    Set<Image> requestedImages = imageService.resolveImages(trainerDTO.getImagesUuid());
 
     existingTrainer.setName(trainerDTO.getName());
     existingTrainer.setSurname(trainerDTO.getSurname());
@@ -88,26 +93,15 @@ public class TrainerService {
     existingTrainer.setPhoneNumber(trainerDTO.getPhoneNumber());
     existingTrainer.setAddress(trainerDTO.getAddress());
     existingTrainer.setImages(requestedImages);
+    // Resolved after the merge: the pointer may have just been removed, and the
+    // fallback has to prefer photos that were already here (see PrimaryImage.resolve).
+    existingTrainer.setPrimaryImageUuid(imageService.resolveUpdatedPrimaryImage(
+        trainerDTO.getPrimaryImageUuid(), existingTrainer.getPrimaryImageUuid(),
+        previousImages, requestedImages));
 
     Trainer updatedTrainer = trainerRepository.save(existingTrainer);
 
-    Set<Image> imagesToDelete = previousImages.stream()
-        .filter(image -> !requestedImages.contains(image))
-        .collect(java.util.stream.Collectors.toSet());
-    if (!imagesToDelete.isEmpty()) {
-      imageRepository.deleteAll(imagesToDelete);
-    }
+    imageService.deleteRemovedImages(previousImages, requestedImages);
     return TrainerMapper.mapToDTO(updatedTrainer);
-  }
-
-  private Set<Image> resolveImages(Set<UUID> imageIds) {
-    if (imageIds == null || imageIds.isEmpty()) {
-      return new HashSet<>();
-    }
-    List<Image> images = imageRepository.findAllById(imageIds);
-    if (images.size() != imageIds.size()) {
-      throw new IllegalArgumentException("One or more image ids do not exist");
-    }
-    return new HashSet<>(images);
   }
 }

@@ -16,7 +16,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
-@Import({CourseTypeService.class, CoursesService.class, ParticipantService.class, TrainerService.class, LecturerService.class})
+@Import({CourseTypeService.class, CoursesService.class, ParticipantService.class, TrainerService.class, LecturerService.class, ImageService.class})
 class CourseTypeServiceTest {
 
   @Autowired
