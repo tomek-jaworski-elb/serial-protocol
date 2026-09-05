@@ -1,0 +1,32 @@
+# Minimal compose stack used by CI to verify the application container
+# actually starts up (health check only, no serial hardware access).
+services:
+  server:
+    build: .
+    container_name: serial-protocol-ci
+    ports:
+      - "8081:443"
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "443"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+  mariadb:
+    image: mariadb:11.7
+    container_name: mariadb-ci
+    environment:
+      - MARIADB_USER=user
+      - MARIADB_PASSWORD=password
+      - MARIADB_DATABASE=certificates
+      - MARIADB_ROOT_PASSWORD=root
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s

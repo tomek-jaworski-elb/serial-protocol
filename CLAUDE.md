@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 .\mvnw.cmd clean package                                       # build JAR with tests
 .\mvnw.cmd clean package -Dmaven.test.skip=true               # build JAR skip tests
 .\mvnw.cmd spring-boot:run                                     # run from Maven
-java -jar .\target\serial-protocol-2.0.jar                     # run packaged JAR
+java -jar .\target\serial-protocol-3.0.jar                     # run packaged JAR
 docker compose up --build                                      # app + MariaDB
 ```
 
