@@ -2,7 +2,6 @@
 <html lang="en">
 <head th:insert="~{fragment::head}"></head>
 <head>
-    <link th:href="@{/nouislider/nouislider.min.css}" rel="stylesheet"/>
     <title th:text="${@environment.getProperty('spring.application.name')} + ' : Tracks'">Serial port server</title>
     <style>
         .canvas-container {
@@ -32,10 +31,6 @@
         #myCanvas {
             z-index: 1;
             pointer-events: none; /* To make sure the background canvas can still receive events */
-        }
-        #range-slider {
-            margin: 10px auto;
-            width: 50%;
         }
     </style>
 </head>
@@ -75,13 +70,18 @@
                 <label class="form-check-label" for="ladymarie">Lady Marie</label>
             </div>
         </div>
-        <div hidden id="range-slider"></div>
-        <div hidden class="container text-center">
-            <span>Filter time range: <span id="min-value">00:00</span></span>
-            <span> - <span id="max-value">24:00</span></span>
-        </div>
-        <input type="hidden" id="minValueInput" name="minValue" value="20">
-        <input type="hidden" id="maxValueInput" name="maxValue" value="80">
+        <!--/*
+          The whole day, as HH:mm. TrackService parses these with that pattern and drops every log
+          item when the parse fails, so the previous values of 20 and 80 filtered out the entire
+          track set before it ever reached the browser - the page could not have drawn anything
+          even with its scripts intact. "24:00" is the sentinel the service turns into 23:59.
+
+          They are hidden because the time-range slider that used to write them was hidden too, and
+          its library was never actually shipped. Restoring that filter means vendoring noUiSlider
+          and unhiding both; until then these carry the full day.
+        */-->
+        <input type="hidden" id="minValueInput" name="minValue" value="00:00">
+        <input type="hidden" id="maxValueInput" name="maxValue" value="24:00">
         <div class="container justify-content-center text-center py-2 my-2">
             <button type="submit" class="btn btn-primary mx-3">Submit</button>
             <button type="reset" class="btn btn-secondary mx-3" id="resetButton">Reset</button>
@@ -100,46 +100,12 @@
 </div>
 <footer th:replace="~{fragment::footer}"></footer>
 <script type="text/javascript" th:src="@{/js/common-draw-ship.js}"></script>
-<script type="text/javascript" th:src="@{/js/common/enums.js}"></script>
-<script type="text/javascript" th:src="@{/js/nouislider/nouislider.min.js}"></script>
 <script th:inline="javascript">
 
-    const slider = document.getElementById('range-slider');
-
-    function toTimeString(minutes) {
-        const hours = Math.floor(minutes / 60);
-        const mins = minutes % 60;
-        return (hours < 10 ? '0' : '') + hours + ':' + (mins < 10 ? '0' : '') + mins;
-    }
-
-    noUiSlider.create(slider, {
-        start: [0, 1440],
-        connect: true,
-        range: {
-            'min': 0,
-            'max': 1440 // 1440 minut = 24 godziny
-        },
-        step: 30 // Krok co 30 minut
-    });
-
-    let minValueElement = document.getElementById('min-value');
-    let maxValueElement = document.getElementById('max-value');
-    let minValueInput = document.getElementById('minValueInput');
-    let maxValueInput = document.getElementById('maxValueInput');
-
-    slider.noUiSlider.on('update', function (values) {
-        const minVal = parseInt(values[0]);
-        const maxVal = parseInt(values[1]);
-
-        const minTime = toTimeString(minVal);
-        const maxTime = toTimeString(maxVal);
-
-        minValueElement.textContent = minTime;
-        maxValueElement.textContent = maxTime;
-
-        minValueInput.value = minTime;
-        maxValueInput.value = maxTime;
-    });
+    // Ship palette, handed down from the Models enum rather than read out of a ModelsOfShips
+    // object that only exists in chart-script.js - a file this page does not load. Reaching for it
+    // threw, which killed the drawing loop below on its first coloured track.
+    const SHIP_COLORS = /*[[${shipColors}]]*/ {};
 
     document.getElementById("resetButton").addEventListener("click", function () {
         console.log("Click!");
@@ -165,8 +131,6 @@
     for (let key in mapItems) {
         if (mapItems.hasOwnProperty(key)) {
             let values = mapItems[key]; // Access the values (arrays in this case)
-            const keyNumber = Number(key);
-
             let points = [];
             let scaledPoints = [];
 
@@ -199,8 +163,7 @@
                 }
 
                 // Set stroke style and draw the line
-                const colorFromId = ModelsOfShips.getColorFromId(keyNumber);
-                console.log(colorFromId);
+                const colorFromId = SHIP_COLORS[key];
                 ctx.strokeStyle = colorFromId == null ? 'black' : colorFromId;
                 ctx.lineWidth = 2;
                 ctx.stroke();

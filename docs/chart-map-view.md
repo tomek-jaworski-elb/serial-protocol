@@ -55,6 +55,25 @@ img.save('MapaSilm_2666x4000.avif', quality=60, speed=4)
 img.save('MapaSilm_2666x4000.webp', quality=75, method=6)
 ```
 
+## Follow mode
+
+Selecting a ship in the list switches the chart into a following view: the camera holds that ship,
+the chart turns so its course (or heading) points up, and the zoom is set so the hull is a quarter
+of the viewport height. Full reference: [`docs/follow-mode-spec.md`](follow-mode-spec.md).
+
+Three things in this document change while that mode is on, so read them together:
+
+- **`maxScale` is no longer a flat 3.** The follow optimum asks for 4.3× to 12.6× depending on the
+  ship and the viewport, so the ceiling is computed rather than fixed — and because leaving the
+  mode keeps your zoom, **the ordinary north-up view inherits that range too**. Above roughly 3×
+  the raster is visibly soft; that is accepted, not a defect.
+- **`clampStagePosition()` does not apply while following.** Its "the chart must cover the viewport"
+  rule describes an axis-aligned chart, and the chart is rotated. The anchor limit takes its place.
+- **Hull positions are eased, not applied straight.** Messages arrive about once a second, so every
+  silhouette slides to its newest reported position over `chart.ship.position-smoothing-ms`
+  (default 300, `0` restores the original teleporting behaviour). Every ship is eased, never just
+  the followed one, so the distances between them stay truthful.
+
 ## Zoom, pan, and touch support
 
 | Interaction | Implementation |
@@ -62,18 +81,25 @@ img.save('MapaSilm_2666x4000.webp', quality=75, method=6)
 | Mouse wheel | `bindStageZoom()` — zoom towards the cursor position |
 | Drag | stage `draggable: true` with `dragBoundFunc` clamping |
 | Pinch (mobile) | `bindStagePinch()` — two-finger `touchmove` handling |
-| Buttons `+` / `−` / reset | `bindMapControls()` — zoom to viewport center, reset restores the initial view |
-| Double click / double tap | resets the view to the initial one |
+| Buttons `+` / `−` / reset | `bindMapControls()` — zoom to viewport center. Reset restores the initial view, except while following, where it restores the camera instead (optimal zoom, ship re-centred) |
+| Double click / double tap | resets the view to the initial one; while following it leaves the mode first, then fits |
 
 Rules enforced by `clampScale()` and `clampStagePosition()`:
 
 - initial view (and reset) = map fitted to the full container width; on
   portrait screens this shows nearly the whole map, on landscape the top part
   with vertical panning available;
-- minimum scale = "whole map fits in the viewport" (recomputed on resize),
-  maximum scale = 3× native map resolution;
+- minimum scale = "whole map fits in the viewport" (recomputed on resize). **While
+  following, the floor is instead the zoom at which silhouettes stop degrading to LOD
+  arrows** (`FOLLOW_MIN_SCALE`);
+- maximum scale is **no longer a flat 3×**: it is computed from the most demanding ship's
+  follow optimum (`updateMaxScale()`), which puts it between roughly 6× and 19× depending
+  on the viewport. Leaving follow mode keeps your zoom, so the ordinary north-up view can
+  reach that range too;
 - the map always covers the viewport when zoomed in, and is centered when
-  zoomed out;
+  zoomed out — **except while the chart is rotated**, where `clampStagePosition()` steps
+  aside entirely (its arithmetic assumes an axis-aligned chart) and the follow mode's
+  anchor limit takes over;
 - `Konva.dragDistance = 3` so a small mouse jitter during a click is not
   interpreted as a drag (which would swallow ship clicks);
 - `.canvas-container` has `touch-action: none` so the browser does not
@@ -88,9 +114,24 @@ the map raster itself changes — they map real-world positions to pixels on
 the 2666 × 4000 chart.
 
 Silhouettes are drawn with a constant scale (`modelsConfig[id].scale`) in map
-coordinates, so their size always reflects the real ship size relative to the
-map, at every zoom level. Do not add any zoom-dependent scaling here — the
-true size ratio between ship and chart is a functional requirement.
+coordinates, so a ship keeps the same size relative to the chart at every zoom
+level. **Do not add any zoom-dependent scaling here** — a ship that grows and
+shrinks against the chart it sits on is the thing this rule exists to prevent,
+and it is a functional requirement. `ChartShipListTest`
+(`theHullIsSizedFromTheChartAndNotFromTheZoom`) parses this rule out of
+`chart-script.js` and fails if hull geometry is ever built from the live stage
+scale — the temptation is real, because the LOD arrow four lines away is
+deliberately given a constant on-screen size.
+
+What this paragraph used to claim, and should not have: that the silhouette
+reflects the ship's *real* size. It does not. Hulls are drawn at `cfg.scale`,
+which is 2 px per metre, while positions are placed with `mapa_x = 2.407` px
+per metre — so every silhouette is about **17% shorter and narrower** than the
+chart's own scale would make it. The ratio is constant, which is what the rule
+above is really about, but it is not 1:1 with the world. Left alone
+deliberately: correcting it means touching calibration, and
+`docs/follow-mode-spec.md` measures its "ship length = 25% of viewport height"
+against what is actually drawn.
 
 The tooltip is counter-scaled (`tooltipLayer.scale = 1/stageScale`), so it has
 a constant on-screen size at any zoom level.
