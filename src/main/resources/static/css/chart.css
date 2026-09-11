@@ -72,6 +72,125 @@
     padding: 0;
 }
 
+/* ---- compass ---- */
+.compass-btn {
+    /* The needle is drawn to the button's own 40x40 box, so no inner sizing is needed. */
+    padding: 0;
+    overflow: hidden;
+    /* Actually round. It was described as a round badge and inherited Bootstrap's small
+       button radius instead, which made it a rounded square with a circular dial inside. */
+    border-radius: 50%;
+}
+
+.compass-btn svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* North accented, south in the same grey a dark LED uses — the two-tone needle every
+   chart service settled on, so the pointing half is unmistakable at a glance. */
+.compass-north {
+    fill: #d92d20;
+}
+
+.compass-south {
+    fill: var(--fb-led-off, #8a94a6);
+}
+
+/* Dark and bold: at this size a muted grey N against a white badge simply could not be
+   read. It rides the dial, so it has to carry on its own without a background. */
+.compass-n {
+    font-size: 10px;
+    font-weight: 700;
+    fill: #151a22;
+}
+
+/* A faint dial, so the badge reads as a compass rather than a loose arrow floating in a
+   square. Not a chart symbol — this lives in the control column, off the canvas. */
+.compass-dial {
+    fill: none;
+    stroke: var(--fb-border, #dde1e8);
+    stroke-width: 1;
+}
+
+/* ---- follow chip ---- */
+/* Bottom left of the map pane, which is the positioning context the zoom controls
+   already anchor to. Above the canvas, below nothing else. */
+.follow-chip {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    /* The button spells out "Stop following <ship>", which on a narrow phone can be wider
+       than the map. Cap it against the pane and let the label ellipsise rather than push
+       the status out of the pill or off the screen. */
+    max-width: calc(100% - 20px);
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.25rem 0.25rem 0.5rem;
+    border: 1px solid var(--fb-border, #dde1e8);
+    border-radius: 999px;
+    background: var(--fb-surface, #ffffff);
+    box-shadow: 0 1px 4px rgb(0 0 0 / 15%);
+    font-size: 0.8rem;
+}
+
+.follow-chip-btn {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    border: 0;
+    border-radius: 999px;
+    padding: 0.15rem 0.6rem;
+    background: color-mix(in srgb, var(--fb-accent, #2f7de0) 12%, transparent);
+    color: var(--fb-accent, #2f7de0);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.follow-chip-btn:focus-visible {
+    outline: 2px solid var(--fb-accent, #2f7de0);
+    outline-offset: 1px;
+}
+
+.follow-chip-status {
+    padding-right: 0.4rem;
+    color: var(--fb-muted, #5b6270);
+}
+
+/* The followed ship has stopped reporting and the camera is holding a position that is
+   now a minute old. Amber rather than red: nothing is broken, the picture is just stale. */
+.follow-chip-status.stale {
+    color: #b45309;
+    font-weight: 700;
+}
+
+/* Orientation mode as text, so it needs a size the three letters actually fit into rather
+   than the 20px the glyph buttons above it use.
+
+   Scoped under .map-controls deliberately. As a bare .orientation-btn this rule lost every
+   time: `.map-controls .btn` scores two classes to its one, so the 20px above won on
+   specificity no matter where the rule sat in the file, and HDG rendered three bold
+   characters wide in a 40px box. Same trap as a media query placed before the base rule,
+   arriving by a different road. */
+.map-controls .orientation-btn {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0;
+}
+
+/* The camera is on HDG because the ship is too slow for a course over ground, not
+   because anyone asked for it. Muted and italic so the label reads as a report about
+   the situation rather than as the setting in force. */
+.map-controls .orientation-btn.auto {
+    font-weight: 500;
+    font-style: italic;
+    color: var(--fb-muted, #5b6270);
+}
+
 .form-control {
     font-family: "Courier New", Times, Monospace, serif;
     font-size: 12px;
@@ -85,6 +204,73 @@
     gap: 0.6rem;
     padding: 0.6rem 1rem;
     border-bottom: 1px solid var(--fb-border, #dde1e8);
+    /* Carried by every row, coloured only on the followed one, so switching the mode on
+       never shifts the row's contents sideways. */
+    border-left: 4px solid transparent;
+}
+
+/* The followed row has to be findable at a glance from across the room, which a 18px
+   pressed icon is not. The tint is deliberately NEUTRAL rather than the ship's colour:
+   the palette includes lightgray (Kołobrzeg), which at low alpha is nearly invisible on
+   a white list, so one ship of six would get a far weaker signal than the rest. The
+   ship's identity is carried by the left edge instead, and by the chip it already had. */
+.ship-row.following {
+    background-color: color-mix(in srgb, var(--fb-accent, #2f7de0) 12%, transparent);
+    border-left-color: var(--ship-color, transparent);
+}
+
+/* ---- follow toggle ---- */
+.follow-toggle {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    /* 44px of tap target from the box, not from the glyph: the icon stays 18px so the
+       row keeps its rhythm. The row is taller than this, so nothing grows. */
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--fb-muted, #5b6270);
+    cursor: pointer;
+}
+
+.follow-toggle[aria-disabled="true"] {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.follow-toggle:focus-visible {
+    outline: 2px solid var(--fb-accent, #2f7de0);
+    outline-offset: -6px;
+    border-radius: 50%;
+}
+
+.follow-icon {
+    width: 18px;
+    height: 18px;
+}
+
+.follow-ring,
+.follow-ticks {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+}
+
+/* Outline when off, filled when on — a state cue that survives without colour. */
+.follow-dot {
+    fill: none;
+}
+
+.follow-toggle[aria-pressed="true"] {
+    color: var(--fb-accent, #2f7de0);
+}
+
+.follow-toggle[aria-pressed="true"] .follow-dot {
+    fill: currentColor;
 }
 
 .ship-chip {

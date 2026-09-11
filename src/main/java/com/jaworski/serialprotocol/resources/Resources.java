@@ -118,4 +118,28 @@ public class Resources {
     @Value("${app.runs.test-enabled:false}")
     @Getter
     private boolean testEnabled;
+
+    /**
+     * Time, in milliseconds, a ship silhouette takes to slide from its previous reported position to
+     * the newest one on the chart. Messages arrive about once a second, so without this every hull
+     * teleports; in follow mode, where the ship is pinned to the anchor, that step is taken by the
+     * whole chart instead - roughly 20 px at a 2 kn manoeuvring speed and 120 px at 12 kn.
+     *
+     * <p>0 turns smoothing off and restores the original teleporting behaviour. Read once at page
+     * render and handed to the browser, so a change needs a restart.</p>
+     */
+    @Value("${chart.ship.position-smoothing-ms:300}")
+    @Getter
+    private int shipPositionSmoothingMs;
+
+    /**
+     * Speed, in knots, below which course over ground stops meaning anything and the follow camera
+     * falls back to the reported heading. At 1 kn a ship covers about half a metre between messages,
+     * so a few tens of centimetres of position noise swing the derived course by tens of degrees.
+     *
+     * <p>Read once at page render and handed to the browser, so a change needs a restart.</p>
+     */
+    @Value("${chart.ship.cog-min-speed-kn:1.0}")
+    @Getter
+    private double cogMinSpeedKn;
 }

@@ -35,6 +35,11 @@ public class MapController {
     private static final Logger LOG = LoggerFactory.getLogger(MapController.class);
     public static final String ATTRIBUTE_TRACK_MAP = "trackMap";
     public static final String ATTRIBUTE_NAME = "name";
+    /** Model attribute carrying the ship palette to the tracks page. */
+    private static final String SHIP_COLORS = "shipColors";
+    /** The two chart settings the browser needs, read once at render. */
+    private static final String SHIP_SMOOTHING_MS = "shipPositionSmoothingMs";
+    private static final String COG_MIN_SPEED_KN = "cogMinSpeedKn";
     private static final String PASS_SERVICE = "pass-service";
     private static final String ACTIVE_SESSION = "sessions";
     private final TrackService trackService;
@@ -76,6 +81,8 @@ public class MapController {
         model.addAttribute(ATTRIBUTE_NAME, "chart");
         model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
         model.addAttribute("isTestEnabled", resources.isTestEnabled());
+        model.addAttribute(SHIP_SMOOTHING_MS, resources.getShipPositionSmoothingMs());
+        model.addAttribute(COG_MIN_SPEED_KN, resources.getCogMinSpeedKn());
         model.addAttribute("shipModels", Models.values());
         return "chart";
     }
@@ -85,6 +92,7 @@ public class MapController {
         model.addAttribute(ATTRIBUTE_NAME, "track");
         model.addAttribute(ATTRIBUTE_TRACK_MAP, Collections.emptyMap());
         model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
+        model.addAttribute(SHIP_COLORS, Models.colorsById());
         return "tracks";
     }
 
@@ -104,6 +112,7 @@ public class MapController {
         model.addAttribute(ATTRIBUTE_NAME, "track");
         model.addAttribute("checkboxForm", checkBoxOption);
         model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
+        model.addAttribute(SHIP_COLORS, Models.colorsById());
         return "tracks";
     }
     @PreAuthorize("hasRole(T(com.jaworski.serialprotocol.authorization.SecurityRoles).ROLE_USER.getRole()) or " +
