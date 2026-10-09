@@ -5,7 +5,6 @@ import com.jaworski.serialprotocol.entity.custom.Image;
 import com.jaworski.serialprotocol.entity.custom.Trainer;
 import com.jaworski.serialprotocol.mappers.custom.TrainerMapper;
 import com.jaworski.serialprotocol.repository.custom.CoursesRepository;
-import com.jaworski.serialprotocol.repository.custom.ImageRepository;
 import com.jaworski.serialprotocol.repository.custom.TrainerRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -26,10 +25,10 @@ import java.util.UUID;
 @Transactional
 public class TrainerService {
 
-  private final ImageRepository imageRepository;
   private final ImageService imageService;
   private final TrainerRepository trainerRepository;
   private final CoursesRepository coursesRepository;
+  private final SoftDeleteSupport softDeleteSupport;
   private final static Logger LOGGER = LoggerFactory.getLogger(TrainerService.class);
 
   public List<TrainerDTO> findAll() {
@@ -62,14 +61,12 @@ public class TrainerService {
 
   public void deleteById(UUID id) {
     if (coursesRepository.existsByTrainers_Uuid(id)) {
-      throw new IllegalStateException("Cannot delete trainer with id " + id + " because it is referenced by existing courses.");
+      throw new IllegalStateException("This trainer is used in existing courses and cannot be deleted.");
     }
+    // Marked, not removed: the photos stay with the row so an administrator can restore it.
     trainerRepository.findById(id).ifPresent(trainer -> {
-      if (!trainer.getImages().isEmpty()) {
-        imageRepository.deleteAll(trainer.getImages());
-      }
+      softDeleteSupport.softDelete(trainer, trainerRepository);
     });
-    trainerRepository.deleteById(id);
   }
 
   public TrainerDTO update(TrainerDTO trainerDTO) {
@@ -77,10 +74,11 @@ public class TrainerService {
       throw new IllegalArgumentException("Trainer id is required for update");
     }
     if (!trainerRepository.existsById(trainerDTO.getId())) {
-      throw new IllegalArgumentException("Trainer with id " + trainerDTO.getId() + " not found");
+      throw softDeleteSupport.notFound("Trainer", trainerDTO.getId());
     }
     Trainer existingTrainer = trainerRepository.findById(trainerDTO.getId())
-        .orElseThrow(() -> new IllegalArgumentException("Trainer with id " + trainerDTO.getId() + " not found"));
+        .orElseThrow(() -> softDeleteSupport.notFound("Trainer", trainerDTO.getId()));
+    VersionGuard.check(Trainer.class, trainerDTO.getId(), existingTrainer.getVersion(), trainerDTO.getVersion());
 
     Set<Image> previousImages = new HashSet<>(existingTrainer.getImages());
     Set<Image> requestedImages = imageService.resolveImages(trainerDTO.getImagesUuid());
@@ -99,7 +97,7 @@ public class TrainerService {
         trainerDTO.getPrimaryImageUuid(), existingTrainer.getPrimaryImageUuid(),
         previousImages, requestedImages));
 
-    Trainer updatedTrainer = trainerRepository.save(existingTrainer);
+    Trainer updatedTrainer = trainerRepository.saveAndFlush(existingTrainer);
 
     imageService.deleteRemovedImages(previousImages, requestedImages);
     return TrainerMapper.mapToDTO(updatedTrainer);

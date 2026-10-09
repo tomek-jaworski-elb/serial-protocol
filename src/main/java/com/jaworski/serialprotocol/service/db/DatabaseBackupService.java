@@ -1,5 +1,9 @@
 package com.jaworski.serialprotocol.service.db;
 
+import com.jaworski.serialprotocol.dto.backup.BackupRow;
+import com.jaworski.serialprotocol.service.db.custom.SoftDeleteSupport;
+import tools.jackson.databind.JavaType;
+
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.JsonGenerator;
 import tools.jackson.core.JsonParser;
@@ -96,10 +100,29 @@ import java.util.zip.GZIPOutputStream;
 public class DatabaseBackupService {
 
     private static final Logger LOG = LoggerFactory.getLogger(DatabaseBackupService.class);
-    public static final String SCHEMA_VERSION = "1.0";
+    /** 1.1 adds {@code deletedAt}/{@code deletedBy} to every soft-deletable row; 1.0 files still read, as active rows. */
+    public static final String SCHEMA_VERSION = "1.1";
+    static final Set<String> READABLE_SCHEMA_VERSIONS = Set.of("1.0", SCHEMA_VERSION);
 
     /** Number of rows read/written per page during backup, and flushed per transaction during restore. */
     static final int BATCH_SIZE = 200;
+
+    /** Custom-domain tables in delete order: join tables, then children, then what they point at. */
+    private static final List<String> CUSTOM_TABLES_CHILDREN_FIRST = List.of(
+            Courses.TABLE_NAME + "_trainers",
+            Courses.TABLE_NAME + "_lecturers",
+            Courses.TABLE_NAME + "_technicians",
+            Courses.TABLE_NAME,
+            Participant.TABLE_NAME,
+            Trainer.TABLE_NAME + "_image",
+            Lecturer.TABLE_NAME + "_image",
+            Technician.TABLE_NAME + "_image",
+            Trainer.TABLE_NAME,
+            Lecturer.TABLE_NAME,
+            Technician.TABLE_NAME,
+            CourseCounter.TABLE_NAME,
+            CourseType.TABLE_NAME,
+            Image.TABLE_NAME);
 
     private final ImageRepository imageRepository;
     private final CourseTypeRepository courseTypeRepository;
@@ -113,6 +136,7 @@ public class DatabaseBackupService {
     private final InstructorRepository instructorRepository;
     private final ObjectMapper objectMapper;
     private final PlatformTransactionManager transactionManager;
+    private final SoftDeleteSupport softDeleteSupport;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -132,26 +156,29 @@ public class DatabaseBackupService {
      */
     @Transactional(readOnly = true)
     public void createBackup(OutputStream outputStream) throws IOException {
-        try (GZIPOutputStream gzos = new GZIPOutputStream(outputStream);
-             JsonGenerator gen = objectMapper.createGenerator(gzos)) {
+        // Deleted rows are part of a backup, so the whole write runs with the filter off.
+        softDeleteSupport.runWithDeleted(() -> {
+            try (GZIPOutputStream gzos = new GZIPOutputStream(outputStream);
+                 JsonGenerator gen = objectMapper.createGenerator(gzos)) {
 
-            gen.writeStartObject();
-            gen.writeStringProperty("schemaVersion", SCHEMA_VERSION);
-            gen.writeStringProperty("timestamp", LocalDateTime.now().toString());
+                gen.writeStartObject();
+                gen.writeStringProperty("schemaVersion", SCHEMA_VERSION);
+                gen.writeStringProperty("timestamp", LocalDateTime.now().toString());
 
-            streamWriteImages(gen);
-            streamWriteCourseTypes(gen);
-            streamWriteCourseCounters(gen);
-            streamWriteTrainers(gen);
-            streamWriteLecturers(gen);
-            streamWriteTechnicians(gen);
-            streamWriteParticipants(gen);
-            streamWriteCourses(gen);
-            streamWriteStudents(gen);
-            streamWriteInstructors(gen);
+                streamWriteImages(gen);
+                streamWriteCourseTypes(gen);
+                streamWriteCourseCounters(gen);
+                streamWriteTrainers(gen);
+                streamWriteLecturers(gen);
+                streamWriteTechnicians(gen);
+                streamWriteParticipants(gen);
+                streamWriteCourses(gen);
+                streamWriteStudents(gen);
+                streamWriteInstructors(gen);
 
-            gen.writeEndObject();
-        }
+                gen.writeEndObject();
+            }
+        });
         LOG.info("Streaming backup completed.");
     }
 
@@ -196,7 +223,7 @@ public class DatabaseBackupService {
         do {
             chunk = courseTypeRepository.findAll(PageRequest.of(page++, BATCH_SIZE));
             for (CourseType ct : chunk) {
-                gen.writePOJO(new CourseTypeDTO(ct.getId(), ct.getCode(), ct.getDescription(), ct.getLongDescription()));
+                gen.writePOJO(BackupRow.of(new CourseTypeDTO(ct.getId(), ct.getCode(), ct.getDescription(), ct.getLongDescription(), null), ct));
                 entityManager.detach(ct);
                 total++;
             }
@@ -214,10 +241,10 @@ public class DatabaseBackupService {
         do {
             chunk = courseCounterRepository.findAll(PageRequest.of(page++, BATCH_SIZE));
             for (CourseCounter cc : chunk) {
-                gen.writePOJO(new CourseCounterDTO(
+                gen.writePOJO(BackupRow.of(new CourseCounterDTO(
                         cc.getUuid(),
                         cc.getCounter(),
-                        cc.getImage() == null ? null : cc.getImage().getId()));
+                        cc.getImage() == null ? null : cc.getImage().getId()), cc));
                 entityManager.detach(cc);
                 total++;
             }
@@ -235,7 +262,7 @@ public class DatabaseBackupService {
         do {
             chunk = trainerRepository.findAll(PageRequest.of(page++, BATCH_SIZE));
             for (Trainer t : chunk) {
-                gen.writePOJO(TrainerMapper.mapToDTO(t));
+                gen.writePOJO(BackupRow.of(TrainerMapper.mapToDTO(t), t));
                 entityManager.detach(t);
                 total++;
             }
@@ -253,7 +280,7 @@ public class DatabaseBackupService {
         do {
             chunk = lecturerRepository.findAll(PageRequest.of(page++, BATCH_SIZE));
             for (Lecturer l : chunk) {
-                gen.writePOJO(LecturerMapper.mapToDTO(l));
+                gen.writePOJO(BackupRow.of(LecturerMapper.mapToDTO(l), l));
                 entityManager.detach(l);
                 total++;
             }
@@ -271,7 +298,7 @@ public class DatabaseBackupService {
         do {
             chunk = technicianRepository.findAll(PageRequest.of(page++, BATCH_SIZE));
             for (Technician t : chunk) {
-                gen.writePOJO(TechnicianMapper.mapToDTO(t));
+                gen.writePOJO(BackupRow.of(TechnicianMapper.mapToDTO(t), t));
                 entityManager.detach(t);
                 total++;
             }
@@ -289,7 +316,7 @@ public class DatabaseBackupService {
         do {
             chunk = participantRepository.findAll(PageRequest.of(page++, BATCH_SIZE));
             for (Participant p : chunk) {
-                gen.writePOJO(ParticipantMapper.mapToDTO(p));
+                gen.writePOJO(BackupRow.of(ParticipantMapper.mapToDTO(p), p));
                 entityManager.detach(p);
                 total++;
             }
@@ -307,7 +334,7 @@ public class DatabaseBackupService {
         do {
             chunk = coursesRepository.findAll(PageRequest.of(page++, BATCH_SIZE));
             for (Courses c : chunk) {
-                gen.writePOJO(CoursesMapper.mapToDTO(c));
+                gen.writePOJO(BackupRow.of(CoursesMapper.mapToDTO(c), c));
                 entityManager.detach(c);
                 total++;
             }
@@ -399,10 +426,10 @@ public class DatabaseBackupService {
                 switch (fieldName) {
                     case "schemaVersion":
                         schemaVersion = parser.getString();
-                        if (!SCHEMA_VERSION.equals(schemaVersion)) {
+                        if (!READABLE_SCHEMA_VERSIONS.contains(schemaVersion)) {
                             throw new IllegalArgumentException(
                                     "Incompatible schema version: expected=" + SCHEMA_VERSION
-                                            + ", found=" + schemaVersion);
+                                            + " (readable: " + READABLE_SCHEMA_VERSIONS + "), found=" + schemaVersion);
                         }
                         break;
                     case "timestamp":
@@ -521,11 +548,11 @@ public class DatabaseBackupService {
      */
     private Map<Long, Long> streamRestoreCourseTypes(JsonParser parser, TransactionTemplate txTemplate) throws IOException {
         Map<Long, Long> idMap = new HashMap<>();
-        List<CourseTypeDTO> batch = new ArrayList<>(BATCH_SIZE);
+        List<BackupRow<CourseTypeDTO>> batch = new ArrayList<>(BATCH_SIZE);
         while (parser.nextToken() != JsonToken.END_ARRAY) {
-            batch.add(objectMapper.readValue(parser, CourseTypeDTO.class));
+            batch.add(objectMapper.readValue(parser, rowOf(CourseTypeDTO.class)));
             if (batch.size() >= BATCH_SIZE) {
-                List<CourseTypeDTO> toFlush = new ArrayList<>(batch);
+                List<BackupRow<CourseTypeDTO>> toFlush = new ArrayList<>(batch);
                 Map<Long, Long> partial = txTemplate.execute(status -> persistCourseTypes(toFlush));
                 if (partial != null) {
                     idMap.putAll(partial);
@@ -543,12 +570,14 @@ public class DatabaseBackupService {
         return idMap;
     }
 
-    private Map<Long, Long> persistCourseTypes(List<CourseTypeDTO> dtos) {
+    private Map<Long, Long> persistCourseTypes(List<BackupRow<CourseTypeDTO>> rows) {
         Map<Long, Long> idMap = new HashMap<>();
-        for (CourseTypeDTO dto : dtos) {
+        for (BackupRow<CourseTypeDTO> row : rows) {
+            CourseTypeDTO dto = row.getRecord();
             Long originalId = dto.getId();
             CourseType ct = CourseTypeMapper.mapToEntity(dto);
             ct.setId(null); // let DB generate new IDENTITY id
+            row.applyTo(ct);
             CourseType saved = courseTypeRepository.save(ct);
             idMap.put(originalId, saved.getId());
         }
@@ -558,33 +587,35 @@ public class DatabaseBackupService {
     }
 
     private void streamRestoreCourseCounters(JsonParser parser, TransactionTemplate txTemplate) throws IOException {
-        List<CourseCounterDTO> batch = new ArrayList<>(BATCH_SIZE);
+        List<BackupRow<CourseCounterDTO>> batch = new ArrayList<>(BATCH_SIZE);
         long total = 0;
         while (parser.nextToken() != JsonToken.END_ARRAY) {
-            batch.add(objectMapper.readValue(parser, CourseCounterDTO.class));
+            batch.add(objectMapper.readValue(parser, rowOf(CourseCounterDTO.class)));
             if (batch.size() >= BATCH_SIZE) {
-                List<CourseCounterDTO> toFlush = new ArrayList<>(batch);
+                List<BackupRow<CourseCounterDTO>> toFlush = new ArrayList<>(batch);
                 txTemplate.execute(status -> { persistCourseCounters(toFlush); return null; });
                 total += batch.size();
                 batch.clear();
             }
         }
         if (!batch.isEmpty()) {
-            List<CourseCounterDTO> toFlush = batch;
+            List<BackupRow<CourseCounterDTO>> toFlush = batch;
             txTemplate.execute(status -> { persistCourseCounters(toFlush); return null; });
             total += toFlush.size();
         }
         LOG.info("Restored {} course counters.", total);
     }
 
-    private void persistCourseCounters(List<CourseCounterDTO> dtos) {
-        for (CourseCounterDTO dto : dtos) {
+    private void persistCourseCounters(List<BackupRow<CourseCounterDTO>> rows) {
+        for (BackupRow<CourseCounterDTO> row : rows) {
+            CourseCounterDTO dto = row.getRecord();
             CourseCounter cc = new CourseCounter();
             cc.setUuid(dto.uuid());
             cc.setCounter(dto.counter());
             if (dto.imageUuid() != null) {
                 cc.setImage(entityManager.getReference(Image.class, dto.imageUuid()));
             }
+            row.applyTo(cc);
             entityManager.persist(cc);
         }
         entityManager.flush();
@@ -592,27 +623,28 @@ public class DatabaseBackupService {
     }
 
     private void streamRestoreTrainers(JsonParser parser, TransactionTemplate txTemplate) throws IOException {
-        List<TrainerDTO> batch = new ArrayList<>(BATCH_SIZE);
+        List<BackupRow<TrainerDTO>> batch = new ArrayList<>(BATCH_SIZE);
         long total = 0;
         while (parser.nextToken() != JsonToken.END_ARRAY) {
-            batch.add(objectMapper.readValue(parser, TrainerDTO.class));
+            batch.add(objectMapper.readValue(parser, rowOf(TrainerDTO.class)));
             if (batch.size() >= BATCH_SIZE) {
-                List<TrainerDTO> toFlush = new ArrayList<>(batch);
+                List<BackupRow<TrainerDTO>> toFlush = new ArrayList<>(batch);
                 txTemplate.execute(status -> { persistTrainers(toFlush); return null; });
                 total += batch.size();
                 batch.clear();
             }
         }
         if (!batch.isEmpty()) {
-            List<TrainerDTO> toFlush = batch;
+            List<BackupRow<TrainerDTO>> toFlush = batch;
             txTemplate.execute(status -> { persistTrainers(toFlush); return null; });
             total += toFlush.size();
         }
         LOG.info("Restored {} trainers.", total);
     }
 
-    private void persistTrainers(List<TrainerDTO> dtos) {
-        for (TrainerDTO dto : dtos) {
+    private void persistTrainers(List<BackupRow<TrainerDTO>> rows) {
+        for (BackupRow<TrainerDTO> row : rows) {
+            TrainerDTO dto = row.getRecord();
             Trainer trainer = new Trainer();
             trainer.setUuid(dto.getId());
             trainer.setName(dto.getName());
@@ -627,6 +659,7 @@ public class DatabaseBackupService {
             // to the mappers alone would be written to the backup file and silently
             // dropped on restore.
             trainer.setPrimaryImageUuid(dto.getPrimaryImageUuid());
+            row.applyTo(trainer);
             entityManager.persist(trainer);
         }
         entityManager.flush();
@@ -634,27 +667,28 @@ public class DatabaseBackupService {
     }
 
     private void streamRestoreLecturers(JsonParser parser, TransactionTemplate txTemplate) throws IOException {
-        List<LecturerDTO> batch = new ArrayList<>(BATCH_SIZE);
+        List<BackupRow<LecturerDTO>> batch = new ArrayList<>(BATCH_SIZE);
         long total = 0;
         while (parser.nextToken() != JsonToken.END_ARRAY) {
-            batch.add(objectMapper.readValue(parser, LecturerDTO.class));
+            batch.add(objectMapper.readValue(parser, rowOf(LecturerDTO.class)));
             if (batch.size() >= BATCH_SIZE) {
-                List<LecturerDTO> toFlush = new ArrayList<>(batch);
+                List<BackupRow<LecturerDTO>> toFlush = new ArrayList<>(batch);
                 txTemplate.execute(status -> { persistLecturers(toFlush); return null; });
                 total += batch.size();
                 batch.clear();
             }
         }
         if (!batch.isEmpty()) {
-            List<LecturerDTO> toFlush = batch;
+            List<BackupRow<LecturerDTO>> toFlush = batch;
             txTemplate.execute(status -> { persistLecturers(toFlush); return null; });
             total += toFlush.size();
         }
         LOG.info("Restored {} lecturers.", total);
     }
 
-    private void persistLecturers(List<LecturerDTO> dtos) {
-        for (LecturerDTO dto : dtos) {
+    private void persistLecturers(List<BackupRow<LecturerDTO>> rows) {
+        for (BackupRow<LecturerDTO> row : rows) {
+            LecturerDTO dto = row.getRecord();
             Lecturer lecturer = new Lecturer();
             lecturer.setUuid(dto.getId());
             lecturer.setName(dto.getName());
@@ -669,6 +703,7 @@ public class DatabaseBackupService {
             // to the mappers alone would be written to the backup file and silently
             // dropped on restore.
             lecturer.setPrimaryImageUuid(dto.getPrimaryImageUuid());
+            row.applyTo(lecturer);
             entityManager.persist(lecturer);
         }
         entityManager.flush();
@@ -676,27 +711,28 @@ public class DatabaseBackupService {
     }
 
     private void streamRestoreTechnicians(JsonParser parser, TransactionTemplate txTemplate) throws IOException {
-        List<TechnicianDTO> batch = new ArrayList<>(BATCH_SIZE);
+        List<BackupRow<TechnicianDTO>> batch = new ArrayList<>(BATCH_SIZE);
         long total = 0;
         while (parser.nextToken() != JsonToken.END_ARRAY) {
-            batch.add(objectMapper.readValue(parser, TechnicianDTO.class));
+            batch.add(objectMapper.readValue(parser, rowOf(TechnicianDTO.class)));
             if (batch.size() >= BATCH_SIZE) {
-                List<TechnicianDTO> toFlush = new ArrayList<>(batch);
+                List<BackupRow<TechnicianDTO>> toFlush = new ArrayList<>(batch);
                 txTemplate.execute(status -> { persistTechnicians(toFlush); return null; });
                 total += batch.size();
                 batch.clear();
             }
         }
         if (!batch.isEmpty()) {
-            List<TechnicianDTO> toFlush = batch;
+            List<BackupRow<TechnicianDTO>> toFlush = batch;
             txTemplate.execute(status -> { persistTechnicians(toFlush); return null; });
             total += toFlush.size();
         }
         LOG.info("Restored {} technicians.", total);
     }
 
-    private void persistTechnicians(List<TechnicianDTO> dtos) {
-        for (TechnicianDTO dto : dtos) {
+    private void persistTechnicians(List<BackupRow<TechnicianDTO>> rows) {
+        for (BackupRow<TechnicianDTO> row : rows) {
+            TechnicianDTO dto = row.getRecord();
             Technician technician = new Technician();
             technician.setUuid(dto.getId());
             technician.setName(dto.getName());
@@ -711,6 +747,7 @@ public class DatabaseBackupService {
             // to the mappers alone would be written to the backup file and silently
             // dropped on restore.
             technician.setPrimaryImageUuid(dto.getPrimaryImageUuid());
+            row.applyTo(technician);
             entityManager.persist(technician);
         }
         entityManager.flush();
@@ -718,27 +755,28 @@ public class DatabaseBackupService {
     }
 
     private void streamRestoreParticipants(JsonParser parser, TransactionTemplate txTemplate) throws IOException {
-        List<ParticipantDTO> batch = new ArrayList<>(BATCH_SIZE);
+        List<BackupRow<ParticipantDTO>> batch = new ArrayList<>(BATCH_SIZE);
         long total = 0;
         while (parser.nextToken() != JsonToken.END_ARRAY) {
-            batch.add(objectMapper.readValue(parser, ParticipantDTO.class));
+            batch.add(objectMapper.readValue(parser, rowOf(ParticipantDTO.class)));
             if (batch.size() >= BATCH_SIZE) {
-                List<ParticipantDTO> toFlush = new ArrayList<>(batch);
+                List<BackupRow<ParticipantDTO>> toFlush = new ArrayList<>(batch);
                 txTemplate.execute(status -> { persistParticipants(toFlush); return null; });
                 total += batch.size();
                 batch.clear();
             }
         }
         if (!batch.isEmpty()) {
-            List<ParticipantDTO> toFlush = batch;
+            List<BackupRow<ParticipantDTO>> toFlush = batch;
             txTemplate.execute(status -> { persistParticipants(toFlush); return null; });
             total += toFlush.size();
         }
         LOG.info("Restored {} participants.", total);
     }
 
-    private void persistParticipants(List<ParticipantDTO> dtos) {
-        for (ParticipantDTO dto : dtos) {
+    private void persistParticipants(List<BackupRow<ParticipantDTO>> rows) {
+        for (BackupRow<ParticipantDTO> row : rows) {
+            ParticipantDTO dto = row.getRecord();
             Participant p = new Participant();
             p.setUuid(dto.getParticipantUuid());
             p.setId(dto.getId());
@@ -753,6 +791,7 @@ public class DatabaseBackupService {
             if (dto.getImage() != null) {
                 p.setImage(entityManager.getReference(Image.class, dto.getImage()));
             }
+            row.applyTo(p);
             entityManager.persist(p);
         }
         entityManager.flush();
@@ -761,27 +800,28 @@ public class DatabaseBackupService {
 
     private void streamRestoreCourses(JsonParser parser, TransactionTemplate txTemplate,
                                       Map<Long, Long> courseTypeIdMap) throws IOException {
-        List<CoursesDTO> batch = new ArrayList<>(BATCH_SIZE);
+        List<BackupRow<CoursesDTO>> batch = new ArrayList<>(BATCH_SIZE);
         long total = 0;
         while (parser.nextToken() != JsonToken.END_ARRAY) {
-            batch.add(objectMapper.readValue(parser, CoursesDTO.class));
+            batch.add(objectMapper.readValue(parser, rowOf(CoursesDTO.class)));
             if (batch.size() >= BATCH_SIZE) {
-                List<CoursesDTO> toFlush = new ArrayList<>(batch);
+                List<BackupRow<CoursesDTO>> toFlush = new ArrayList<>(batch);
                 txTemplate.execute(status -> { persistCourses(toFlush, courseTypeIdMap); return null; });
                 total += batch.size();
                 batch.clear();
             }
         }
         if (!batch.isEmpty()) {
-            List<CoursesDTO> toFlush = batch;
+            List<BackupRow<CoursesDTO>> toFlush = batch;
             txTemplate.execute(status -> { persistCourses(toFlush, courseTypeIdMap); return null; });
             total += toFlush.size();
         }
         LOG.info("Restored {} courses.", total);
     }
 
-    private void persistCourses(List<CoursesDTO> dtos, Map<Long, Long> courseTypeIdMap) {
-        for (CoursesDTO dto : dtos) {
+    private void persistCourses(List<BackupRow<CoursesDTO>> rows, Map<Long, Long> courseTypeIdMap) {
+        for (BackupRow<CoursesDTO> row : rows) {
+            CoursesDTO dto = row.getRecord();
             Courses course = new Courses();
             course.setUuid(dto.getUuid());
             course.setId(dto.getId());
@@ -820,6 +860,8 @@ public class DatabaseBackupService {
                     .map(id -> entityManager.getReference(Technician.class, id))
                     .collect(Collectors.toSet());
             course.setTechnicians(technicians);
+
+            row.applyTo(course);
 
             entityManager.persist(course);
         }
@@ -898,22 +940,14 @@ public class DatabaseBackupService {
     // -------------------------------------------------------------------------
 
     private void clearAllTables() {
-        // Courses owns all ManyToMany join tables → deleteAll() removes join rows first
-        coursesRepository.deleteAll();
+        // The custom entities are soft-deleted (@SQLDelete), so deleteAll() would only mark rows and
+        // deleteAllInBatch() skips the already-marked ones. A restore has to start from empty tables,
+        // so these are plain DELETEs, children before parents; join tables are cleared explicitly.
+        for (String table : CUSTOM_TABLES_CHILDREN_FIRST) {
+            entityManager.createNativeQuery("DELETE FROM " + table).executeUpdate();
+        }
         entityManager.flush();
 
-        participantRepository.deleteAllInBatch();
-        entityManager.flush();
-
-        // Trainer/Lecturer/Technician own their image join tables
-        trainerRepository.deleteAll();
-        lecturerRepository.deleteAll();
-        technicianRepository.deleteAll();
-        entityManager.flush();
-
-        courseCounterRepository.deleteAllInBatch();
-        courseTypeRepository.deleteAllInBatch();
-        imageRepository.deleteAllInBatch();
         studentRepository.deleteAllInBatch();
         instructorRepository.deleteAllInBatch();
         entityManager.flush();
@@ -925,6 +959,10 @@ public class DatabaseBackupService {
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
+
+    private JavaType rowOf(Class<?> record) {
+        return objectMapper.getTypeFactory().constructParametricType(BackupRow.class, record);
+    }
 
     private Set<Image> resolveImageRefs(Set<UUID> uuids) {
         if (uuids == null || uuids.isEmpty()) {

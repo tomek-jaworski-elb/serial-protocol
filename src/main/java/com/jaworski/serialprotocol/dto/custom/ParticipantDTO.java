@@ -1,6 +1,7 @@
 package com.jaworski.serialprotocol.dto.custom;
 
 import lombok.AllArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -30,6 +31,11 @@ public class ParticipantDTO {
   @ToString.Exclude
   @EqualsAndHashCode.Exclude
   private UUID image;
+
+  /** Optimistic-locking version of the record the form was opened on (a hidden field). Not part of a
+   * backup: restored rows start again at 0. */
+  @JsonIgnore
+  private Long version;
 
   /**
    * The photo to show as the avatar. A participant holds exactly one image ({@code @OneToOne}),

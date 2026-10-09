@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DataJpaTest
-@Import({CourseCounterService.class, ImageService.class,
+@Import({SoftDeleteSupport.class, CourseCounterService.class, ImageService.class,
         CoursesService.class, ParticipantService.class, CourseTypeService.class,
         TrainerService.class, LecturerService.class, TechnicianService.class})
 class CourseCounterServiceTest {
@@ -86,8 +86,10 @@ class CourseCounterServiceTest {
 
     courseCounterService.delete(save.uuid());
 
-    assertEquals(1, imageService.getAllImages());
+    // Deleting only hides the counter, so an administrator can restore it with its photo.
+    assertEquals(2, imageService.getAllImages());
     assertEquals(savedImage.getId(), imageService.getImageById(savedImage.getId()).getId());
+    assertEquals(image.getId(), imageService.getImageById(image.getId()).getId());
   }
 
   @Test
@@ -101,8 +103,8 @@ class CourseCounterServiceTest {
     assertEquals(1, imageService.getAllImages());
 
 //     Najpierw odłączamy obraz od CourseCounter
-    CourseCounterDTO updated = new CourseCounterDTO(save.uuid(), save.counter(), null);
-    courseCounterService.save(updated);
+    CourseCounterDTO updated = new CourseCounterDTO(save.uuid(), save.counter(), null, save.version());
+    courseCounterService.update(updated);
 
     // Teraz usuwamy obraz
     imageService.delete(image.getId());
@@ -125,9 +127,13 @@ class CourseCounterServiceTest {
     CourseCounterDTO toSave = new CourseCounterDTO(5L, image.getId());
     CourseCounterDTO save = courseCounterService.save(toSave);
     assertNotNull(save);
+    // Let go of the photo before removing it. The duplicate-counter check on update runs a query, which
+    // flushes the session, and a counter still pointing at a removed image cannot be flushed.
+    CourseCounterDTO detached = courseCounterService.update(
+        new CourseCounterDTO(save.uuid(), save.counter(), null, save.version()));
     imageService.delete(image.getId());
     var updatedImage = imageService.saveImage(new byte[]{1, 2, 33,4,5,6,7,7,8}, "context text new");
-    CourseCounterDTO updated = new CourseCounterDTO(save.uuid() ,7L, updatedImage.getId());
+    CourseCounterDTO updated = new CourseCounterDTO(save.uuid(), 7L, updatedImage.getId(), detached.version());
 
     CourseCounterDTO update = courseCounterService.update(updated);
     assertEquals(updated.counter(), update.counter());
@@ -191,7 +197,7 @@ class CourseCounterServiceTest {
         IllegalStateException.class,
         () -> courseCounterService.delete(counterUuid)
     );
-    assertTrue(exception.getMessage().contains("referenced by existing courses"));
+    assertTrue(exception.getMessage().contains("used in existing courses"));
   }
 
   @Test

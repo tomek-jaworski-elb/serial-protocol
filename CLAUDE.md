@@ -45,6 +45,9 @@ No lint plugin (Checkstyle/PMD/SpotBugs) is configured in `pom.xml` — do not i
 - **Primary-image ordering is lexicographic** (`UUID::toString`), never `UUID.compareTo`, which compares both halves as signed longs. Go through `dto.custom.PrimaryImage`.
 - **`CustomDBController`'s `@InitBinder` is an anonymous `PropertyEditorSupport`**, not `StringTrimmerEditor`. It turns blank strings into `null`, which optional-field validation depends on.
 - **Tests run on H2 with `server.port=8081`** and auth `user:user`. Nothing activates a `test` profile, so `@Profile("!test")` beans such as `SchemaMigrationRunner` still load in full-context tests.
+- **Custom-domain records are never removed by user code.** The seven `SoftDeletable` entities carry an auto-enabled Hibernate filter that also applies to `findById`, so a deleted row is invisible everywhere, including guards and bulk JPQL. Delete through `SoftDeleteSupport.softDelete` (mark + flush + detach); only `DeletedRecordsService.purge` removes a row. Code that must see deleted rows goes through `SoftDeleteSupport.withDeleted`, and entities loaded there stay in the session cache — detach them before returning. (CLAUDE.md § Soft delete, trash and optimistic locking)
+- **Edit forms carry `version`.** Every update path runs `VersionGuard.check`; a mismatch is `ObjectOptimisticLockingFailureException`, handled once in `WebExceptionHandler`. A controller handler that saves an edited record must rethrow that exception, not swallow it under `catch (RuntimeException)`. Course parents are loaded with `find()` then `lock(OPTIMISTIC)`; a lock mode passed to `find()` reaches the versionless `Image`.
+- **The four uuid ids use `@AssignedOrGeneratedUuid`.** A preset uuid is kept, which backup restore relies on; `@GeneratedValue(strategy = UUID)` would refuse it as detached. Backups are schema `1.1` (`BackupRow`: DTO + `deletedAt`/`deletedBy`), still read `1.0`, and never contain `version`.
 <!-- mirror:end invariants -->
 
 ## Working conventions
@@ -111,7 +114,7 @@ A window killed by a crash never sends a close frame, so silence on the second c
 Two MVC controller families under `controller/web`:
 
 - `MapController` — serial/realtime pages: `/` (`index`), `/terminal`, `/chart`, `/tracks`, `/about`, `/greeting`, plus `/login`, `/logout`, `/name-service`, `/instructor-service`.
-- `CustomDBController` — all custom-domain CRUD; `ImageController`, `PdfReportController`, `DbUtilsController` (`DatabaseBackupService` backup/restore) round it out. `MyErrorController` + `WebExceptionHandler` handle errors.
+- `CustomDBController` — all custom-domain CRUD; `ImageController`, `PdfReportController`, `DbUtilsController` (`DatabaseBackupService` backup/restore) and `AdminDeletedController` (`/admin/deleted/**`, the trash) round it out. `MyErrorController` + `WebExceptionHandler` handle errors.
 
 `templates/fragment.html` is the shared layout — `head`, `header`, `footer`, `pagination(...)`, `toastNotifications`, `imageEditor(...)` fragments. Every page pulls in the footer, which is what makes the open-page count work. Menu entries behind `web.ui.extended=true` are gated in the template by comparing the property **as a string** (`@environment.getProperty(...) == 'true'`). `static/bootstrap-5-3-8` is the version actually referenced; `bootstrap-5-3-7` is a leftover.
 
@@ -153,6 +156,7 @@ Full reference: [`docs/custom-domain-analysis.md`](docs/custom-domain-analysis.m
 
 Entity hierarchy:
 ```
+SoftDeletable (@MappedSuperclass) — deleted_at, deleted_by, version; base of PersonBase, CourseType, CourseCounter, Courses
 PersonBase (@MappedSuperclass) — uuid (@Id), name, surname, notes, nickname, email, phoneNumber, address
   ├── Lecturer   @ManyToMany images + primaryImageUuid
   ├── Trainer    @ManyToMany images + primaryImageUuid
@@ -164,7 +168,7 @@ Courses     — uuid (@Id), id: Long, participant @ManyToOne, courseType @ManyTo
 Image       — id: UUID, data: byte[] @Lob LAZY, contentType
 ```
 
-CRUD shape is the same for every entity: `GET /<x>-service`, `POST /<x>-service/add`, `POST /<x>-service/update`, `POST /<x>-service/delete/{key}`. The key is `{uuid}` for participant, course-counter and courses and `{id}` for trainer, lecturer, technician and course-type. `POST /courses-service/add-participant` is the quick-add from the participant view: it submits only `participantUuid`, `courseTypeId`, `startDate` and `endDate`, so trainers, lecturers, technicians and counter stay empty.
+CRUD shape is the same for every entity: `GET /<x>-service`, `POST /<x>-service/add`, `POST /<x>-service/update`, `POST /<x>-service/delete/{key}`. The key is `{uuid}` for participant, course-counter and courses and `{id}` for trainer, lecturer, technician and course-type. `POST /courses-service/add-participant` is the quick-add from the participant view: it submits only `participantUuid`, `courseTypeId`, `startDate` and `endDate`, so trainers, lecturers, technicians and counter stay empty. Delete marks the row; the trash is `GET /admin/deleted/{entity}`, `POST …/restore/{key}`, `POST …/purge/{key}` (admin only).
 
 Key conventions:
 - UUID is DB identity; numeric `id` on `Courses`/`Participant` is a business key managed via `nextId()` (`COALESCE(MAX(id),0)+1`, backed by `CoursesRepository.findMaxCoursesId()` / `ParticipantRepository.findMaxParticipantId()`).
@@ -172,18 +176,28 @@ Key conventions:
 - All `@AttributeOverride` for UUID includes `nullable=false, updatable=false, unique=true`.
 - Date format is `dd/MM/yyyy` (EU). HTML forms use Flatpickr on `type="text"` — never `type="date"`.
 - `@InitBinder` in `CustomDBController` registers an anonymous `PropertyEditorSupport` for `String.class` only, turning blank input into `null` — required for optional field validation. (It is *not* `StringTrimmerEditor`; that class appears nowhere in the code. Non-`String` types such as `UUID` go through Spring's default converters.)
-- `CoursesMapper.mapToEntity()` is deprecated; use `CoursesService.buildCourses()` with `repository.getReferenceById()`.
+- `CoursesMapper.mapToEntity()` is deprecated; use `CoursesService.buildCourses()`, whose `activeParent()` loads each parent through the filter and locks it optimistically.
 - `CoursesDTO` has dual counter fields: `courseCounterUuid` (read-only, set by mapper) and `counter` (Long, from forms). `resolveCourseCounter()` prefers UUID.
-- Participant deletion is guarded: throws `IllegalStateException` if linked courses exist.
+- Deleting a participant, type, counter, trainer, lecturer or technician is guarded: `IllegalStateException` while an *active* course uses it. Deleted courses block nothing.
 - `CourseType.code` is unique at DB level and checked in `CourseTypeService` through `existsByCode()` / `existsByCodeAndIdNot()`.
-- `CourseCounterDTO` is a Java `record` (Spring 6.1+ constructor binding required).
+- `CourseCounterDTO` is a Java `record` (Spring 6.1+ constructor binding required); like every custom DTO it carries `version`.
 
 ### Images and avatars
 - Uploads are capped at 10 MB (`spring.servlet.multipart.max-file-size` and `max-request-size`). Single-image entities (participant, course-counter) go through `ImageUploadCoordinator.uploadSingleImage()`; multi-image people through `uploadImages()`, limited to `MAX_UPLOAD_IMAGES`.
 - One endpoint serves everything: `GET /custom/image/{uuid}`, optionally `?size=thumb` — the *only* accepted value, anything else is a 400 so a single URL cannot spawn unbounded resize work. `ThumbnailGenerator.MAX_EDGE=160`.
 - ETags derive from the uuid alone (`"{uuid}-orig"` / `"{uuid}-thumb-{ThumbnailGenerator.VERSION}"`) because image bytes never change — replacing a photo creates a new `Image` row. Bump `ThumbnailGenerator.VERSION` when thumbnail rendering changes; that invalidates thumbs only, not originals. A 304 still verifies existence, otherwise deleted photos would stay cached forever.
+- Deleting an owner keeps its photos (a restore needs them); `DeletedRecordsService.purge` removes the ones nothing else uses.
 - `Cache-Control: private, no-cache` is set explicitly and survives Spring Security's `no-store` writer, which skips whenever the header is already present.
 - Multi-image people (`Lecturer`/`Trainer`/`Technician`) carry a `primaryImageUuid` pointer; `dto.custom.PrimaryImage` is the single source of truth for resolving it, shared by services (on write) and DTOs (on render). Sort candidate UUIDs **lexicographically by `toString()`**, never `UUID.compareTo` (it compares both halves as signed longs). An absent pointer in a request means "leave it alone", and fallback prefers pre-existing photos so a newly uploaded one never silently becomes the avatar.
+
+### Soft delete, trash and optimistic locking
+Full reference: [`docs/soft-delete.md`](docs/soft-delete.md)
+
+A user's delete marks the row (`deleted_at`, `deleted_by`); the `activeOnly` filter on `SoftDeletable` is auto-enabled and applies to lookups by id, so every list, `findById`, guard and bulk JPQL sees active rows only. `SoftDeleteSupport` holds the few operations around it: `currentUser()` (`"system"` when nobody is signed in), `softDelete()` (mark, flush, detach — the session cache would otherwise hand the row back), and `withDeleted()` / `runWithDeleted()` (filter off for the rest of the transaction, re-entrant). Guards count active courses only; `nextId()` and the unique-value checks run with the filter off so deleted rows keep their ids, codes and counters. A course's parents go through `CoursesService.activeParent` (`find()`, then `lock(OPTIMISTIC)`).
+
+The trash is `/admin/deleted/{entity}` (`AdminDeletedController`, `DeletedRecordsService`, `DeletedKind`): list, restore (refused while a parent of a course is in the trash), purge (refused while any course, deleted or not, points at the record; JPQL bulk delete, then photos nothing else uses). The service detaches every hidden row it loaded before returning.
+
+`version` lives on `SoftDeletable`; DTOs and the seven edit forms carry it (`data-version` → hidden field), `VersionGuard` checks it in every update path, and `WebExceptionHandler` turns `ObjectOptimisticLockingFailureException` into one flash message plus a redirect to the `Referer`. Update paths `saveAndFlush`. Backups (schema `1.1`, `BackupRow<T>`) carry deleted rows and read `1.0` files as active rows; `@AssignedOrGeneratedUuid` is what lets a restore insert rows under their old uuids.
 
 ### Ship model registry
 Defined in the `Models` enum (id, display name, colour) and, for serial prefixes, in `MessageTranslator.MODEL_MAP`:

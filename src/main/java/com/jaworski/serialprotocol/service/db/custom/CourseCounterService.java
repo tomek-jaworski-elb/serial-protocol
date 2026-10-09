@@ -27,8 +27,13 @@ public class CourseCounterService {
   private final CourseCounterRepository courseCounterRepository;
   private final ImageRepository imageRepository;
   private final CoursesRepository coursesRepository;
+  private final SoftDeleteSupport softDeleteSupport;
 
   public CourseCounterDTO save(CourseCounterDTO courseCounterDTO) {
+    if (courseCounterDTO.uuid() != null) {
+      throw new IllegalArgumentException("A new course counter cannot carry a uuid; use update for an existing one.");
+    }
+    requireCounterFree(courseCounterDTO.counter(), null);
     CourseCounter entity = CourseCounterMapper.toEntity(courseCounterDTO);
     UUID uuid = courseCounterDTO.imageUuid();
     Image image = resolveImage(uuid);
@@ -48,7 +53,31 @@ public class CourseCounterService {
   }
 
   public Long nextCounter() {
-    return courseCounterRepository.findMaxCounter() + 1;
+    // Deleted counters count: their numbers are never handed out again.
+    return softDeleteSupport.withDeleted(courseCounterRepository::findMaxCounter) + 1;
+  }
+
+  /**
+   * A counter value is unique across all rows, deleted ones included, so a taken value is reported
+   * differently depending on who holds it. {@code ownUuid} is the row being edited, or null for a new one.
+   */
+  private void requireCounterFree(Long counter, UUID ownUuid) {
+    if (counter == null) {
+      return;
+    }
+    // exists-queries on purpose: loading a deleted holder would leave it in the session cache
+    if (takenByOther(counter, ownUuid)) {
+      throw new IllegalArgumentException("Course counter " + counter + " already exists.");
+    }
+    if (softDeleteSupport.withDeleted(() -> takenByOther(counter, ownUuid))) {
+      throw new IllegalArgumentException(softDeleteSupport.heldByDeletedRecord("Course counter " + counter));
+    }
+  }
+
+  private boolean takenByOther(Long counter, UUID ownUuid) {
+    return ownUuid == null
+        ? courseCounterRepository.existsByCounter(counter)
+        : courseCounterRepository.existsByCounterAndUuidNot(counter, ownUuid);
   }
 
   private Image resolveImage(UUID imageId) {
@@ -61,15 +90,12 @@ public class CourseCounterService {
 
   public void delete(UUID uuid) {
     if (coursesRepository.existsByCourseCounter_Uuid(uuid)) {
-      throw new IllegalStateException("Cannot delete course counter with uuid " + uuid + " because it is referenced by existing courses.");
+      throw new IllegalStateException("This course counter is used in existing courses and cannot be deleted.");
     }
     CourseCounter courseCounter = courseCounterRepository.findById(uuid)
-            .orElseThrow(() -> new IllegalArgumentException("CourseCounter with id " + uuid + " not found"));
-    Image image = courseCounter.getImage();
-    if (image != null) {
-      imageRepository.delete(image);
-    }
-    courseCounterRepository.deleteById(uuid);
+            .orElseThrow(() -> softDeleteSupport.notFound("Course counter", uuid));
+    // Marked, not removed: the photo stays with the row so an administrator can restore it.
+    softDeleteSupport.softDelete(courseCounter, courseCounterRepository);
   }
 
   public Optional<CourseCounterDTO> getByUuid(UUID uuid) {
@@ -85,11 +111,13 @@ public class CourseCounterService {
 
   public CourseCounterDTO update(CourseCounterDTO toSave) {
     CourseCounter courseCounter = courseCounterRepository.findById(toSave.uuid())
-            .orElseThrow(() -> new IllegalArgumentException("CourseCounter with id " + toSave.uuid() + " not found"));
+            .orElseThrow(() -> softDeleteSupport.notFound("Course counter", toSave.uuid()));
+    VersionGuard.check(CourseCounter.class, toSave.uuid(), courseCounter.getVersion(), toSave.version());
+    requireCounterFree(toSave.counter(), toSave.uuid());
     UUID oldImageId = courseCounter.getImage() != null ? courseCounter.getImage().getId() : null;
     courseCounter.setImage(resolveImage(toSave.imageUuid()));
     courseCounter.setCounter(toSave.counter());
-    CourseCounter save = courseCounterRepository.save(courseCounter);
+    CourseCounter save = courseCounterRepository.saveAndFlush(courseCounter);
     if (oldImageId != null && !oldImageId.equals(toSave.imageUuid())) {
       imageRepository.deleteById(oldImageId);
     }

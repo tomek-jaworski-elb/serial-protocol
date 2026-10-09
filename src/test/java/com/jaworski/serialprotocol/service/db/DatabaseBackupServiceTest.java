@@ -23,6 +23,7 @@ import com.jaworski.serialprotocol.repository.custom.LecturerRepository;
 import com.jaworski.serialprotocol.repository.custom.ParticipantRepository;
 import com.jaworski.serialprotocol.repository.custom.TechnicianRepository;
 import com.jaworski.serialprotocol.repository.custom.TrainerRepository;
+import com.jaworski.serialprotocol.service.db.custom.SoftDeleteSupport;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -51,20 +52,12 @@ import static org.junit.jupiter.api.Assertions.*;
  *   <li>{@code restoreFromBackup()} – validation-only paths (wrong schema, invalid GZIP, bad JSON).</li>
  * </ul>
  *
- * <p><strong>Why no round-trip tests here?</strong>
- * {@code @DataJpaTest} wraps each test in a transaction and keeps the entities managed inside that
- * transaction's persistence context (PC).  {@code restoreFromBackup()} participates in the same
- * transaction (REQUIRED propagation) and calls {@code entityManager.clear()} to wipe the PC.
- * When it then tries to re-persist entities with the same UUIDs, Hibernate detects them as
- * "detached" (seen in this session) and throws {@code EntityExistsException}.
- * This is a Hibernate-level interaction specific to the in-process {@code @DataJpaTest} context;
- * it does <em>not</em> occur in production (MariaDB) where restore runs in its own transaction.
- * Full backup → restore → verify round-trips are covered by
- * {@link com.jaworski.serialprotocol.controller.web.DbUtilsControllerTest}, which uses
- * {@code @SpringBootTest} and therefore a proper isolated transaction per request.
+ * <p>Round trips with data live in {@link BackupRoundTripTest}, which commits each step in its own
+ * transaction. (An earlier note here blamed the test transaction for "detached entity passed to persist";
+ * the real cause was the uuid generator refusing assigned ids, fixed by {@code AssignedOrGeneratedUuid}.)
  */
 @DataJpaTest
-@Import(DatabaseBackupService.class)
+@Import({DatabaseBackupService.class, SoftDeleteSupport.class})
 class DatabaseBackupServiceTest {
 
     // ---- Test-only ObjectMapper (JavaTimeModule for LocalDate/LocalDateTime) ----

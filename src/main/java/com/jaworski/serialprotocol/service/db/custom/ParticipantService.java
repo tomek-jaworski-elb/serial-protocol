@@ -30,6 +30,7 @@ public class ParticipantService {
   private final ParticipantRepository participantRepository;
   private final ImageRepository imageRepository;
   private final CoursesRepository coursesRepository;
+  private final SoftDeleteSupport softDeleteSupport;
 
   @Transactional(readOnly = true)
   public List<ParticipantDTO> findAll() {
@@ -51,7 +52,8 @@ public class ParticipantService {
   }
 
   public Long nextId() {
-    return participantRepository.findMaxParticipantId() + 1;
+    // Deleted participants count: their ids are never handed out again.
+    return softDeleteSupport.withDeleted(participantRepository::findMaxParticipantId) + 1;
   }
 
   public boolean isIdTaken(Long id) {
@@ -66,8 +68,12 @@ public class ParticipantService {
     if (dto.getId() == null) {
       dto.setId(nextId());
     }
-    if (isIdTaken(dto.getId())) {
-      throw new IllegalArgumentException("Participant with id " + dto.getId() + " already exists");
+    Long id = dto.getId();
+    if (isIdTaken(id)) {
+      throw new IllegalArgumentException("Participant with id " + id + " already exists");
+    }
+    if (softDeleteSupport.withDeleted(() -> participantRepository.countWithParticipantId(id)) > 0) {
+      throw new IllegalArgumentException(softDeleteSupport.heldByDeletedRecord("Participant id " + id));
     }
 
     Image saveImage = resolveImage(dto.getImage());
@@ -79,14 +85,12 @@ public class ParticipantService {
 
   public void deleteByUuid(UUID uuid) {
     if (coursesRepository.existsByParticipant_Uuid(uuid)) {
-      throw new IllegalStateException("Cannot delete participant with uuid " + uuid + " because they are referenced by existing courses.");
+      throw new IllegalStateException("This participant is used in existing courses and cannot be deleted.");
     }
+    // Marked, not removed: the photo stays with the row so an administrator can restore it.
     participantRepository.findById(uuid).ifPresent(participant -> {
-      if (participant.getImage() != null) {
-        imageRepository.deleteById(participant.getImage().getId());
-      }
+      softDeleteSupport.softDelete(participant, participantRepository);
     });
-    participantRepository.deleteById(uuid);
   }
 
   @Transactional
@@ -94,14 +98,19 @@ public class ParticipantService {
     if (dto.getParticipantUuid() == null) {
       throw new IllegalArgumentException("UUID is required for update");
     }
+    Participant current = participantRepository.findById(dto.getParticipantUuid())
+        .orElseThrow(() -> softDeleteSupport.notFound("Participant", dto.getParticipantUuid()));
+    VersionGuard.check(Participant.class, dto.getParticipantUuid(), current.getVersion(), dto.getVersion());
     if (dto.getId() != null && isIdTakenByOther(dto.getId(), dto.getParticipantUuid())) {
       throw new IllegalArgumentException("Participant id " + dto.getId() + " is already used by another participant");
     }
+    if (dto.getId() != null && softDeleteSupport.withDeleted(
+        () -> participantRepository.countWithParticipantIdExcludingUuid(dto.getId(), dto.getParticipantUuid())) > 0) {
+      throw new IllegalArgumentException(softDeleteSupport.heldByDeletedRecord("Participant id " + dto.getId()));
+    }
 
     // Remember old image UUID before any changes
-    UUID oldImageId = participantRepository.findById(dto.getParticipantUuid())
-            .map(p -> p.getImage() != null ? p.getImage().getId() : null)
-            .orElse(null);
+    UUID oldImageId = current.getImage() != null ? current.getImage().getId() : null;
 
     Image requestedImage = resolveImage(dto.getImage());
 

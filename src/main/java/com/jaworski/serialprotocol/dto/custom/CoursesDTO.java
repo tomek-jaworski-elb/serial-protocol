@@ -1,5 +1,6 @@
 package com.jaworski.serialprotocol.dto.custom;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -27,6 +28,11 @@ public class CoursesDTO {
   private Set<UUID> trainerIds = new HashSet<>();
   private Set<UUID> lecturerIds = new HashSet<>();
   private Set<UUID> technicianIds = new HashSet<>();
+
+  /** Optimistic-locking version of the record the form was opened on (a hidden field). Not part of a
+   * backup: restored rows start again at 0. */
+  @JsonIgnore
+  private Long version;
 
   public String getTrainerIdsString() {
     return trainerIds == null ? "" : trainerIds.stream().map(String::valueOf).collect(Collectors.joining(","));

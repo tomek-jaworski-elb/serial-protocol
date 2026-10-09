@@ -56,6 +56,7 @@
             <h5 class="card-title">Update course counter</h5>
             <form method="post" enctype="multipart/form-data" th:action="@{/course-counter-service/update}">
                 <input id="updateUuid" name="uuid" type="hidden" required>
+                <input id="updateCounterVersion" name="version" type="hidden">
                 <div class="row g-3">
                     <div class="col-md-4">
                         <label for="updateCounter" class="form-label">ID <span class="text-danger">*</span></label>
@@ -129,14 +130,14 @@
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li>
                                     <button type="button" class="dropdown-item update-course-counter-btn" data-image-source
-                                            th:attr="data-uuid=${courseCounter.uuid},data-image=${courseCounter.imageUuid},data-counter=${courseCounter.counter}">
+                                            th:attr="data-version=${courseCounter.version},data-uuid=${courseCounter.uuid},data-image=${courseCounter.imageUuid},data-counter=${courseCounter.counter}">
                                         Update
                                     </button>
                                 </li>
                                 <li>
                                     <form method="post" class="m-0" th:action="@{/course-counter-service/delete/{uuid}(uuid=${courseCounter.uuid})}">
                                         <button type="submit" class="dropdown-item text-danger"
-                                                onclick="return confirm('Are you sure you want to delete this item?');">Delete</button>
+                                                onclick="return confirm('Delete this course counter? An administrator can restore it.');">Delete</button>
                                     </form>
                                 </li>
                             </ul>
@@ -231,6 +232,7 @@
         updateButtons.forEach((btn) => {
             btn.addEventListener('click', () => {
                 updateUuid.value = btn.dataset.uuid || '';
+                document.getElementById('updateCounterVersion').value = btn.dataset.version || '';
                 updateCounter.value = btn.dataset.counter || '';
                 updateCourseCounterFormContainer.classList.remove('d-none');
                 if (addCourseCounterFormContainer) {

@@ -2,8 +2,6 @@ package com.jaworski.serialprotocol.entity.custom;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
@@ -14,6 +12,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.hibernate.annotations.SQLDelete;
 
 import java.util.UUID;
 
@@ -21,13 +20,16 @@ import java.util.UUID;
 @Table(name = CourseCounter.TABLE_NAME)
 @Data
 @NoArgsConstructor
-public class CourseCounter {
+@SQLDelete(sql = "UPDATE " + CourseCounter.TABLE_NAME + " SET deleted_at = CURRENT_TIMESTAMP, deleted_by = 'system', version = version + 1 WHERE "
+    + CourseCounter.TABLE_NAME + "_uuid = ? AND version = ?")
+@EqualsAndHashCode(callSuper = false)
+public class CourseCounter extends SoftDeletable {
 
   public static final String TABLE_NAME = "course_counter";
 
   @Id
   @Column(name = CourseCounter.TABLE_NAME + "_uuid")
-  @GeneratedValue(strategy = GenerationType.UUID)
+  @AssignedOrGeneratedUuid
   private UUID uuid;
 
   @NotNull

@@ -5,7 +5,6 @@ import com.jaworski.serialprotocol.entity.custom.Image;
 import com.jaworski.serialprotocol.entity.custom.Lecturer;
 import com.jaworski.serialprotocol.mappers.custom.LecturerMapper;
 import com.jaworski.serialprotocol.repository.custom.CoursesRepository;
-import com.jaworski.serialprotocol.repository.custom.ImageRepository;
 import com.jaworski.serialprotocol.repository.custom.LecturerRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -26,10 +25,10 @@ import java.util.UUID;
 @Transactional
 public class LecturerService {
 
-  private final ImageRepository imageRepository;
   private final ImageService imageService;
   private final LecturerRepository lecturerRepository;
   private final CoursesRepository coursesRepository;
+  private final SoftDeleteSupport softDeleteSupport;
   private static final Logger LOGGER = LoggerFactory.getLogger(LecturerService.class);
 
   @Transactional(readOnly = true)
@@ -63,14 +62,12 @@ public class LecturerService {
 
   public void deleteById(UUID id) {
     if (coursesRepository.existsByLecturers_Uuid(id)) {
-      throw new IllegalStateException("Cannot delete lecturer with id " + id + " because it is referenced by existing courses.");
+      throw new IllegalStateException("This lecturer is used in existing courses and cannot be deleted.");
     }
+    // Marked, not removed: the photos stay with the row so an administrator can restore it.
     lecturerRepository.findById(id).ifPresent(lecturer -> {
-      if (!lecturer.getImages().isEmpty()) {
-        imageRepository.deleteAll(lecturer.getImages());
-      }
+      softDeleteSupport.softDelete(lecturer, lecturerRepository);
     });
-    lecturerRepository.deleteById(id);
   }
 
   public LecturerDTO updateById(LecturerDTO dto) {
@@ -78,7 +75,8 @@ public class LecturerService {
       throw new IllegalArgumentException("Lecturer id is required for update");
     }
     Lecturer existingLecturer = lecturerRepository.findById(dto.getId())
-        .orElseThrow(() -> new IllegalArgumentException("Lecturer with id " + dto.getId() + " not found"));
+        .orElseThrow(() -> softDeleteSupport.notFound("Lecturer", dto.getId()));
+    VersionGuard.check(Lecturer.class, dto.getId(), existingLecturer.getVersion(), dto.getVersion());
 
     Set<Image> previousImages = new HashSet<>(existingLecturer.getImages());
     Set<Image> requestedImages = imageService.resolveImages(dto.getImagesUuid());
@@ -97,7 +95,7 @@ public class LecturerService {
         dto.getPrimaryImageUuid(), existingLecturer.getPrimaryImageUuid(),
         previousImages, requestedImages));
 
-    Lecturer updatedLecturer = lecturerRepository.save(existingLecturer);
+    Lecturer updatedLecturer = lecturerRepository.saveAndFlush(existingLecturer);
 
     imageService.deleteRemovedImages(previousImages, requestedImages);
     return LecturerMapper.mapToDTO(updatedLecturer);

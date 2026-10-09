@@ -187,6 +187,9 @@
     <li sec:authorize="hasRole('ADMIN')">
         <a class="dropdown-item" th:classappend="${name == 'db-utils'} ? 'active'" th:href="@{/db-utils}">DB Utils</a>
     </li>
+    <li sec:authorize="hasRole('ADMIN')">
+        <a class="dropdown-item" th:classappend="${name == 'admin-deleted'} ? 'active'" th:href="@{/admin/deleted}">Deleted records</a>
+    </li>
 </th:block>
 
 <!--

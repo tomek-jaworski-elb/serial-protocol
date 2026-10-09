@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DataJpaTest
-@Import({TechnicianService.class, ImageService.class, CoursesService.class, ParticipantService.class,
+@Import({SoftDeleteSupport.class, TechnicianService.class, ImageService.class, CoursesService.class, ParticipantService.class,
         CourseTypeService.class, TrainerService.class, LecturerService.class})
 class TechnicianServiceTest {
 
@@ -151,7 +151,7 @@ class TechnicianServiceTest {
             IllegalStateException.class,
             () -> technicianService.deleteById(technicianId)
         );
-        assertTrue(exception.getMessage().contains("referenced by existing courses"));
+        assertTrue(exception.getMessage().contains("used in existing courses"));
     }
 
     @Test
@@ -161,9 +161,10 @@ class TechnicianServiceTest {
         technicianService.deleteById(saved.getId());
         Set<UUID> images = saved.getImagesUuid();
         assertNull(technicianService.findById(saved.getId()));
+        // Deleting only hides the technician, so an administrator can restore it with its photos.
         if (images != null && !images.isEmpty()) {
             Image imageById = imageService.getImageById(images.stream().findFirst().orElseThrow());
-            assertNull(imageById);
+            assertNotNull(imageById);
         }
     }
 

@@ -9,13 +9,18 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.SQLDelete;
 
 @Entity
 @Data
 @Table(name = CourseType.TABLE_NAME)
 @NoArgsConstructor
-public class CourseType {
+@SQLDelete(sql = "UPDATE " + CourseType.TABLE_NAME + " SET deleted_at = CURRENT_TIMESTAMP, deleted_by = 'system', version = version + 1 WHERE "
+    + CourseType.TABLE_NAME + "_id = ? AND version = ?")
+@EqualsAndHashCode(callSuper = false)
+public class CourseType extends SoftDeletable {
 
   public static final String TABLE_NAME = "course_type";
 

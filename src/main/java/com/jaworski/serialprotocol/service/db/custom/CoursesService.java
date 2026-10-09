@@ -6,6 +6,7 @@ import com.jaworski.serialprotocol.entity.custom.Courses;
 import com.jaworski.serialprotocol.entity.custom.CourseType;
 import com.jaworski.serialprotocol.entity.custom.Lecturer;
 import com.jaworski.serialprotocol.entity.custom.Participant;
+import com.jaworski.serialprotocol.entity.custom.SoftDeletable;
 import com.jaworski.serialprotocol.entity.custom.Technician;
 import com.jaworski.serialprotocol.entity.custom.Trainer;
 import com.jaworski.serialprotocol.repository.custom.CourseCounterRepository;
@@ -16,6 +17,9 @@ import com.jaworski.serialprotocol.repository.custom.LecturerRepository;
 import com.jaworski.serialprotocol.repository.custom.ParticipantRepository;
 import com.jaworski.serialprotocol.repository.custom.TechnicianRepository;
 import com.jaworski.serialprotocol.repository.custom.TrainerRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +48,10 @@ public class CoursesService {
   private final TrainerRepository trainerRepository;
   private final LecturerRepository lecturerRepository;
   private final TechnicianRepository technicianRepository;
+  private final SoftDeleteSupport softDeleteSupport;
+
+  @PersistenceContext
+  private EntityManager entityManager;
 
   @Transactional(readOnly = true)
   public List<CoursesDTO> findAll() {
@@ -79,7 +87,8 @@ public class CoursesService {
   }
 
   public Long nextId() {
-    return coursesRepository.findMaxCoursesId() + 1;
+    // Deleted courses count: their ids are never handed out again.
+    return softDeleteSupport.withDeleted(coursesRepository::findMaxCoursesId) + 1;
   }
 
   public CoursesDTO save(CoursesDTO dto) {
@@ -100,17 +109,19 @@ public class CoursesService {
   }
 
   public void deleteByUuid(UUID uuid) {
-    coursesRepository.deleteCoursesByUuid(uuid);
-    LOGGER.info("Deleted course with uuid={}", uuid);
+    coursesRepository.findById(uuid).ifPresent(course -> {
+      softDeleteSupport.softDelete(course, coursesRepository);
+      LOGGER.info("Deleted course with uuid={}", uuid);
+    });
   }
 
   public CoursesDTO update(CoursesDTO dto) {
     if (dto.getUuid() == null) {
       throw new IllegalArgumentException("UUID is required for update");
     }
-    if (!coursesRepository.existsById(dto.getUuid())) {
-      throw new IllegalArgumentException("Course with UUID " + dto.getUuid() + " not found");
-    }
+    Courses current = coursesRepository.findById(dto.getUuid())
+        .orElseThrow(() -> softDeleteSupport.notFound("Course", dto.getUuid()));
+    VersionGuard.check(Courses.class, dto.getUuid(), current.getVersion(), dto.getVersion());
     if (dto.getParticipantUuid() == null) {
       throw new IllegalArgumentException("Participant UUID is required");
     }
@@ -119,31 +130,49 @@ public class CoursesService {
     }
     validateDates(dto);
     Courses courses = buildCourses(dto);
-    Courses updated = coursesRepository.save(courses);
+    Courses updated = coursesRepository.saveAndFlush(courses);
     LOGGER.info("Updated course with uuid={}", updated.getUuid());
     return CoursesMapper.mapToDTO(updated);
   }
 
+  /**
+   * A course may only point at active rows, and they must still be active when it is saved. The parent is
+   * loaded (so a deleted one is simply not found) under an optimistic lock: if someone deletes it before this
+   * transaction commits, its version has moved and the commit fails instead of leaving a course that points
+   * at a hidden row. {@code getReferenceById} would do neither, because it never hits the database.
+   */
+  private <T extends SoftDeletable> T activeParent(Class<T> type, Object id, String what) {
+    T parent = id == null ? null : entityManager.find(type, id);
+    if (parent == null) {
+      LOGGER.warn("{} {} does not exist or has been deleted", type.getSimpleName(), id);
+      throw new IllegalArgumentException(what + " does not exist or has been deleted.");
+    }
+    // lock() after find(): a lock mode passed to find() is applied to everything loaded with the parent,
+    // and a photo loaded with a participant or trainer has no version to lock.
+    entityManager.lock(parent, LockModeType.OPTIMISTIC);
+    return parent;
+  }
+
   private Courses buildCourses(CoursesDTO dto) {
-    Participant participant = participantRepository.getReferenceById(dto.getParticipantUuid());
-    CourseType courseType = courseTypeRepository.getReferenceById(dto.getCourseTypeId());
+    Participant participant = activeParent(Participant.class, dto.getParticipantUuid(), "The selected participant");
+    CourseType courseType = activeParent(CourseType.class, dto.getCourseTypeId(), "The selected course type");
 
     Set<Trainer> trainers = dto.getTrainerIds() == null
         ? new HashSet<>()
         : dto.getTrainerIds().stream()
-        .map(trainerRepository::getReferenceById)
+        .map(id -> activeParent(Trainer.class, id, "One of the selected trainers"))
         .collect(Collectors.toSet());
 
     Set<Lecturer> lecturers = dto.getLecturerIds() == null
         ? new HashSet<>()
         : dto.getLecturerIds().stream()
-        .map(lecturerRepository::getReferenceById)
+        .map(id -> activeParent(Lecturer.class, id, "One of the selected lecturers"))
         .collect(Collectors.toSet());
 
     Set<Technician> technicians = dto.getTechnicianIds() == null
         ? new HashSet<>()
         : dto.getTechnicianIds().stream()
-        .map(technicianRepository::getReferenceById)
+        .map(id -> activeParent(Technician.class, id, "One of the selected technicians"))
         .collect(Collectors.toSet());
 
     CourseCounter courseCounter = resolveCourseCounter(dto);
@@ -151,6 +180,7 @@ public class CoursesService {
     Courses courses = new Courses();
     courses.setUuid(dto.getUuid());
     courses.setId(dto.getId());
+    courses.setVersion(dto.getVersion());
     courses.setParticipant(participant);
     courses.setCourseType(courseType);
     courses.setCourseCounter(courseCounter);
@@ -164,13 +194,23 @@ public class CoursesService {
 
   private CourseCounter resolveCourseCounter(CoursesDTO dto) {
     if (dto.getCourseCounterUuid() != null) {
-      return courseCounterRepository.getReferenceById(dto.getCourseCounterUuid());
+      return activeParent(CourseCounter.class, dto.getCourseCounterUuid(), "The selected course counter");
     }
     if (dto.getCounter() != null) {
-      return courseCounterRepository.findByCounter(dto.getCounter())
-          .orElseThrow(() -> new IllegalArgumentException("CourseCounter with counter " + dto.getCounter() + " not found"));
+      CourseCounter byNumber = courseCounterRepository.findByCounter(dto.getCounter())
+          .orElseThrow(() -> missingCounter(dto.getCounter()));
+      entityManager.lock(byNumber, LockModeType.OPTIMISTIC);
+      return byNumber;
     }
     return null;
+  }
+
+  /** The number came from the form, so it may be echoed back; a counter in the trash is named as such. */
+  private IllegalArgumentException missingCounter(Long counter) {
+    boolean inTrash = softDeleteSupport.withDeleted(() -> courseCounterRepository.existsByCounter(counter));
+    return new IllegalArgumentException(inTrash
+        ? "Course counter " + counter + " has been deleted. Ask an administrator to restore it."
+        : "Course counter " + counter + " does not exist.");
   }
 
   private void validateDates(CoursesDTO dto) {

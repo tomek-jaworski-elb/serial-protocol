@@ -5,7 +5,6 @@ import com.jaworski.serialprotocol.entity.custom.Image;
 import com.jaworski.serialprotocol.entity.custom.Technician;
 import com.jaworski.serialprotocol.mappers.custom.TechnicianMapper;
 import com.jaworski.serialprotocol.repository.custom.CoursesRepository;
-import com.jaworski.serialprotocol.repository.custom.ImageRepository;
 import com.jaworski.serialprotocol.repository.custom.TechnicianRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -26,10 +25,10 @@ import java.util.UUID;
 @Transactional
 public class TechnicianService {
 
-  private final ImageRepository imageRepository;
   private final ImageService imageService;
   private final TechnicianRepository technicianRepository;
   private final CoursesRepository coursesRepository;
+  private final SoftDeleteSupport softDeleteSupport;
   private static final Logger LOGGER = LoggerFactory.getLogger(TechnicianService.class);
 
   @Transactional(readOnly = true)
@@ -63,14 +62,12 @@ public class TechnicianService {
 
   public void deleteById(UUID id) {
     if (coursesRepository.existsByTechnicians_Uuid(id)) {
-      throw new IllegalStateException("Cannot delete technician with id " + id + " because it is referenced by existing courses.");
+      throw new IllegalStateException("This technician is used in existing courses and cannot be deleted.");
     }
+    // Marked, not removed: the photos stay with the row so an administrator can restore it.
     technicianRepository.findById(id).ifPresent(technician -> {
-      if (!technician.getImages().isEmpty()) {
-        imageRepository.deleteAll(technician.getImages());
-      }
+      softDeleteSupport.softDelete(technician, technicianRepository);
     });
-    technicianRepository.deleteById(id);
   }
 
   public TechnicianDTO updateById(TechnicianDTO dto) {
@@ -78,7 +75,8 @@ public class TechnicianService {
       throw new IllegalArgumentException("Technician id is required for update");
     }
     Technician existing = technicianRepository.findById(dto.getId())
-        .orElseThrow(() -> new IllegalArgumentException("Technician with id " + dto.getId() + " not found"));
+        .orElseThrow(() -> softDeleteSupport.notFound("Technician", dto.getId()));
+    VersionGuard.check(Technician.class, dto.getId(), existing.getVersion(), dto.getVersion());
 
     Set<Image> previousImages = new HashSet<>(existing.getImages());
     Set<Image> requestedImages = imageService.resolveImages(dto.getImagesUuid());
@@ -97,7 +95,7 @@ public class TechnicianService {
         dto.getPrimaryImageUuid(), existing.getPrimaryImageUuid(),
         previousImages, requestedImages));
 
-    Technician updated = technicianRepository.save(existing);
+    Technician updated = technicianRepository.saveAndFlush(existing);
 
     imageService.deleteRemovedImages(previousImages, requestedImages);
     return TechnicianMapper.mapToDTO(updated);

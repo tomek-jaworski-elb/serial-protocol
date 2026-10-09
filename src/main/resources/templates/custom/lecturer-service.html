@@ -82,6 +82,7 @@
             <h5 class="card-title">Update lecturer</h5>
             <form method="post" enctype="multipart/form-data" th:action="@{/lecturer-service/update}">
                 <input id="updateLecturerId" name="id" type="hidden" required>
+                <input id="updateLecturerVersion" name="version" type="hidden">
                 <div class="row g-3">
                     <div class="col-md-4">
                         <label for="updateLecturerName" class="form-label">Name <span class="text-danger">*</span></label>
@@ -184,14 +185,14 @@
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li>
                                     <button type="button" class="dropdown-item update-lecturer-btn" data-image-source
-                                            th:attr="data-id=${lecturer.id},data-images=${lecturer.imagesUuidString},data-primary-image=${lecturer.avatarImageUuid},data-name=${lecturer.name},data-surname=${lecturer.surname},data-nickname=${lecturer.nickname},data-email=${lecturer.email},data-phone=${lecturer.phoneNumber},data-address=${lecturer.address},data-notes=${lecturer.notes}">
+                                            th:attr="data-version=${lecturer.version},data-id=${lecturer.id},data-images=${lecturer.imagesUuidString},data-primary-image=${lecturer.avatarImageUuid},data-name=${lecturer.name},data-surname=${lecturer.surname},data-nickname=${lecturer.nickname},data-email=${lecturer.email},data-phone=${lecturer.phoneNumber},data-address=${lecturer.address},data-notes=${lecturer.notes}">
                                         Update
                                     </button>
                                 </li>
                                 <li>
                                     <form method="post" class="m-0" th:action="@{/lecturer-service/delete/{id}(id=${lecturer.id})}">
                                         <button type="submit" class="dropdown-item text-danger"
-                                                onclick="return confirm('Are you sure you want to delete this item?');">Delete</button>
+                                                onclick="return confirm('Delete this lecturer? An administrator can restore it.');">Delete</button>
                                     </form>
                                 </li>
                             </ul>
@@ -301,6 +302,7 @@
         updateButtons.forEach((btn) => {
             btn.addEventListener('click', () => {
                 updateLecturerId.value = btn.dataset.id || '';
+                document.getElementById('updateLecturerVersion').value = btn.dataset.version || '';
                 updateLecturerName.value = btn.dataset.name || '';
                 updateLecturerSurname.value = btn.dataset.surname || '';
                 updateLecturerNickname.value = btn.dataset.nickname !== 'null' ? (btn.dataset.nickname || '') : '';
