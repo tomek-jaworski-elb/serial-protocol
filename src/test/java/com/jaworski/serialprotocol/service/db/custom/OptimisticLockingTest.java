@@ -9,6 +9,7 @@ import com.jaworski.serialprotocol.entity.custom.Participant;
 import com.jaworski.serialprotocol.repository.custom.ParticipantRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,6 +72,20 @@ class OptimisticLockingTest {
   @BeforeEach
   void clean() {
     tx = new TransactionTemplate(txManager);
+    wipe();
+  }
+
+  /**
+   * This class commits for real and shares its cached context, so its database, with transactional test
+   * classes that assume empty tables. Whatever the last test here left behind would be theirs to find,
+   * depending on the order Surefire picks.
+   */
+  @AfterEach
+  void leaveNothingBehind() {
+    wipe();
+  }
+
+  private void wipe() {
     tx.executeWithoutResult(s -> TABLES.forEach(t -> em.createNativeQuery("DELETE FROM " + t).executeUpdate()));
   }
 

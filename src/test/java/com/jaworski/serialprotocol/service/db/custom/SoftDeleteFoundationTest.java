@@ -117,12 +117,18 @@ class SoftDeleteFoundationTest {
   @BeforeEach
   void clean() {
     tx = new TransactionTemplate(txManager);
-    tx.executeWithoutResult(s -> TABLES.forEach(t -> em.createNativeQuery("DELETE FROM " + t).executeUpdate()));
+    wipe();
   }
 
+  /** Commits are real here, so the tables are wiped after each test as well, for whoever shares the context. */
   @AfterEach
-  void clearSecurityContext() {
+  void leaveNothingBehind() {
     SecurityContextHolder.clearContext();
+    wipe();
+  }
+
+  private void wipe() {
+    tx.executeWithoutResult(s -> TABLES.forEach(t -> em.createNativeQuery("DELETE FROM " + t).executeUpdate()));
   }
 
   // ---- the seven entities -----------------------------------------------------------------------

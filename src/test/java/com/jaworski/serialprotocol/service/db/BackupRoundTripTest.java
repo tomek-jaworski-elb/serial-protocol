@@ -18,6 +18,7 @@ import com.jaworski.serialprotocol.service.db.custom.SoftDeleteSupport;
 import com.jaworski.serialprotocol.service.db.custom.TrainerService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -105,7 +106,13 @@ class BackupRoundTripTest {
   @BeforeEach
   void clean() {
     tx = new TransactionTemplate(txManager);
-    tx.executeWithoutResult(s -> TABLES.forEach(t -> em.createNativeQuery("DELETE FROM " + t).executeUpdate()));
+    wipe();
+  }
+
+  /** Commits are real here, so the tables are wiped after each test as well, for whoever shares the context. */
+  @AfterEach
+  void leaveNothingBehind() {
+    wipe();
   }
 
   @Test
