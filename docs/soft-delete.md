@@ -148,6 +148,11 @@ Run `docker compose up --build`, sign in as a user, then as admin.
 - Tests run on H2. Anything that checks visibility after a delete needs either a fresh transaction
   (`TransactionTemplate` with `Propagation.NOT_SUPPORTED` on the class, as `SoftDeleteFoundationTest` does)
   or relies on `softDelete`'s detach.
+- A class that commits for real also wipes its tables after each test, not only before. Test classes with the
+  same `@DataJpaTest` + `@Import` set share one cached context, hence one H2 database, and Surefire runs
+  classes in filesystem order: alphabetical on NTFS, effectively arbitrary on ext4. `OptimisticLockingTest`
+  once left a participant behind for `DeletedRecordsServiceTest`, which asserts absolute counts, and only CI
+  ran them in that order. `-Dsurefire.runOrder=reversealphabetical` reproduces it locally.
 - A commit-time check (the locked parents of a course) only fires when a transaction actually commits, never
   inside a rolled-back `@DataJpaTest` transaction.
 - `DeletedRecordsServiceTest`, `SoftDeleteUserPathTest`, `OptimisticLockingTest`, `StaleFormTest`,
