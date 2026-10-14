@@ -88,6 +88,7 @@
             <h5 class="card-title">Update trainer</h5>
             <form method="post" enctype="multipart/form-data" th:action="@{/trainer-service/update}">
                 <input id="updateTrainerId" name="id" type="hidden" required>
+                <input id="updateTrainerVersion" name="version" type="hidden">
                 <div class="row g-3">
                     <div class="col-md-4">
                         <label for="updateTrainerName" class="form-label">Name <span class="text-danger">*</span></label>
@@ -197,14 +198,14 @@
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li>
                                     <button type="button" class="dropdown-item update-trainer-btn" data-image-source
-                                            th:attr="data-id=${trainer.id},data-images=${trainer.imagesUuidString},data-primary-image=${trainer.avatarImageUuid},data-name=${trainer.name},data-surname=${trainer.surname},data-nickname=${trainer.nickname},data-email=${trainer.email},data-phone=${trainer.phoneNumber},data-address=${trainer.address},data-notes=${trainer.notes}">
+                                            th:attr="data-version=${trainer.version},data-id=${trainer.id},data-images=${trainer.imagesUuidString},data-primary-image=${trainer.avatarImageUuid},data-name=${trainer.name},data-surname=${trainer.surname},data-nickname=${trainer.nickname},data-email=${trainer.email},data-phone=${trainer.phoneNumber},data-address=${trainer.address},data-notes=${trainer.notes}">
                                         Update
                                     </button>
                                 </li>
                                 <li>
                                     <form method="post" class="m-0" th:action="@{/trainer-service/delete/{id}(id=${trainer.id})}">
                                         <button type="submit" class="dropdown-item text-danger"
-                                                onclick="return confirm('Are you sure you want to delete this item?');">Delete</button>
+                                                onclick="return confirm('Delete this trainer? An administrator can restore it.');">Delete</button>
                                     </form>
                                 </li>
                             </ul>
@@ -314,6 +315,7 @@
         updateButtons.forEach((btn) => {
             btn.addEventListener('click', () => {
                 updateTrainerId.value = btn.dataset.id || '';
+                document.getElementById('updateTrainerVersion').value = btn.dataset.version || '';
                 updateTrainerName.value = btn.dataset.name || '';
                 updateTrainerSurname.value = btn.dataset.surname || '';
                 updateTrainerNickname.value = btn.dataset.nickname !== 'null' ? (btn.dataset.nickname || '') : '';

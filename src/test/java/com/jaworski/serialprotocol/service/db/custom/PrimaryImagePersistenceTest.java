@@ -34,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 // PER_CLASS so the @MethodSource factory can hand out adapters built from the autowired
 // services; the transaction is still rolled back per test method.
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@Import({TrainerService.class, LecturerService.class, TechnicianService.class,
+@Import({SoftDeleteSupport.class, TrainerService.class, LecturerService.class, TechnicianService.class,
         ImageService.class, CoursesService.class, ParticipantService.class, CourseTypeService.class})
 class PrimaryImagePersistenceTest {
 

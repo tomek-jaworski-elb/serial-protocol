@@ -14,6 +14,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.hibernate.annotations.SQLDelete;
 
 import java.time.LocalDate;
 
@@ -33,6 +34,7 @@ import static com.jaworski.serialprotocol.entity.custom.Participant.TABLE_NAME;
     @AttributeOverride(name = "phoneNumber", column = @Column(name = TABLE_NAME + "_phone_number", nullable = true, length = 26)),
     @AttributeOverride(name = "address",     column = @Column(name = TABLE_NAME + "_address",      nullable = true, length = 300))
 })
+@SQLDelete(sql = "UPDATE " + TABLE_NAME + " SET deleted_at = CURRENT_TIMESTAMP, deleted_by = 'system', version = version + 1 WHERE " + TABLE_NAME + "_uuid = ? AND version = ?")
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public class Participant extends PersonBase {

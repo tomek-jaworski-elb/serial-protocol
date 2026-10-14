@@ -16,7 +16,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
-@Import({CourseTypeService.class, CoursesService.class, ParticipantService.class, TrainerService.class, LecturerService.class, ImageService.class})
+@Import({SoftDeleteSupport.class, CourseTypeService.class, CoursesService.class, ParticipantService.class, TrainerService.class, LecturerService.class, ImageService.class})
 class CourseTypeServiceTest {
 
   @Autowired
@@ -68,7 +68,7 @@ class CourseTypeServiceTest {
         () -> courseTypeService.findById(9999L)
     );
 
-    assertEquals("Course type with id 9999 not found", exception.getMessage());
+    assertEquals("Course type not found. It may have been deleted by someone else.", exception.getMessage());
   }
 
   @Test
@@ -118,7 +118,7 @@ class CourseTypeServiceTest {
         () -> courseTypeService.update(nonExisting)
     );
 
-    assertEquals("Course type with id 9999 not found", exception.getMessage());
+    assertEquals("Course type not found. It may have been deleted by someone else.", exception.getMessage());
   }
 
   @Test
@@ -144,7 +144,7 @@ class CourseTypeServiceTest {
         IllegalStateException.class,
         () -> courseTypeService.deleteById(id)
     );
-    assertTrue(exception.getMessage().contains("referenced by existing courses"));
+    assertTrue(exception.getMessage().contains("used in existing courses"));
   }
 
   @Test

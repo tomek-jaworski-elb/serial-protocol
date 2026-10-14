@@ -19,6 +19,7 @@ import com.jaworski.serialprotocol.service.WebSocketPublisher;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.WebDataBinder;
@@ -111,6 +112,8 @@ public class CustomDBController {
     } catch (IllegalArgumentException e) {
       LOG.error("Cannot add course. payload={}", coursesDTO, e);
       redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+    } catch (ObjectOptimisticLockingFailureException e) {
+      throw e;   // one message for every stale form: WebExceptionHandler
     } catch (RuntimeException e) {
       LOG.error("Cannot add course. payload={}", coursesDTO, e);
       redirectAttributes.addFlashAttribute("errorMessage", "Failed to add course. Please verify your input.");
@@ -129,6 +132,8 @@ public class CustomDBController {
     } catch (IllegalArgumentException e) {
       LOG.error("Cannot update course. payload={}", coursesDTO, e);
       redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+    } catch (ObjectOptimisticLockingFailureException e) {
+      throw e;   // one message for every stale form: WebExceptionHandler
     } catch (RuntimeException e) {
       LOG.error("Cannot update course. payload={}", coursesDTO, e);
       redirectAttributes.addFlashAttribute("errorMessage", "Failed to update course. Please verify your input.");
@@ -141,6 +146,9 @@ public class CustomDBController {
     try {
       coursesService.deleteByUuid(uuid);
       redirectAttributes.addFlashAttribute("successMessage", "Course deleted successfully.");
+    } catch (IllegalStateException e) {
+      LOG.warn("Cannot delete course. uuid={}: {}", uuid, e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (RuntimeException e) {
       LOG.error("Cannot delete course. uuid={}", uuid, e);
       redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete course.");
@@ -157,6 +165,8 @@ public class CustomDBController {
     } catch (IllegalArgumentException e) {
       LOG.error("Cannot assign participant to course. payload={}", coursesDTO, e);
       redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+    } catch (ObjectOptimisticLockingFailureException e) {
+      throw e;   // one message for every stale form: WebExceptionHandler
     } catch (RuntimeException e) {
       LOG.error("Cannot assign participant to course. payload={}", coursesDTO, e);
       redirectAttributes.addFlashAttribute("errorMessage", "Failed to assign participant to course.");
@@ -217,6 +227,8 @@ public class CustomDBController {
       // phrasing and are not written for a toast.
       LOG.warn("Cannot update trainer. payload={}: {}", trainerDTO, e.getMessage());
       redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+    } catch (ObjectOptimisticLockingFailureException e) {
+      throw e;   // one message for every stale form: WebExceptionHandler
     } catch (RuntimeException e) {
       LOG.error("Cannot update trainer. payload={}", trainerDTO, e);
       redirectAttributes.addFlashAttribute("errorMessage", "Failed to update trainer. Please verify your input.");
@@ -229,6 +241,9 @@ public class CustomDBController {
     try {
       trainerService.deleteById(id);
       redirectAttributes.addFlashAttribute("successMessage", "Trainer deleted successfully.");
+    } catch (IllegalStateException e) {
+      LOG.warn("Cannot delete trainer. id={}: {}", id, e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (RuntimeException e) {
       LOG.error("Cannot delete trainer. id={}", id, e);
       redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete trainer.");
@@ -289,6 +304,8 @@ public class CustomDBController {
       // phrasing and are not written for a toast.
       LOG.warn("Cannot update lecturer. payload={}: {}", lecturerDTO, e.getMessage());
       redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+    } catch (ObjectOptimisticLockingFailureException e) {
+      throw e;   // one message for every stale form: WebExceptionHandler
     } catch (RuntimeException e) {
       LOG.error("Cannot update lecturer. payload={}", lecturerDTO, e);
       redirectAttributes.addFlashAttribute("errorMessage", "Failed to update lecturer. Please verify your input.");
@@ -301,6 +318,9 @@ public class CustomDBController {
     try {
       lecturerService.deleteById(id);
       redirectAttributes.addFlashAttribute("successMessage", "Lecturer deleted successfully.");
+    } catch (IllegalStateException e) {
+      LOG.warn("Cannot delete lecturer. id={}: {}", id, e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (RuntimeException e) {
       LOG.error("Cannot delete lecturer. id={}", id, e);
       redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete lecturer.");
@@ -361,6 +381,8 @@ public class CustomDBController {
       // phrasing and are not written for a toast.
       LOG.warn("Cannot update technician. payload={}: {}", technicianDTO, e.getMessage());
       redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+    } catch (ObjectOptimisticLockingFailureException e) {
+      throw e;   // one message for every stale form: WebExceptionHandler
     } catch (RuntimeException e) {
       LOG.error("Cannot update technician. payload={}", technicianDTO, e);
       redirectAttributes.addFlashAttribute("errorMessage", "Failed to update technician. Please verify your input.");
@@ -373,6 +395,9 @@ public class CustomDBController {
     try {
       technicianService.deleteById(id);
       redirectAttributes.addFlashAttribute("successMessage", "Technician deleted successfully.");
+    } catch (IllegalStateException e) {
+      LOG.warn("Cannot delete technician. id={}: {}", id, e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (RuntimeException e) {
       LOG.error("Cannot delete technician. id={}", id, e);
       redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete technician.");
@@ -401,6 +426,9 @@ public class CustomDBController {
       courseTypeDTO.setId(null);
       courseTypeService.save(courseTypeDTO);
       redirectAttributes.addFlashAttribute("successMessage", "Course type added successfully.");
+    } catch (IllegalArgumentException e) {
+      LOG.warn("Cannot add course type. payload={}: {}", courseTypeDTO, e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (RuntimeException e) {
       LOG.error("Cannot add course type. payload={}", courseTypeDTO, e);
       redirectAttributes.addFlashAttribute("errorMessage", "Failed to add course type. Please verify your input.");
@@ -417,6 +445,11 @@ public class CustomDBController {
 
       courseTypeService.update(courseTypeDTO);
       redirectAttributes.addFlashAttribute("successMessage", "Course type updated successfully.");
+    } catch (IllegalArgumentException e) {
+      LOG.warn("Cannot update course type. payload={}: {}", courseTypeDTO, e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+    } catch (ObjectOptimisticLockingFailureException e) {
+      throw e;   // one message for every stale form: WebExceptionHandler
     } catch (RuntimeException e) {
       LOG.error("Cannot update course type. payload={}", courseTypeDTO, e);
       redirectAttributes.addFlashAttribute("errorMessage", "Failed to update course type. Please verify your input.");
@@ -429,6 +462,9 @@ public class CustomDBController {
     try {
       courseTypeService.deleteById(id);
       redirectAttributes.addFlashAttribute("successMessage", "Course type deleted successfully.");
+    } catch (IllegalStateException e) {
+      LOG.warn("Cannot delete course type. id={}: {}", id, e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (RuntimeException e) {
       LOG.error("Cannot delete course type. id={}", id, e);
       redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete course type.");
@@ -519,6 +555,8 @@ public class CustomDBController {
               .orElse(e.getMessage());
       LOG.warn("Validation error updating participant. payload={}: {}", participantDTO, violations);
       redirectAttributes.addFlashAttribute("errorMessage", "Validation error: " + violations);
+    } catch (ObjectOptimisticLockingFailureException e) {
+      throw e;   // one message for every stale form: WebExceptionHandler
     } catch (RuntimeException e) {
       LOG.error("Cannot update participant. payload={}", participantDTO, e);
       redirectAttributes.addFlashAttribute("errorMessage", "Failed to update participant. Please verify your input.");
@@ -531,6 +569,9 @@ public class CustomDBController {
     try {
       participantService.deleteByUuid(uuid);
       redirectAttributes.addFlashAttribute("successMessage", "Participant deleted successfully.");
+    } catch (IllegalStateException e) {
+      LOG.warn("Cannot delete participant. uuid={}: {}", uuid, e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (RuntimeException e) {
       LOG.error("Cannot delete participant. uuid={}", uuid, e);
       redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete participant.");
@@ -603,6 +644,8 @@ public class CustomDBController {
     } catch (IllegalArgumentException e) {
       LOG.error("Cannot update course counter. payload={}", courseCounterDTO, e);
       redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+    } catch (ObjectOptimisticLockingFailureException e) {
+      throw e;   // one message for every stale form: WebExceptionHandler
     } catch (RuntimeException e) {
       LOG.error("Cannot update course counter. payload={}", courseCounterDTO, e);
       redirectAttributes.addFlashAttribute("errorMessage", "Failed to update course counter. Please verify your input.");
@@ -615,6 +658,9 @@ public class CustomDBController {
     try {
       courseCounterService.delete(uuid);
       redirectAttributes.addFlashAttribute("successMessage", "Course counter deleted successfully.");
+    } catch (IllegalStateException e) {
+      LOG.warn("Cannot delete course counter. uuid={}: {}", uuid, e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (RuntimeException e) {
       LOG.error("Cannot delete course counter. uuid={}", uuid, e);
       redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete course counter.");

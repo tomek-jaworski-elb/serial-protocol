@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:text="${@environment.getProperty('spring.application.name')} + ' : Deleted records'">Deleted records</title>
+    <th:block th:replace="~{fragment::headContent}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/custom-crud.css}">
+</head>
+<body>
+<header th:replace="~{fragment::header}"></header>
+<div class="container mb-4">
+    <th:block th:replace="~{fragment::toastNotifications}"></th:block>
+
+    <div class="crud-toolbar">
+        <h4 class="mb-0" id="deletedTableHeading">Deleted records</h4>
+        <div class="crud-toolbar-actions">
+            <span class="badge bg-secondary" th:text="${rowsPage.totalElements}"
+                  th:if="${rowsPage != null && rowsPage.totalElements > 0}">0</span>
+        </div>
+    </div>
+    <p class="text-muted small">
+        What users deleted. <strong>Restore</strong> puts a record back exactly as it was.
+        <strong>Purge</strong> removes it for good, together with photos nothing else uses — this cannot be undone.
+        A course comes back only after the people and settings it refers to are back; a record is purged only
+        after every course that refers to it is gone.
+    </p>
+
+    <ul class="nav nav-tabs mb-3">
+        <li class="nav-item" th:each="k : ${kinds}">
+            <a class="nav-link" th:classappend="${k == kind} ? 'active'"
+               th:href="@{/admin/deleted/{p}(p=${k.path})}" th:text="${k.label}">Participants</a>
+        </li>
+    </ul>
+
+    <div class="alert alert-light border" th:if="${#lists.isEmpty(rows)}">
+        No deleted <span th:text="${#strings.toLowerCase(kind.label)}">records</span>.
+    </div>
+
+    <div class="table-responsive" th:if="${!#lists.isEmpty(rows)}"
+         role="region" aria-labelledby="deletedTableHeading" tabindex="0">
+        <table class="table table-striped table-hover align-middle crud-table">
+            <thead class="table-light">
+            <tr>
+                <th scope="col" class="col-num">#</th>
+                <th scope="col" th:text="${kind.singular}">Record</th>
+                <th scope="col">Details</th>
+                <th scope="col">Deleted at</th>
+                <th scope="col">Deleted by</th>
+                <th scope="col">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="row, rowStat : ${rows}">
+                <th scope="row" class="col-num" th:text="${rowsPage.number * pageSize + rowStat.index + 1}">1</th>
+                <td th:text="${row.title}">Kowalski Jan</td>
+                <td th:text="${row.details}">No. 12</td>
+                <td th:text="${row.deletedAt}">01/01/2026 12:00</td>
+                <td th:text="${row.deletedBy}">user</td>
+                <td>
+                    <div class="crud-row-actions">
+                        <form method="post" th:action="@{/admin/deleted/{p}/restore/{k}(p=${kind.path},k=${row.key})}">
+                            <button type="submit" class="btn btn-outline-success btn-sm">Restore</button>
+                        </form>
+                        <form method="post" th:action="@{/admin/deleted/{p}/purge/{k}(p=${kind.path},k=${row.key})}">
+                            <button type="submit" class="btn btn-outline-danger btn-sm"
+                                    onclick="return confirm('Permanently delete this record? This cannot be undone.');">
+                                Purge
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div th:replace="~{fragment :: pagination(${rowsPage}, ${baseUrl}, ${pageSize})}"></div>
+</div>
+<footer th:replace="~{fragment::footer}"></footer>
+</body>
+</html>

@@ -95,6 +95,7 @@
             <h5 class="card-title">Update participant</h5>
             <form method="post" enctype="multipart/form-data" th:action="@{/participant-service/update}">
                 <input id="updateParticipantUuid" name="participantUuid" type="hidden">
+                <input id="updateParticipantVersion" name="version" type="hidden">
                 <div class="row g-3">
                     <div class="col-md-2">
                         <label for="updateParticipantId" class="form-label">ID <span class="text-muted small">(unique)</span></label>
@@ -261,7 +262,7 @@
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li>
                                     <button type="button" class="dropdown-item update-participant-btn" data-image-source
-                                            th:attr="data-uuid=${participant.participantUuid},data-image=${participant.image},data-id=${participant.id},data-name=${participant.name},data-surname=${participant.surname},data-birthdate=${participant.birthDate},data-nickname=${participant.nickname},data-email=${participant.email},data-phone=${participant.phoneNumber},data-address=${participant.address},data-notes=${participant.notes}">
+                                            th:attr="data-version=${participant.version},data-uuid=${participant.participantUuid},data-image=${participant.image},data-id=${participant.id},data-name=${participant.name},data-surname=${participant.surname},data-birthdate=${participant.birthDate},data-nickname=${participant.nickname},data-email=${participant.email},data-phone=${participant.phoneNumber},data-address=${participant.address},data-notes=${participant.notes}">
                                         Update
                                     </button>
                                 </li>
@@ -274,7 +275,7 @@
                                 <li>
                                     <form method="post" class="m-0" th:action="@{/participant-service/delete/{uuid}(uuid=${participant.participantUuid})}">
                                         <button type="submit" class="dropdown-item text-danger"
-                                                onclick="return confirm('Are you sure you want to delete this participant?');">Delete</button>
+                                                onclick="return confirm('Delete this participant? An administrator can restore it.');">Delete</button>
                                     </form>
                                 </li>
                             </ul>
@@ -428,6 +429,7 @@
         updateButtons.forEach((btn) => {
             btn.addEventListener('click', () => {
                 updateParticipantUuid.value = btn.dataset.uuid || '';
+                document.getElementById('updateParticipantVersion').value = btn.dataset.version || '';
                 updateParticipantId.value = btn.dataset.id || '';
                 updateParticipantName.value = btn.dataset.name || '';
                 updateParticipantSurname.value = btn.dataset.surname || '';

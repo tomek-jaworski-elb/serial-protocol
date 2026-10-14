@@ -1,14 +1,13 @@
 package com.jaworski.serialprotocol.entity.custom;
 
 import jakarta.persistence.Column;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.util.UUID;
@@ -16,14 +15,17 @@ import java.util.UUID;
 /**
  * Common base class for person-like entities.
  * Subclasses must override column names via {@code @AttributeOverride}.
+ * The soft-delete columns ({@code deleted_at}, {@code deleted_by}) come from {@link SoftDeletable}
+ * and are shared by name across all tables, so they are not overridden.
  */
 @MappedSuperclass
 @Data
 @NoArgsConstructor
-public abstract class PersonBase {
+@EqualsAndHashCode(callSuper = false)
+public abstract class PersonBase extends SoftDeletable {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @AssignedOrGeneratedUuid
     @Column(name = "uuid", nullable = false, updatable = false)
     private UUID uuid;
 

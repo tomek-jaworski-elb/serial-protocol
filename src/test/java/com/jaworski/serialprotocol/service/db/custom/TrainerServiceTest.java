@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DataJpaTest
-@Import({TrainerService.class, CoursesService.class, ParticipantService.class, CourseTypeService.class, LecturerService.class, ImageService.class})
+@Import({SoftDeleteSupport.class, TrainerService.class, CoursesService.class, ParticipantService.class, CourseTypeService.class, LecturerService.class, ImageService.class})
 class TrainerServiceTest {
 
   @Autowired
@@ -187,7 +187,7 @@ class TrainerServiceTest {
         () -> trainerService.update(nonExisting)
     );
 
-    assertEquals("Trainer with id " + nonExistingUuid + " not found", exception.getMessage());
+    assertEquals("Trainer not found. It may have been deleted by someone else.", exception.getMessage());
   }
 
   @Test
@@ -219,7 +219,7 @@ class TrainerServiceTest {
         IllegalStateException.class,
         () -> trainerService.deleteById(trainerId)
     );
-    assertTrue(exception.getMessage().contains("referenced by existing courses"));
+    assertTrue(exception.getMessage().contains("used in existing courses"));
   }
 
   @Test

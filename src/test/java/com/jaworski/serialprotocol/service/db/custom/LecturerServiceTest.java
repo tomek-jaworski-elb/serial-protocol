@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DataJpaTest
-@Import({LecturerService.class, ImageService.class, CoursesService.class, ParticipantService.class, CourseTypeService.class, TrainerService.class})
+@Import({SoftDeleteSupport.class, LecturerService.class, ImageService.class, CoursesService.class, ParticipantService.class, CourseTypeService.class, TrainerService.class})
 class LecturerServiceTest {
 
     @Autowired
@@ -150,7 +150,7 @@ class LecturerServiceTest {
             IllegalStateException.class,
             () -> lecturerService.deleteById(lecturerId)
         );
-        assertTrue(exception.getMessage().contains("referenced by existing courses"));
+        assertTrue(exception.getMessage().contains("used in existing courses"));
     }
 
     @Test
@@ -160,8 +160,9 @@ class LecturerServiceTest {
         lecturerService.deleteById(saved.getId());
         Set<UUID> images = saved.getImagesUuid();
         assertNull(lecturerService.findById(saved.getId()));
+        // Deleting only hides the lecturer, so an administrator can restore it with its photos.
         Image imageById = imageService.getImageById(images.stream().findFirst().orElseThrow());
-        assertNull(imageById);
+        assertNotNull(imageById);
     }
 
     @Test
@@ -208,7 +209,7 @@ class LecturerServiceTest {
     @Test
     void updateById_shouldUpdateEmail() {
       LecturerDTO saved = lecturerService.save(createLecturer("Jan", "Kowalski"));
-      String newEmail = "newEmail";
+      String newEmail = "new.email@example.com";
       saved.setEmail(newEmail);
       LecturerDTO updated = lecturerService.updateById(saved);
       assertNotNull(updated);

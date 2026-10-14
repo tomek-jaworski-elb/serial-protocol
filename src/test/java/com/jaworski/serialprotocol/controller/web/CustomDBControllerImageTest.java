@@ -20,6 +20,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 
 import java.util.Base64;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -186,14 +187,14 @@ class CustomDBControllerImageTest {
         TrainerDTO trainer = trainerWithImages(1);
         long before = imageRepository.count();
 
-        // the record disappears between loading it and saving it
+        // the record disappears between loading it and saving it; deleting only hides it, so its photo stays
         trainerService.deleteById(trainer.getId());
 
         mockMvc.perform(multipartUpdateTrainer(trainer).file(jpeg("doomed.jpg")));
 
         assertThat(imageRepository.count())
                 .as("the freshly uploaded image must not survive the failed update")
-                .isEqualTo(before - 1);
+                .isEqualTo(before);
     }
 
     /**
@@ -269,6 +270,7 @@ class CustomDBControllerImageTest {
                 .file(new MockMultipartFile("imageFile", "new.jpg", "image/jpeg", new byte[]{4, 5, 6}))
                 .param("participantUuid", participant.getParticipantUuid().toString())
                 .param("id", String.valueOf(participant.getId()))
+                .param("version", Objects.toString(participant.getVersion(), "0"))
                 .param("name", participant.getName())
                 .param("surname", participant.getSurname())
                 .param("removeImage", "true")
@@ -348,6 +350,7 @@ class CustomDBControllerImageTest {
     private MockHttpServletRequestBuilder updateTrainer(TrainerDTO trainer) {
         return post("/trainer-service/update")
                 .param("id", trainer.getId().toString())
+                .param("version", Objects.toString(trainer.getVersion(), "0"))
                 .param("name", trainer.getName())
                 .param("surname", trainer.getSurname())
                 .with(csrf())
@@ -358,6 +361,7 @@ class CustomDBControllerImageTest {
             TrainerDTO trainer) {
         var builder = multipart("/trainer-service/update");
         builder.param("id", trainer.getId().toString());
+        builder.param("version", Objects.toString(trainer.getVersion(), "0"));
         builder.param("name", trainer.getName());
         builder.param("surname", trainer.getSurname());
         builder.with(csrf());
@@ -369,6 +373,7 @@ class CustomDBControllerImageTest {
         return post("/participant-service/update")
                 .param("participantUuid", participant.getParticipantUuid().toString())
                 .param("id", String.valueOf(participant.getId()))
+                .param("version", Objects.toString(participant.getVersion(), "0"))
                 .param("name", participant.getName())
                 .param("surname", participant.getSurname())
                 .with(csrf())

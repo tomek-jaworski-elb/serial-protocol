@@ -29,6 +29,4 @@ public interface CoursesRepository extends JpaRepository<Courses, UUID> {
 
   @Query("SELECT COALESCE(MAX(c.id), 0) FROM Courses c")
   Long findMaxCoursesId();
-
-  void deleteCoursesByUuid(UUID uuid);
 }

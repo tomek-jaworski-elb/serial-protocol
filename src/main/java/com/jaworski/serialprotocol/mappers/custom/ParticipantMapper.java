@@ -15,6 +15,7 @@ public class ParticipantMapper {
     ParticipantDTO dto = new ParticipantDTO();
     dto.setParticipantUuid(participant.getUuid());
     dto.setId(participant.getId());
+    dto.setVersion(participant.getVersion());
     dto.setName(participant.getName());
     dto.setSurname(participant.getSurname());
     dto.setNotes(participant.getNotes());
@@ -34,6 +35,7 @@ public class ParticipantMapper {
     Participant participant = new Participant();
     participant.setUuid(dto.getParticipantUuid());
     participant.setId(dto.getId());
+    participant.setVersion(dto.getVersion());
     participant.setName(dto.getName());
     participant.setSurname(dto.getSurname());
     participant.setNotes(dto.getNotes());

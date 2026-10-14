@@ -18,6 +18,7 @@ public class LecturerMapper {
     }
     LecturerDTO dto = new LecturerDTO();
     dto.setId(lecturer.getUuid());
+    dto.setVersion(lecturer.getVersion());
     dto.setName(lecturer.getName());
     dto.setSurname(lecturer.getSurname());
     dto.setNotes(lecturer.getNotes());
@@ -39,6 +40,7 @@ public class LecturerMapper {
     Lecturer lecturer = new Lecturer();
     if (dto.getId() != null) {
       lecturer.setUuid(dto.getId());
+      lecturer.setVersion(dto.getVersion());
     }
     lecturer.setName(dto.getName());
     lecturer.setSurname(dto.getSurname());

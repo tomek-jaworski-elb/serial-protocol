@@ -19,7 +19,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
-@Import({ParticipantService.class, CoursesService.class, CourseTypeService.class, TrainerService.class, LecturerService.class, ImageService.class})
+@Import({SoftDeleteSupport.class, ParticipantService.class, CoursesService.class, CourseTypeService.class, TrainerService.class, LecturerService.class, ImageService.class})
 class ParticipantServiceTest {
 
     @Autowired
@@ -175,7 +175,7 @@ class ParticipantServiceTest {
             IllegalStateException.class,
             () -> participantService.deleteByUuid(participantUuid)
         );
-        assertTrue(exception.getMessage().contains("referenced by existing courses"));
+        assertTrue(exception.getMessage().contains("used in existing courses"));
     }
 
     @Test

@@ -5,12 +5,14 @@ import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-@ControllerAdvice(assignableTypes = {CustomDBController.class, MapController.class, DbUtilsController.class})
+@ControllerAdvice(assignableTypes = {CustomDBController.class, MapController.class, DbUtilsController.class,
+    AdminDeletedController.class})
 public class WebExceptionHandler {
 
   private static final String DEFAULT_REDIRECT = "redirect:/trainer-service";
@@ -33,6 +35,20 @@ public class WebExceptionHandler {
         .orElse("Validation failed");
     LOG.warn("Constraint violation: {}", violations);
     redirectAttributes.addFlashAttribute("errorMessage", "Validation error: " + violations);
+    return resolveRedirect(request);
+  }
+
+  /**
+   * A form that was opened before someone else saved the same record. Raised by {@code VersionGuard} in the
+   * services and by Hibernate's own version check; the controllers rethrow it so it lands here.
+   */
+  @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+  public String handleStaleRecord(ObjectOptimisticLockingFailureException e,
+                                  HttpServletRequest request,
+                                  RedirectAttributes redirectAttributes) {
+    LOG.warn("Stale form rejected: {}", e.getMessage());
+    redirectAttributes.addFlashAttribute("errorMessage",
+        "This record was changed by someone else in the meantime. Reload the page and try again.");
     return resolveRedirect(request);
   }
 

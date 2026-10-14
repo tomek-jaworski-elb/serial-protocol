@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
-@Import({CoursesService.class, ParticipantService.class, CourseTypeService.class, TrainerService.class, LecturerService.class, TechnicianService.class, ImageService.class})
+@Import({SoftDeleteSupport.class, CoursesService.class, ParticipantService.class, CourseTypeService.class, TrainerService.class, LecturerService.class, TechnicianService.class, ImageService.class})
 class CoursesServiceTest {
 
   @Autowired

@@ -18,6 +18,7 @@ public class TrainerMapper {
     }
     TrainerDTO dto = new TrainerDTO();
     dto.setId(trainer.getUuid());
+    dto.setVersion(trainer.getVersion());
     dto.setName(trainer.getName());
     dto.setSurname(trainer.getSurname());
     dto.setNotes(trainer.getNotes());
@@ -39,6 +40,7 @@ public class TrainerMapper {
     Trainer trainer = new Trainer();
     if (dto.getId() != null) {
       trainer.setUuid(dto.getId());
+      trainer.setVersion(dto.getVersion());
     }
     trainer.setName(dto.getName());
     trainer.setSurname(dto.getSurname());

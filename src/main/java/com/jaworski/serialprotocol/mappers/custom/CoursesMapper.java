@@ -32,6 +32,7 @@ public class CoursesMapper {
     CoursesDTO dto = new CoursesDTO();
     dto.setUuid(courses.getUuid());
     dto.setId(courses.getId());
+    dto.setVersion(courses.getVersion());
     dto.setParticipantUuid(courses.getParticipant() == null
             ? null
             : courses.getParticipant().getUuid());

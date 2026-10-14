@@ -18,5 +18,9 @@ public interface CourseCounterRepository extends JpaRepository<CourseCounter, UU
 
   Optional<CourseCounter> findByCounter(Long counter);
 
+  boolean existsByCounter(Long counter);
+
+  boolean existsByCounterAndUuidNot(Long counter, UUID uuid);
+
   List<CourseCounter> findAllByUuidIn(Collection<UUID> uuids);
 }

@@ -9,6 +9,7 @@ public class CourseCounterMapper {
     CourseCounter courseCounter = new CourseCounter();
     courseCounter.setUuid(dto.uuid());
     courseCounter.setCounter(dto.counter());
+    courseCounter.setVersion(dto.version());
     // Image is resolved and set by the service layer — not mapped here
     return courseCounter;
   }
@@ -19,7 +20,8 @@ public class CourseCounterMapper {
             entity.getCounter(),
             entity.getImage() == null
                     ? null
-                    : entity.getImage().getId()
+                    : entity.getImage().getId(),
+            entity.getVersion()
     );
   }
 }
