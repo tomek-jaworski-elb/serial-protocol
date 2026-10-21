@@ -19,6 +19,8 @@ Edit `CLAUDE.md` first and copy the block here in the same change. Do not add ot
 java -jar .\target\serial-protocol-3.0.jar                     # run packaged JAR (3.0 = <version> in pom.xml)
 docker compose up --build                                      # app + MariaDB
 ./start_docker.sh -d    |    ./stop_docker.sh                  # rebuild and start detached / stop (bash)
+.\mvnw.cmd -f simulator/pom.xml verify                        # build + test the data simulator (simulator/target/ship-sim.jar)
+run-sim.bat replay --from docs\LogTerminal.txt --loop          # feed the running app over UDP (localhost:2222) from the recording
 ```
 
 No lint plugin (Checkstyle/PMD/SpotBugs) is configured in `pom.xml` — do not invent a lint command. A local run listens on 443 (`https://localhost/`); Docker maps host 8081 to container 443 (`https://localhost:8081/`).
@@ -39,6 +41,8 @@ Each one is explained in the `CLAUDE.md` section it names.
 - **Primary-image ordering is lexicographic** (`UUID::toString`), never `UUID.compareTo`, which compares both halves as signed longs. Go through `dto.custom.PrimaryImage`.
 - **`CustomDBController`'s `@InitBinder` is an anonymous `PropertyEditorSupport`**, not `StringTrimmerEditor`. It turns blank strings into `null`, which optional-field validation depends on.
 - **Tests run on H2 with `server.port=8081`** and auth `user:user`. Nothing activates a `test` profile, so `@Profile("!test")` beans such as `SchemaMigrationRunner` still load in full-context tests.
+- **Every frame enters through `FrameIngress`.** `SerialPortListenerImpl` and `UdpPacketHandlerImpl` are adapters and never publish `/rs` or `/json` themselves; `FrameIngestService` publishes the raw bytes first and a DTO only when its checksum verifies. (CLAUDE.md § Ingest pipeline)
+- **`src/test/resources/golden/frames.jsonl` is a contract with `simulator/`.** The application's `GoldenFramesTest` and the simulator's `FrameEncoderTest` both read it; a frame-format change edits the file first and turns both red. Regenerate it only with `GoldenFramesWriter` (`-Dgolden.write=true`). Both adapters log `"Received delimited message: [...]"` and the simulator's replay parses it, so that text is an API too. (CLAUDE.md § Data simulator)
 <!-- mirror:end invariants -->
 
 ## Working conventions
