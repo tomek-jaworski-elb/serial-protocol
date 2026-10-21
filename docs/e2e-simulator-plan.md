@@ -35,7 +35,7 @@ section 6, reshaped by a decision interview with the owner on 2026-10-21 (sectio
 | Golden file | In the application; the simulator reads it through a property |
 | Replay sources | Raw `Received delimited message: [...]` lines only; no re-encoding of tracking logs |
 | Motion model | Nomoto first-order yaw response, parameters per ship; speed follows the scripted setpoint with a lag; `engine` (a throttle setting) is scripted independently — no coupling between frame fields |
-| Parameters | Fitted from real `tracking.log` files when the owner delivers them (kept outside the repository), tuned on screen until then; a `fit` subcommand, built after the generator works |
+| Parameters | Chosen by eye in `scenarios/ships.yaml`. The `fit` subcommand and the delivery of real tracking logs were dropped on 2026-10-21 after the generator's acceptance: the owner does not need the motion to reproduce the real models |
 | Scenarios in v1 | `six-ships.yaml` (start poses from the real log) and `whole-lake.yaml` (spread over the map); all six fault kinds |
 | Convenience | Default sink `udp://localhost:2222`; `run-sim.bat` next to `run.bat` |
 | Acceptance | Stage 0 by tests; stages 1 and 2 on screen with the owner |
@@ -198,7 +198,7 @@ datagrams byte-identical to the arrays in the log.
 
 **Estimate.** One to one and a half days.
 
-## Stage 2 — `generate`: scenarios, Nomoto motion, fault injection, `fit`
+## Stage 2 — `generate`: scenarios, Nomoto motion, fault injection
 
 **Goal.** Ships that manoeuvre on `/chart` the way the Iława models do — visible inertia in
 turning and in speed changes — from a scenario file, plus deliberate faults.
@@ -214,15 +214,21 @@ ships:
     model: { K: 0.05, T: 8.0, accel-time: 20.0 }   # per ship, see scenarios/ships.yaml
     start: { x: 71.1, y: 59.7, heading: 232.5, speed: 0.0, rudder: 0.0, engine: 6 }
     timeline:
-      - at: 10s  { speed: 4.0, engine: 50 }
-      - at: 40s  { rudder: 10.0 }
-      - at: 90s  { rudder: 0.0 }
+      - at: 10s
+        set: { speed: 4.0, engine: 50 }
+      - at: 40s
+        set: { rudder: 10.0 }
+      - at: 90s
+        set: { rudder: 0.0 }
 faults:
-  - at: 30s  { ship: w1, kind: bad-crc }
+  - { at: 30s, ship: w1, kind: bad-crc }
 ```
 
+(As built: a timeline entry is `at` plus a `set` map, and a fault is one flow mapping; both
+bind to records without a custom deserializer.)
+
 `model` can be omitted when the ship is listed in `scenarios/ships.yaml`, the per-ship
-parameter file that the `fit` subcommand writes. `--duration` on the command line overrides
+parameter file (values chosen by eye). `--duration` on the command line overrides
 `duration` in the file. There is no `--seed`: nothing is random.
 
 **Units and ranges**, validated by the parser, which rejects a scenario with a named field out
@@ -264,23 +270,18 @@ at once.
 **Shipped scenarios.** `simulator/scenarios/six-ships.yaml` (all six, start poses taken from
 `docs/LogTerminal.txt`, slow manoeuvres), `whole-lake.yaml` (the six spread over the map,
 longer runs), `faults.yaml` (one of each fault), and `ships.yaml` (per-ship `K`, `T`,
-`accel-time`, with a comment naming the source: tuned on screen, or fitted from which log).
+`accel-time`, with a comment saying the values were chosen by eye and accepted on screen).
 
-**`fit` subcommand** — built after the generator is accepted, so late logs do not block the
-stage: `ship-sim fit --from tracking.log --ship w1` reads "Translated message:" lines (heading,
-speed and rudder once a second), derives the yaw rate from consecutive headings, fits `K` and
-`T` of the first-order response by least squares over the stretches where the rudder moved,
-and prints a `ships.yaml` fragment with the residual error and the number of samples used, so a
-log with no manoeuvring is reported as unusable rather than producing numbers. Log files live
-in `simulator/data/`, which is git-ignored; only the fitted parameters are committed. Until the
-owner delivers logs, `ships.yaml` holds values tuned on screen.
+**`fit` subcommand — dropped.** It was to estimate `K` and `T` per ship from real
+`tracking.log` files once the generator was accepted. At that acceptance (2026-10-21) the owner
+said the motion need not reproduce the real models, so `fit` and the delivery of logs are off
+the table; `ships.yaml` keeps values chosen by eye and says so.
 
 **Tests.** Simulator: a northbound run increases X and leaves Y unchanged; an eastbound run
 increases Y; a constant rudder yields a circle whose radius follows `K`; the yaw rate
 approaches `K * rudder` with time constant `T`; speed approaches the setpoint with
 `accel-time`; scenario parsing and range validation; each fault produces the documented bytes;
-the same scenario rendered twice gives identical streams; `fit` recovers `K` and `T` from a
-track the generator itself produced (synthetic fixture, no real log needed). Application:
+the same scenario rendered twice gives identical streams. Application:
 fixtures written by the `jsonl://` sink — one line per emitted message with its bytes and the
 fault kind that produced it (or none) — committed as `src/test/resources/frames/six-ships.jsonl`
 and `faults.jsonl`, because a glued or split message cannot be recovered from a flat byte file.
@@ -296,7 +297,7 @@ of the table — an unknown ship shows as `Model -1` in the status line, a silen
 "Updated" time grows, `bad-crc` frames change nothing — without disturbing the other ships.
 After this stage: one pull request for `simulator/`.
 
-**Estimate.** Two days, plus one for `fit`.
+**Estimate.** Two days.
 
 ## Dropped, and why
 
@@ -311,6 +312,8 @@ After this stage: one pull request for `simulator/`.
 - **`rs.comports` system-name match**: only needed to pick one end of a virtual port pair.
 - **Re-encoding of tracking logs for replay**: lossy, and `log.log` carries the raw arrays.
 - **A CI job for the simulator's unit tests**: not asked for; added only on request.
+- **`fit` and real tracking logs** (end of stage 2): the owner accepted the generator with
+  parameters chosen by eye and does not need the motion to match the real models.
 
 ## Recorded for later, without action
 
@@ -328,7 +331,7 @@ After this stage: one pull request for `simulator/`.
   both `GoldenFramesTest` and `FrameEncoderTest` must go red before the code changes.
 - **Log strings stay an API.** The simulator never asks the application to change
   "Translated message: ..." or "Received delimited message: ..."; the replay source parses the
-  latter and `fit` the former, so both are now consumed by something — recorded in the
-  **invariants** block of `CLAUDE.md`, mirrored in `AGENTS.md`.
+  latter, so both are consumed by something — recorded in the **invariants** block of
+  `CLAUDE.md`, mirrored in `AGENTS.md`.
 - **Memory note.** The project memory records the environment limits and the decisions; it
   gets the stage status after each approval.

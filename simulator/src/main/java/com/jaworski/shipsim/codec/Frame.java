@@ -57,4 +57,16 @@ public record Frame(
     public boolean isLadyMarieLayout() {
         return LADY_MARIE_PREFIX.equals(prefix.toLowerCase(Locale.ROOT));
     }
+
+    /** The same frame under another prefix - the {@code unknown-prefix} fault. The layout follows the new prefix. */
+    public Frame withPrefix(String newPrefix) {
+        return new Frame(newPrefix, heading, bowTugDirection, bowTugForce, engine, sternTugForce, sternTugDirection,
+                rudder, speed, positionX, positionY, bowThruster, gpsQuality, reserved);
+    }
+
+    /** The same frame with another heading - the {@code crlf-in-payload} fault forces 333.8 degrees. */
+    public Frame withHeading(double newHeading) {
+        return new Frame(prefix, newHeading, bowTugDirection, bowTugForce, engine, sternTugForce, sternTugDirection,
+                rudder, speed, positionX, positionY, bowThruster, gpsQuality, reserved);
+    }
 }

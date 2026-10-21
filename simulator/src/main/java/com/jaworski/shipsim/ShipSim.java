@@ -10,7 +10,7 @@ import picocli.CommandLine.Command;
  */
 @Command(name = "ship-sim", mixinStandardHelpOptions = true, version = "ship-sim 1.0",
         description = "Feeds the serial-protocol application with ship-model frames.",
-        subcommands = {ReplayCommand.class, RawCommand.class})
+        subcommands = {ReplayCommand.class, GenerateCommand.class, RawCommand.class})
 public class ShipSim implements Runnable {
 
     @Override

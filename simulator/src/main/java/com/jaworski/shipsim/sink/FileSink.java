@@ -30,6 +30,11 @@ public final class FileSink implements Sink {
     }
 
     @Override
+    public boolean paced() {
+        return false;
+    }
+
+    @Override
     public void close() throws IOException {
         out.close();
     }

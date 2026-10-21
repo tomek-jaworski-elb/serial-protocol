@@ -1,0 +1,12 @@
+# Motion parameters per ship, used by `generate` for every ship whose scenario gives no `model`.
+#   K           steady yaw rate in degrees per second per degree of rudder
+#   T           yaw time constant in seconds (0 = the yaw rate follows the rudder at once)
+#   accel-time  time constant of the speed response in seconds (0 = immediate)
+# Source: values chosen by eye on 2026-10-21 and accepted on screen. They are not fitted to the
+# real models and are not meant to be: a plausible look is the requirement, not realism.
+w1: { K: 0.05, T: 8.0, accel-time: 20.0 }
+b2: { K: 0.05, T: 8.0, accel-time: 20.0 }
+d3: { K: 0.05, T: 8.0, accel-time: 20.0 }
+c4: { K: 0.06, T: 6.0, accel-time: 15.0 }
+k5: { K: 0.05, T: 8.0, accel-time: 20.0 }
+l6: { K: 0.04, T: 10.0, accel-time: 25.0 }

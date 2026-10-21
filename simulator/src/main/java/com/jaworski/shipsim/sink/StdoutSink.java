@@ -21,6 +21,11 @@ public final class StdoutSink implements Sink {
     }
 
     @Override
+    public boolean paced() {
+        return false;
+    }
+
+    @Override
     public String toString() {
         return "stdout";
     }

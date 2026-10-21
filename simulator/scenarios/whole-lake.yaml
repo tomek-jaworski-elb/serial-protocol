@@ -1,0 +1,38 @@
+# The six ships spread over the whole chart (positionX in -1156..506 north, positionY in
+# -64..1044 east), each on a turning circle it keeps for the rest of the run, for a demo that
+# uses the entire map. At 3 kn with K = 0.05 a 12-degree rudder gives a circle about 300 m
+# across, an 8-degree one about 440 m; starts are placed so that the circles stay on the chart.
+# Motion parameters come from ships.yaml.
+rate: 1s
+duration: 900s
+ships:
+  - prefix: w1
+    start: { x: 300, y: 200, heading: 180, speed: 3.0, engine: 60, gps-quality: 0.05 }
+    timeline:
+      - at: 30s
+        set: { rudder: -12 }
+  - prefix: b2
+    start: { x: 150, y: 700, heading: 270, speed: 3.0, engine: 60, gps-quality: 0.05 }
+    timeline:
+      - at: 30s
+        set: { rudder: -8 }
+  - prefix: d3
+    start: { x: -100, y: 850, heading: 160, speed: 3.0, engine: 60, gps-quality: 0.05 }
+    timeline:
+      - at: 30s
+        set: { rudder: 12 }
+  - prefix: c4
+    start: { x: -500, y: 300, heading: 45, speed: 3.0, engine: 60, gps-quality: 0.05 }
+    timeline:
+      - at: 30s
+        set: { rudder: 8 }
+  - prefix: k5
+    start: { x: -900, y: 750, heading: 0, speed: 3.0, engine: 60, gps-quality: 0.05 }
+    timeline:
+      - at: 30s
+        set: { rudder: -12 }
+  - prefix: l6
+    start: { x: -1000, y: 250, heading: 60, speed: 3.0, engine: 100, bow-thruster: -128, gps-quality: 1.5 }
+    timeline:
+      - at: 30s
+        set: { rudder: -12 }

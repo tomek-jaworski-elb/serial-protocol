@@ -55,7 +55,7 @@ public final class FrameEncoder {
     }
 
     /** Low byte of the signed sum of {@code out[0..length)}, as the application recomputes it. */
-    static byte checksum(byte[] out, int length) {
+    public static byte checksum(byte[] out, int length) {
         int sum = 0;
         for (int i = 0; i < length; i++) {
             sum += out[i];

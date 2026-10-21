@@ -1,0 +1,21 @@
+# One of each fault, on three ships (two 27-byte layouts and Lady Marie's 29-byte one), so that
+# every code path the application has for a damaged frame can be watched. The times are also
+# what src/test/resources/frames/faults.jsonl in the application was generated from, and what
+# ScenarioFixtureTest asserts; change both together.
+rate: 1s
+duration: 120s
+ships:
+  - prefix: w1
+    start: { x: 300, y: 300, heading: 90, speed: 3.0, engine: 60, gps-quality: 0.05 }
+  - prefix: b2
+    start: { x: 200, y: 500, heading: 180, speed: 2.0, engine: 40, gps-quality: 0.05 }
+  - prefix: l6
+    start: { x: 100, y: 400, heading: 0, speed: 2.0, engine: 100, bow-thruster: -128, gps-quality: 1.5 }
+faults:
+  - { at: 10s, ship: w1, kind: bad-crc }
+  - { at: 20s, ship: b2, kind: crlf-in-payload }
+  - { at: 30s, ship: w1, kind: glue-next }
+  - { at: 35s, ship: l6, kind: glue-next }
+  - { at: 40s, ship: b2, kind: unknown-prefix }
+  - { at: 50s, ship: w1, kind: burst, count: 20 }
+  - { at: 60s, ship: l6, kind: silence, seconds: 30s }

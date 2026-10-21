@@ -1,0 +1,79 @@
+# All six ships leaving their recorded poses (docs/LogTerminal.txt, near the Iława port) for slow
+# manoeuvres on the lake. Motion parameters come from ships.yaml. Headings point north-east, into
+# the lake; speeds stay low so that ten minutes keep every ship inside the chart.
+rate: 1s
+duration: 600s
+ships:
+  - prefix: w1
+    start: { x: 71.1, y: 59.7, heading: 45, speed: 0, rudder: 0, engine: 6, bow-thruster: 111,
+             bow-tug-direction: 22.36, stern-tug-direction: 22.36, gps-quality: 0.02 }
+    timeline:
+      - at: 5s
+        set: { speed: 1.8, engine: 40 }
+      - at: 60s
+        set: { rudder: 6 }
+      - at: 150s
+        set: { rudder: 0 }
+      - at: 300s
+        set: { rudder: -6 }
+      - at: 400s
+        set: { rudder: 0 }
+      - at: 500s
+        set: { speed: 0.5, engine: 10 }
+  - prefix: b2
+    start: { x: 63.6, y: 64.2, heading: 60, speed: 0, rudder: 0, engine: 100, bow-thruster: 127,
+             bow-tug-direction: 22.32, stern-tug-direction: 22.32, gps-quality: 0.02 }
+    timeline:
+      - at: 5s
+        set: { speed: 2.5, engine: 60 }
+      - at: 90s
+        set: { rudder: -5 }
+      - at: 200s
+        set: { rudder: 0 }
+      - at: 350s
+        set: { rudder: 8 }
+      - at: 450s
+        set: { rudder: 0 }
+  - prefix: d3
+    start: { x: 30.5, y: 80.2, heading: 30, speed: 0, rudder: 0, engine: 101, bow-thruster: 127,
+             bow-tug-force: 9.8, bow-tug-direction: 4.83, stern-tug-force: 9.8, stern-tug-direction: 5.31,
+             gps-quality: 0.03 }
+    timeline:
+      - at: 5s
+        set: { speed: 2.0, engine: 50 }
+      - at: 120s
+        set: { rudder: 10 }
+      - at: 240s
+        set: { rudder: 0 }
+  - prefix: c4
+    start: { x: -124.7, y: 147.1, heading: 20, speed: 2.0, rudder: 0, engine: 50, bow-thruster: 117,
+             bow-tug-direction: 31.39, stern-tug-direction: 31.39, gps-quality: 0.05 }
+    timeline:
+      - at: 30s
+        set: { rudder: -4 }
+      - at: 180s
+        set: { rudder: 4 }
+      - at: 330s
+        set: { rudder: 0 }
+  - prefix: k5
+    start: { x: 41.4, y: 74.1, heading: 70, speed: 0, rudder: 0, engine: 100, bow-thruster: 117,
+             bow-tug-force: 10, stern-tug-force: 10, gps-quality: 0.02 }
+    timeline:
+      - at: 5s
+        set: { speed: 1.5, engine: 30 }
+      - at: 200s
+        set: { rudder: -12 }
+      - at: 320s
+        set: { rudder: 0 }
+  - prefix: l6
+    start: { x: 55.2, y: 59.7, heading: 50, speed: 0, rudder: 0, engine: 100, bow-thruster: -128,
+             bow-tug-force: 10, stern-tug-force: 10, stern-tug-direction: 256.94, gps-quality: 1.54 }
+    timeline:
+      - at: 5s
+        set: { speed: 2.0, engine: 100 }
+      - at: 100s
+        set: { rudder: 5 }
+      - at: 250s
+        set: { rudder: -5 }
+      - at: 400s
+        set: { rudder: 0 }

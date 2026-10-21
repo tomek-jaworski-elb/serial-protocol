@@ -12,6 +12,8 @@ import java.util.Locale;
  *       on the same machine;</li>
  *   <li>{@code file://path} - raw frames appended one after another ({@code file:///tmp/x.bin},
  *       {@code file://C:/x.bin} and {@code file://relative.bin} are all accepted);</li>
+ *   <li>{@code jsonl://path} - one JSON line per message with its ship, fault and time, for test
+ *       fixtures;</li>
  *   <li>{@code stdout} - one Java array literal per frame.</li>
  * </ul>
  */
@@ -22,6 +24,7 @@ public final class SinkUri {
 
     private static final String UDP = "udp://";
     private static final String FILE = "file://";
+    private static final String JSONL = "jsonl://";
     private static final String STDOUT = "stdout";
 
     private SinkUri() {
@@ -39,7 +42,10 @@ public final class SinkUri {
         if (lower.startsWith(FILE)) {
             return new FileSink(filePath(value.substring(FILE.length())));
         }
-        throw new IllegalArgumentException("unsupported sink '" + uri + "': use udp://host:port, file://path or stdout");
+        if (lower.startsWith(JSONL)) {
+            return new JsonlSink(filePath(value.substring(JSONL.length())));
+        }
+        throw new IllegalArgumentException("unsupported sink '" + uri + "': use udp://host:port, jsonl://path, file://path or stdout");
     }
 
     private static Sink openUdp(String hostPort) throws IOException {
