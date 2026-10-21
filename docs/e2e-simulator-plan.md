@@ -3,7 +3,8 @@
 Plan for the recommendation in [`e2e-simulator-proposals.md`](e2e-simulator-proposals.md)
 section 6, reshaped by a decision interview with the owner on 2026-10-21 (section 1). Branch
 `symulator-danych-AIS`. Status: stages 0, 1 and 2 are implemented and accepted on screen
-(commits `331835d`, `5599a03`, `0389b4b`); everything listed under "Dropped, and why" is not.
+(commits `331835d`, `5599a03`, `0389b4b`, then the review fixes `9fd3862` and `e3220d6`);
+everything listed under "Dropped, and why" is not.
 
 ## 0. Ground rules
 
@@ -60,12 +61,17 @@ a UTF-8 string. Two copies of one pipeline, already diverged.
   `Arrays.toString(frame)` to `SessionType.RS` (the text the `parseData` area on `/terminal`
   shows); calls `MessageTranslator.getDTO`; if `!isCRCValid()`, logs at INFO "Failed to
   translate message" with the origin and stops; otherwise serialises through
-  `JsonMapperService` and publishes to `SessionType.JSON`. `IllegalArgumentException` from an
-  unsupported length and `JacksonException` are caught and logged, as the serial listener does
-  today. `getDTO` never returns `null` (it throws), so no null check.
+  `JsonMapperService` and publishes to `SessionType.JSON`. As hardened after the review of
+  2026-10-21 (`e3220d6`): an `IllegalArgumentException` from an unsupported length is logged at
+  WARN without a stack trace (noise on an open UDP port or a serial line is a fact of life, and
+  the translator's message already carries the bytes), `JacksonException` at ERROR, and any
+  other `RuntimeException` at ERROR with the frame, so nothing escapes to the transport's
+  thread. `getDTO` never returns `null` (it throws), so no null check.
 - `SerialPortListenerImpl.serialEvent` keeps the port log line and delegates to `ingest(data,
   portDescription)`. `UdpPacketHandlerImpl.handle` keeps `supports()` (length > 2) and
-  delegates to `ingest(payload, sender)`; its UTF-8 payload log goes.
+  delegates to `ingest(payload, sender)`; its UTF-8 payload log is replaced by the same
+  `"Received delimited message: [...]"` phrase the serial adapter logs, so a UDP-fed session
+  can be replayed from `log.log`.
 - The "Translated message: ..." log line stays inside `MessageTranslator.getDTO`, so the
   tracking file and `/tracks` are untouched and now fed by every origin.
 
