@@ -116,6 +116,10 @@ Faults, each hitting one ship at one time:
 | `burst` | `count` copies in one tick (default 100) | nothing is dropped |
 | `silence` | nothing for `seconds` (default 30s); the ship keeps moving | the "Updated" time in the tooltip grows |
 
+Two rules the table implies: a fault due while its ship is silent stays queued and fires on
+the first frame after the silence (a held `glue-next` frame waits the same way); a `glue-next`
+on the last tick of a run has nothing to glue to, so the frame goes out as it is.
+
 Shipped scenarios: `six-ships.yaml` (all six from their recorded poses, slow manoeuvres,
 10 min), `whole-lake.yaml` (the six on turning circles over the whole chart, 15 min),
 `faults.yaml` (one of each fault on three ships, 2 min; also the source of the application's

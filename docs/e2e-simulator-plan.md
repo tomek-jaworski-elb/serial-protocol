@@ -2,7 +2,8 @@
 
 Plan for the recommendation in [`e2e-simulator-proposals.md`](e2e-simulator-proposals.md)
 section 6, reshaped by a decision interview with the owner on 2026-10-21 (section 1). Branch
-`symulator-danych-AIS`. Nothing below is implemented.
+`symulator-danych-AIS`. Status: stages 0, 1 and 2 are implemented and accepted on screen
+(commits `331835d`, `5599a03`, `0389b4b`); everything listed under "Dropped, and why" is not.
 
 ## 0. Ground rules
 
@@ -266,6 +267,12 @@ at once.
 | `unknown-prefix` | prefix `x9` | reaches `/json` with `modelName=-1`; chart prints `Model -1`, draws nothing | same |
 | `burst` | N frames of one ship with no pacing | nothing is dropped: the fan-out executor uses `CallerRunsPolicy`, so above `threads.queue-capacity=100` the publishing runs on the serial thread | nothing dropped below `MAX_CONCURRENT_DISPATCHES=256` in flight |
 | `silence` | the ship sends nothing for T seconds | the tooltip's "Updated: N seconds ago" grows; the explicit "no data N s" warning exists only for a followed ship (`updateFollowStatus`) | same |
+
+Two rules the table implies, settled by the code review of 2026-10-21: a fault due while its
+ship is silent stays queued and fires on the first frame after the silence (a held `glue-next`
+frame waits the same way); a `glue-next` on the last tick of a run has nothing to glue to, so
+the frame goes out as it is. As built, `generate` also takes `--ships <file>` to point at a
+parameter file other than the `ships.yaml` beside the scenario.
 
 **Shipped scenarios.** `simulator/scenarios/six-ships.yaml` (all six, start poses taken from
 `docs/LogTerminal.txt`, slow manoeuvres), `whole-lake.yaml` (the six spread over the map,

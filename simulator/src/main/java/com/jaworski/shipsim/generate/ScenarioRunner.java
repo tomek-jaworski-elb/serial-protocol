@@ -67,10 +67,11 @@ public final class ScenarioRunner implements Iterator<ScenarioRunner.Tick> {
         }
         Duration at = at(tickIndex);
         double seconds = at.toNanos() / 1_000_000_000.0;
+        boolean lastTick = scenario.duration() != null && at(tickIndex + 1).compareTo(scenario.duration()) >= 0;
         List<TaggedFrame> frames = new ArrayList<>();
         for (ShipRun ship : ships) {
             ship.applyTimeline(at);
-            emit(ship, at, seconds, frames);
+            emit(ship, at, seconds, lastTick, frames);
             ship.motion.step(dtSeconds);
         }
         tickIndex++;
@@ -81,42 +82,54 @@ public final class ScenarioRunner implements Iterator<ScenarioRunner.Tick> {
         return scenario.rate().multipliedBy(index);
     }
 
-    private void emit(ShipRun ship, Duration at, double seconds, List<TaggedFrame> out) {
+    /**
+     * Two rules beyond the fault table: a fault due while its ship is silent stays queued and
+     * fires on the first frame after the silence (a held {@code glue-next} frame waits the same
+     * way), and a {@code glue-next} on the last tick of a run has nothing to glue to, so the frame
+     * goes out as it is.
+     */
+    private void emit(ShipRun ship, Duration at, double seconds, boolean lastTick, List<TaggedFrame> out) {
+        if (ship.isSilentAt(at)) {
+            return;
+        }
+        List<FaultSpec> due = ship.takeDueFaults(at);
+        int silence = indexOf(due, FaultKind.SILENCE);
+        if (silence >= 0) {
+            ship.silentUntil = at.plus(due.get(silence).silence());
+            due.remove(silence);
+            ship.requeue(due);
+            return;
+        }
+
         String prefix = ship.spec.prefix();
         Frame frame = ship.motion.frame();
         String fault = null;
         int copies = 1;
         boolean hold = false;
-
-        for (FaultSpec due : ship.takeDueFaults(at)) {
-            switch (due.kind()) {
-                case SILENCE -> ship.silentUntil = at.plus(due.silence());
-                case BAD_CRC, CRLF_IN_PAYLOAD, UNKNOWN_PREFIX, GLUE_NEXT, BURST -> {
-                    fault = due.kind().yamlName();
-                    if (due.kind() == FaultKind.CRLF_IN_PAYLOAD) {
-                        frame = frame.withHeading(CRLF_HEADING);
-                    } else if (due.kind() == FaultKind.UNKNOWN_PREFIX) {
-                        frame = frame.withPrefix(UNKNOWN_PREFIX);
-                    } else if (due.kind() == FaultKind.BURST) {
-                        copies = due.count();
-                    } else if (due.kind() == FaultKind.GLUE_NEXT) {
-                        hold = true;
-                    }
+        for (FaultSpec f : due) {
+            fault = f.kind().yamlName();
+            switch (f.kind()) {
+                case CRLF_IN_PAYLOAD -> frame = frame.withHeading(CRLF_HEADING);
+                case UNKNOWN_PREFIX -> frame = frame.withPrefix(UNKNOWN_PREFIX);
+                case BURST -> copies = f.count();
+                case GLUE_NEXT -> hold = !lastTick;
+                case BAD_CRC, SILENCE -> {
+                    // BAD_CRC is applied to the encoded bytes below; SILENCE was handled above.
                 }
             }
         }
-        if (ship.silentUntil != null && at.compareTo(ship.silentUntil) < 0) {
-            return;
-        }
 
         byte[] bytes = encoder.encode(frame);
-        if (fault != null && fault.equals(FaultKind.BAD_CRC.yamlName())) {
+        if (FaultKind.BAD_CRC.yamlName().equals(fault)) {
             bytes[bytes.length - DELIMITER_LENGTH - 1]++;
         }
         if (hold) {
             // The delimiter is lost: this frame waits, without its CR LF, for the ship's next one.
             ship.held = Arrays.copyOf(bytes, bytes.length - DELIMITER_LENGTH);
             return;
+        }
+        if (FaultKind.GLUE_NEXT.yamlName().equals(fault)) {
+            fault = null;
         }
         if (ship.held != null) {
             byte[] glued = Arrays.copyOf(ship.held, ship.held.length + bytes.length);
@@ -158,5 +171,25 @@ public final class ScenarioRunner implements Iterator<ScenarioRunner.Tick> {
             }
             return due;
         }
+
+        /** Puts faults back at the head of the queue, in their original order. */
+        void requeue(List<FaultSpec> due) {
+            for (int i = due.size() - 1; i >= 0; i--) {
+                faults.addFirst(due.get(i));
+            }
+        }
+
+        boolean isSilentAt(Duration at) {
+            return silentUntil != null && at.compareTo(silentUntil) < 0;
+        }
+    }
+
+    private static int indexOf(List<FaultSpec> faults, FaultKind kind) {
+        for (int i = 0; i < faults.size(); i++) {
+            if (faults.get(i).kind() == kind) {
+                return i;
+            }
+        }
+        return -1;
     }
 }

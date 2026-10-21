@@ -59,8 +59,9 @@ public class ReplayCommand implements Callable<Integer> {
         }
         Duration fixed = Durations.scale(Durations.parse(rate), speed);
         long unstamped = entries.stream().filter(e -> e.timestamp() == null).count();
-        if (originalTiming && unstamped > 0) {
-            err.println(unstamped + " of " + entries.size() + " frames have no parseable timestamp and are paced like their predecessor");
+        if (unstamped > 0) {
+            err.println("Warning: " + unstamped + " of " + entries.size() + " frames have no parseable timestamp"
+                    + (originalTiming ? " and are paced like their predecessor" : ""));
         }
         long sent = 0;
         try (Sink sink = SinkUri.open(to)) {

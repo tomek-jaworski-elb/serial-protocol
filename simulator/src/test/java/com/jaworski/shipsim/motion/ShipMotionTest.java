@@ -76,6 +76,18 @@ class ShipMotionTest {
     }
 
     @Test
+    void theRadiusOfTheCircleFollowsK() {
+        // Diameter of the turning circle = the east extent of a full clockwise turn from heading 0.
+        double speedMetresPerSecond = 2.0 * ShipMotion.KNOT_IN_METRES_PER_SECOND;
+        double diameterAtK01 = eastExtent(ship(0, 2.0, 10, new MotionParams(0.1, 0, 0)), 360);
+        double diameterAtK02 = eastExtent(ship(0, 2.0, 10, new MotionParams(0.2, 0, 0)), 180);
+
+        // r = K * rudder = 1 deg/s: R = v / omega with omega in rad/s.
+        assertEquals(2 * speedMetresPerSecond / Math.toRadians(1.0), diameterAtK01, 0.01 * diameterAtK01);
+        assertEquals(diameterAtK01 / 2, diameterAtK02, 0.01 * diameterAtK02, "doubling K halves the circle");
+    }
+
+    @Test
     void theHeadingStaysWithinTheCircle() {
         ShipMotion ship = ship(359.5, 0, 10, IMMEDIATE);
 
@@ -104,5 +116,14 @@ class ShipMotionTest {
         for (int i = 0; i < count; i++) {
             ship.step(1.0);
         }
+    }
+
+    private static double eastExtent(ShipMotion ship, int count) {
+        double maxY = 0;
+        for (int i = 0; i < count; i++) {
+            ship.step(1.0);
+            maxY = Math.max(maxY, ship.state().y());
+        }
+        return maxY;
     }
 }

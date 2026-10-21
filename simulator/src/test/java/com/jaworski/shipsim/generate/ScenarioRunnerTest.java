@@ -2,15 +2,20 @@ package com.jaworski.shipsim.generate;
 
 import com.jaworski.shipsim.codec.FrameEncoder;
 import com.jaworski.shipsim.generate.ScenarioRunner.Tick;
+import com.jaworski.shipsim.scenario.FaultKind;
+import com.jaworski.shipsim.scenario.FaultSpec;
 import com.jaworski.shipsim.scenario.MotionParams;
 import com.jaworski.shipsim.scenario.Scenario;
 import com.jaworski.shipsim.scenario.ScenarioLoader;
+import com.jaworski.shipsim.scenario.ShipSpec;
+import com.jaworski.shipsim.scenario.ShipState;
 import com.jaworski.shipsim.sink.TaggedFrame;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -118,6 +123,40 @@ class ScenarioRunnerTest {
         for (int i = 0; i < frames.size(); i++) {
             assertArrayEquals(frames.get(i).bytes(), again.get(i).bytes(), "message " + i);
         }
+    }
+
+    @Test
+    void aFaultDueDuringASilenceFiresOnTheFirstFrameAfterIt() {
+        Scenario scenario = oneShip(Duration.ofSeconds(12), List.of(
+                new FaultSpec(Duration.ofSeconds(5), "w1", FaultKind.SILENCE, 1, Duration.ofSeconds(3)),
+                new FaultSpec(Duration.ofSeconds(6), "w1", FaultKind.BAD_CRC, 1, FaultSpec.DEFAULT_SILENCE)));
+
+        List<TaggedFrame> out = run(scenario);
+
+        assertTrue(out.stream().noneMatch(f -> f.seconds() >= 5.0 && f.seconds() < 8.0), "silent from 5 s to 8 s");
+        List<TaggedFrame> badCrc = out.stream().filter(f -> "bad-crc".equals(f.fault())).toList();
+        assertEquals(1, badCrc.size());
+        assertEquals(8.0, badCrc.get(0).seconds(), "deferred to the first frame after the silence");
+        assertEquals(12 - 3, out.size());
+    }
+
+    @Test
+    void aGlueNextOnTheLastTickSendsTheFrameAsItIs() {
+        Scenario scenario = oneShip(Duration.ofSeconds(5), List.of(
+                new FaultSpec(Duration.ofSeconds(4), "w1", FaultKind.GLUE_NEXT, 1, FaultSpec.DEFAULT_SILENCE)));
+
+        List<TaggedFrame> out = run(scenario);
+
+        assertEquals(5, out.size(), "nothing is lost at the end of the run");
+        TaggedFrame last = out.get(4);
+        assertEquals(4.0, last.seconds());
+        assertEquals(27, last.bytes().length);
+        assertNull(last.fault(), "the frame went out unglued, so it carries no fault");
+    }
+
+    private static Scenario oneShip(Duration duration, List<FaultSpec> faults) {
+        ShipSpec ship = new ShipSpec("w1", new MotionParams(0.05, 8, 20), ShipState.fromMap(Map.of("speed", 2.0)), List.of());
+        return new Scenario(Duration.ofSeconds(1), duration, List.of(ship), faults);
     }
 
     private static Scenario loadFaults() throws IOException {
