@@ -45,6 +45,7 @@ No lint plugin (Checkstyle/PMD/SpotBugs) is configured in `pom.xml` — do not i
 - **Primary-image ordering is lexicographic** (`UUID::toString`), never `UUID.compareTo`, which compares both halves as signed longs. Go through `dto.custom.PrimaryImage`.
 - **`CustomDBController`'s `@InitBinder` is an anonymous `PropertyEditorSupport`**, not `StringTrimmerEditor`. It turns blank strings into `null`, which optional-field validation depends on.
 - **Tests run on H2 with `server.port=8081`** and auth `user:user`. Nothing activates a `test` profile, so `@Profile("!test")` beans such as `SchemaMigrationRunner` still load in full-context tests.
+- **Every frame enters through `FrameIngress`.** `SerialPortListenerImpl` and `UdpPacketHandlerImpl` are adapters and never publish `/rs` or `/json` themselves; `FrameIngestService` publishes the raw bytes first and a DTO only when its checksum verifies. (CLAUDE.md § Ingest pipeline)
 <!-- mirror:end invariants -->
 
 ## Working conventions
@@ -61,15 +62,19 @@ No lint plugin (Checkstyle/PMD/SpotBugs) is configured in `pom.xml` — do not i
 ### Boot flow
 `SerialProtocolApplication` → `StartUp.start()` opens serial ports, optionally checks external REST connectivity.
 
-### Serial ingest pipeline
+### Ingest pipeline (serial and UDP)
 ```
 SerialController (jSerialComm discovery, filtered by rs.comports)
-  → SerialPortListenerImpl (delimiter-framed, rs.message_delimiter=13,10)
-    → WebSocketPublisher → /rs  (raw byte array string)
-    → MessageTranslator → ModelTrackDTO → WebSocketPublisher → /json
+  -> SerialPortListenerImpl (delimiter-framed, rs.message_delimiter=13,10) --+
+UdpServer -> UdpDispatcher -> UdpPacketHandlerImpl (one datagram = one frame) --+
+                                                                                |
+                                                                                v
+                              FrameIngress / FrameIngestService - the only pipeline
+                                -> WebSocketPublisher -> /rs  (raw byte array string, every frame)
+                                -> MessageTranslator -> ModelTrackDTO -> isCRCValid gate -> WebSocketPublisher -> /json
 ```
 
-`MessageTranslator` dispatches by message length: `27` (common models via `MessageCommon`) or `29` (Lady Marie via `MessageLadyMarie`). The log line `"Translated message: ModelTrackDTO(...)"` is parsed by `TrackService` — changing this log text breaks track replay. Frame format and port discovery notes: [`docs/Opis RS232.txt`](docs/Opis%20RS232.txt).
+The two transports are adapters: they log what arrived and call `FrameIngress.ingest(frame, origin)`, nothing else. Tests and the simulator (`docs/e2e-simulator-plan.md`) inject frames at `FrameIngress`, above the port. `MessageTranslator` dispatches by message length: `27` (common models via `MessageCommon`) or `29` (Lady Marie via `MessageLadyMarie`). The log line `"Translated message: ModelTrackDTO(...)"` is parsed by `TrackService` — changing this log text breaks track replay. Frame format and port discovery notes: [`docs/Opis RS232.txt`](docs/Opis%20RS232.txt).
 
 ### Track replay (`/tracks`)
 There is no track table. `logback-spring.xml` writes every translated frame to `logs/${logging.tracking.file.name}.log` (`SAVE-TRANSMISSION-FILE`, rolled daily into `logs/yyyy/MM/`). `ReadLogsFileService` reads those files back, `LogPatternMatcher` holds the regexes, `TrackService` rebuilds tracks. The log format *is* the storage format — treat those log strings as an API. The page receives the ship palette as the `shipColors` model attribute (`Models.colorsById()`) and reads it in `tracks.html`.
@@ -202,4 +207,4 @@ The enum declares `CHERRY_LADY` before `DORCHERTER_LADY`; order is irrelevant, l
 `PdfReportController` (`/pdf/**`, one POST per entity type) → `PdfReportService` with `PdfPageLayout`, `PdfHeaderFooterEvent`, `PdfColorScheme`. Configuration prefix: `pdf.report.*` (`PdfReportProperties`). Max records: `pdf.report.max-records=100`. Fonts are bundled in `src/main/resources/fonts` (DejaVuSans — required for Polish glyphs). Design notes and library comparison: [`docs/pdf-report-plan.md`](docs/pdf-report-plan.md).
 
 ### UDP server
-Optional UDP listener: `udp.server.enabled=${UDP_SERVER_ENABLED:true}`, port `udp.server.port=${UDP_SERVER_PORT:2222}`, buffer `udp.server.buffer-size`. `UdpServer` → `UdpDispatcher` → `UdpPacketHandlerImpl`; properties bound by `UdpProperties`.
+Optional UDP listener: `udp.server.enabled=${UDP_SERVER_ENABLED:true}`, port `udp.server.port=${UDP_SERVER_PORT:2222}`, buffer `udp.server.buffer-size`. When disabled, `UdpServer`, `UdpDispatcher` and `UdpPacketHandlerImpl` are not created at all (`@ConditionalOnBooleanProperty`). `UdpServer` → `UdpDispatcher` → `UdpPacketHandlerImpl` → `FrameIngress`; properties bound by `UdpProperties`. A datagram is treated exactly like a serial frame — published raw on `/rs`, translated, dropped unless the checksum verifies, then published on `/json` — so UDP is the transport for simulated traffic. It used to skip `/rs` and the checksum gate; that is why the pipeline was pulled out of the adapters.

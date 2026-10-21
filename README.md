@@ -73,7 +73,9 @@ Taka wiadomość pojawia się w logach konsoli, zostaje zapisana w plikach logó
 ## Architektura
 
 ### Pipeline odbioru danych
-`SerialController` → `SerialPortListenerImpl` → `MessageTranslator` → WebSocket (`/rs`, `/json`)
+`SerialController` → `SerialPortListenerImpl` → `FrameIngress` → `MessageTranslator` → WebSocket (`/rs`, `/json`)
+
+Serwer UDP (`UdpServer` → `UdpPacketHandlerImpl`) wchodzi do tego samego `FrameIngress`, więc datagram jest traktowany dokładnie jak ramka z portu szeregowego.
 
 ### Kanały WebSocket
 | Kanał | Opis |

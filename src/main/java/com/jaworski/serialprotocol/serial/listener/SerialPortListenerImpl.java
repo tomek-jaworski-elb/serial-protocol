@@ -3,29 +3,24 @@ package com.jaworski.serialprotocol.serial.listener;
 import com.fazecast.jSerialComm.SerialPort;
 import com.fazecast.jSerialComm.SerialPortEvent;
 import com.fazecast.jSerialComm.SerialPortMessageListener;
-import com.jaworski.serialprotocol.dto.ModelTrackDTO;
 import com.jaworski.serialprotocol.resources.Resources;
-import com.jaworski.serialprotocol.serial.SessionType;
-import com.jaworski.serialprotocol.service.WebSocketPublisher;
-import com.jaworski.serialprotocol.service.utils.JsonMapperService;
-import com.jaworski.serialprotocol.service.utils.MessageTranslator;
+import com.jaworski.serialprotocol.service.ingest.FrameIngress;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import tools.jackson.core.JacksonException;
 
-import java.util.Arrays;
-
+/**
+ * Serial-port adapter: frames the byte stream on the configured delimiter and hands every
+ * message to {@link FrameIngress}. Nothing is published from here.
+ */
 @RequiredArgsConstructor
 @Component
 public class SerialPortListenerImpl implements SerialPortMessageListener {
 
     private static final Logger LOG = LoggerFactory.getLogger(SerialPortListenerImpl.class);
     private final Resources resources;
-    private final WebSocketPublisher webSocketPublisher;
-    private final JsonMapperService jsonMapperService;
-    private final MessageTranslator messageTranslator;
+    private final FrameIngress frameIngress;
 
     @Override
     public byte[] getMessageDelimiter() {
@@ -47,20 +42,8 @@ public class SerialPortListenerImpl implements SerialPortMessageListener {
     public void serialEvent(SerialPortEvent event) {
         SerialPort serialPort = event.getSerialPort();
         byte[] delimitedMessage = event.getReceivedData();
+        // This log line is an API: the simulator's replay parses "Received delimited message: [...]".
         LOG.info("On port {} Received delimited message: {}", serialPort.getPortDescription(), delimitedMessage);
-        webSocketPublisher.publishForAllClients(Arrays.toString(delimitedMessage), SessionType.RS);
-        try {
-            ModelTrackDTO dto = messageTranslator.getDTO(delimitedMessage);
-            if (dto == null || !dto.isCRCValid()) {
-                LOG.info("Failed to translate message: {}", Arrays.toString(delimitedMessage));
-                return;
-            }
-            String jsonString = jsonMapperService.toJsonString(dto);
-            webSocketPublisher.publishForAllClients(jsonString, SessionType.JSON);
-        } catch (IllegalArgumentException e) {
-            LOG.error("Failed to translate message: {}", Arrays.toString(delimitedMessage), e);
-        } catch (JacksonException e) {
-            LOG.error("Failed to serialize message: {}", Arrays.toString(delimitedMessage), e);
-        }
+        frameIngress.ingest(delimitedMessage, serialPort.getPortDescription());
     }
 }
