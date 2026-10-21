@@ -27,6 +27,8 @@ Java 25, Spring Boot 4.1.1 (`jakarta.*`), Maven wrapper, MariaDB 11.7 / H2 (test
 java -jar .\target\serial-protocol-3.0.jar                     # run packaged JAR (3.0 = <version> in pom.xml)
 docker compose up --build                                      # app + MariaDB
 ./start_docker.sh -d    |    ./stop_docker.sh                  # rebuild and start detached / stop (bash)
+.\mvnw.cmd -f simulator/pom.xml verify                        # build + test the data simulator (simulator/target/ship-sim.jar)
+run-sim.bat replay --from docs\LogTerminal.txt --loop          # feed the running app over UDP (localhost:2222) from the recording
 ```
 
 No lint plugin (Checkstyle/PMD/SpotBugs) is configured in `pom.xml` — do not invent a lint command. A local run listens on 443 (`https://localhost/`); Docker maps host 8081 to container 443 (`https://localhost:8081/`).
@@ -46,6 +48,7 @@ No lint plugin (Checkstyle/PMD/SpotBugs) is configured in `pom.xml` — do not i
 - **`CustomDBController`'s `@InitBinder` is an anonymous `PropertyEditorSupport`**, not `StringTrimmerEditor`. It turns blank strings into `null`, which optional-field validation depends on.
 - **Tests run on H2 with `server.port=8081`** and auth `user:user`. Nothing activates a `test` profile, so `@Profile("!test")` beans such as `SchemaMigrationRunner` still load in full-context tests.
 - **Every frame enters through `FrameIngress`.** `SerialPortListenerImpl` and `UdpPacketHandlerImpl` are adapters and never publish `/rs` or `/json` themselves; `FrameIngestService` publishes the raw bytes first and a DTO only when its checksum verifies. (CLAUDE.md § Ingest pipeline)
+- **`src/test/resources/golden/frames.jsonl` is a contract with `simulator/`.** The application's `GoldenFramesTest` and the simulator's `FrameEncoderTest` both read it; a frame-format change edits the file first and turns both red. Regenerate it only with `GoldenFramesWriter` (`-Dgolden.write=true`). The serial log line `"Received delimited message: [...]"` is parsed by the simulator's replay, so that text is an API too. (CLAUDE.md § Data simulator)
 <!-- mirror:end invariants -->
 
 ## Working conventions
@@ -208,3 +211,6 @@ The enum declares `CHERRY_LADY` before `DORCHERTER_LADY`; order is irrelevant, l
 
 ### UDP server
 Optional UDP listener: `udp.server.enabled=${UDP_SERVER_ENABLED:true}`, port `udp.server.port=${UDP_SERVER_PORT:2222}`, buffer `udp.server.buffer-size`. When disabled, `UdpServer`, `UdpDispatcher` and `UdpPacketHandlerImpl` are not created at all (`@ConditionalOnBooleanProperty`). `UdpServer` → `UdpDispatcher` → `UdpPacketHandlerImpl` → `FrameIngress`; properties bound by `UdpProperties`. A datagram is treated exactly like a serial frame — published raw on `/rs`, translated, dropped unless the checksum verifies, then published on `/json` — so UDP is the transport for simulated traffic. It used to skip `/rs` and the checksum gate; that is why the pipeline was pulled out of the adapters.
+
+### Data simulator (`simulator/`)
+`simulator/` is a separate Maven build (own `pom.xml`, no Spring, Java 25, picocli 4.7.7, Jackson 3), **not** a module of this pom: the application never depends on it. It feeds frames to a running application over UDP — the default sink is `udp://localhost:2222` — so they enter through `FrameIngress` like a serial frame. Build with `.\mvnw.cmd -f simulator/pom.xml verify`; `run-sim.bat` builds the JAR when missing and runs it with the JDK from `JAVA_HOME` (the JAR is compiled for Java 25, a Java 21 on `PATH` refuses it). Stage 1 ships `replay` (recorded `Received delimited message: [...]` lines; `docs/LogTerminal.txt` holds 61 frames of all six ships) and `raw`; `generate` is stage 2. The codec contract with this application is the golden file (invariants above). Plan, decisions and what was dropped: [`docs/e2e-simulator-plan.md`](docs/e2e-simulator-plan.md); usage: [`simulator/README.md`](simulator/README.md). When watching `/chart`, keep its tab in the foreground — `chart-script.js` closes the `/json` socket of a hidden tab and reopens it when the tab is shown.

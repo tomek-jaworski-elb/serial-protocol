@@ -77,6 +77,9 @@ Taka wiadomość pojawia się w logach konsoli, zostaje zapisana w plikach logó
 
 Serwer UDP (`UdpServer` → `UdpPacketHandlerImpl`) wchodzi do tego samego `FrameIngress`, więc datagram jest traktowany dokładnie jak ramka z portu szeregowego.
 
+### Symulator danych (bez modeli)
+Katalog `simulator/` zawiera osobną aplikację `ship-sim`, która karmi serwer ramkami przez UDP (port 2222). Odtworzenie nagrania z sześcioma statkami: `run-sim.bat replay --from docs\LogTerminal.txt --loop` (wymaga JDK 25; kartę `/chart` trzymaj na wierzchu). Szczegóły: [`simulator/README.md`](simulator/README.md), plan i decyzje: [`docs/e2e-simulator-plan.md`](docs/e2e-simulator-plan.md).
+
 ### Kanały WebSocket
 | Kanał | Opis |
 |---|---|
