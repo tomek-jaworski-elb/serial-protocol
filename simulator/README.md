@@ -40,9 +40,10 @@ is the same thing without that convenience.
 
 ### `replay` — recorded frames from an application log
 
-Reads every `Received delimited message: [...]` line the serial listener logs (`docs/LogTerminal.txt`
-holds 61 frames of all six ships; any `logs/log.log` works too) and sends the frames as they were
-recorded, delimiter included.
+Reads every `Received delimited message: [...]` line the application logs - the serial listener
+and the UDP handler both write it, so a session fed by this simulator can be replayed too
+(`docs/LogTerminal.txt` holds 61 frames of all six ships; any `logs/log.log` works) - and sends
+the frames as they were recorded, delimiter included.
 
 | Option | Meaning |
 |---|---|
@@ -116,9 +117,17 @@ Faults, each hitting one ship at one time:
 | `burst` | `count` copies in one tick (default 100) | nothing is dropped |
 | `silence` | nothing for `seconds` (default 30s); the ship keeps moving | the "Updated" time in the tooltip grows |
 
-Two rules the table implies: a fault due while its ship is silent stays queued and fires on
-the first frame after the silence (a held `glue-next` frame waits the same way); a `glue-next`
-on the last tick of a run has nothing to glue to, so the frame goes out as it is.
+Rules the table implies: a fault due while its ship is silent stays queued and fires on the
+first frame after the silence (a held `glue-next` frame waits the same way); a `glue-next` on
+the last tick of a run has nothing to glue to, so the frame goes out as it is; several faults
+due on one tick all apply and the message is tagged with their names joined by `+`
+(`bad-crc+burst`); a `glue-next` that arrives while a frame is already held adds to it, so
+three frames can arrive as one message.
+
+Timing: a live sink is paced against a schedule, so the time spent sending does not stretch
+the gaps and the wrap of `--loop` keeps the same gap as any other tick. `--loop` needs a live
+sink. A UDP sink does not care whether anything listens: start the simulator before the
+application or restart the application mid-run, and the frames sent meanwhile are simply lost.
 
 Shipped scenarios: `six-ships.yaml` (all six from their recorded poses, slow manoeuvres,
 10 min), `whole-lake.yaml` (the six on turning circles over the whole chart, 15 min),

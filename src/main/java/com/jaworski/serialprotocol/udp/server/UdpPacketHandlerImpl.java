@@ -28,7 +28,8 @@ public class UdpPacketHandlerImpl implements UdpPacketHandler {
     @Override
     public void handle(UdpPacket packet) {
         byte[] payload = packet.payload();
-        LOG.info("UDP packet from {}: {}", packet.sender(), payload);
+        // Same phrase as the serial adapter: "Received delimited message: [...]" is what the simulator's replay parses.
+        LOG.info("From UDP {} Received delimited message: {}", packet.sender(), payload);
         frameIngress.ingest(payload, String.valueOf(packet.sender()));
     }
 }

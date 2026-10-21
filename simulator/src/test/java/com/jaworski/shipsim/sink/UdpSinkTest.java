@@ -16,6 +16,20 @@ class UdpSinkTest {
     private static final byte[] FRAME = {119, 49, 8, -69, 8, -69, 0, 6, 0, 8, -69, -123, 1, 50, 73, -114, 66, 4, 27, 111, 66, 111, 0, 3, 10, 13, 10};
 
     @Test
+    void nothingListeningDoesNotStopTheRun() throws IOException {
+        int closedPort;
+        try (DatagramSocket probe = new DatagramSocket(0, InetAddress.getLoopbackAddress())) {
+            closedPort = probe.getLocalPort();
+        }
+
+        try (UdpSink sink = new UdpSink("127.0.0.1", closedPort)) {
+            for (int i = 0; i < 5; i++) {
+                org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> sink.send(FRAME), "send " + i);
+            }
+        }
+    }
+
+    @Test
     void everyFrameArrivesAsOneDatagramOfExactlyItsBytes() throws IOException {
         try (DatagramSocket receiver = new DatagramSocket(0, InetAddress.getLoopbackAddress())) {
             receiver.setSoTimeout(2_000);

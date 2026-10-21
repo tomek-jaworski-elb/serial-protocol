@@ -22,6 +22,11 @@ import java.util.Arrays;
  * "Translated message" line that feeds the tracking file is written by
  * {@link MessageTranslator#getDTO} itself, so every origin feeds {@code /tracks} without this
  * class knowing about it.</p>
+ *
+ * <p>Nothing escapes this method: a frame of an unsupported length is a fact of life on a serial
+ * line and on an open UDP port alike, so it is logged at WARN without a stack trace (the
+ * translator's message already carries the bytes); anything else is logged at ERROR with the
+ * frame and does not reach the transport's thread.</p>
  */
 @RequiredArgsConstructor
 @Service
@@ -45,9 +50,11 @@ public class FrameIngestService implements FrameIngress {
             }
             webSocketPublisher.publishForAllClients(jsonMapperService.toJsonString(dto), SessionType.JSON);
         } catch (IllegalArgumentException e) {
-            LOG.error("Failed to translate message from {}: {}", origin, raw, e);
+            LOG.warn("Failed to translate message from {}: {}", origin, e.getMessage());
         } catch (JacksonException e) {
             LOG.error("Failed to serialize message from {}: {}", origin, raw, e);
+        } catch (RuntimeException e) {
+            LOG.error("Failed to process message from {}: {}", origin, raw, e);
         }
     }
 }

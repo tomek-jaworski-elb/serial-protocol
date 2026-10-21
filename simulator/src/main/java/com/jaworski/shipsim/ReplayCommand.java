@@ -65,14 +65,20 @@ public class ReplayCommand implements Callable<Integer> {
         }
         long sent = 0;
         try (Sink sink = SinkUri.open(to)) {
+            if (loop && !sink.paced()) {
+                err.println("--loop needs a live sink such as udp://; " + sink + " would be written without end");
+                return 1;
+            }
             err.println("Replaying " + entries.size() + " frames from " + from + " to " + sink + (loop ? ", looping" : ""));
+            Pacer pacer = new Pacer();
             do {
                 Entry previous = null;
                 Duration delay = fixed;
                 for (Entry entry : entries) {
-                    if (previous != null) {
-                        delay = gap(previous, entry, delay, fixed);
-                        Thread.sleep(delay);
+                    // At the start of a pass the gap is the fixed one; the pacer's first call ever returns at once.
+                    delay = previous == null ? fixed : gap(previous, entry, delay, fixed);
+                    if (sink.paced()) {
+                        pacer.next(delay);
                     }
                     sink.send(entry.frame());
                     sent++;

@@ -154,6 +154,36 @@ class ScenarioRunnerTest {
         assertNull(last.fault(), "the frame went out unglued, so it carries no fault");
     }
 
+    @Test
+    void twoFaultsOnTheSameTickBothApplyAndBothAreTagged() {
+        Scenario scenario = oneShip(Duration.ofSeconds(5), List.of(
+                new FaultSpec(Duration.ofSeconds(3), "w1", FaultKind.BAD_CRC, 1, FaultSpec.DEFAULT_SILENCE),
+                new FaultSpec(Duration.ofSeconds(3), "w1", FaultKind.BURST, 5, FaultSpec.DEFAULT_SILENCE)));
+
+        List<TaggedFrame> at3 = run(scenario).stream().filter(f -> f.seconds() == 3.0).toList();
+
+        assertEquals(5, at3.size(), "the burst count");
+        assertTrue(at3.stream().allMatch(f -> "bad-crc+burst".equals(f.fault())), "both names in the tag");
+        assertTrue(at3.stream().allMatch(f -> FrameEncoder.checksum(f.bytes(), 24) != f.bytes()[24]), "and the checksum is broken");
+    }
+
+    @Test
+    void aSecondGlueNextWhileAFrameIsHeldGluesThreeFrames() {
+        Scenario scenario = oneShip(Duration.ofSeconds(6), List.of(
+                new FaultSpec(Duration.ofSeconds(2), "w1", FaultKind.GLUE_NEXT, 1, FaultSpec.DEFAULT_SILENCE),
+                new FaultSpec(Duration.ofSeconds(3), "w1", FaultKind.GLUE_NEXT, 1, FaultSpec.DEFAULT_SILENCE)));
+
+        List<TaggedFrame> out = run(scenario);
+
+        assertEquals(6 - 2, out.size(), "two frames held, nothing lost");
+        TaggedFrame glued = out.stream().filter(f -> f.seconds() == 4.0).findFirst().orElseThrow();
+        assertEquals(25 + 25 + 27, glued.bytes().length);
+        assertEquals('w', glued.bytes()[25]);
+        assertEquals('w', glued.bytes()[50]);
+        assertEquals(FrameEncoder.LF, glued.bytes()[76]);
+        assertEquals("glue-next", glued.fault());
+    }
+
     private static Scenario oneShip(Duration duration, List<FaultSpec> faults) {
         ShipSpec ship = new ShipSpec("w1", new MotionParams(0.05, 8, 20), ShipState.fromMap(Map.of("speed", 2.0)), List.of());
         return new Scenario(Duration.ofSeconds(1), duration, List.of(ship), faults);

@@ -2,9 +2,9 @@ package com.jaworski.shipsim.generate;
 
 import com.jaworski.shipsim.codec.Frame;
 import com.jaworski.shipsim.codec.FrameEncoder;
+import com.jaworski.shipsim.motion.ShipMotion;
 import com.jaworski.shipsim.scenario.FaultKind;
 import com.jaworski.shipsim.scenario.FaultSpec;
-import com.jaworski.shipsim.motion.ShipMotion;
 import com.jaworski.shipsim.scenario.MotionParams;
 import com.jaworski.shipsim.scenario.Scenario;
 import com.jaworski.shipsim.scenario.ShipSpec;
@@ -17,13 +17,24 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 
 /**
  * Turns a scenario into ticks. Each tick, every ship first takes the timeline entries that are
  * due, then produces its frame, has any due fault applied to it, and finally moves on by one
  * frame interval. Nothing here is random, so the same scenario always yields the same bytes.
+ *
+ * <p>Rules beyond the fault table: a fault due while its ship is silent stays queued and fires
+ * on the first frame after the silence (a held {@code glue-next} frame waits the same way); a
+ * {@code glue-next} on the last tick of a run has nothing to glue to, so the frame goes out as
+ * it is; several faults due on one tick all apply, and the message is tagged with their names
+ * joined by {@code +}; a {@code glue-next} that arrives while a frame is already held adds to
+ * what is held, so three frames can arrive as one message.</p>
  */
 public final class ScenarioRunner implements Iterator<ScenarioRunner.Tick> {
 
@@ -33,6 +44,7 @@ public final class ScenarioRunner implements Iterator<ScenarioRunner.Tick> {
 
     static final double CRLF_HEADING = 333.8;
     static final String UNKNOWN_PREFIX = "x9";
+    static final String FAULT_SEPARATOR = "+";
     private static final int DELIMITER_LENGTH = 2;
 
     private final Scenario scenario;
@@ -44,14 +56,22 @@ public final class ScenarioRunner implements Iterator<ScenarioRunner.Tick> {
     public ScenarioRunner(Scenario scenario) {
         this.scenario = scenario;
         this.dtSeconds = scenario.rate().toNanos() / 1_000_000_000.0;
+        Map<String, ShipRun> byPrefix = new LinkedHashMap<>();
         for (ShipSpec spec : scenario.ships()) {
             if (spec.model() == null) {
                 throw new IllegalArgumentException("ship " + spec.prefix() + " has no motion parameters");
             }
-            ships.add(new ShipRun(spec, spec.model()));
+            ShipRun run = new ShipRun(spec, spec.model());
+            ships.add(run);
+            byPrefix.put(spec.prefix(), run);
         }
         for (FaultSpec fault : scenario.faults()) {
-            ships.stream().filter(s -> s.spec.prefix().equals(fault.ship())).findFirst().orElseThrow().faults.add(fault);
+            ShipRun run = byPrefix.get(fault.ship());
+            if (run == null) {
+                throw new IllegalArgumentException("fault at " + fault.at() + " names ship " + fault.ship()
+                        + ", which is not in the scenario");
+            }
+            run.faults.add(fault);
         }
     }
 
@@ -82,12 +102,6 @@ public final class ScenarioRunner implements Iterator<ScenarioRunner.Tick> {
         return scenario.rate().multipliedBy(index);
     }
 
-    /**
-     * Two rules beyond the fault table: a fault due while its ship is silent stays queued and
-     * fires on the first frame after the silence (a held {@code glue-next} frame waits the same
-     * way), and a {@code glue-next} on the last tick of a run has nothing to glue to, so the frame
-     * goes out as it is.
-     */
     private void emit(ShipRun ship, Duration at, double seconds, boolean lastTick, List<TaggedFrame> out) {
         if (ship.isSilentAt(at)) {
             return;
@@ -101,52 +115,70 @@ public final class ScenarioRunner implements Iterator<ScenarioRunner.Tick> {
             return;
         }
 
-        String prefix = ship.spec.prefix();
         Frame frame = ship.motion.frame();
-        String fault = null;
+        Set<String> applied = new LinkedHashSet<>();
         int copies = 1;
         boolean hold = false;
+        boolean badCrc = false;
         for (FaultSpec f : due) {
-            fault = f.kind().yamlName();
             switch (f.kind()) {
                 case CRLF_IN_PAYLOAD -> frame = frame.withHeading(CRLF_HEADING);
                 case UNKNOWN_PREFIX -> frame = frame.withPrefix(UNKNOWN_PREFIX);
                 case BURST -> copies = f.count();
+                case BAD_CRC -> badCrc = true;
                 case GLUE_NEXT -> hold = !lastTick;
-                case BAD_CRC, SILENCE -> {
-                    // BAD_CRC is applied to the encoded bytes below; SILENCE was handled above.
+                case SILENCE -> {
+                    // Handled above: a silence never reaches this loop.
                 }
+            }
+            if (f.kind() != FaultKind.GLUE_NEXT || hold) {
+                applied.add(f.kind().yamlName());
             }
         }
 
         byte[] bytes = encoder.encode(frame);
-        if (FaultKind.BAD_CRC.yamlName().equals(fault)) {
+        if (badCrc) {
             bytes[bytes.length - DELIMITER_LENGTH - 1]++;
         }
         if (hold) {
             // The delimiter is lost: this frame waits, without its CR LF, for the ship's next one.
-            ship.held = Arrays.copyOf(bytes, bytes.length - DELIMITER_LENGTH);
+            ship.hold(Arrays.copyOf(bytes, bytes.length - DELIMITER_LENGTH), applied);
             return;
         }
-        if (FaultKind.GLUE_NEXT.yamlName().equals(fault)) {
-            fault = null;
-        }
         if (ship.held != null) {
-            byte[] glued = Arrays.copyOf(ship.held, ship.held.length + bytes.length);
-            System.arraycopy(bytes, 0, glued, ship.held.length, bytes.length);
+            bytes = concat(ship.held, bytes);
+            Set<String> all = new LinkedHashSet<>(ship.heldFaults);
+            all.addAll(applied);
+            applied = all;
             ship.held = null;
-            bytes = glued;
-            fault = FaultKind.GLUE_NEXT.yamlName();
+            ship.heldFaults.clear();
         }
+        String fault = applied.isEmpty() ? null : String.join(FAULT_SEPARATOR, applied);
         for (int i = 0; i < copies; i++) {
-            out.add(new TaggedFrame(bytes, prefix, fault, seconds));
+            out.add(new TaggedFrame(bytes, ship.spec.prefix(), fault, seconds));
         }
+    }
+
+    private static byte[] concat(byte[] head, byte[] tail) {
+        byte[] joined = Arrays.copyOf(head, head.length + tail.length);
+        System.arraycopy(tail, 0, joined, head.length, tail.length);
+        return joined;
+    }
+
+    private static int indexOf(List<FaultSpec> faults, FaultKind kind) {
+        for (int i = 0; i < faults.size(); i++) {
+            if (faults.get(i).kind() == kind) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     private static final class ShipRun {
         final ShipSpec spec;
         final ShipMotion motion;
         final Deque<FaultSpec> faults = new ArrayDeque<>();
+        final Set<String> heldFaults = new LinkedHashSet<>();
         int nextTimelineEntry;
         Duration silentUntil;
         byte[] held;
@@ -182,14 +214,11 @@ public final class ScenarioRunner implements Iterator<ScenarioRunner.Tick> {
         boolean isSilentAt(Duration at) {
             return silentUntil != null && at.compareTo(silentUntil) < 0;
         }
-    }
 
-    private static int indexOf(List<FaultSpec> faults, FaultKind kind) {
-        for (int i = 0; i < faults.size(); i++) {
-            if (faults.get(i).kind() == kind) {
-                return i;
-            }
+        /** Keeps a frame (without its delimiter) for the next emission; a second one is added, not substituted. */
+        void hold(byte[] frameWithoutDelimiter, Set<String> faultsApplied) {
+            held = held == null ? frameWithoutDelimiter : concat(held, frameWithoutDelimiter);
+            heldFaults.addAll(faultsApplied);
         }
-        return -1;
     }
 }

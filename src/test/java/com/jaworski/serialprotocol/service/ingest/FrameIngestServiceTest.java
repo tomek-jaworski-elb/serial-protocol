@@ -103,6 +103,20 @@ class FrameIngestServiceTest {
     }
 
     @Test
+    void aFailureAfterTheRawPublishIsLoggedAndNeverReachesTheTransportThread() {
+        org.mockito.Mockito.doAnswer(invocation -> {
+            if (invocation.getArgument(1) == SessionType.JSON) {
+                throw new IllegalStateException("socket gone");
+            }
+            return null;
+        }).when(publisher).publishForAllClients(anyString(), org.mockito.ArgumentMatchers.any(SessionType.class));
+
+        assertDoesNotThrow(() -> service.ingest(WARTA, ORIGIN));
+
+        verify(publisher).publishForAllClients(Arrays.toString(WARTA), SessionType.RS);
+    }
+
+    @Test
     void anUnknownPrefixWithAValidChecksumStillReachesJson() {
         // Parity with what the serial path always did: there is no ship-id gate, only a checksum gate.
         service.ingest(UNKNOWN_PREFIX, ORIGIN);

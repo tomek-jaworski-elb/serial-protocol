@@ -71,6 +71,20 @@ class LogReplaySourceTest {
     }
 
     @Test
+    void aLogOfAUdpFedRunReplaysLikeASerialOne(@TempDir Path dir) throws IOException {
+        Path log = dir.resolve("log.log");
+        Files.write(log, List.of(
+                "21-10-2026 20:56:38.300 [virtual-134] INFO  c.j.s.u.server.UdpPacketHandlerImpl.handle - From UDP /127.0.0.1:55761 Received delimited message: [119, 49, 8, -69, 8, -69, 0, 6, 0, 8, -69, -123, 1, 50, 73, -114, 66, 4, 27, 111, 66, 111, 0, 3, 10, 13, 10]"),
+                StandardCharsets.UTF_8);
+
+        List<Entry> entries = LogReplaySource.read(log, false);
+
+        assertEquals(1, entries.size());
+        assertEquals(27, entries.get(0).frame().length);
+        assertNotNull(entries.get(0).timestamp());
+    }
+
+    @Test
     void parseArrayReadsSignedBytesAndRejectsAnythingElse() {
         assertArrayEquals(new byte[]{119, 49, -69, 13, 10}, LogReplaySource.parseArray("119, 49,-69 , 13, 10"));
         assertArrayEquals(new byte[0], LogReplaySource.parseArray("  "));

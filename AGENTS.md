@@ -42,7 +42,7 @@ Each one is explained in the `CLAUDE.md` section it names.
 - **`CustomDBController`'s `@InitBinder` is an anonymous `PropertyEditorSupport`**, not `StringTrimmerEditor`. It turns blank strings into `null`, which optional-field validation depends on.
 - **Tests run on H2 with `server.port=8081`** and auth `user:user`. Nothing activates a `test` profile, so `@Profile("!test")` beans such as `SchemaMigrationRunner` still load in full-context tests.
 - **Every frame enters through `FrameIngress`.** `SerialPortListenerImpl` and `UdpPacketHandlerImpl` are adapters and never publish `/rs` or `/json` themselves; `FrameIngestService` publishes the raw bytes first and a DTO only when its checksum verifies. (CLAUDE.md § Ingest pipeline)
-- **`src/test/resources/golden/frames.jsonl` is a contract with `simulator/`.** The application's `GoldenFramesTest` and the simulator's `FrameEncoderTest` both read it; a frame-format change edits the file first and turns both red. Regenerate it only with `GoldenFramesWriter` (`-Dgolden.write=true`). The serial log line `"Received delimited message: [...]"` is parsed by the simulator's replay, so that text is an API too. (CLAUDE.md § Data simulator)
+- **`src/test/resources/golden/frames.jsonl` is a contract with `simulator/`.** The application's `GoldenFramesTest` and the simulator's `FrameEncoderTest` both read it; a frame-format change edits the file first and turns both red. Regenerate it only with `GoldenFramesWriter` (`-Dgolden.write=true`). Both adapters log `"Received delimited message: [...]"` and the simulator's replay parses it, so that text is an API too. (CLAUDE.md § Data simulator)
 <!-- mirror:end invariants -->
 
 ## Working conventions

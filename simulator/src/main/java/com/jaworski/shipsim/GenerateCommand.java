@@ -64,17 +64,20 @@ public class GenerateCommand implements Callable<Integer> {
                 err.println("A duration is required to write " + sink + ": set 'duration' in the scenario or pass --duration");
                 return 1;
             }
+            if (loop && !sink.paced()) {
+                err.println("--loop needs a live sink such as udp://; " + sink + " would be written without end");
+                return 1;
+            }
             err.println("Generating " + plan.ships().size() + " ship(s) from " + scenario + " to " + sink
                     + (plan.duration() == null ? ", until interrupted" : ", for " + plan.duration().toSeconds() + " s")
                     + (loop ? ", looping" : ""));
+            Pacer pacer = new Pacer();
             do {
                 ScenarioRunner runner = new ScenarioRunner(plan);
-                boolean first = true;
                 while (runner.hasNext()) {
-                    if (!first && sink.paced()) {
-                        Thread.sleep(gap);
+                    if (sink.paced()) {
+                        pacer.next(gap);
                     }
-                    first = false;
                     Tick tick = runner.next();
                     for (TaggedFrame frame : tick.frames()) {
                         sink.send(frame);
