@@ -1,35 +1,37 @@
 package com.jaworski.serialprotocol.entity.custom;
 
-import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Size;
-import org.hibernate.annotations.DynamicUpdate;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.util.UUID;
 
-@Entity
-@Data
-@NoArgsConstructor
-/*
- * Without this, storing a thumbnail rewrites every column of the row — including the
- * full-size LONGBLOB, which was loaded anyway because field-level laziness is inactive
- * (no hibernate-enhance-maven-plugin). First render of a table of large photos would
- * issue a full-blob UPDATE per image just to record two small columns.
+/**
+ * A photo's identity and metadata. The bytes live in {@link ImageBlob} under the same uuid.
+ *
+ * <p>Split on purpose: field-level laziness is inactive in this build, so any load of a row
+ * that held the LONGBLOBs read them too. With the bytes in their own table every write path
+ * (resolving a person's photo set, deleting a person) and every list is cheap, and the two
+ * LONGBLOBs are read solely by {@code ImageService} when bytes are actually served or scaled.
+ * A soft-deleted image keeps its blob row; purging is a separate, later decision.</p>
  */
-@DynamicUpdate
+@Entity
+@SQLRestriction("deleted_at is null")
+@SQLDelete(sql = "UPDATE image SET deleted_at = CURRENT_TIMESTAMP(6) WHERE image_uuid = ? AND version = ?")
+@Data
+@EqualsAndHashCode(callSuper = false)
+@NoArgsConstructor
 @Table(name = Image.TABLE_NAME)
-public class Image {
+public class Image extends Auditable {
 
   public static final String TABLE_NAME = "image";
 
@@ -38,32 +40,11 @@ public class Image {
   @Column(name = TABLE_NAME + "_uuid", nullable = false, updatable = false)
   private UUID id;
 
-  @Lob
-  @Column(name = TABLE_NAME + "_data", columnDefinition = "LONGBLOB", nullable = false)
-  @Basic(fetch = FetchType.LAZY)
-  @Size(max = 10_000_000)
-  @ToString.Exclude
-  @EqualsAndHashCode.Exclude
-  private byte[] data;
-
   @Column(name = TABLE_NAME + "_content_type", nullable = false, length = 100)
   @Size(max = 100)
   private String contentType;
 
-  /**
-   * Downscaled copy, generated on first request and stored so it is produced once.
-   * Nullable on purpose: rows created before this column existed, and formats
-   * ImageIO cannot read (webp, svg), simply never get one and fall back to the
-   * original. ddl-auto=update adds a nullable column on its own, so this needs no
-   * entry in SchemaMigrationRunner.
-   */
-  @Lob
-  @Column(name = TABLE_NAME + "_thumb_data", columnDefinition = "LONGBLOB")
-  @Basic(fetch = FetchType.LAZY)
-  @ToString.Exclude
-  @EqualsAndHashCode.Exclude
-  private byte[] thumbData;
-
+  /** Content type of the stored thumbnail, null when there is none (see thumbVersion). */
   @Column(name = TABLE_NAME + "_thumb_content_type", length = 100)
   @Size(max = 100)
   private String thumbContentType;

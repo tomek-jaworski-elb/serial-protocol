@@ -3,6 +3,7 @@ package com.jaworski.serialprotocol.entity.custom;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -14,7 +15,10 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
@@ -23,10 +27,13 @@ import java.util.Set;
 import java.util.UUID;
 
 @Entity
+@SQLRestriction("deleted_at is null")
+@SQLDelete(sql = "UPDATE courses SET deleted_at = CURRENT_TIMESTAMP(6) WHERE courses_uuid = ? AND version = ?")
 @Table(name = Courses.TABLE_NAME)
 @Data
+@EqualsAndHashCode(callSuper = false)
 @NoArgsConstructor
-public class Courses {
+public class Courses extends Auditable {
 
   public static final String TABLE_NAME = "courses";
   @Id
@@ -34,18 +41,20 @@ public class Courses {
   @Column(name = TABLE_NAME + "_uuid", nullable = false, updatable = false)
   private UUID uuid;
 
-  @Column(name = TABLE_NAME + "_id", unique = false, nullable = false)
+  @Column(name = TABLE_NAME + "_id", unique = true, nullable = false)
   @NotNull
   @Positive
   private Long id;
 
-  @ManyToOne(optional = false)
+  // The to-one associations are LAZY: the mapper only needs their ids, and anything that does
+  // get initialised is batch-loaded (default_batch_fetch_size) rather than one query per row.
+  @ManyToOne(optional = false, fetch = FetchType.LAZY)
   @JoinColumn(name = TABLE_NAME + "_participant_id", nullable = false)
   @NotNull
   private Participant participant;
 
-  @ManyToOne(optional = false)
-  @JoinColumn(name = TABLE_NAME + "_course_type_id", nullable = false)
+  @ManyToOne(optional = false, fetch = FetchType.LAZY)
+  @JoinColumn(name = TABLE_NAME + "_course_type_uuid", nullable = false)
   @NotNull
   private CourseType courseType;
 
@@ -84,7 +93,7 @@ public class Courses {
   @NotNull
   private Set<Technician> technicians = new HashSet<>();
 
-  @ManyToOne()
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = CourseCounter.TABLE_NAME + "_uuid")
   private CourseCounter courseCounter;
 

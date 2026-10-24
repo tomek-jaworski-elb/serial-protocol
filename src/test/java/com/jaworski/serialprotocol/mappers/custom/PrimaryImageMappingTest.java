@@ -8,6 +8,7 @@ import com.jaworski.serialprotocol.entity.custom.Technician;
 import com.jaworski.serialprotocol.entity.custom.Trainer;
 import org.junit.jupiter.api.Test;
 
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,7 +33,7 @@ class PrimaryImageMappingTest {
         entity.setSurname("Kowalska");
         entity.setPrimaryImageUuid(POINTER);
 
-        TrainerDTO dto = TrainerMapper.mapToDTO(entity);
+        TrainerDTO dto = TrainerMapper.mapToDTO(entity, Set.of());
         assertThat(dto.getPrimaryImageUuid()).as("entity -> dto").isEqualTo(POINTER);
 
         assertThat(TrainerMapper.mapToEntity(dto).getPrimaryImageUuid())
@@ -48,7 +49,7 @@ class PrimaryImageMappingTest {
         entity.setSurname("Wisniewska");
         entity.setPrimaryImageUuid(POINTER);
 
-        LecturerDTO dto = LecturerMapper.mapToDTO(entity);
+        LecturerDTO dto = LecturerMapper.mapToDTO(entity, Set.of());
         assertThat(dto.getPrimaryImageUuid()).as("entity -> dto").isEqualTo(POINTER);
 
         assertThat(LecturerMapper.mapToEntity(dto).getPrimaryImageUuid())
@@ -64,7 +65,7 @@ class PrimaryImageMappingTest {
         entity.setSurname("Zielinski");
         entity.setPrimaryImageUuid(POINTER);
 
-        TechnicianDTO dto = TechnicianMapper.mapToDTO(entity);
+        TechnicianDTO dto = TechnicianMapper.mapToDTO(entity, Set.of());
         assertThat(dto.getPrimaryImageUuid()).as("entity -> dto").isEqualTo(POINTER);
 
         assertThat(TechnicianMapper.mapToEntity(dto).getPrimaryImageUuid())
@@ -80,7 +81,7 @@ class PrimaryImageMappingTest {
         entity.setName("Piotr");
         entity.setSurname("Nowak");
 
-        TrainerDTO dto = TrainerMapper.mapToDTO(entity);
+        TrainerDTO dto = TrainerMapper.mapToDTO(entity, Set.of());
 
         assertThat(dto.getPrimaryImageUuid()).isNull();
         assertThat(TrainerMapper.mapToEntity(dto).getPrimaryImageUuid()).isNull();

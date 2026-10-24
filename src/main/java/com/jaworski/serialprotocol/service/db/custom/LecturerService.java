@@ -16,10 +16,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import com.jaworski.serialprotocol.repository.custom.ImageLink;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -34,20 +37,21 @@ public class LecturerService {
 
   @Transactional(readOnly = true)
   public List<LecturerDTO> findAll() {
-    return lecturerRepository.findAll().stream()
-            .map(LecturerMapper::mapToDTO)
-            .toList();
+    return toDTOs(lecturerRepository.findAll());
   }
 
   @Transactional(readOnly = true)
   public Page<LecturerDTO> findAll(Pageable pageable) {
-    return lecturerRepository.findAll(pageable).map(LecturerMapper::mapToDTO);
+    Page<Lecturer> page = lecturerRepository.findAll(pageable);
+    Map<UUID, Set<UUID>> images = imageIdsOf(page.getContent());
+    return page.map(p -> LecturerMapper.mapToDTO(p, images.get(p.getUuid())));
   }
 
+  @Transactional(readOnly = true)
   public LecturerDTO findById(UUID id) {
     return lecturerRepository.findById(id)
-            .map(LecturerMapper::mapToDTO)
-            .orElse(null);
+        .map(p -> LecturerMapper.mapToDTO(p, imageIdsOf(List.of(p)).get(id)))
+        .orElse(null);
   }
 
   public LecturerDTO save(LecturerDTO dto) {
@@ -58,7 +62,7 @@ public class LecturerService {
     lecturer.setPrimaryImageUuid(
         imageService.resolveNewPrimaryImage(dto.getPrimaryImageUuid(), dto.getImagesUuid()));
     Lecturer savedLecturer = lecturerRepository.save(lecturer);
-    return LecturerMapper.mapToDTO(savedLecturer);
+    return LecturerMapper.mapToDTO(savedLecturer, dto.getImagesUuid());
   }
 
   public void deleteById(UUID id) {
@@ -80,6 +84,8 @@ public class LecturerService {
     Lecturer existingLecturer = lecturerRepository.findById(dto.getId())
         .orElseThrow(() -> new IllegalArgumentException("Lecturer with id " + dto.getId() + " not found"));
 
+    OptimisticLock.check(dto.getVersion(), existingLecturer.getVersion(), "Lecturer");
+
     Set<Image> previousImages = new HashSet<>(existingLecturer.getImages());
     Set<Image> requestedImages = imageService.resolveImages(dto.getImagesUuid());
 
@@ -100,6 +106,65 @@ public class LecturerService {
     Lecturer updatedLecturer = lecturerRepository.save(existingLecturer);
 
     imageService.deleteRemovedImages(previousImages, requestedImages);
-    return LecturerMapper.mapToDTO(updatedLecturer);
+    return LecturerMapper.mapToDTO(updatedLecturer, idsOf(requestedImages));
+  }
+
+  /** Creates the lecturer and stores the uploaded photos in the same transaction. */
+  public LecturerDTO save(LecturerDTO dto, List<UploadedImage> uploads) {
+    Set<UUID> images = dto.getImagesUuid() == null ? new HashSet<>() : new HashSet<>(dto.getImagesUuid());
+    ImageService.assertWithinLimit(images.size(), uploads.size());
+    images.addAll(imageService.saveImages(uploads));
+    dto.setImagesUuid(images);
+    return save(dto);
+  }
+
+  /**
+   * Updates the lecturer; the photos it ends up with are the ones it had, minus {@code removals},
+   * plus {@code uploads}, all committed together with the record.
+   *
+   * <p>The request carries the images to <em>remove</em>, never the ones to keep. That direction
+   * matters: the edit form builds its thumbnails in JavaScript, so a "keep these" list would turn
+   * any rendering failure into data loss — an empty editor would submit an empty keep-list and
+   * wipe every photo. With removals, a broken editor simply removes nothing, and a missing
+   * parameter means "leave the images alone". Ids outside the record's own set are ignored, so a
+   * forged uuid can only ever subtract from its photos, never attach someone else's.</p>
+   */
+  public LecturerDTO updateById(LecturerDTO dto, List<UploadedImage> uploads, List<UUID> removals) {
+    if (dto.getId() == null) {
+      throw new IllegalArgumentException("Lecturer id is required for update");
+    }
+    if (!lecturerRepository.existsById(dto.getId())) {
+      throw new IllegalArgumentException("Lecturer with id " + dto.getId() + " not found");
+    }
+    // Ids only: initialising the image collection would read every photo's blob.
+    Set<UUID> kept = new HashSet<>(ImageLink.groupByOwner(lecturerRepository.findImageLinks(List.of(dto.getId())))
+        .getOrDefault(dto.getId(), Set.of()));
+    if (removals != null) {
+      kept.removeAll(removals);
+    }
+    ImageService.assertWithinLimit(kept.size(), uploads.size());
+    kept.addAll(imageService.saveImages(uploads));
+    dto.setImagesUuid(kept);
+    return updateById(dto);
+  }
+
+  private List<LecturerDTO> toDTOs(List<Lecturer> people) {
+    Map<UUID, Set<UUID>> images = imageIdsOf(people);
+    return people.stream().map(p -> LecturerMapper.mapToDTO(p, images.get(p.getUuid()))).toList();
+  }
+
+  /**
+   * Image ids for all given people in one query. Never {@code getImages()}: that would load
+   * every photo's blob (see {@link ImageLink}).
+   */
+  private Map<UUID, Set<UUID>> imageIdsOf(List<Lecturer> people) {
+    if (people.isEmpty()) {
+      return Map.of();
+    }
+    return ImageLink.groupByOwner(lecturerRepository.findImageLinks(people.stream().map(Lecturer::getUuid).toList()));
+  }
+
+  private static Set<UUID> idsOf(Set<Image> images) {
+    return images.stream().map(Image::getId).collect(Collectors.toSet());
   }
 }

@@ -38,7 +38,7 @@ services:
           mariadb:
             condition: service_healthy
     mariadb:
-      image: mariadb:11.7
+      image: mariadb:11.8
       restart: unless-stopped
       container_name: mariadb
       environment:
@@ -46,6 +46,10 @@ services:
         - MARIADB_PASSWORD=password
         - MARIADB_DATABASE=certificates
         - MARIADB_ROOT_PASSWORD=root
+        # Runs mariadb-upgrade on start when the data volume was written by an older server
+        # (the volume below predates 11.8). Without it the server starts but keeps warning
+        # about system tables from the previous version.
+        - MARIADB_AUTO_UPGRADE=1
       volumes:
         - mariadb-data:/var/lib/mysql
       expose:

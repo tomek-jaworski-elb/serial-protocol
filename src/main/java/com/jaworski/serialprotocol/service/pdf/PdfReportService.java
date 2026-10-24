@@ -803,7 +803,7 @@ public class PdfReportService {
         return fullName(dto.getName(), dto.getSurname());
     }
 
-    private String resolveCourseTypeLabel(Long id) {
+    private String resolveCourseTypeLabel(UUID id) {
         if (id == null) return EM_DASH;
         try {
             CourseTypeDTO ct = courseTypeService.findById(id);

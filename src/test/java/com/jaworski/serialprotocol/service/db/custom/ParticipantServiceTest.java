@@ -19,7 +19,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
-@Import({ParticipantService.class, CoursesService.class, CourseTypeService.class, TrainerService.class, LecturerService.class, ImageService.class})
+@Import({IdAllocator.class, ParticipantService.class, CoursesService.class, CourseTypeService.class, TrainerService.class, LecturerService.class, ImageService.class})
 class ParticipantServiceTest {
 
     @Autowired
@@ -408,7 +408,6 @@ class ParticipantServiceTest {
 
     private UUID createAndSaveImageId() {
       Image image = new Image();
-      image.setData(new byte[]{1, 2, 3, 4});
       image.setContentType("context");
       return imageRepository.save(image).getId();
     }

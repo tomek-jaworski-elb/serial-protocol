@@ -102,7 +102,7 @@ Katalog `simulator/` zawiera osobną aplikację `ship-sim`, która karmi serwer 
 Aplikacja umożliwia generowanie raportów PDF z danych kursów (`PdfReportController` → `PdfReportService`). Konfiguracja czcionek i limitów w `application.properties` (prefiks `pdf.report.*`).
 
 ### Bezpieczeństwo
-Uwierzytelnianie in-memory z konfiguracją przez właściwości (`custom.server.credentials.*`). Chronione ścieżki: `/name-service`, `/instructor-service`, `/api/**`, `/admin/**`, `/db-utils/**`, `/pdf/**`, oraz wszystkie endpointy CRUD domeny custom (`/trainer-service/**`, `/lecturer-service/**`, `/technician-service/**`, `/participant-service/**`, `/courses-service/**`, `/course-type-service/**`, `/course-counter-service/**`).
+Uwierzytelnianie in-memory z konfiguracją przez właściwości (`custom.server.credentials.*`). Chronione ścieżki: `/name-service`, `/instructor-service`, `/api/**`, `/admin/**`, `/pdf/**`, oraz wszystkie endpointy CRUD domeny custom (`/trainer-service/**`, `/lecturer-service/**`, `/technician-service/**`, `/participant-service/**`, `/courses-service/**`, `/course-type-service/**`, `/course-counter-service/**`).
 
 ## Dokumentacja szczegółowa
 

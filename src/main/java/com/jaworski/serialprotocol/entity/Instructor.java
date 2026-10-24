@@ -1,5 +1,6 @@
 package com.jaworski.serialprotocol.entity;
 
+import com.jaworski.serialprotocol.entity.custom.Auditable;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,15 +13,21 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.time.LocalDate;
 
+/** Legacy record fed by the external REST client; see {@link Student} for why it is audited. */
 @Entity
 @Table(name = Instructor.TABLE_NAME)
+@SQLRestriction("deleted_at is null")
+@SQLDelete(sql = "UPDATE instructor SET deleted_at = CURRENT_TIMESTAMP(6) WHERE instructor_no = ? AND version = ?")
 @Data
+@EqualsAndHashCode(callSuper = false)
 @NoArgsConstructor
 @AllArgsConstructor
-public class Instructor {
+public class Instructor extends Auditable {
 
     public static final String TABLE_NAME = "instructor";
 

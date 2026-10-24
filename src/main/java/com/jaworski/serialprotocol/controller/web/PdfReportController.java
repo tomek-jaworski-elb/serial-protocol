@@ -271,7 +271,7 @@ public class PdfReportController {
     /**
      * Generates a PDF report for the given course-type IDs (Long).
      *
-     * @param ids comma-separated course-type Long IDs (empty → empty report)
+     * @param ids comma-separated course-type UUIDs (empty → empty report)
      * @return PDF response or 400/500 on error
      */
     @PostMapping(value = "/course-type",
@@ -280,18 +280,18 @@ public class PdfReportController {
     public ResponseEntity<byte[]> courseTypePdf(
             @RequestParam(required = false, defaultValue = "") String ids) {
 
-        List<Long> idList;
+        List<UUID> idList;
         try {
-            idList = parseLongs(ids);
+            idList = parseUuids(ids);
         } catch (IllegalArgumentException e) {
-            return badRequest("Invalid numeric ID in 'ids': " + e.getMessage());
+            return badRequest("Invalid UUID in 'ids': " + e.getMessage());
         }
         if (exceedsMax(idList)) {
             return tooManyRecords(idList.size(), pdfReportProperties.getMaxRecords());
         }
 
         List<CourseTypeDTO> dtos= new ArrayList<>();
-        for (Long id : idList) {
+        for (UUID id : idList) {
             try {
                 dtos.add(courseTypeService.findById(id));
             } catch (Exception e) {
@@ -374,29 +374,6 @@ public class PdfReportController {
         return result;
     }
 
-    /**
-     * Parses a comma-separated string of {@code Long} IDs.
-     *
-     * @param raw raw request parameter value
-     * @return list of parsed Longs (empty list when {@code raw} is blank)
-     * @throws IllegalArgumentException if any token is not a valid long
-     */
-    private static List<Long> parseLongs(String raw) {
-        if (raw == null || raw.isBlank()) {
-            return List.of();
-        }
-        List<Long> result = new ArrayList<>();
-        for (String token : raw.split(",")) {
-            String trimmed = token.trim();
-            if (trimmed.isBlank()) continue;
-            try {
-                result.add(Long.parseLong(trimmed));
-            } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("'" + trimmed + "' is not a valid numeric ID", e);
-            }
-        }
-        return result;
-    }
 
     /** Returns {@code true} when the list exceeds the configured max-records limit. */
     private boolean exceedsMax(List<?> list) {

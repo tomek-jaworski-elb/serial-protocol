@@ -8,14 +8,22 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 @Entity
+@SQLRestriction("deleted_at is null")
+@SQLDelete(sql = "UPDATE course_type SET deleted_at = CURRENT_TIMESTAMP(6) WHERE course_type_uuid = ? AND version = ?")
 @Data
+@EqualsAndHashCode(callSuper = false)
 @Table(name = CourseType.TABLE_NAME)
 @NoArgsConstructor
-public class CourseType {
+public class CourseType extends Auditable {
 
   public static final String TABLE_NAME = "course_type";
 
@@ -25,10 +33,12 @@ public class CourseType {
     this.longDescription = longDescription;
   }
 
+  // UUID like every other table: an AUTO_INCREMENT key cannot be generated independently by
+  // two databases (V6__course_type_uuid.sql moved existing rows over).
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Column(name = CourseType.TABLE_NAME + "_id", nullable = false, updatable = false)
-  private Long id;
+  @GeneratedValue(strategy = GenerationType.UUID)
+  @Column(name = CourseType.TABLE_NAME + "_uuid", nullable = false, updatable = false)
+  private UUID id;
 
   @Column(name = CourseType.TABLE_NAME + "_code", nullable = false, unique = true, length = 32)
   @NotBlank

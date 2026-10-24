@@ -40,8 +40,8 @@
                     <div class="col-md-2">
                         <label for="addParticipantId" class="form-label">ID <span class="text-muted small">(unique)</span></label>
                         <input id="addParticipantId" name="id" type="number" min="1" class="form-control"
-                               th:value="${nextId}" required>
-                        <div class="form-text">Auto-suggested. You may change it.</div>
+                               th:placeholder="${'next free: ' + nextId}">
+                        <div class="form-text">Leave empty to get the next free number on save.</div>
                     </div>
                     <div class="col-md-4">
                         <label for="addParticipantName" class="form-label">Name <span class="text-danger">*</span></label>
@@ -95,6 +95,7 @@
             <h5 class="card-title">Update participant</h5>
             <form method="post" enctype="multipart/form-data" th:action="@{/participant-service/update}">
                 <input id="updateParticipantUuid" name="participantUuid" type="hidden">
+                <input id="updateParticipantVersion" name="version" type="hidden">
                 <div class="row g-3">
                     <div class="col-md-2">
                         <label for="updateParticipantId" class="form-label">ID <span class="text-muted small">(unique)</span></label>
@@ -261,7 +262,7 @@
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li>
                                     <button type="button" class="dropdown-item update-participant-btn" data-image-source
-                                            th:attr="data-uuid=${participant.participantUuid},data-image=${participant.image},data-id=${participant.id},data-name=${participant.name},data-surname=${participant.surname},data-birthdate=${participant.birthDate},data-nickname=${participant.nickname},data-email=${participant.email},data-phone=${participant.phoneNumber},data-address=${participant.address},data-notes=${participant.notes}">
+                                            th:attr="data-version=${participant.version},data-uuid=${participant.participantUuid},data-image=${participant.image},data-id=${participant.id},data-name=${participant.name},data-surname=${participant.surname},data-birthdate=${participant.birthDate},data-nickname=${participant.nickname},data-email=${participant.email},data-phone=${participant.phoneNumber},data-address=${participant.address},data-notes=${participant.notes}">
                                         Update
                                     </button>
                                 </li>
@@ -429,6 +430,7 @@
             btn.addEventListener('click', () => {
                 updateParticipantUuid.value = btn.dataset.uuid || '';
                 updateParticipantId.value = btn.dataset.id || '';
+                document.getElementById('updateParticipantVersion').value = btn.dataset.version || '';
                 updateParticipantName.value = btn.dataset.name || '';
                 updateParticipantSurname.value = btn.dataset.surname || '';
                 fpUpdateBirthDate.setDate(btn.dataset.birthdate || '', false, 'Y-m-d');

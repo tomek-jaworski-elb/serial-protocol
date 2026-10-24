@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DataJpaTest
-@Import({TechnicianService.class, ImageService.class, CoursesService.class, ParticipantService.class,
+@Import({IdAllocator.class, TechnicianService.class, ImageService.class, CoursesService.class, ParticipantService.class,
         CourseTypeService.class, TrainerService.class, LecturerService.class})
 class TechnicianServiceTest {
 
@@ -338,10 +338,8 @@ class TechnicianServiceTest {
 
     private Set<UUID> createImages() {
         Image image1 = new Image();
-        image1.setData(new byte[]{4, 5, 6});
         image1.setContentType("content");
         Image image2 = new Image();
-        image2.setData(new byte[]{1, 2, 0, 3, 4, 4, 5, 6});
         image2.setContentType("xyz");
         List<Image> saved = imageRepository.saveAll(List.of(image1, image2));
         Set<UUID> ids = new HashSet<>();

@@ -2,6 +2,8 @@ package com.jaworski.serialprotocol.service.db.custom;
 
 import com.jaworski.serialprotocol.dto.custom.PrimaryImage;
 import com.jaworski.serialprotocol.entity.custom.Image;
+import com.jaworski.serialprotocol.entity.custom.ImageBlob;
+import com.jaworski.serialprotocol.repository.custom.ImageBlobRepository;
 import com.jaworski.serialprotocol.repository.custom.ImageRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -10,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -26,7 +29,25 @@ public class ImageService {
       "image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"
   );
 
+  /** How many photos a lecturer, trainer or technician may carry. */
+  public static final int MAX_IMAGES_PER_PERSON = 6;
+
+  /**
+   * Raised when a request would push a record past its photo limit.
+   *
+   * <p>Its own type so the handlers can surface its message verbatim without also leaking
+   * internal ones — {@code "Trainer with id <uuid> not found"} or {@code "One or more image
+   * ids do not exist"} come out of the service layer as plain IllegalArgumentException and
+   * are not written for the person reading the toast.</p>
+   */
+  public static class ImageLimitExceededException extends IllegalArgumentException {
+    public ImageLimitExceededException(String message) {
+      super(message);
+    }
+  }
+
   private final ImageRepository imageRepository;
+  private final ImageBlobRepository blobRepository;
 
   /**
    * Normalizes an uploaded or stored content type to one of the allowed image types,
@@ -47,45 +68,92 @@ public class ImageService {
     return ALLOWED_IMAGE_TYPES.contains(base) ? base : "application/octet-stream";
   }
 
+  /**
+   * Fails when {@code kept} photos plus {@code added} new ones would exceed the limit.
+   *
+   * <p>Clamped at zero on the kept side so a record that somehow holds more than the limit
+   * (data from before the cap existed) can still have images removed — that is the only
+   * way back under the limit. Adding to such a record stays blocked.</p>
+   */
+  public static void assertWithinLimit(int kept, int added) {
+    int budget = Math.max(0, MAX_IMAGES_PER_PERSON - kept);
+    if (added > budget) {
+      throw new ImageLimitExceededException(
+          "Maximum " + MAX_IMAGES_PER_PERSON + " images allowed (" + kept + " already in use)");
+    }
+  }
+
+  /** The metadata row only; never the bytes. */
+  @Transactional(readOnly = true)
   public Image getImageById(UUID id) {
     return imageRepository.findById(id).orElse(null);
-  }
-
-  public Image saveImage(byte[] data, String contentType) {
-    Image image = new Image();
-    image.setData(data);
-    image.setContentType(contentType);
-    return imageRepository.save(image);
-  }
-
-  public Set<UUID> saveAllImages(List<Image> images) {
-    return imageRepository.saveAll(images).stream()
-        .map(Image::getId)
-        .collect(Collectors.toSet());
-  }
-
-  public int getAllImages() {
-    return (int) imageRepository.count();
-  }
-
-  public void delete(UUID id) {
-    imageRepository.deleteById(id);
-  }
-
-  /** Primary-key lookup only — deliberately does not touch the blob columns. */
-  public boolean exists(UUID id) {
-    return imageRepository.existsById(id);
   }
 
   /** Bytes plus the content type they should be served with. */
   public record ImageContent(byte[] data, String contentType) {
   }
 
+  /** The full-size bytes, or {@code null} when the image does not exist (or was deleted). */
+  @Transactional(readOnly = true)
+  public ImageContent getOriginal(UUID id) {
+    Image image = imageRepository.findById(id).orElse(null);
+    if (image == null) {
+      return null;
+    }
+    ImageBlob blob = blobRepository.findById(id).orElse(null);
+    if (blob == null || blob.getData() == null || blob.getData().length == 0) {
+      return null;
+    }
+    return new ImageContent(blob.getData(), image.getContentType());
+  }
+
+  /**
+   * Stores a photo: the metadata row, its bytes, and the thumbnail.
+   *
+   * <p>The thumbnail is produced here, at upload, so that serving one is a pure read. It
+   * used to be generated on the first GET and written back then, which made a GET a write
+   * and, under replication, would have every node emit change traffic for derived data.</p>
+   */
+  public Image saveImage(byte[] data, String contentType) {
+    Image image = new Image();
+    image.setContentType(contentType);
+    image = imageRepository.save(image);
+    ImageBlob blob = new ImageBlob(image.getId(), data);
+    applyThumbnail(image, blob);
+    blobRepository.save(blob);
+    return image;
+  }
+
+  /** {@link #saveImage} for every upload of a request; ids in upload order. */
+  public Set<UUID> saveImages(List<UploadedImage> uploads) {
+    Set<UUID> ids = new LinkedHashSet<>();
+    for (UploadedImage upload : uploads) {
+      ids.add(saveImage(upload.data(), upload.contentType()).getId());
+    }
+    return ids;
+  }
+
+  @Transactional(readOnly = true)
+  public int getAllImages() {
+    return (int) imageRepository.count();
+  }
+
+  /** A tombstone on the metadata row; the bytes stay (see {@link ImageBlob}). */
+  public void delete(UUID id) {
+    imageRepository.deleteById(id);
+  }
+
+  /** Primary-key lookup only — deliberately does not touch the blob table. */
+  @Transactional(readOnly = true)
+  public boolean exists(UUID id) {
+    return imageRepository.existsById(id);
+  }
+
   /**
    * Fetches images by id, validating every id exists.
    *
    * <p>Shared by {@code LecturerService}/{@code TrainerService}/{@code TechnicianService}
-   * when resolving the image set a create/update request asked for.</p>
+   * when resolving the image set a create/update request asked for. Metadata rows only.</p>
    *
    * @throws IllegalArgumentException if any id has no matching image
    */
@@ -132,67 +200,104 @@ public class ImageService {
   }
 
   /**
-   * Returns the downscaled copy of an image, generating and storing it on first use.
+   * Returns the downscaled copy of an image, or the original whenever there is none.
+   *
+   * <p>A pure read: the thumbnail was stored at upload. A row whose thumbnail predates the
+   * current {@link ThumbnailGenerator#VERSION} (or was never produced, for rows older than
+   * the column) is scaled for this response only and left as it is; rebuilding and storing
+   * it is {@link ThumbnailBackfill}'s job. Nothing in this method ever writes, so serving an
+   * image cannot fail on a write and never generates change traffic.</p>
    *
    * <p>Falls back to the original whenever a thumbnail cannot or need not be made:
    * an unreadable format (webp, svg), an image already smaller than the target, or a
-   * generation failure. A thumbnail is a convenience, never a reason to fail a
-   * request, so this never throws for image-processing reasons.</p>
+   * generation failure. A thumbnail is a convenience, never a reason to fail a request.</p>
    */
+  @Transactional(readOnly = true)
   public ImageContent getThumbnail(UUID id) {
-    ImageRepository.ThumbnailView stored = imageRepository.findThumbnailById(id).orElse(null);
-    if (stored == null) {
-      return null;
-    }
-    // Only a state produced by the CURRENT generator can be reused. Anything older is
-    // rebuilt, which is what makes bumping ThumbnailGenerator.VERSION mean something:
-    // without this the bump would change every ETag, make every client refetch, and
-    // return the identical old bytes.
-    boolean current = ThumbnailGenerator.VERSION.equals(stored.getThumbVersion());
-    if (current && stored.getThumbData() != null && stored.getThumbData().length > 0) {
-      return new ImageContent(stored.getThumbData(), stored.getThumbContentType());
-    }
-
     Image image = imageRepository.findById(id).orElse(null);
-    if (image == null || image.getData() == null || image.getData().length == 0) {
+    if (image == null) {
       return null;
     }
-
-    // A current version with no data records "tried, and it cannot be done" — webp and
-    // svg have no ImageIO reader, and an image already under the target size gains
-    // nothing. Without it every request would re-run a conversion known to fail.
-    byte[] scaled = null;
-    boolean verdict = current;   // whether the outcome is worth recording
-    if (!current) {
-      try {
-        scaled = ThumbnailGenerator.scale(image.getData(), image.getContentType());
-        verdict = true;
-      } catch (ThumbnailGenerator.ThumbnailFailedException e) {
-        // Serve the original this time and try again next time. Recording the version here
-        // would pin a perfectly good photo to the full-size path until someone bumps VERSION,
-        // which rebuilds every thumbnail in the table.
-        LOG.warn("Thumbnail generation failed for image {}, leaving it unrecorded", id);
+    boolean current = ThumbnailGenerator.VERSION.equals(image.getThumbVersion());
+    if (current) {
+      // A current verdict: either real thumbnail bytes, or "cannot be done", in which case
+      // the original is the answer.
+      byte[] thumb = blobRepository.findThumbData(id).orElse(null);
+      if (thumb != null && thumb.length > 0) {
+        return new ImageContent(thumb, image.getThumbContentType());
       }
-    }
-    if (scaled == null) {
-      if (!current && verdict) {
-        // Record the attempt, not a copy of the original: duplicating a 10 MB blob to
-        // avoid a cheap failed read would be a poor trade.
-        image.setThumbData(null);
-        image.setThumbContentType(null);
-        image.setThumbVersion(ThumbnailGenerator.VERSION);
-        imageRepository.save(image);
-      }
-      return new ImageContent(image.getData(), image.getContentType());
+      return getOriginal(id);
     }
 
-    String thumbType = ThumbnailGenerator.outputContentType(image.getContentType());
-    image.setThumbData(scaled);
-    image.setThumbContentType(thumbType);
+    ImageBlob blob = blobRepository.findById(id).orElse(null);
+    if (blob == null || blob.getData() == null || blob.getData().length == 0) {
+      return null;
+    }
+    // Stale or absent: serve a freshly scaled copy without recording it.
+    byte[] scaled = scaleQuietly(id, blob.getData(), image.getContentType());
+    return scaled == null
+        ? new ImageContent(blob.getData(), image.getContentType())
+        : new ImageContent(scaled, ThumbnailGenerator.outputContentType(image.getContentType()));
+  }
+
+  /**
+   * Rebuilds the stored thumbnail of one image against the current generator version.
+   *
+   * @return whether the row now carries a current thumbnail state (a transient failure
+   *     leaves it untouched so a later run can retry)
+   */
+  public boolean refreshThumbnail(UUID id) {
+    Image image = imageRepository.findById(id).orElse(null);
+    ImageBlob blob = blobRepository.findById(id).orElse(null);
+    if (image == null || blob == null) {
+      return false;
+    }
+    boolean recorded = applyThumbnail(image, blob);
+    if (recorded) {
+      blobRepository.save(blob);
+      imageRepository.save(image);
+    }
+    return recorded;
+  }
+
+  /** Ids of images whose thumbnail state was produced by another generator version, or never. */
+  @Transactional(readOnly = true)
+  public List<UUID> findStaleThumbnailIds() {
+    return imageRepository.findIdsWithStaleThumbnail(ThumbnailGenerator.VERSION);
+  }
+
+  /**
+   * Fills the thumbnail columns from the image's own bytes.
+   *
+   * <p>A {@code null} from the generator is a permanent verdict — unreadable format, bytes
+   * that do not match their content type, an image already under the target size — and is
+   * recorded as the current version with no data, so nobody retries a conversion known to
+   * fail. Recording the version and not a copy of the original matters: duplicating a 10 MB
+   * blob to avoid a cheap failed read would be a poor trade. An unexpected failure is not a
+   * verdict about the image and leaves the columns alone so the backfill retries it.</p>
+   *
+   * @return whether a verdict was recorded
+   */
+  private boolean applyThumbnail(Image image, ImageBlob blob) {
+    byte[] scaled;
+    try {
+      scaled = ThumbnailGenerator.scale(blob.getData(), image.getContentType());
+    } catch (ThumbnailGenerator.ThumbnailFailedException e) {
+      LOG.warn("Thumbnail generation failed for image {}, leaving it unrecorded", image.getId());
+      return false;
+    }
+    blob.setThumbData(scaled);
+    image.setThumbContentType(scaled == null ? null : ThumbnailGenerator.outputContentType(image.getContentType()));
     image.setThumbVersion(ThumbnailGenerator.VERSION);
-    // Concurrent requests may both generate; the bytes are equivalent, so the second
-    // write simply overwrites the first with the same result.
-    imageRepository.save(image);
-    return new ImageContent(scaled, thumbType);
+    return true;
+  }
+
+  private static byte[] scaleQuietly(UUID id, byte[] data, String contentType) {
+    try {
+      return ThumbnailGenerator.scale(data, contentType);
+    } catch (ThumbnailGenerator.ThumbnailFailedException e) {
+      LOG.warn("Thumbnail generation failed for image {}, serving the original", id);
+      return null;
+    }
   }
 }

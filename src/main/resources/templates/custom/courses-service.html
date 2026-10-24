@@ -143,7 +143,7 @@
             <h5 class="card-title">Update course</h5>
             <form method="post" th:action="@{/courses-service/update}">
                 <input id="updateCourseUuid" name="uuid" type="hidden">
-                <input id="updateCourseId" name="id" type="hidden">
+                <input id="updateCourseVersion" name="version" type="hidden">
                 <div class="row g-3">
                     <div class="col-md-3">
                         <label for="updateParticipantUuid" class="form-label">Participant <span class="text-danger">*</span></label>
@@ -314,7 +314,7 @@
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li>
                                     <button type="button" class="dropdown-item update-course-btn"
-                                            th:attr="data-uuid=${course.uuid},data-id=${course.id},data-participant-uuid=${course.participantUuid},data-course-type-id=${course.courseTypeId},data-start-date=${course.startDate},data-end-date=${course.endDate},data-counter=${course.counter}"
+                                            th:attr="data-version=${course.version},data-uuid=${course.uuid},data-id=${course.id},data-participant-uuid=${course.participantUuid},data-course-type-id=${course.courseTypeId},data-start-date=${course.startDate},data-end-date=${course.endDate},data-counter=${course.counter}"
                                             th:data-trainer-ids="${course.trainerIdsString}"
                                             th:data-lecturer-ids="${course.lecturerIdsString}"
                                             th:data-technician-ids="${course.technicianIdsString}">
@@ -473,7 +473,7 @@
         updateButtons.forEach((btn) => {
             btn.addEventListener('click', () => {
                 document.getElementById('updateCourseUuid').value = btn.dataset.uuid || '';
-                document.getElementById('updateCourseId').value = btn.dataset.id || '';
+                document.getElementById('updateCourseVersion').value = btn.dataset.version || '';
 
                 const participantSelect = document.getElementById('updateParticipantUuid');
                 const courseTypeSelect = document.getElementById('updateCourseTypeId');

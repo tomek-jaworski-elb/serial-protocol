@@ -25,10 +25,15 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -44,6 +49,7 @@ public class CoursesService {
   private final TrainerRepository trainerRepository;
   private final LecturerRepository lecturerRepository;
   private final TechnicianRepository technicianRepository;
+  private final IdAllocator idAllocator;
 
   @Transactional(readOnly = true)
   public List<CoursesDTO> findAll() {
@@ -78,8 +84,38 @@ public class CoursesService {
         .toList();
   }
 
+  /**
+   * Courses grouped by participant, for a page of participants in one query.
+   *
+   * <p>Every requested uuid is present in the result, with an empty list when the participant
+   * has no courses, so templates can index the map without a null check.</p>
+   */
+  @Transactional(readOnly = true)
+  public Map<UUID, List<CoursesDTO>> findByParticipantUuids(Collection<UUID> participantUuids) {
+    return groupBy(participantUuids,
+        coursesRepository.findByParticipant_UuidIn(participantUuids), CoursesDTO::getParticipantUuid);
+  }
+
+  /** Same as {@link #findByParticipantUuids} for course counters. */
+  @Transactional(readOnly = true)
+  public Map<UUID, List<CoursesDTO>> findByCourseCounterUuids(Collection<UUID> courseCounterUuids) {
+    return groupBy(courseCounterUuids,
+        coursesRepository.findByCourseCounter_UuidIn(courseCounterUuids), CoursesDTO::getCourseCounterUuid);
+  }
+
+  private static Map<UUID, List<CoursesDTO>> groupBy(Collection<UUID> keys, List<Courses> courses,
+      Function<CoursesDTO, UUID> key) {
+    Map<UUID, List<CoursesDTO>> grouped = new HashMap<>();
+    keys.forEach(k -> grouped.put(k, new ArrayList<>()));
+    courses.stream().map(CoursesMapper::mapToDTO)
+        .forEach(dto -> grouped.computeIfAbsent(key.apply(dto), k -> new ArrayList<>()).add(dto));
+    return grouped;
+  }
+
+  /** The number the next course would get; a hint, never a value to submit. */
+  @Transactional(readOnly = true)
   public Long nextId() {
-    return coursesRepository.findMaxCoursesId() + 1;
+    return idAllocator.peek(IdAllocator.COURSES, coursesRepository::findMaxCoursesId);
   }
 
   public CoursesDTO save(CoursesDTO dto) {
@@ -91,7 +127,7 @@ public class CoursesService {
     }
     validateDates(dto);
     if (dto.getId() == null) {
-      dto.setId(nextId());
+      dto.setId(idAllocator.next(IdAllocator.COURSES, coursesRepository::findMaxCoursesId));
     }
     Courses courses = buildCourses(dto);
     Courses saved = coursesRepository.save(courses);
@@ -108,9 +144,8 @@ public class CoursesService {
     if (dto.getUuid() == null) {
       throw new IllegalArgumentException("UUID is required for update");
     }
-    if (!coursesRepository.existsById(dto.getUuid())) {
-      throw new IllegalArgumentException("Course with UUID " + dto.getUuid() + " not found");
-    }
+    Courses existing = coursesRepository.findById(dto.getUuid())
+        .orElseThrow(() -> new IllegalArgumentException("Course with UUID " + dto.getUuid() + " not found"));
     if (dto.getParticipantUuid() == null) {
       throw new IllegalArgumentException("Participant UUID is required");
     }
@@ -118,13 +153,24 @@ public class CoursesService {
       throw new IllegalArgumentException("Course type ID is required");
     }
     validateDates(dto);
-    Courses courses = buildCourses(dto);
-    Courses updated = coursesRepository.save(courses);
+    OptimisticLock.check(dto.getVersion(), existing.getVersion(), "Course");
+    // The course number is assigned once, on creation; whatever the request carries is ignored.
+    dto.setId(existing.getId());
+    applyTo(existing, dto);
+    Courses updated = coursesRepository.save(existing);
     LOGGER.info("Updated course with uuid={}", updated.getUuid());
     return CoursesMapper.mapToDTO(updated);
   }
 
   private Courses buildCourses(CoursesDTO dto) {
+    Courses courses = new Courses();
+    courses.setUuid(dto.getUuid());
+    applyTo(courses, dto);
+    return courses;
+  }
+
+  /** Copies the request onto the entity; used for a new course and, on update, the managed one. */
+  private void applyTo(Courses courses, CoursesDTO dto) {
     Participant participant = participantRepository.getReferenceById(dto.getParticipantUuid());
     CourseType courseType = courseTypeRepository.getReferenceById(dto.getCourseTypeId());
 
@@ -148,8 +194,6 @@ public class CoursesService {
 
     CourseCounter courseCounter = resolveCourseCounter(dto);
 
-    Courses courses = new Courses();
-    courses.setUuid(dto.getUuid());
     courses.setId(dto.getId());
     courses.setParticipant(participant);
     courses.setCourseType(courseType);
@@ -159,7 +203,6 @@ public class CoursesService {
     courses.setTrainers(trainers);
     courses.setLecturers(lecturers);
     courses.setTechnicians(technicians);
-    return courses;
   }
 
   private CourseCounter resolveCourseCounter(CoursesDTO dto) {

@@ -1,5 +1,10 @@
 package com.jaworski.serialprotocol.dto.custom;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Past;
+import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -16,15 +21,31 @@ import java.util.UUID;
 public class ParticipantDTO {
 
   private UUID participantUuid;
+  /** The participant number; empty on add means "allocate the next free one". */
+  @Positive(message = "must be a positive number")
   private Long id;
+  @NotBlank(message = "is required")
+  @Size(max = 100)
   private String name;
+  @NotBlank(message = "is required")
+  @Size(max = 100)
   private String surname;
+  @Size(max = 1000)
   private String notes;
+  @Size(max = 100)
   private String nickname;
+  @Email(message = "must be a valid e-mail address")
+  @Size(max = 100)
   private String email;
+  @Size(max = 26)
   private String phoneNumber;
+  @Size(max = 300)
   private String address;
+
+  /** Optimistic-lock version of the stored record; posted back by the update form, null = unchecked. */
+  private Long version;
   @DateTimeFormat(pattern = "dd/MM/yyyy")
+  @Past(message = "must be in the past")
   private LocalDate birthDate;
 
   @ToString.Exclude

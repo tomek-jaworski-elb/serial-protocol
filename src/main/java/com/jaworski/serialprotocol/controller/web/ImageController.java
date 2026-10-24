@@ -1,6 +1,5 @@
 package com.jaworski.serialprotocol.controller.web;
 
-import com.jaworski.serialprotocol.entity.custom.Image;
 import com.jaworski.serialprotocol.service.db.custom.ImageService;
 import com.jaworski.serialprotocol.service.db.custom.ThumbnailGenerator;
 import lombok.RequiredArgsConstructor;
@@ -96,12 +95,12 @@ public class ImageController {
       data = thumbnail.data();
       contentType = thumbnail.contentType();
     } else {
-      Image image = imageService.getImageById(uuid);
-      if (image == null || image.getData() == null || image.getData().length == 0) {
+      ImageService.ImageContent original = imageService.getOriginal(uuid);
+      if (original == null) {
         throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Image not found");
       }
-      data = image.getData();
-      contentType = image.getContentType();
+      data = original.data();
+      contentType = original.contentType();
     }
 
     MediaType mediaType = MediaType.APPLICATION_OCTET_STREAM;

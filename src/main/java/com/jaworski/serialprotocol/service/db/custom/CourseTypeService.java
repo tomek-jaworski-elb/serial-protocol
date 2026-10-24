@@ -8,41 +8,47 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @RequiredArgsConstructor
 @Service
+@Transactional
 public class CourseTypeService {
 
   private final CourseTypeRepository courseTypeRepository;
   private final CoursesRepository coursesRepository;
 
   public CourseTypeDTO save(CourseTypeDTO courseTypeDTO) {
-    if (courseTypeRepository.existsByCode(courseTypeDTO.getCode())) {
+    if (courseTypeRepository.countWithCode(courseTypeDTO.getCode()) > 0) {
       throw new IllegalArgumentException("Course type with code '" + courseTypeDTO.getCode() + "' already exists.");
     }
     var entity = CourseTypeMapper.mapToEntity(courseTypeDTO);
     return CourseTypeMapper.mapToDTO(courseTypeRepository.save(entity));
   }
 
+  @Transactional(readOnly = true)
   public List<CourseTypeDTO> findAll() {
     return courseTypeRepository.findAll().stream()
         .map(CourseTypeMapper::mapToDTO)
         .toList();
   }
 
+  @Transactional(readOnly = true)
   public Page<CourseTypeDTO> findAll(Pageable pageable) {
     return courseTypeRepository.findAll(pageable).map(CourseTypeMapper::mapToDTO);
   }
 
-  public CourseTypeDTO findById(Long id) {
+  @Transactional(readOnly = true)
+  public CourseTypeDTO findById(UUID id) {
     return courseTypeRepository.findById(id)
         .map(CourseTypeMapper::mapToDTO)
         .orElseThrow(() -> new IllegalArgumentException("Course type with id " + id + " not found"));
   }
 
-  public void deleteById(Long id) {
+  public void deleteById(UUID id) {
     if (coursesRepository.existsByCourseType_Id(id)) {
       throw new IllegalStateException("Cannot delete course type with id " + id + " because it is referenced by existing courses.");
     }
@@ -53,13 +59,15 @@ public class CourseTypeService {
     if (courseTypeDTO.getId() == null) {
       throw new IllegalArgumentException("Course type id is required for update");
     }
-    if (!courseTypeRepository.existsById(courseTypeDTO.getId())) {
-      throw new IllegalArgumentException("Course type with id " + courseTypeDTO.getId() + " not found");
-    }
-    if (courseTypeRepository.existsByCodeAndIdNot(courseTypeDTO.getCode(), courseTypeDTO.getId())) {
+    var entity = courseTypeRepository.findById(courseTypeDTO.getId())
+        .orElseThrow(() -> new IllegalArgumentException("Course type with id " + courseTypeDTO.getId() + " not found"));
+    OptimisticLock.check(courseTypeDTO.getVersion(), entity.getVersion(), "Course type");
+    if (courseTypeRepository.countWithCodeExcludingId(courseTypeDTO.getCode(), courseTypeDTO.getId()) > 0) {
       throw new IllegalArgumentException("Course type with code '" + courseTypeDTO.getCode() + "' already exists.");
     }
-    var entity = CourseTypeMapper.mapToEntity(courseTypeDTO);
+    entity.setCode(courseTypeDTO.getCode());
+    entity.setDescription(courseTypeDTO.getDescription());
+    entity.setLongDescription(courseTypeDTO.getLongDescription());
     return CourseTypeMapper.mapToDTO(courseTypeRepository.save(entity));
   }
 }

@@ -177,9 +177,9 @@ class CustomDBControllerImageTest {
     }
 
     /**
-     * uploadImages() commits through ImageService, which has its own transaction, while
-     * the controller does not. A failure between the upload and the entity save would
-     * otherwise leave the new rows in the table referenced by nothing.
+     * The upload and the record commit in one transaction (the services take the bytes, not
+     * ids of rows the controller had already committed), so a failing save cannot leave the
+     * new rows in the table referenced by nothing.
      */
     @Test
     void update_failingAfterTheUpload_discardsTheNewImages() throws Exception {
@@ -197,9 +197,9 @@ class CustomDBControllerImageTest {
     }
 
     /**
-     * The add endpoints upload before they persist, exactly like the update ones, so the same
-     * cleanup is needed. A name over its column length is an ordinary user mistake, not an edge
-     * case — without this the user retries and leaks another set of blobs each time.
+     * Same guarantee on the add endpoints. A name over its column length is an ordinary user
+     * mistake, not an edge case — without this the user retries and leaks another set of blobs
+     * each time.
      */
     @Test
     void add_failingAfterTheUpload_discardsTheNewImages() throws Exception {
