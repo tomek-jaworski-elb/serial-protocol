@@ -13,6 +13,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -92,6 +93,21 @@ class SyncRestoreTest {
     assertThat(result.beforeRestore().getFileName().toString()).contains("before-restore");
     assertThat(backups.list()).hasSize(backupsBefore + 1);
     assertThat(Files.exists(SyncBackupService.reportFor(result.beforeRestore()))).isFalse();
+  }
+
+  @Test
+  void aRestoreForgetsTheBaseOfTheLastImport() throws Exception {
+    JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+    SyncFixture.seed(jdbc);
+    Path backup = backups.writeBackup("manual");
+    nodeService.markImported(Instant.now(), "other.sync", SyncFixture.ORIGIN, Instant.now());
+
+    restores.restore(backup);
+
+    Map<String, Object> node = jdbc.queryForMap("select * from sync_node");
+    assertThat(node.get("LAST_IMPORT_NODE")).isNull();
+    assertThat(node.get("LAST_IMPORT_EXPORTED_AT")).isNull();
+    assertThat(node.get("LAST_IMPORT_FILE")).isEqualTo(backup.getFileName().toString());
   }
 
   @Test

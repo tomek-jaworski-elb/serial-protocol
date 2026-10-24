@@ -84,8 +84,8 @@ public class SyncImportService {
       throw new SyncRefusedException("The file has a damaged row and cannot be imported: " + e.getMessage(), e);
     }
     return SyncAnalyzer.analyze(new SyncAnalyzer.Input(self.getId(), self.getName(),
-        self.getLastSyncAt(), properties.isReadOnly(), file.manifest().node(), local, file.tables(),
-        ZoneId.systemDefault()));
+        self.getLastSyncAt(), properties.isReadOnly(), file.manifest().node(),
+        SyncNodeService.seenFrom(self, file.manifest().node().id()), local, file.tables(), ZoneId.systemDefault()));
   }
 
   /**

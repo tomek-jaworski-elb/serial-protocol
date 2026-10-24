@@ -26,6 +26,11 @@ public class SyncLocalReader {
 
   @Transactional(readOnly = true)
   public Map<String, List<SyncRow>> read() {
+    return readInTransaction();
+  }
+
+  /** The same read inside a transaction the caller owns ({@code SyncApplyService} checks nothing moved). */
+  Map<String, List<SyncRow>> readInTransaction() {
     Map<String, List<SyncRow>> tables = new LinkedHashMap<>();
     for (SyncTable table : SyncTables.TABLES) {
       tables.put(table.name(), jdbc.query("SELECT * FROM " + table.name() + " ORDER BY " + table.orderBy(),

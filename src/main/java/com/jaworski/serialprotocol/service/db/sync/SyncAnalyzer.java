@@ -15,6 +15,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -42,12 +43,15 @@ public final class SyncAnalyzer {
    * @param since    {@code sync_node.last_sync_at}; {@code null} reads as "every local row changed here"
    * @param readOnly whether this installation runs in READ_ONLY mode
    * @param fileNode the exporting node, from the manifest
+   * @param seen     {@code exportedAt} of the last file imported from {@code fileNode}, or
+   *                 {@code null} when the last import came from another node (or there was none);
+   *                 a file row not touched since then was already merged here
    * @param local    the local tables in file shape
    * @param file     the file's tables
    * @param zone     the zone the report shows timestamps in
    */
   public record Input(UUID self, String selfName, Instant since, boolean readOnly, SyncManifest.Node fileNode,
-      Map<String, List<SyncRow>> local, Map<String, List<SyncRow>> file, ZoneId zone) {
+      Instant seen, Map<String, List<SyncRow>> local, Map<String, List<SyncRow>> file, ZoneId zone) {
   }
 
   static final Map<String, String> TABLE_LABELS = Map.ofEntries(
@@ -251,12 +255,29 @@ public final class SyncAnalyzer {
    * edit, which may be this computer. A tombstone in the file that this computer does not
    * have (or has with another {@code deleted_at}) is therefore a change made there whatever
    * its origin says.
+   *
+   * <p>Either way the file row must be newer than {@code seen}, the export time of the last
+   * file taken from the same node: a row that node wrote, which this computer imported and
+   * then edited, comes back unchanged in the next file (another origin, a lower version) and is
+   * not a competing change. Clocks differ between computers, but here both timestamps come
+   * from the exporting one.</p>
    */
   private boolean changedThere(SyncRow local, SyncRow file) {
+    if (alreadySeen(file)) {
+      return false;
+    }
     if (!in.self().equals(file.originNode())) {
       return true;
     }
     return file.isDeleted() && !Objects.equals(file.deletedAt(), local.deletedAt());
+  }
+
+  private boolean alreadySeen(SyncRow file) {
+    Instant seen = in.seen();
+    if (seen == null) {
+      return false;
+    }
+    return !after(file.createdAt(), seen) && !after(file.updatedAt(), seen) && !after(file.deletedAt(), seen);
   }
 
   /** Rows stamped before V10 ({@code origin_node} NULL) count as untouched here. */
@@ -392,18 +413,23 @@ public final class SyncAnalyzer {
    */
   private void checkReferences() {
     List<RowPlan> candidates = new ArrayList<>(plan);
+    Set<String> conditional = new HashSet<>();
     for (Collision c : List.copyOf(collisions)) {
       if (c.type() == Type.C2 || c.type() == Type.C3) {
         String key = c.id().substring(c.type().name().length() + 1 + c.table().length() + 1);
         candidates.add(new RowPlan(c.table(), key, Action.UPDATE, fileByKey.get(c.table()).get(key)));
+        conditional.add(c.table() + "|" + key);
       }
     }
     for (RowPlan candidate : candidates) {
       SyncTable table = table(candidate.table());
       SyncRow row = candidate.fileRow();
+      String condition = conditional.contains(candidate.table() + "|" + candidate.key())
+          ? " This applies only if the file's version of the record is taken." : "";
       Map<String, String> refs = REFERENCES.getOrDefault(candidate.table(), Map.of());
       for (Map.Entry<String, String> ref : refs.entrySet()) {
-        checkReference(table, candidate.key(), row, row.text(ref.getKey()), ref.getValue(), ref.getKey());
+        checkReference(table, candidate.key(), row, row.text(ref.getKey()), ref.getValue(), ref.getKey(),
+            condition);
       }
       for (Map.Entry<String, JoinTable> join : JOIN_TABLES.entrySet()) {
         if (!join.getValue().ownerTable().equals(candidate.table())) {
@@ -412,7 +438,7 @@ public final class SyncAnalyzer {
         for (SyncRow member : fileByKey.get(join.getKey()).values()) {
           if (candidate.key().equals(member.text(join.getValue().ownerColumn()))) {
             checkReference(table, candidate.key(), row, member.text(join.getValue().memberColumn()),
-                join.getValue().memberTable(), join.getKey());
+                join.getValue().memberTable(), join.getKey(), condition);
           }
         }
       }
@@ -420,7 +446,7 @@ public final class SyncAnalyzer {
   }
 
   private void checkReference(SyncTable table, String key, SyncRow row, String referenced, String referencedTable,
-      String via) {
+      String via, String condition) {
     if (referenced == null) {
       return;
     }
@@ -431,10 +457,10 @@ public final class SyncAnalyzer {
       return;
     }
     String what = label(table(referencedTable)).toLowerCase(Locale.ROOT);
-    String reason = missing
+    String reason = (missing
         ? "The record from the file refers to a " + what + " that exists on neither computer."
         : "The record from the file refers to a " + what + " (" + name(referencedTable, target)
-            + ") that is deleted here, and the record itself is live.";
+            + ") that is deleted here, and the record itself is live.") + condition;
     List<Resolution> options = new ArrayList<>();
     options.add(new Resolution("skip-row", "Skip this record from the file"));
     if (tombstone) {

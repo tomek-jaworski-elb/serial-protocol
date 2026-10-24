@@ -74,13 +74,31 @@ public class SyncNodeService implements NodeIdentity {
     repository.save(node);
   }
 
-  /** Records a completed import: what was loaded and when, and {@code last_sync_at} with it. */
-  public void markImported(Instant at, String fileName) {
+  /**
+   * Records a completed import: what was loaded and when, {@code last_sync_at} with it, and the
+   * file's maker and export time so the next file from that node is compared against it.
+   */
+  public void markImported(Instant at, String fileName, UUID fileNode, Instant exportedAt) {
     SyncNode node = current();
     node.setLastImportAt(at);
     node.setLastImportFile(fileName);
+    node.setLastImportNode(fileNode);
+    node.setLastImportExportedAt(exportedAt);
     node.setLastSyncAt(at);
     repository.save(node);
+  }
+
+  /**
+   * Records a restore: the database is now an earlier state, so the base of the last import is
+   * forgotten; the next file from any node is compared without one.
+   */
+  public void markRestored(Instant at, String fileName) {
+    markImported(at, fileName, null, null);
+  }
+
+  /** The export time of the last imported file when it came from {@code fileNode}, otherwise {@code null}. */
+  public static Instant seenFrom(SyncNode node, UUID fileNode) {
+    return fileNode != null && fileNode.equals(node.getLastImportNode()) ? node.getLastImportExportedAt() : null;
   }
 
   /**

@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
@@ -85,7 +86,12 @@ class SyncCollisionTest {
   }
 
   SyncAnalysis analyze(Instant since, boolean readOnly) {
-    return SyncAnalyzer.analyze(new SyncAnalyzer.Input(SELF, "Office", since, readOnly, FILE_NODE, local, file,
+    return analyze(since, readOnly, null);
+  }
+
+  /** @param seen the export time of the last file imported from {@link #FILE_NODE}, {@code null} for none */
+  SyncAnalysis analyze(Instant since, boolean readOnly, Instant seen) {
+    return SyncAnalyzer.analyze(new SyncAnalyzer.Input(SELF, "Office", since, readOnly, FILE_NODE, seen, local, file,
         ZoneOffset.UTC));
   }
 
@@ -473,6 +479,18 @@ class SyncCollisionTest {
     assertThat(analysis.collisions()).extracting(Collision::id).containsExactlyInAnyOrder(
         "C2-participants-" + key(1),
         "C6-participants-" + key(1) + "-image_uuid-" + key(9));
+    // The C6 only matters if the C2 is resolved in the file's favour, and the report says so.
+    assertThat(analysis.collisions()).filteredOn(c -> c.type() == Type.C6).singleElement()
+        .extracting(Collision::explanation).asString()
+        .endsWith("This applies only if the file's version of the record is taken.");
+  }
+
+  @Test
+  void c6OfAPlannedRowIsUnconditional() {
+    file("participants", participant(key(1), 1001, "Anna", OTHER, 0, AFTER, null).with("image_uuid", key(9)));
+
+    assertThat(analyze().collisions()).singleElement().extracting(Collision::explanation).asString()
+        .doesNotContain("This applies only");
   }
 
   @Test
@@ -481,6 +499,43 @@ class SyncCollisionTest {
     file("participants", participant(key(1), 1001, "Anna", OTHER, 1, AFTER, null).with("image_uuid", key(9)));
 
     assertThat(analyze().collisions()).extracting(Collision::type).containsExactlyInAnyOrder(Type.C3, Type.C6);
+  }
+
+  // ---- the base of the last file from the same node -------------------------------------
+
+  static final Instant SEEN = SINCE.plusSeconds(5400);
+
+  @Test
+  void aFileRowNotTouchedSinceTheLastFileFromThatNodeIsNotAChangeThere() {
+    // Written there, imported here, then edited here: the next file still carries their copy.
+    local("participants", participant(key(1), 1001, "Ania", SELF, 2, LATER, null));
+    file("participants", participant(key(1), 1001, "Anna", OTHER, 1, AFTER, null));
+
+    SyncAnalysis analysis = analyze(SINCE, false, SEEN);
+
+    assertThat(analysis.plan()).isEmpty();
+    assertThat(analysis.hasCollisions()).isFalse();
+    assertThat(analysis.notices()).isEmpty();
+  }
+
+  @Test
+  void aFileRowTouchedAfterTheLastFileFromThatNodeIsAChangeThere() {
+    local("participants", participant(key(1), 1001, "Ania", SELF, 2, LATER, null),
+        participant(key(2), 1002, "Basia", SELF, 2, LATER, null));
+    file("participants", participant(key(1), 1001, "Anna", OTHER, 1, LATER, null),
+        participant(key(2), 1002, "Basia", OTHER, 1, AFTER, LATER));
+
+    assertThat(analyze(SINCE, false, SEEN).collisions()).extracting(Collision::id, Collision::type)
+        .containsExactlyInAnyOrder(tuple("C2-participants-" + key(1), Type.C2),
+            tuple("C3-participants-" + key(2), Type.C3));
+  }
+
+  @Test
+  void withoutABaseEveryRowFromAnotherNodeCountsAsChangedThere() {
+    local("participants", participant(key(1), 1001, "Ania", SELF, 2, LATER, null));
+    file("participants", participant(key(1), 1001, "Anna", OTHER, 1, AFTER, null));
+
+    assertThat(analyze(SINCE, false, null).collisions()).extracting(Collision::type).containsExactly(Type.C2);
   }
 
   @Test

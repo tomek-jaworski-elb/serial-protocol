@@ -14,8 +14,17 @@ import org.springframework.test.context.TestPropertySource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mariadb.MariaDBContainer;
+import org.springframework.jdbc.core.JdbcTemplate;
+
+import javax.sql.DataSource;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
+import java.util.Calendar;
+import java.util.TimeZone;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 /**
  * The Flyway migrations build a MariaDB schema that the Hibernate mappings accept.
@@ -37,7 +46,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers(disabledWithoutDocker = true)
 @TestPropertySource(properties = {
     "spring.flyway.enabled=true",
-    "spring.jpa.hibernate.ddl-auto=validate"
+    "spring.jpa.hibernate.ddl-auto=validate",
+    // Same as src/main/resources/application.properties, which the H2 test profile replaces.
+    "spring.datasource.hikari.connection-init-sql=SET time_zone = '+00:00'"
 })
 class SchemaMigrationTest {
 
@@ -48,6 +59,8 @@ class SchemaMigrationTest {
 
     @Autowired
     private Flyway flyway;
+    @Autowired
+    private DataSource dataSource;
 
     @Test
     void everyMigrationAppliesAndTheMappingsValidateAgainstTheResult() {
@@ -62,5 +75,22 @@ class SchemaMigrationTest {
         assertThat(applied).extracting(MigrationInfo::getState)
             .containsOnly(MigrationState.SUCCESS);
         assertThat(flyway.info().pending()).as("nothing left to apply").isEmpty();
+    }
+
+    /**
+     * Audit timestamps are UTC wall time in {@code DATETIME(6)} columns. {@code @SQLDelete} and
+     * the column defaults write {@code CURRENT_TIMESTAMP(6)}, which follows the session time
+     * zone, so the pool pins every connection to UTC; otherwise a soft delete made on a server
+     * running in another zone would land hours away from the edits around it.
+     */
+    @Test
+    void everyConnectionRunsInUtcSoDatabaseSideTimestampsMatchTheOnesHibernateWrites() {
+        JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+        Calendar utc = Calendar.getInstance(TimeZone.getTimeZone(ZoneOffset.UTC));
+
+        assertThat(jdbc.queryForObject("select @@session.time_zone", String.class)).isEqualTo("+00:00");
+        Instant fromDatabase = jdbc.query("select current_timestamp(6)",
+            rs -> rs.next() ? rs.getTimestamp(1, utc).toInstant() : null);
+        assertThat(fromDatabase).isCloseTo(Instant.now(), within(1, ChronoUnit.MINUTES));
     }
 }

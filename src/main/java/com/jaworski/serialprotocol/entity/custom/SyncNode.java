@@ -48,6 +48,13 @@ public class SyncNode implements Persistable<UUID> {
   @Column(name = "last_import_file", length = 255)
   private String lastImportFile;
 
+  /** The node that made the last imported file, and that file's {@code exportedAt}: the base the next file from the same node is compared against. */
+  @Column(name = "last_import_node")
+  private UUID lastImportNode;
+
+  @Column(name = "last_import_exported_at")
+  private Instant lastImportExportedAt;
+
   /** The later of the last export and the last import; local changes are measured from it. */
   @Column(name = "last_sync_at")
   private Instant lastSyncAt;

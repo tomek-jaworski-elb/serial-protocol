@@ -60,6 +60,8 @@ final class SyncFixture {
     for (String table : WIPE_ORDER) {
       jdbc.update("delete from " + table);
     }
+    // The base of the last import survives the data; a test starts without one.
+    jdbc.update("update sync_node set last_import_node = null, last_import_exported_at = null");
   }
 
   static void seed(JdbcTemplate jdbc) {

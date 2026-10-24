@@ -120,7 +120,7 @@ public class SyncRestoreService {
       writer.insertBlob(zip, id, file.thumbIds().contains(id));
       blobs++;
     }
-    nodeService.markImported(now, name);
+    nodeService.markRestored(now, name);
     return new int[] {rows, blobs};
   }
 }

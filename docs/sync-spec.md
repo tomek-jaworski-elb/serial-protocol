@@ -92,11 +92,12 @@ a download, into a scratch file under `sync.work-dir` that is copied to the HTTP
 snapshot transaction has ended; the importer reads the staged file entry by entry. Nothing holds
 all blobs in memory.
 
-## Schema changes (`V10__sync.sql`)
+## Schema changes (`V10__sync.sql`, `V11__sync_import_base.sql`)
 
 ```
 sync_node        node_id uuid PK, node_name varchar(100),
-                 last_export_at, last_import_at, last_import_file varchar(255), last_sync_at
+                 last_export_at, last_import_at, last_import_file varchar(255), last_sync_at,
+                 last_import_node uuid NULL, last_import_exported_at NULL        (V11: the base, see Analysis)
 <every synchronised row table>   origin_node uuid NULL      (10 tables: 8 custom, student, instructor)
 ```
 
@@ -172,6 +173,14 @@ local row counts as changed here"). Two facts drive the decision:
   so a tombstone keeps the origin of its last edit. A tombstone in the file whose `deleted_at`
   the local row does not have is therefore "changed there" whatever its origin says; this is
   how a deletion made on computer B of a row created on computer A reaches A.
+- **the base**: `sync_node.last_import_node` and `last_import_exported_at` (V11) remember which
+  node's file was imported last and when that file was exported. A file from the *same* node
+  whose row was not created, edited or deleted after that moment carries nothing this computer
+  has not already seen, so it is "not changed there" even if its origin is the other node: a row
+  authored on B, imported here and edited here since must not collide with B's next file, which
+  still carries the old copy. A file from another node, or a node that never imported, has no
+  base and every differing row of another origin counts as changed there. A restore clears the
+  base (`SyncNodeService.markRestored`).
 
 `version` orders two states of one row; `updated_at` only breaks ties and is shown to people,
 because the computers' clocks are not synchronised.
@@ -182,7 +191,7 @@ because the computers' clocks are not synchronised.
 | present | absent | created locally after the file was made. On an active node: keep (notice "not in file"). On a read-only node: **collision C1 "created on a read-only computer"** |
 | equal (same `version`, `updated_at`, `deleted_at`, `origin_node`) | — | nothing |
 | not changed here, changed there | — | **update** (file wins; if the file's `version` is lower it is a stale stick: keep, notice "file is older than this computer for this row") |
-| changed here, not changed there (file origin is `self`, or file row older than what we exported) | — | keep, no notice |
+| changed here, not changed there (file origin is `self`, file row older than what we exported, or file row not touched since the base of the last file from that node) | — | keep, no notice |
 | changed here **and** changed there, live on both sides | — | **collision C2 "edited on both computers"** |
 | changed here and there, deleted on one side, edited on the other | — | **collision C3 "deleted on one, edited on the other"** |
 | deleted on both sides | — | nothing (keep the earlier `deleted_at`) |
@@ -229,11 +238,24 @@ In one JDBC transaction, in the table order above: inserts and updates of live r
 updates, join-table rows replaced per owning row, blobs streamed in, sequences adjusted, and the
 resolutions' renumberings last. `version` is written as in the file, so later optimistic checks
 on every node keep working. The transaction also updates `sync_node`
-(`last_import_at`, `last_import_file`, `last_sync_at`). Any failure rolls everything back;
-the backup written just before stays. Thumbnails arrive with the file; `ThumbnailBackfill` is
+(`last_import_at`, `last_import_file`, `last_sync_at`, `last_import_node`,
+`last_import_exported_at`). Any failure rolls everything back;
+the backup written just before stays. The transaction starts by reading the local tables again
+and refuses ("the … records changed while the backup was being written; read the file again")
+when any audited row differs from the state the report was analysed against: the backup can
+take a while and an edit made meanwhile must not be overwritten unseen. Thumbnails arrive with the file; `ThumbnailBackfill` is
 triggered once afterwards for rows that came without one.
 
 Details settled with the implementation (`SyncApplyService`):
+
+- Resolutions are applied in two passes, every C1–C5 first and the C6s after, and a C6 "skip the
+  row" or "bring back" whose referencing row is no longer written (its C2/C3 was decided in this
+  computer's favour) does nothing. The analysis marks such a C6 as conditional in its wording.
+- A C4/C5 "keep the file's number/code" whose local holder is itself replaced by the file's copy
+  (a C2/C3 taken from the file) renumbers nothing: the file cannot hold one number twice. Rows
+  are then written updates first, the holder of a number before the row that takes it, inserts
+  last, because the unique index is checked row by row; two updates that swap their numbers
+  park one of them on a fresh number first.
 
 - The file is analysed again inside the apply, against the database as it is now; a decision
   whose collision is gone refuses the import with "read the file again".
@@ -352,7 +374,9 @@ the same message the container used to produce.
   its seed instants the same way (`SyncFixture.update`); plain `setObject(OffsetDateTime)` through
   the MariaDB driver would store the *local* wall time and shift every audit column by the zone
   offset. Only `deleted_at` is set by the database itself (`CURRENT_TIMESTAMP(6)` in `@SQLDelete`),
-  so it follows the server's session time zone; the Docker image runs in UTC. The reader keeps
+  so it follows the session time zone, which is why every pooled connection is pinned to UTC
+  (`spring.datasource.hikari.connection-init-sql=SET time_zone = '+00:00'`,
+  `SchemaMigrationTest.everyConnectionRunsInUtc…`) whatever the server or the JVM runs in. The reader keeps
   table rows in memory and streams blobs through the work directory, which fits a database an
   order of magnitude larger than today's; `JAVA_TOOL_OPTIONS` in docker-compose stays at 512 MB.
   The backup directory in docker-compose is the named volume `server-sync-backups` mounted on

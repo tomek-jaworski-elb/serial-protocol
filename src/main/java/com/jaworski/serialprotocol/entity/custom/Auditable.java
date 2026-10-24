@@ -22,8 +22,11 @@ import java.util.UUID;
  *       flush. A request without a version is applied unchecked (older clients, tests).</li>
  *   <li>{@link #createdAt} / {@link #updatedAt} are set by Hibernate on insert and on every
  *       dirty flush; they are the "which copy is newer" input of any merge.</li>
- *   <li>Deletes are {@code UPDATE … SET deleted_at = now()} ({@code @SQLDelete} on each entity
- *       class, together with {@code @SQLRestriction("deleted_at is null")}). Hibernate then hides
+ *   <li>Deletes are {@code UPDATE … SET deleted_at = CURRENT_TIMESTAMP(6)} ({@code @SQLDelete} on
+ *       each entity class, together with {@code @SQLRestriction("deleted_at is null")}). The
+ *       database fills that one in its session time zone, which the MariaDB pool pins to UTC
+ *       ({@code connection-init-sql}) so it lines up with the UTC wall time Hibernate writes for
+ *       the other two. Hibernate then hides
  *       deleted rows from every JPQL, derived and collection query; only native queries see them,
  *       which is exactly what the uniqueness pre-checks and {@code MAX()} queries want, because a
  *       number or code that belongs to a deleted row is still taken in the unique index. Not

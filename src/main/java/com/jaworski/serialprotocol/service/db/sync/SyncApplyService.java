@@ -49,6 +49,15 @@ public class SyncApplyService {
   private static final Logger LOG = LoggerFactory.getLogger(SyncApplyService.class);
 
   /** The {@code id_sequence} row behind each numbered table. */
+  /** The business column each table keeps unique, which the write order has to respect. */
+  static final Map<String, String> UNIQUE_COLUMNS;
+
+  static {
+    Map<String, String> columns = new HashMap<>(SyncAnalyzer.NUMBER_COLUMNS);
+    columns.put("course_type", "course_type_code");
+    UNIQUE_COLUMNS = Map.copyOf(columns);
+  }
+
   static final Map<String, String> SEQUENCES = Map.of(
       "participants", "participant",
       "courses", "courses",
@@ -61,12 +70,14 @@ public class SyncApplyService {
   private final JdbcTemplate jdbc;
   private final TransactionTemplate transaction;
   private final SyncNodeService nodeService;
+  private final SyncLocalReader localReader;
 
   public SyncApplyService(DataSource dataSource, PlatformTransactionManager transactionManager,
-      SyncNodeService nodeService) {
+      SyncNodeService nodeService, SyncLocalReader localReader) {
     this.jdbc = new JdbcTemplate(dataSource);
     this.transaction = new TransactionTemplate(transactionManager);
     this.nodeService = nodeService;
+    this.localReader = localReader;
   }
 
   /**
@@ -77,16 +88,57 @@ public class SyncApplyService {
    * @param local       the local tables the analysis was made from
    * @param self        this node's id, stamped on every local row a resolution changes
    * @param now         the commit time written into the changed local rows and {@code sync_node}
+   * @throws SyncRefusedException when the database no longer matches {@code local}: the backup
+   *                              written between the analysis and this call takes a while, and
+   *                              an edit made meanwhile would otherwise be overwritten without
+   *                              a collision
    */
   public Outcome apply(Path path, SyncFile file, SyncAnalysis analysis, Map<String, String> resolutions,
       Map<String, List<SyncRow>> local, UUID self, Instant now, String fileName) {
     return transaction.execute(status -> {
+      checkUnchanged(local, localReader.readInTransaction());
       try (ZipFile zip = new ZipFile(path.toFile(), StandardCharsets.UTF_8)) {
         return new Run(zip, file, analysis, resolutions, local, self, now).run(fileName);
       } catch (IOException e) {
         throw new UncheckedIOException(e);
       }
     });
+  }
+
+  /**
+   * Every audited row must be in the state the analysis saw: same keys, same version, audit
+   * timestamps and origin. Join tables follow their owner and {@code id_sequence} is merged by
+   * value, so neither is compared.
+   */
+  static void checkUnchanged(Map<String, List<SyncRow>> analysed, Map<String, List<SyncRow>> current) {
+    for (SyncTable table : SyncTables.TABLES) {
+      Map<String, SyncRow> seen = new HashMap<>();
+      for (SyncRow row : analysed.getOrDefault(table.name(), List.of())) {
+        if (row.isAudited()) {
+          seen.put(row.key(table), row);
+        }
+      }
+      List<SyncRow> now = current.getOrDefault(table.name(), List.of());
+      int audited = 0;
+      for (SyncRow row : now) {
+        if (!row.isAudited()) {
+          continue;
+        }
+        audited++;
+        SyncRow before = seen.get(row.key(table));
+        if (before == null || !before.sameStateAs(row)) {
+          throw changedMeanwhile(table);
+        }
+      }
+      if (audited != seen.size()) {
+        throw changedMeanwhile(table);
+      }
+    }
+  }
+
+  private static SyncRefusedException changedMeanwhile(SyncTable table) {
+    return new SyncRefusedException("The " + SyncAnalyzer.TABLE_LABELS.getOrDefault(table.name(), table.name())
+        .toLowerCase(Locale.ROOT) + " records changed while the backup was being written; read the file again.");
   }
 
   /** One transaction's state: what to write, and what the resolutions change first. */
@@ -141,8 +193,17 @@ public class SyncApplyService {
 
     Outcome run(String fileName) {
       prepareSequences();
+      // C6 last: a dangling reference raised for the file side of a C2/C3 only matters when
+      // that side was taken, which the C2/C3 decision settles first.
       for (Collision collision : analysis.collisions()) {
-        resolve(collision);
+        if (collision.type() != Collision.Type.C6) {
+          resolve(collision);
+        }
+      }
+      for (Collision collision : analysis.collisions()) {
+        if (collision.type() == Collision.Type.C6) {
+          resolve(collision);
+        }
       }
       skipDependants();
       localChanges.forEach(Runnable::run);
@@ -156,7 +217,8 @@ public class SyncApplyService {
       }
       writeBlobs();
       writeSequences();
-      nodeService.markImported(SyncValues.parseTimestamp(now), fileName);
+      nodeService.markImported(SyncValues.parseTimestamp(now), fileName, file.manifest().node().id(),
+          SyncValues.parseTimestamp(file.manifest().exportedAt()));
       LOG.info("Sync file {} applied: {} inserted, {} updated, {} photo(s) loaded, {} local change(s)",
           fileName, inserted, updated, blobs, changes.size());
       return new Outcome(inserted, updated, blobs, List.copyOf(changes));
@@ -190,6 +252,11 @@ public class SyncApplyService {
         case C4 -> renumber(c, table, key, code);
         case C5 -> recode(c, table, key, code);
         case C6 -> {
+          if (!writes.get(c.table()).containsKey(key)) {
+            // The file row is not being written (the local version was kept, or the row was
+            // already skipped), so the reference it carries never reaches the database.
+            return;
+          }
           if (code.equals("skip-row")) {
             skip(c.table(), key, "skipped " + c.tableLabel() + " " + c.record() + " from the file");
           } else {
@@ -290,11 +357,17 @@ public class SyncApplyService {
         return;
       }
       String localKey = localByKey.get(c.table()).entrySet().stream()
-          .filter(e -> !e.getKey().equals(fileKey) && !writes.get(c.table()).containsKey(e.getKey()))
-          .filter(e -> number.equals(e.getValue().text(column)))
+          .filter(e -> !e.getKey().equals(fileKey) && number.equals(e.getValue().text(column)))
           .map(Map.Entry::getKey).findFirst()
           .orElseThrow(() -> new SyncRefusedException("The record with number " + number
               + " is no longer here; read the file again."));
+      if (writes.get(c.table()).containsKey(localKey)) {
+        // The local holder is itself replaced by the file's copy of it (a C2/C3 resolved in the
+        // file's favour), and the file cannot hold one number twice: nothing to renumber.
+        changes.add(c.tableLabel() + " made here with number " + number
+            + " is replaced by the file's copy of it, which carries another number");
+        return;
+      }
       long fresh = allocate(sequence);
       localChanges.add(() -> touch(table, localKey, List.of(new Bind(column, fresh)),
           c.tableLabel() + " made here was given number " + fresh + " instead of " + number));
@@ -309,11 +382,15 @@ public class SyncApplyService {
         return;
       }
       String localKey = localByKey.get(c.table()).entrySet().stream()
-          .filter(e -> !e.getKey().equals(fileKey) && !writes.get(c.table()).containsKey(e.getKey()))
-          .filter(e -> fileCode.equalsIgnoreCase(e.getValue().text("course_type_code")))
+          .filter(e -> !e.getKey().equals(fileKey) && fileCode.equalsIgnoreCase(e.getValue().text("course_type_code")))
           .map(Map.Entry::getKey).findFirst()
           .orElseThrow(() -> new SyncRefusedException("The course type with code " + fileCode
               + " is no longer here; read the file again."));
+      if (writes.get(c.table()).containsKey(localKey)) {
+        changes.add("course type made here with code " + fileCode
+            + " is replaced by the file's copy of it, which carries another code");
+        return;
+      }
       String fresh = freeCode(fileCode);
       localChanges.add(() -> touch(table, localKey, List.of(new Bind("course_type_code", fresh)),
           "course type made here was given code " + fresh + " instead of " + fileCode));
@@ -414,23 +491,88 @@ public class SyncApplyService {
 
     // ---- rows ------------------------------------------------------------------------------
 
+    /**
+     * The unique index is checked row by row, and a planned row may take the number or code a
+     * local row still holds (a C4/C5 kept in the file's favour whose holder the file replaces):
+     * the updates go first, the holder of a number before the row that takes it, and the inserts
+     * last. Two updates that swap their numbers cannot be ordered, so one of them is parked on a
+     * fresh number first.
+     */
     private void writeRows(SyncTable table) {
       Map<String, Column> cols = columns(table.name());
+      Map<String, SyncRow> local = localByKey.get(table.name());
+      Map<String, SyncRow> updates = new LinkedHashMap<>();
+      Map<String, SyncRow> inserts = new LinkedHashMap<>();
       for (Map.Entry<String, SyncRow> entry : writes.get(table.name()).entrySet()) {
-        List<Bind> binds = new ArrayList<>();
-        for (Map.Entry<String, Object> value : entry.getValue().values().entrySet()) {
-          if (cols.containsKey(value.getKey())) {
-            binds.add(new Bind(value.getKey(), value.getValue()));
-          }
-        }
-        if (localByKey.get(table.name()).containsKey(entry.getKey())) {
-          update(table, binds);
-          updated++;
-        } else {
-          insert(table, binds);
-          inserted++;
+        (local.containsKey(entry.getKey()) ? updates : inserts).put(entry.getKey(), entry.getValue());
+      }
+      for (Map.Entry<String, SyncRow> entry : orderedByHolder(table, updates)) {
+        update(table, binds(cols, entry.getValue()));
+        updated++;
+      }
+      for (SyncRow row : inserts.values()) {
+        insert(table, binds(cols, row));
+        inserted++;
+      }
+    }
+
+    private static List<Bind> binds(Map<String, Column> cols, SyncRow row) {
+      List<Bind> binds = new ArrayList<>();
+      for (Map.Entry<String, Object> value : row.values().entrySet()) {
+        if (cols.containsKey(value.getKey())) {
+          binds.add(new Bind(value.getKey(), value.getValue()));
         }
       }
+      return binds;
+    }
+
+    private List<Map.Entry<String, SyncRow>> orderedByHolder(SyncTable table, Map<String, SyncRow> updates) {
+      String column = UNIQUE_COLUMNS.get(table.name());
+      if (column == null || updates.size() < 2) {
+        return List.copyOf(updates.entrySet());
+      }
+      Map<String, String> holderOf = new HashMap<>();
+      for (Map.Entry<String, SyncRow> entry : localByKey.get(table.name()).entrySet()) {
+        holderOf.put(unique(entry.getValue().text(column)), entry.getKey());
+      }
+      Map<String, SyncRow> pending = new LinkedHashMap<>(updates);
+      List<Map.Entry<String, SyncRow>> ordered = new ArrayList<>();
+      while (!pending.isEmpty()) {
+        boolean progressed = false;
+        for (Map.Entry<String, SyncRow> entry : List.copyOf(pending.entrySet())) {
+          String holder = holderOf.get(unique(entry.getValue().text(column)));
+          if (holder == null || holder.equals(entry.getKey()) || !pending.containsKey(holder)) {
+            ordered.add(entry);
+            pending.remove(entry.getKey());
+            holderOf.values().remove(entry.getKey());
+            progressed = true;
+          }
+        }
+        if (!progressed) {
+          park(table, column, pending.keySet().iterator().next());
+          holderOf.values().remove(pending.keySet().iterator().next());
+        }
+      }
+      return ordered;
+    }
+
+    /** Moves a local row to a number or code nobody holds so that another row can take its own. */
+    private void park(SyncTable table, String column, String key) {
+      Object fresh = column.equals("course_type_code")
+          ? freeCode(localByKey.get(table.name()).get(key).text(column))
+          : allocate(SEQUENCES.get(table.name()));
+      String[] parts = key.split("\\|", -1);
+      List<Bind> binds = new ArrayList<>(List.of(new Bind(column, fresh)));
+      StringBuilder where = new StringBuilder();
+      for (int i = 0; i < table.keyColumns().size(); i++) {
+        where.append(i == 0 ? "" : " and ").append(table.keyColumns().get(i)).append(" = ?");
+        binds.add(new Bind(table.keyColumns().get(i), parts[i]));
+      }
+      execute(table.name(), "update " + table.name() + " set " + column + " = ? where " + where, binds);
+    }
+
+    private static String unique(String value) {
+      return value == null ? null : value.toLowerCase(Locale.ROOT);
     }
 
     private void insert(SyncTable table, List<Bind> binds) {

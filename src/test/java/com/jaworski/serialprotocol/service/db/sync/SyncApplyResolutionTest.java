@@ -198,6 +198,145 @@ class SyncApplyResolutionTest {
     assertThat(result.report().inserted()).isEqualTo(1);
   }
 
+  @Test
+  void keepingTheLocalVersionLeavesTheDanglingReferenceOfTheFileSideAlone() throws Exception {
+    JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+    UUID self = nodeService.current().getId();
+
+    // The other side gave Anna a photo that the file will not carry.
+    SyncFixture.seed(jdbc);
+    jdbc.update("insert into image (image_uuid, image_content_type, created_at, updated_at, version, origin_node)"
+        + " values (?, 'image/png', ?, ?, 0, ?)", NO_SUCH_IMAGE, AFTER, AFTER, SyncFixture.ORIGIN);
+    SyncFixture.update(jdbc, "update participants set image_uuid = ?, updated_at = ?, version = 1, origin_node = ?"
+        + " where participants_uuid = ?", NO_SUCH_IMAGE, AFTER, SyncFixture.ORIGIN, SyncFixture.PARTICIPANT);
+    byte[] file = without(SyncFixture.fileFromOtherNode(exporter), "tables/image.jsonl", NO_SUCH_IMAGE);
+
+    // This side edited Anna too.
+    SyncFixture.seed(jdbc);
+    jdbc.update("update sync_node set last_sync_at = ?", OffsetDateTime.ofInstant(SINCE, ZoneOffset.UTC));
+    SyncFixture.update(jdbc, "update participants set participants_email = ?, updated_at = ?, version = 1,"
+        + " origin_node = ? where participants_uuid = ?", "here@example", LATER, self, SyncFixture.PARTICIPANT);
+
+    SyncStaging.Staged staged = imports.staging().stage(new ByteArrayInputStream(file), "keep.sync");
+    SyncAnalysis analysis = imports.analyze(staged).analysis();
+    String c2 = "C2-participants-" + SyncFixture.PARTICIPANT;
+    String c6 = "C6-participants-" + SyncFixture.PARTICIPANT + "-image_uuid-" + NO_SUCH_IMAGE;
+    assertThat(analysis.collisions()).extracting(Collision::id).containsExactlyInAnyOrder(c2, c6);
+
+    SyncImportResult result = imports.apply(staged, Map.of(c2, "keep-local", c6, "skip-row"));
+
+    Map<String, Object> anna = jdbc.queryForMap("select * from participants where participants_uuid = ?",
+        SyncFixture.PARTICIPANT);
+    assertThat(anna.get("PARTICIPANTS_EMAIL")).isEqualTo("here@example");
+    assertThat(String.valueOf(anna.get("IMAGE_UUID"))).isEqualTo(SyncFixture.IMAGE.toString());
+    assertThat(result.report().changes()).as("nothing was skipped: the file's Anna was never taken").isEmpty();
+    assertThat(result.report().updated()).isZero();
+  }
+
+  @Test
+  void keepingTheFileNumberWhenItsLocalHolderIsReplacedByTheFileNeedsNoRenumbering() throws Exception {
+    JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+    UUID self = nodeService.current().getId();
+
+    // The other side moved Anna to number 1005 and gave 1001 to a new participant.
+    SyncFixture.seed(jdbc);
+    SyncFixture.update(jdbc, "update participants set participants_id = 1005, updated_at = ?, version = 1,"
+        + " origin_node = ? where participants_uuid = ?", AFTER, SyncFixture.ORIGIN, SyncFixture.PARTICIPANT);
+    SyncFixture.update(jdbc, "insert into participants (participants_uuid, participants_id, participants_name,"
+        + " participants_surname, created_at, updated_at, version, origin_node) values (?, ?, ?, ?, ?, ?, 0, ?)",
+        NEW_PARTICIPANT, 1001L, "Ola", "New", AFTER, AFTER, SyncFixture.ORIGIN);
+    byte[] file = SyncFixture.fileFromOtherNode(exporter);
+
+    // This side edited Anna, who still holds 1001 here.
+    SyncFixture.seed(jdbc);
+    jdbc.update("update sync_node set last_sync_at = ?", OffsetDateTime.ofInstant(SINCE, ZoneOffset.UTC));
+    SyncFixture.update(jdbc, "update participants set participants_email = ?, updated_at = ?, version = 1,"
+        + " origin_node = ? where participants_uuid = ?", "here@example", LATER, self, SyncFixture.PARTICIPANT);
+
+    SyncStaging.Staged staged = imports.staging().stage(new ByteArrayInputStream(file), "number.sync");
+    SyncAnalysis analysis = imports.analyze(staged).analysis();
+    String c2 = "C2-participants-" + SyncFixture.PARTICIPANT;
+    String c4 = "C4-participants-" + NEW_PARTICIPANT;
+    assertThat(analysis.collisions()).extracting(Collision::id).containsExactlyInAnyOrder(c2, c4);
+
+    SyncImportResult result = imports.apply(staged, Map.of(c2, "take-file", c4, "keep-file-number"));
+
+    assertThat(jdbc.queryForObject("select participants_id from participants where participants_uuid = ?",
+        Long.class, SyncFixture.PARTICIPANT)).isEqualTo(1005L);
+    assertThat(jdbc.queryForObject("select participants_id from participants where participants_uuid = ?",
+        Long.class, NEW_PARTICIPANT)).isEqualTo(1001L);
+    assertThat(result.report().changes()).singleElement().asString()
+        .contains("number 1001").contains("replaced by the file's copy");
+  }
+
+  @Test
+  void twoParticipantsWhoSwappedNumbersInTheFileAreWrittenInAnOrderTheUniqueIndexAllows() throws Exception {
+    JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+    UUID self = nodeService.current().getId();
+
+    // Both sides know Anna (1001) and Ola (1002); the other side swapped their numbers.
+    SyncFixture.seed(jdbc);
+    SyncFixture.update(jdbc, "insert into participants (participants_uuid, participants_id, participants_name,"
+        + " participants_surname, created_at, updated_at, version, origin_node) values (?, ?, ?, ?, ?, ?, 0, ?)",
+        NEW_PARTICIPANT, 1002L, "Ola", "New", SyncFixture.AT, SyncFixture.AT, SyncFixture.ORIGIN);
+    jdbc.update("update participants set participants_id = 9999 where participants_uuid = ?", NEW_PARTICIPANT);
+    SyncFixture.update(jdbc, "update participants set participants_id = 1002, updated_at = ?, version = 1,"
+        + " origin_node = ? where participants_uuid = ?", AFTER, SyncFixture.ORIGIN, SyncFixture.PARTICIPANT);
+    SyncFixture.update(jdbc, "update participants set participants_id = 1001, updated_at = ?, version = 1,"
+        + " origin_node = ? where participants_uuid = ?", AFTER, SyncFixture.ORIGIN, NEW_PARTICIPANT);
+    byte[] file = SyncFixture.fileFromOtherNode(exporter);
+
+    // This side edited both, so both are C2; taking the file's side of each swaps their numbers.
+    SyncFixture.seed(jdbc);
+    SyncFixture.update(jdbc, "insert into participants (participants_uuid, participants_id, participants_name,"
+        + " participants_surname, created_at, updated_at, version, origin_node) values (?, ?, ?, ?, ?, ?, 0, ?)",
+        NEW_PARTICIPANT, 1002L, "Ola", "New", SyncFixture.AT, SyncFixture.AT, SyncFixture.ORIGIN);
+    jdbc.update("update sync_node set last_sync_at = ?", OffsetDateTime.ofInstant(SINCE, ZoneOffset.UTC));
+    SyncFixture.update(jdbc, "update participants set participants_email = ?, updated_at = ?, version = 1,"
+        + " origin_node = ?", "here@example", LATER, self);
+
+    SyncStaging.Staged staged = imports.staging().stage(new ByteArrayInputStream(file), "swap.sync");
+    SyncAnalysis analysis = imports.analyze(staged).analysis();
+    String anna = "C2-participants-" + SyncFixture.PARTICIPANT;
+    String ola = "C2-participants-" + NEW_PARTICIPANT;
+    assertThat(analysis.collisions()).extracting(Collision::id).containsExactlyInAnyOrder(anna, ola);
+
+    imports.apply(staged, Map.of(anna, "take-file", ola, "take-file"));
+
+    assertThat(jdbc.queryForObject("select participants_id from participants where participants_uuid = ?",
+        Long.class, SyncFixture.PARTICIPANT)).isEqualTo(1002L);
+    assertThat(jdbc.queryForObject("select participants_id from participants where participants_uuid = ?",
+        Long.class, NEW_PARTICIPANT)).isEqualTo(1001L);
+    assertThat(jdbc.queryForObject("select count(*) from participants", Long.class)).isEqualTo(2L);
+  }
+
+  @Test
+  void aRowFromTheLastFileOfTheSameNodeEditedHereSinceIsNotACollisionWithTheNextFile() throws Exception {
+    JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+    UUID self = nodeService.current().getId();
+    SyncFixture.seed(jdbc);
+    byte[] file = SyncFixture.fileFromOtherNode(exporter);
+    SyncFixture.wipe(jdbc);
+    SyncStaging.Staged first = imports.staging().stage(new ByteArrayInputStream(file), "first.sync");
+    imports.apply(first, Map.of());
+    Map<String, Object> node = jdbc.queryForMap("select * from sync_node");
+    assertThat(String.valueOf(node.get("LAST_IMPORT_NODE"))).isEqualTo(SyncFixture.ORIGIN.toString());
+    assertThat(node.get("LAST_IMPORT_EXPORTED_AT")).isNotNull();
+
+    // Anna, written there, is edited here after the import; the next file still has their copy.
+    SyncFixture.update(jdbc, "update participants set participants_email = ?, updated_at = ?, version = 1,"
+        + " origin_node = ? where participants_uuid = ?", "here@example", OffsetDateTime.now().plusMinutes(1), self,
+        SyncFixture.PARTICIPANT);
+    SyncStaging.Staged second = imports.staging().stage(new ByteArrayInputStream(file), "second.sync");
+    SyncAnalysis analysis = imports.analyze(second).analysis();
+
+    assertThat(analysis.hasCollisions()).isFalse();
+    assertThat(analysis.plan()).isEmpty();
+    imports.apply(second, Map.of());
+    assertThat(jdbc.queryForObject("select participants_email from participants where participants_uuid = ?",
+        String.class, SyncFixture.PARTICIPANT)).isEqualTo("here@example");
+  }
+
   private static void course(JdbcTemplate jdbc, UUID id, long number, UUID participant, OffsetDateTime at,
       UUID origin) {
     SyncFixture.update(jdbc, "insert into courses (courses_uuid, courses_id, courses_start_date, courses_end_date,"
