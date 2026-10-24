@@ -21,7 +21,7 @@ public interface CoursesRepository extends JpaRepository<Courses, UUID> {
 
   List<Courses> findByCourseCounter_UuidIn(Collection<UUID> courseCounterUuids);
 
-  boolean existsByCourseType_Id(Long courseTypeId);
+  boolean existsByCourseType_Id(UUID courseTypeId);
 
   boolean existsByParticipant_Uuid(UUID participantUuid);
 

@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DataJpaTest
-@Import({CourseCounterService.class, ImageService.class,
+@Import({IdAllocator.class, CourseCounterService.class, ImageService.class,
         CoursesService.class, ParticipantService.class, CourseTypeService.class,
         TrainerService.class, LecturerService.class, TechnicianService.class})
 class CourseCounterServiceTest {

@@ -12,11 +12,12 @@ import org.springframework.data.domain.PageRequest;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
-@Import({CourseTypeService.class, CoursesService.class, ParticipantService.class, TrainerService.class, LecturerService.class, ImageService.class})
+@Import({IdAllocator.class, CourseTypeService.class, CoursesService.class, ParticipantService.class, TrainerService.class, LecturerService.class, ImageService.class})
 class CourseTypeServiceTest {
 
   @Autowired
@@ -63,12 +64,13 @@ class CourseTypeServiceTest {
 
   @Test
   void shouldThrowWhenCourseTypeNotFoundById() {
+    UUID missing = UUID.randomUUID();
     IllegalArgumentException exception = assertThrows(
         IllegalArgumentException.class,
-        () -> courseTypeService.findById(9999L)
+        () -> courseTypeService.findById(missing)
     );
 
-    assertEquals("Course type with id 9999 not found", exception.getMessage());
+    assertEquals("Course type with id " + missing + " not found", exception.getMessage());
   }
 
   @Test
@@ -111,14 +113,14 @@ class CourseTypeServiceTest {
   @Test
   void shouldThrowWhenUpdatingNonExistingCourseType() {
     CourseTypeDTO nonExisting = createCourseType("C-A", "Basic", "Basic navigation course");
-    nonExisting.setId(9999L);
+    nonExisting.setId(UUID.randomUUID());
 
     IllegalArgumentException exception = assertThrows(
         IllegalArgumentException.class,
         () -> courseTypeService.update(nonExisting)
     );
 
-    assertEquals("Course type with id 9999 not found", exception.getMessage());
+    assertEquals("Course type with id " + nonExisting.getId() + " not found", exception.getMessage());
   }
 
   @Test
@@ -139,7 +141,7 @@ class CourseTypeServiceTest {
     course.setEndDate(LocalDate.of(2025, 1, 31));
     coursesService.save(course);
 
-    Long id = courseType.getId();
+    UUID id = courseType.getId();
     IllegalStateException exception = assertThrows(
         IllegalStateException.class,
         () -> courseTypeService.deleteById(id)

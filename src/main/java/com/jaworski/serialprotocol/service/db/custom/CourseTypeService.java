@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @RequiredArgsConstructor
 @Service
@@ -41,13 +42,13 @@ public class CourseTypeService {
   }
 
   @Transactional(readOnly = true)
-  public CourseTypeDTO findById(Long id) {
+  public CourseTypeDTO findById(UUID id) {
     return courseTypeRepository.findById(id)
         .map(CourseTypeMapper::mapToDTO)
         .orElseThrow(() -> new IllegalArgumentException("Course type with id " + id + " not found"));
   }
 
-  public void deleteById(Long id) {
+  public void deleteById(UUID id) {
     if (coursesRepository.existsByCourseType_Id(id)) {
       throw new IllegalStateException("Cannot delete course type with id " + id + " because it is referenced by existing courses.");
     }

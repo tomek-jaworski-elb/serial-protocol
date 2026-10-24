@@ -35,7 +35,7 @@ public class Courses {
   @Column(name = TABLE_NAME + "_uuid", nullable = false, updatable = false)
   private UUID uuid;
 
-  @Column(name = TABLE_NAME + "_id", unique = false, nullable = false)
+  @Column(name = TABLE_NAME + "_id", unique = true, nullable = false)
   @NotNull
   @Positive
   private Long id;
@@ -48,7 +48,7 @@ public class Courses {
   private Participant participant;
 
   @ManyToOne(optional = false, fetch = FetchType.LAZY)
-  @JoinColumn(name = TABLE_NAME + "_course_type_id", nullable = false)
+  @JoinColumn(name = TABLE_NAME + "_course_type_uuid", nullable = false)
   @NotNull
   private CourseType courseType;
 

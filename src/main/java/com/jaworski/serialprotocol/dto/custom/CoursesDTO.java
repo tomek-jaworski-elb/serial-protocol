@@ -17,7 +17,7 @@ public class CoursesDTO {
   private UUID uuid;
   private Long id;
   private UUID participantUuid;
-  private Long courseTypeId;
+  private UUID courseTypeId;
   private UUID courseCounterUuid;
   private Long counter;
   @DateTimeFormat(pattern = "dd/MM/yyyy")

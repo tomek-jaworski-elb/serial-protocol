@@ -11,6 +11,8 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 @Entity
 @Data
 @Table(name = CourseType.TABLE_NAME)
@@ -25,10 +27,12 @@ public class CourseType {
     this.longDescription = longDescription;
   }
 
+  // UUID like every other table: an AUTO_INCREMENT key cannot be generated independently by
+  // two databases (V6__course_type_uuid.sql moved existing rows over).
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Column(name = CourseType.TABLE_NAME + "_id", nullable = false, updatable = false)
-  private Long id;
+  @GeneratedValue(strategy = GenerationType.UUID)
+  @Column(name = CourseType.TABLE_NAME + "_uuid", nullable = false, updatable = false)
+  private UUID id;
 
   @Column(name = CourseType.TABLE_NAME + "_code", nullable = false, unique = true, length = 32)
   @NotBlank

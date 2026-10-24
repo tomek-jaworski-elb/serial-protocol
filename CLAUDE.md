@@ -45,6 +45,7 @@ No lint plugin (Checkstyle/PMD/SpotBugs) is configured in `pom.xml` — do not i
 - **Hull geometry must never depend on the live zoom.** `ChartShipListTest#theHullIsSizedFromTheChartAndNotFromTheZoom` fails if it does. (CLAUDE.md § Chart map)
 - **List pages never load an `Image` entity.** Field-level laziness on `Image.data` is inactive (no enhancement plugin), so any loaded `Image` carries its LONGBLOBs. Person mappers take image ids from `ImageLink` projections, the to-one associations to `Image`, `Participant` and `CourseCounter` are LAZY, and `ListPagesLoadNoImageBlobsTest` fails if a list page loads one. (CLAUDE.md § Images and avatars)
 - **Serving an image never writes, and an upload commits with its owner.** Thumbnails are made in `ImageService.saveImage` at upload; `getThumbnail` is read-only and scales a stale row for the response without storing it, `ThumbnailBackfill` rebuilds stale rows once after start-up. Controllers hand `UploadedImage` bytes to the services, which store them in the same transaction as the record, so a failed save leaves no orphan and needs no compensating delete. (CLAUDE.md § Images and avatars)
+- **Business numbers come from `IdAllocator`, never from `MAX(id)+1` at render time.** `participants_id`, `courses_id` and `course_counter_counter` are reserved from a row of `id_sequence` locked inside the saving transaction (`next`), consulted together with the highest value in use; the add forms only show `peek` as a placeholder and submit nothing. A course keeps the number it was created with (`CoursesService.update` ignores the request's `id`). Every table is UUID-keyed; `course_type` was the last `AUTO_INCREMENT` and moved in `V6__course_type_uuid.sql`. (CLAUDE.md § Custom domain module)
 - **Dates are `dd/MM/yyyy`.** Forms use Flatpickr on `type="text"`, never `type="date"`.
 - **Primary-image ordering is lexicographic** (`UUID::toString`), never `UUID.compareTo`, which compares both halves as signed longs. Go through `dto.custom.PrimaryImage`.
 - **`CustomDBController`'s `@InitBinder` is an anonymous `PropertyEditorSupport`**, not `StringTrimmerEditor`. It turns blank strings into `null`, which optional-field validation depends on.
@@ -169,7 +170,7 @@ PersonBase (@MappedSuperclass) — uuid (@Id), name, surname, notes, nickname, e
   ├── Trainer    @ManyToMany images + primaryImageUuid
   ├── Technician @ManyToMany images + primaryImageUuid
   └── Participant — id: Long (business key, unique), birthDate, image @OneToOne
-CourseType  — id (IDENTITY), code (unique), description
+CourseType  — id: UUID (@Id, column course_type_uuid), code (unique), description
 CourseCounter — uuid (@Id), counter (unique), image @OneToOne
 Courses     — uuid (@Id), id: Long, participant @ManyToOne, courseType @ManyToOne, date range, trainers/lecturers/technicians @ManyToMany
 Image       — id: UUID, data: byte[] @Lob LAZY, contentType
@@ -178,7 +179,7 @@ Image       — id: UUID, data: byte[] @Lob LAZY, contentType
 CRUD shape is the same for every entity: `GET /<x>-service`, `POST /<x>-service/add`, `POST /<x>-service/update`, `POST /<x>-service/delete/{key}`. The key is `{uuid}` for participant, course-counter and courses and `{id}` for trainer, lecturer, technician and course-type. `POST /courses-service/add-participant` is the quick-add from the participant view: it submits only `participantUuid`, `courseTypeId`, `startDate` and `endDate`, so trainers, lecturers, technicians and counter stay empty.
 
 Key conventions:
-- UUID is DB identity; numeric `id` on `Courses`/`Participant` is a business key managed via `nextId()` (`COALESCE(MAX(id),0)+1`, backed by `CoursesRepository.findMaxCoursesId()` / `ParticipantRepository.findMaxParticipantId()`).
+- UUID is DB identity everywhere; numeric `id` on `Courses`/`Participant` and `counter` on `CourseCounter` are human-visible business numbers. A `null` number on save is reserved by `IdAllocator.next(sequence, highestInUse)` from the `id_sequence` row of that sequence (`SELECT … FOR UPDATE`, seeded by `V5__id_sequences.sql`, created on first use where the migration has not run), stepping over any higher number typed by hand. `nextId()` / `nextCounter()` are `IdAllocator.peek` and feed only the forms' placeholders. `courses_id` is unique (`V4__unique_courses_id.sql` renumbered duplicates first) and is never changed by an update.
 - Person-like DTOs use `id` for UUID in `LecturerDTO`/`TrainerDTO`/`TechnicianDTO`; `ParticipantDTO` uses `participantUuid` (avoids collision with `Long id`).
 - All `@AttributeOverride` for UUID includes `nullable=false, updatable=false, unique=true`.
 - Date format is `dd/MM/yyyy` (EU). HTML forms use Flatpickr on `type="text"` — never `type="date"`.

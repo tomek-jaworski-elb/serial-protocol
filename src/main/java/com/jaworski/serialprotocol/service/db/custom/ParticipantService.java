@@ -28,6 +28,7 @@ public class ParticipantService {
   private final ParticipantRepository participantRepository;
   private final ImageRepository imageRepository;
   private final ImageService imageService;
+  private final IdAllocator idAllocator;
   private final CoursesRepository coursesRepository;
 
   @Transactional(readOnly = true)
@@ -49,8 +50,10 @@ public class ParticipantService {
             .orElse(null);
   }
 
+  /** The number the next add would get; a hint for the form, never a value to submit. */
+  @Transactional(readOnly = true)
   public Long nextId() {
-    return participantRepository.findMaxParticipantId() + 1;
+    return idAllocator.peek(IdAllocator.PARTICIPANT, participantRepository::findMaxParticipantId);
   }
 
   public boolean isIdTaken(Long id) {
@@ -63,7 +66,9 @@ public class ParticipantService {
 
   public ParticipantDTO save(ParticipantDTO dto) {
     if (dto.getId() == null) {
-      dto.setId(nextId());
+      // Reserved under a row lock in this transaction, so two forms submitted together
+      // cannot get the same number; a number typed by hand is still checked below.
+      dto.setId(idAllocator.next(IdAllocator.PARTICIPANT, participantRepository::findMaxParticipantId));
     }
     if (isIdTaken(dto.getId())) {
       throw new IllegalArgumentException("Participant with id " + dto.getId() + " already exists");

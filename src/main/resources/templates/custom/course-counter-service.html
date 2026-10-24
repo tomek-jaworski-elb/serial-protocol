@@ -36,8 +36,10 @@
             <form method="post" enctype="multipart/form-data" th:action="@{/course-counter-service/add}">
                 <div class="row g-3">
                     <div class="col-md-4">
-                        <label for="addCounter" class="form-label">ID <span class="text-danger">*</span></label>
-                        <input id="addCounter" name="counter" type="number" min="1" class="form-control" th:value="${nextCounter}" required>
+                        <label for="addCounter" class="form-label">ID</label>
+                        <input id="addCounter" name="counter" type="number" min="1" class="form-control"
+                               th:placeholder="${'next free: ' + nextCounter}">
+                        <div class="form-text">Leave empty to get the next free number on save.</div>
                     </div>
                     <div class="col-md-8">
                         <div th:replace="~{fragment::imageEditor(false, 'Optional. JPG or PNG, 10&nbsp;MB max.')}"></div>

@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
-@Import({CoursesService.class, ParticipantService.class, CourseTypeService.class, TrainerService.class, LecturerService.class, TechnicianService.class, ImageService.class})
+@Import({IdAllocator.class, CoursesService.class, ParticipantService.class, CourseTypeService.class, TrainerService.class, LecturerService.class, TechnicianService.class, ImageService.class})
 class CoursesServiceTest {
 
   @Autowired
@@ -396,9 +396,35 @@ class CoursesServiceTest {
     assertEquals(0, page.getTotalElements());
   }
 
+  // --- the course number is assigned once ---
+
+  @Test
+  void update_keepsTheOriginalNumber_whateverTheRequestCarries() {
+    ParticipantDTO participant = savedParticipant("Numer", "Stały");
+    CourseTypeDTO courseType = savedCourseType("NUM-1");
+    CoursesDTO saved = coursesService.save(createCourse(participant.getParticipantUuid(), courseType.getId()));
+    Long original = saved.getId();
+    saved.setId(original + 500);
+
+    CoursesDTO updated = coursesService.update(saved);
+
+    assertEquals(original, updated.getId());
+    assertEquals(original, coursesService.findByUuid(saved.getUuid()).getId());
+  }
+
+  @Test
+  void twoCoursesNeverShareANumber() {
+    ParticipantDTO participant = savedParticipant("Numer", "Unikalny");
+    CourseTypeDTO courseType = savedCourseType("NUM-2");
+    CoursesDTO first = coursesService.save(createCourse(participant.getParticipantUuid(), courseType.getId()));
+    CoursesDTO second = coursesService.save(createCourse(participant.getParticipantUuid(), courseType.getId()));
+
+    assertNotEquals(first.getId(), second.getId());
+  }
+
   // --- helpers ---
 
-  private CoursesDTO createCourse(UUID participantUuid, Long courseTypeId) {
+  private CoursesDTO createCourse(UUID participantUuid, UUID courseTypeId) {
     CoursesDTO dto = new CoursesDTO();
     dto.setParticipantUuid(participantUuid);
     dto.setCourseTypeId(courseTypeId);

@@ -271,7 +271,7 @@ public class PdfReportController {
     /**
      * Generates a PDF report for the given course-type IDs (Long).
      *
-     * @param ids comma-separated course-type Long IDs (empty → empty report)
+     * @param ids comma-separated course-type UUIDs (empty → empty report)
      * @return PDF response or 400/500 on error
      */
     @PostMapping(value = "/course-type",
@@ -280,18 +280,18 @@ public class PdfReportController {
     public ResponseEntity<byte[]> courseTypePdf(
             @RequestParam(required = false, defaultValue = "") String ids) {
 
-        List<Long> idList;
+        List<UUID> idList;
         try {
-            idList = parseLongs(ids);
+            idList = parseUuids(ids);
         } catch (IllegalArgumentException e) {
-            return badRequest("Invalid numeric ID in 'ids': " + e.getMessage());
+            return badRequest("Invalid UUID in 'ids': " + e.getMessage());
         }
         if (exceedsMax(idList)) {
             return tooManyRecords(idList.size(), pdfReportProperties.getMaxRecords());
         }
 
         List<CourseTypeDTO> dtos= new ArrayList<>();
-        for (Long id : idList) {
+        for (UUID id : idList) {
             try {
                 dtos.add(courseTypeService.findById(id));
             } catch (Exception e) {

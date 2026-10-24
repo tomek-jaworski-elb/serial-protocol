@@ -27,9 +27,15 @@ public class CourseCounterService {
   private final CourseCounterRepository courseCounterRepository;
   private final ImageRepository imageRepository;
   private final ImageService imageService;
+  private final IdAllocator idAllocator;
   private final CoursesRepository coursesRepository;
 
   public CourseCounterDTO save(CourseCounterDTO courseCounterDTO) {
+    if (courseCounterDTO.counter() == null) {
+      courseCounterDTO = new CourseCounterDTO(courseCounterDTO.uuid(),
+          idAllocator.next(IdAllocator.COURSE_COUNTER, courseCounterRepository::findMaxCounter),
+          courseCounterDTO.imageUuid());
+    }
     CourseCounter entity = CourseCounterMapper.toEntity(courseCounterDTO);
     UUID uuid = courseCounterDTO.imageUuid();
     Image image = resolveImage(uuid);
@@ -48,8 +54,10 @@ public class CourseCounterService {
     return courseCounterRepository.findAll(pageable).map(CourseCounterMapper::toDTO);
   }
 
+  /** The number the next counter would get; a hint, never a value to submit. */
+  @Transactional(readOnly = true)
   public Long nextCounter() {
-    return courseCounterRepository.findMaxCounter() + 1;
+    return idAllocator.peek(IdAllocator.COURSE_COUNTER, courseCounterRepository::findMaxCounter);
   }
 
   /** Creates the counter and stores the uploaded photo, if any, in the same transaction. */

@@ -49,6 +49,7 @@ public class CoursesService {
   private final TrainerRepository trainerRepository;
   private final LecturerRepository lecturerRepository;
   private final TechnicianRepository technicianRepository;
+  private final IdAllocator idAllocator;
 
   @Transactional(readOnly = true)
   public List<CoursesDTO> findAll() {
@@ -111,8 +112,10 @@ public class CoursesService {
     return grouped;
   }
 
+  /** The number the next course would get; a hint, never a value to submit. */
+  @Transactional(readOnly = true)
   public Long nextId() {
-    return coursesRepository.findMaxCoursesId() + 1;
+    return idAllocator.peek(IdAllocator.COURSES, coursesRepository::findMaxCoursesId);
   }
 
   public CoursesDTO save(CoursesDTO dto) {
@@ -124,7 +127,7 @@ public class CoursesService {
     }
     validateDates(dto);
     if (dto.getId() == null) {
-      dto.setId(nextId());
+      dto.setId(idAllocator.next(IdAllocator.COURSES, coursesRepository::findMaxCoursesId));
     }
     Courses courses = buildCourses(dto);
     Courses saved = coursesRepository.save(courses);
@@ -141,9 +144,8 @@ public class CoursesService {
     if (dto.getUuid() == null) {
       throw new IllegalArgumentException("UUID is required for update");
     }
-    if (!coursesRepository.existsById(dto.getUuid())) {
-      throw new IllegalArgumentException("Course with UUID " + dto.getUuid() + " not found");
-    }
+    Courses existing = coursesRepository.findById(dto.getUuid())
+        .orElseThrow(() -> new IllegalArgumentException("Course with UUID " + dto.getUuid() + " not found"));
     if (dto.getParticipantUuid() == null) {
       throw new IllegalArgumentException("Participant UUID is required");
     }
@@ -151,6 +153,8 @@ public class CoursesService {
       throw new IllegalArgumentException("Course type ID is required");
     }
     validateDates(dto);
+    // The course number is assigned once, on creation; whatever the request carries is ignored.
+    dto.setId(existing.getId());
     Courses courses = buildCourses(dto);
     Courses updated = coursesRepository.save(courses);
     LOGGER.info("Updated course with uuid={}", updated.getUuid());

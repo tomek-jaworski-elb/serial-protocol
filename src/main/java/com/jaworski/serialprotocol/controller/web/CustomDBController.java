@@ -89,7 +89,7 @@ public class CustomDBController {
     model.addAttribute("participants", participantService.findAll());
     List<CourseTypeDTO> courseTypes = courseTypeService.findAll();
     model.addAttribute("courseTypes", courseTypes);
-    Map<Long, CourseTypeDTO> courseTypeMap = courseTypes.stream()
+    Map<UUID, CourseTypeDTO> courseTypeMap = courseTypes.stream()
         .collect(Collectors.toMap(CourseTypeDTO::getId, ct -> ct));
     model.addAttribute("courseTypeMap", courseTypeMap);
     model.addAttribute("trainers", trainerService.findAll());
@@ -414,7 +414,7 @@ public class CustomDBController {
   }
 
   @PostMapping("/course-type-service/delete/{id}")
-  public String deleteCourseType(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+  public String deleteCourseType(@PathVariable UUID id, RedirectAttributes redirectAttributes) {
     try {
       courseTypeService.deleteById(id);
       redirectAttributes.addFlashAttribute("successMessage", "Course type deleted successfully.");

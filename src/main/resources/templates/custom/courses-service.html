@@ -143,7 +143,6 @@
             <h5 class="card-title">Update course</h5>
             <form method="post" th:action="@{/courses-service/update}">
                 <input id="updateCourseUuid" name="uuid" type="hidden">
-                <input id="updateCourseId" name="id" type="hidden">
                 <div class="row g-3">
                     <div class="col-md-3">
                         <label for="updateParticipantUuid" class="form-label">Participant <span class="text-danger">*</span></label>
@@ -473,7 +472,6 @@
         updateButtons.forEach((btn) => {
             btn.addEventListener('click', () => {
                 document.getElementById('updateCourseUuid').value = btn.dataset.uuid || '';
-                document.getElementById('updateCourseId').value = btn.dataset.id || '';
 
                 const participantSelect = document.getElementById('updateParticipantUuid');
                 const courseTypeSelect = document.getElementById('updateCourseTypeId');

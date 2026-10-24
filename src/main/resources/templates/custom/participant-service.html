@@ -40,8 +40,8 @@
                     <div class="col-md-2">
                         <label for="addParticipantId" class="form-label">ID <span class="text-muted small">(unique)</span></label>
                         <input id="addParticipantId" name="id" type="number" min="1" class="form-control"
-                               th:value="${nextId}" required>
-                        <div class="form-text">Auto-suggested. You may change it.</div>
+                               th:placeholder="${'next free: ' + nextId}">
+                        <div class="form-text">Leave empty to get the next free number on save.</div>
                     </div>
                     <div class="col-md-4">
                         <label for="addParticipantName" class="form-label">Name <span class="text-danger">*</span></label>
