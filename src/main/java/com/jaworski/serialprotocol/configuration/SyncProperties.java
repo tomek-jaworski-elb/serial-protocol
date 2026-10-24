@@ -6,7 +6,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
+import org.springframework.util.unit.DataSize;
+
 import java.nio.file.Path;
+import java.time.Duration;
 
 /**
  * The {@code sync.*} properties of the USB-stick synchronisation (docs/sync-spec.md).
@@ -37,6 +40,18 @@ public class SyncProperties {
   @Min(0)
   private int backupKeep = 20;
 
+  /** Where uploaded sync files wait between the report and the apply. */
+  @NotNull
+  private Path workDir = Path.of(System.getProperty("java.io.tmpdir"), "serial-protocol-sync");
+
+  /** Staged uploads older than this are removed. */
+  @NotNull
+  private Duration workTtl = Duration.ofHours(2);
+
+  /** The largest sync file the upload accepts; also the servlet multipart limit. */
+  @NotNull
+  private DataSize maxFileSize = DataSize.ofGigabytes(2);
+
   public Mode getMode() { return mode; }
   public void setMode(Mode mode) { this.mode = mode; }
   public String getNodeName() { return nodeName; }
@@ -45,6 +60,12 @@ public class SyncProperties {
   public void setBackupDir(Path backupDir) { this.backupDir = backupDir; }
   public int getBackupKeep() { return backupKeep; }
   public void setBackupKeep(int backupKeep) { this.backupKeep = backupKeep; }
+  public Path getWorkDir() { return workDir; }
+  public void setWorkDir(Path workDir) { this.workDir = workDir; }
+  public Duration getWorkTtl() { return workTtl; }
+  public void setWorkTtl(Duration workTtl) { this.workTtl = workTtl; }
+  public DataSize getMaxFileSize() { return maxFileSize; }
+  public void setMaxFileSize(DataSize maxFileSize) { this.maxFileSize = maxFileSize; }
 
   public boolean isReadOnly() {
     return mode == Mode.READ_ONLY;

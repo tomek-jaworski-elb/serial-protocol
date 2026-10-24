@@ -200,8 +200,8 @@ One entry per collision:
   last exchange of data; only one installation should be editing at a time." C4: "Participant number 118
   was given to Anna Nowak on *biuro-1* and to Jan Kowalski on *biuro-2*; numbers are unique and are
   printed on certificates."
-- **resolutions** (radio buttons): C1 keep local / discard local; C2 take file / keep local /
-  (if only distinct fields differ) merge field by field; C3 keep deleted / keep edited; C4 keep
+- **resolutions** (radio buttons): C1 keep local / discard local; C2 take file / keep local
+  (whole record, no per-field merge); C3 keep deleted / keep edited; C4 keep
   file's number and renumber local to the next free / keep local's and renumber file's; C5 same
   with codes; C6 skip the referencing row / keep the referenced tombstone alive again.
 
@@ -302,8 +302,13 @@ One commit per stage, as for the repair; a stage starts on request.
 | 6 | `SyncMariaDbTest` on Testcontainers; large-file behaviour (streaming, memory); docker-compose volume for the backup dir; `.gitignore` | round trip on MariaDB 11.8 with a 3-digit number of blobs |
 | 7 | Docs: this file cross-referenced, `.claude/rules/domain-persistence.md` and `CLAUDE.md` invariants, operator how-to (export, import, restore) in `docs/sync-howto.md` | mirrored blocks in `AGENTS.md` updated in the same commit |
 
-Open points, to settle during stage 3 at the latest:
+Settled in stage 3:
 
-- whether a tombstone that reappears live in the file (someone restored it elsewhere) is an
-  update or a C3 — the table above treats it as C3 when it was deleted here after `since`,
-  otherwise as an update.
+- a tombstone that reappears live in the file (someone restored it elsewhere) is a C3 when it
+  was deleted here after `since` and an update otherwise (`SyncCollisionTest`);
+- "changed here" also requires `origin_node` to be set: a row written before V10 is never
+  "changed here", so a node's first import after the upgrade cannot collide on history;
+- the report page is `sync-report.html` under `/sync/import/{token}`; the upload is staged under
+  `sync.work-dir` (`SyncStaging`, token in the URL, purged after `sync.work-ttl`) and analysed
+  again on every view. The analysis is `SyncAnalyzer`, a pure class over `SyncRow` maps, so the
+  decision table is tested without a database.

@@ -5,7 +5,11 @@ import com.jaworski.serialprotocol.service.WebSocketPublisher;
 import com.jaworski.serialprotocol.service.db.sync.SyncBackupService;
 import com.jaworski.serialprotocol.service.db.sync.SyncExporter;
 import com.jaworski.serialprotocol.service.db.sync.SyncFileNames;
+import com.jaworski.serialprotocol.service.db.sync.SyncImportPreview;
+import com.jaworski.serialprotocol.service.db.sync.SyncImportService;
 import com.jaworski.serialprotocol.service.db.sync.SyncNodeService;
+import com.jaworski.serialprotocol.service.db.sync.SyncRefusedException;
+import com.jaworski.serialprotocol.service.db.sync.SyncStaging;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,17 +24,23 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.view.RedirectView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
 
 /**
- * The synchronisation page (docs/sync-spec.md): node status, export, backups. Import arrives
- * in stage 3. Open to every logged-in user; the admin-only actions (restore, new node id) live
+ * The synchronisation page (docs/sync-spec.md): node status, export, backups, and the import
+ * in two steps (upload and report, then apply). Open to every logged-in user; the admin-only actions (restore, new node id) live
  * under {@code /admin/sync}.
  */
 @Controller
@@ -44,15 +54,18 @@ public class SyncController {
   private final WebSocketPublisher webSocketPublisher;
   private final SyncExporter exporter;
   private final SyncBackupService backups;
+  private final SyncImportService imports;
   private final Clock clock;
 
   public SyncController(SyncNodeService nodeService, SyncProperties properties,
-      WebSocketPublisher webSocketPublisher, SyncExporter exporter, SyncBackupService backups, Clock clock) {
+      WebSocketPublisher webSocketPublisher, SyncExporter exporter, SyncBackupService backups,
+      SyncImportService imports, Clock clock) {
     this.nodeService = nodeService;
     this.properties = properties;
     this.webSocketPublisher = webSocketPublisher;
     this.exporter = exporter;
     this.backups = backups;
+    this.imports = imports;
     this.clock = clock;
   }
 
@@ -65,7 +78,74 @@ public class SyncController {
     model.addAttribute("backupKeep", properties.getBackupKeep());
     model.addAttribute("backups", backups.list());
     model.addAttribute("sessions", webSocketPublisher.openPageCount());
+    model.addAttribute("maxFileSize", properties.getMaxFileSize().toGigabytes() + " GB");
     return "sync";
+  }
+
+  /**
+   * Step one of the import: the file is staged on disk, analysed, and the browser is sent to
+   * the report. A file that cannot be imported is discarded with the reason as a flash message.
+   */
+  @PostMapping("/import")
+  public String upload(@RequestParam("file") MultipartFile file, RedirectAttributes redirectAttributes)
+      throws IOException {
+    if (file == null || file.isEmpty()) {
+      redirectAttributes.addFlashAttribute("errorMessage", "Choose a sync file first.");
+      return "redirect:/sync";
+    }
+    SyncStaging.Staged staged;
+    try (InputStream in = file.getInputStream()) {
+      staged = imports.staging().stage(in, file.getOriginalFilename());
+    }
+    try {
+      imports.analyze(staged);
+    } catch (SyncRefusedException e) {
+      imports.staging().discard(staged.token());
+      LOG.info("Sync file {} refused: {}", staged.originalName(), e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+      return "redirect:/sync";
+    }
+    return "redirect:/sync/import/" + staged.token();
+  }
+
+  /** The report for a staged file; analysed again on every view, so a refresh shows the current state. */
+  @GetMapping("/import/{token}")
+  public String report(@PathVariable String token, Model model, RedirectAttributes redirectAttributes) {
+    SyncStaging.Staged staged = imports.staging().find(token).orElse(null);
+    if (staged == null) {
+      redirectAttributes.addFlashAttribute("errorMessage",
+          "The uploaded file is no longer available; upload it again.");
+      return "redirect:/sync";
+    }
+    SyncImportPreview preview;
+    try {
+      preview = imports.analyze(staged);
+    } catch (SyncRefusedException e) {
+      imports.staging().discard(token);
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+      return "redirect:/sync";
+    }
+    model.addAttribute("name", "sync");
+    model.addAttribute("preview", preview);
+    model.addAttribute("analysis", preview.analysis());
+    model.addAttribute("collisionsByTable", preview.analysis().collisionsByTable());
+    model.addAttribute("node", nodeService.current());
+    return "sync-report";
+  }
+
+  @PostMapping("/import/{token}/discard")
+  public String discard(@PathVariable String token, RedirectAttributes redirectAttributes) {
+    imports.staging().discard(token);
+    redirectAttributes.addFlashAttribute("successMessage", "The uploaded file was discarded; nothing was changed.");
+    return "redirect:/sync";
+  }
+
+  /** The container limit is sized for a sync file, so only an oversized sync file can get here. */
+  @ExceptionHandler(MaxUploadSizeExceededException.class)
+  public RedirectView tooLarge(RedirectAttributes redirectAttributes) {
+    redirectAttributes.addFlashAttribute("errorMessage",
+        "The sync file is larger than the allowed " + properties.getMaxFileSize().toGigabytes() + " GB.");
+    return new RedirectView("/sync", true);
   }
 
   /**

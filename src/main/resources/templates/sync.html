@@ -88,7 +88,24 @@
         </div>
     </div>
 
-    <p class="text-muted small">Import arrives with the next stage of the synchronisation.</p>
+    <div class="card mb-3">
+        <div class="card-header">Import</div>
+        <div class="card-body">
+            <p class="mb-2">Loads a <code>.sync</code> file made on another installation. Nothing is changed before
+                you have seen the report and confirmed it; a backup is written first.</p>
+            <form id="syncImportForm" th:action="@{/sync/import}" method="post" enctype="multipart/form-data"
+                  class="row g-2 align-items-center">
+                <div class="col-auto">
+                    <input id="syncImportFile" type="file" name="file" class="form-control form-control-sm"
+                           accept=".sync,.bak,.zip" required>
+                </div>
+                <div class="col-auto">
+                    <button id="syncImportBtn" type="submit" class="btn btn-primary btn-sm">Read the file</button>
+                </div>
+                <div class="col-12 text-muted small">Up to <span th:text="${maxFileSize}">2 GB</span>.</div>
+            </form>
+        </div>
+    </div>
 </div>
 <footer th:replace="~{fragment::footer}"></footer>
 </body>

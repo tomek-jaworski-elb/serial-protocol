@@ -168,7 +168,8 @@ public class SyncExporter {
     zip.closeEntry();
   }
 
-  private String schemaVersion() {
+  /** The Flyway version this database is at, or {@code null} without Flyway (the H2 profile). */
+  public String schemaVersion() {
     Flyway instance = flyway.getIfAvailable();
     if (instance == null) {
       return null;

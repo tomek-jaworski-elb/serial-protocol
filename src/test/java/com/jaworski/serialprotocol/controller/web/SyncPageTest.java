@@ -14,6 +14,18 @@ import java.nio.file.Path;
 import java.nio.file.Files;
 import com.jaworski.serialprotocol.service.db.sync.SyncBackupService;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.mock.web.MockMultipartFile;
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.LinkedHashMap;
+import java.util.UUID;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -24,7 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /** The {@code /sync} page: every logged-in user may see it, nobody else; ACTIVE shows no bar. */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
-@TestPropertySource(properties = "sync.backup-dir=target/sync-page-test")
+@TestPropertySource(properties = {"sync.backup-dir=target/sync-page-test", "sync.work-dir=target/sync-work-test"})
 class SyncPageTest {
 
   @Autowired
@@ -95,5 +107,88 @@ class SyncPageTest {
     assertThat(bytes).isEqualTo(Files.readAllBytes(path));
     mockMvc.perform(get("/sync/backup/nothing.bak").header(HttpHeaders.AUTHORIZATION, auth()))
         .andExpect(status().isNotFound());
+  }
+
+  /** Our own export, re-labelled as another node's, so the two-step import can be walked end to end. */
+  private byte[] fileFromAnotherNode() throws Exception {
+    byte[] export = mockMvc.perform(post("/sync/export").with(csrf()).header(HttpHeaders.AUTHORIZATION, auth()))
+        .andReturn().getResponse().getContentAsByteArray();
+    Map<String, byte[]> entries = new LinkedHashMap<>();
+    try (ZipInputStream zip = new ZipInputStream(new ByteArrayInputStream(export))) {
+      for (ZipEntry entry; (entry = zip.getNextEntry()) != null; ) {
+        entries.put(entry.getName(), zip.readAllBytes());
+      }
+    }
+    String manifest = new String(entries.get("manifest.json"), StandardCharsets.UTF_8)
+        .replaceAll("\"id\" : \"[0-9a-f-]+\"", "\"id\" : \"" + UUID.randomUUID() + "\"")
+        .replace("\"name\" : \"", "\"name\" : \"Laptop-");
+    entries.put("manifest.json", manifest.getBytes(StandardCharsets.UTF_8));
+    return zip(entries);
+  }
+
+  private static byte[] zip(Map<String, byte[]> entries) throws Exception {
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    try (ZipOutputStream zip = new ZipOutputStream(out)) {
+      for (var entry : entries.entrySet()) {
+        zip.putNextEntry(new ZipEntry(entry.getKey()));
+        zip.write(entry.getValue());
+        zip.closeEntry();
+      }
+    }
+    return out.toByteArray();
+  }
+
+  @Test
+  void importStagesTheFileAndShowsTheReportWithoutChangingAnything() throws Exception {
+    MockMultipartFile upload = new MockMultipartFile("file", "laptop.sync", "application/zip", fileFromAnotherNode());
+
+    String location = mockMvc.perform(multipart("/sync/import").file(upload).with(csrf())
+            .header(HttpHeaders.AUTHORIZATION, auth()))
+        .andExpect(status().is3xxRedirection())
+        .andExpect(redirectedUrlPattern("/sync/import/*"))
+        .andReturn().getResponse().getRedirectedUrl();
+
+    String html = mockMvc.perform(get(location).header(HttpHeaders.AUTHORIZATION, auth()))
+        .andExpect(status().isOk())
+        .andReturn().getResponse().getContentAsString();
+    assertThat(html).contains("id=\"syncReportFile\"").contains("laptop.sync").contains("Laptop-");
+    assertThat(html).contains("<strong id=\"syncReportCollisions\">0</strong>");
+    assertThat(html).contains("id=\"syncApplyBtn\" type=\"submit\" class=\"btn btn-primary\" disabled");
+    assertThat(html).doesNotContain("syncCollision\"");
+
+    mockMvc.perform(post(location + "/discard").with(csrf()).header(HttpHeaders.AUTHORIZATION, auth()))
+        .andExpect(redirectedUrl("/sync"));
+    mockMvc.perform(get(location).header(HttpHeaders.AUTHORIZATION, auth()))
+        .andExpect(redirectedUrl("/sync"))
+        .andExpect(flash().attributeExists("errorMessage"));
+  }
+
+  @Test
+  void ourOwnExportIsRefusedWithAMessage() throws Exception {
+    byte[] export = mockMvc.perform(post("/sync/export").with(csrf()).header(HttpHeaders.AUTHORIZATION, auth()))
+        .andReturn().getResponse().getContentAsByteArray();
+    MockMultipartFile upload = new MockMultipartFile("file", "own.sync", "application/zip", export);
+
+    mockMvc.perform(multipart("/sync/import").file(upload).with(csrf()).header(HttpHeaders.AUTHORIZATION, auth()))
+        .andExpect(redirectedUrl("/sync"))
+        .andExpect(flash().attribute("errorMessage", org.hamcrest.Matchers.containsString("our own export")));
+  }
+
+  @Test
+  void somethingThatIsNotASyncFileIsRefused() throws Exception {
+    MockMultipartFile upload = new MockMultipartFile("file", "notes.txt", "text/plain", "hello".getBytes());
+
+    mockMvc.perform(multipart("/sync/import").file(upload).with(csrf()).header(HttpHeaders.AUTHORIZATION, auth()))
+        .andExpect(redirectedUrl("/sync"))
+        .andExpect(flash().attributeExists("errorMessage"));
+    mockMvc.perform(get("/sync/import/not-a-token").header(HttpHeaders.AUTHORIZATION, auth()))
+        .andExpect(redirectedUrl("/sync"));
+  }
+
+  @Test
+  void theStatusPageOffersTheImportForm() throws Exception {
+    String html = mockMvc.perform(get("/sync").header(HttpHeaders.AUTHORIZATION, auth()))
+        .andReturn().getResponse().getContentAsString();
+    assertThat(html).contains("id=\"syncImportForm\"").contains("enctype=\"multipart/form-data\"");
   }
 }
