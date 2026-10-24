@@ -231,6 +231,60 @@ class SyncCollisionTest {
     assertThat(analysis.hasCollisions()).isFalse();
   }
 
+  /**
+   * A soft delete keeps the origin of the last edit, so a row created here and deleted on the
+   * other computer comes back as a tombstone with origin {@code self}; the tombstone itself
+   * is the other computer's change.
+   */
+  @Test
+  void aDeletionMadeThereOfARowCreatedHereIsApplied() {
+    local("participants", participant(key(1), 1001, "Anna", SELF, 2, BEFORE, null));
+    file("participants", participant(key(1), 1001, "Anna", SELF, 2, BEFORE, AFTER));
+
+    SyncAnalysis analysis = analyze();
+
+    assertThat(analysis.plan()).singleElement().satisfies(p -> {
+      assertThat(p.action()).isEqualTo(Action.UPDATE);
+      assertThat(p.fileRow().isDeleted()).isTrue();
+    });
+    assertThat(analysis.hasCollisions()).isFalse();
+  }
+
+  @Test
+  void aDeletionMadeThereOfARowEditedHereSinceIsAC3() {
+    local("participants", participant(key(1), 1001, "Anna Edited", SELF, 3, AFTER, null));
+    file("participants", participant(key(1), 1001, "Anna", SELF, 2, BEFORE, AFTER));
+
+    SyncAnalysis analysis = analyze();
+
+    assertThat(analysis.plan()).isEmpty();
+    assertThat(analysis.collisions()).singleElement().satisfies(c -> assertThat(c.type()).isEqualTo(Type.C3));
+  }
+
+  /** Our own tombstone coming back on the stick is not a change made there. */
+  @Test
+  void ourOwnTombstoneComingBackIsNothing() {
+    local("participants", participant(key(1), 1001, "Anna", SELF, 2, BEFORE, BEFORE));
+    file("participants", participant(key(1), 1001, "Anna", SELF, 2, BEFORE, BEFORE));
+
+    SyncAnalysis analysis = analyze();
+
+    assertThat(analysis.plan()).isEmpty();
+    assertThat(analysis.hasCollisions()).isFalse();
+  }
+
+  /** The stale file still shows the row live; the tombstone here was made before the last exchange. */
+  @Test
+  void aStaleFileRowWithOurOriginDoesNotReviveOurTombstone() {
+    local("participants", participant(key(1), 1001, "Anna", SELF, 2, BEFORE, BEFORE));
+    file("participants", participant(key(1), 1001, "Anna", SELF, 2, BEFORE, null));
+
+    SyncAnalysis analysis = analyze();
+
+    assertThat(analysis.plan()).isEmpty();
+    assertThat(analysis.hasCollisions()).isFalse();
+  }
+
   // ---- C1–C3 ----------------------------------------------------------------------------
 
   @Test

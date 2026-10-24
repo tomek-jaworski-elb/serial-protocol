@@ -214,7 +214,7 @@ public final class SyncAnalyzer {
       return Outcome.UNCHANGED;
     }
     boolean changedHere = changedHere(local);
-    boolean changedThere = !in.self().equals(file.originNode());
+    boolean changedThere = changedThere(local, file);
     if (!changedHere && !changedThere) {
       return Outcome.KEEP;
     }
@@ -242,6 +242,21 @@ public final class SyncAnalyzer {
       collisions.add(editedOnBoth(table, key, local, file));
     }
     return Outcome.COLLISION;
+  }
+
+  /**
+   * A file row whose origin is not {@code self} carries the other computer's change. A
+   * tombstone is the exception: a soft delete is an {@code @SQLDelete} UPDATE that never
+   * passes through {@code OriginStamper}, so a row deleted there keeps the origin of its last
+   * edit, which may be this computer. A tombstone in the file that this computer does not
+   * have (or has with another {@code deleted_at}) is therefore a change made there whatever
+   * its origin says.
+   */
+  private boolean changedThere(SyncRow local, SyncRow file) {
+    if (!in.self().equals(file.originNode())) {
+      return true;
+    }
+    return file.isDeleted() && !Objects.equals(file.deletedAt(), local.deletedAt());
   }
 
   /** Rows stamped before V10 ({@code origin_node} NULL) count as untouched here. */

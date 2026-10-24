@@ -13,7 +13,9 @@ import org.springframework.stereotype.Component;
  * instance. The identity is an {@link ObjectProvider} because the listener may be created
  * while the entity manager factory, which the identity's repository needs, is still being
  * built. A soft delete is an {@code @SQLDelete} UPDATE and never passes through here, so a
- * tombstone keeps the origin of its last edit.</p>
+ * tombstone keeps the origin of its last edit; {@code SyncAnalyzer} therefore reads a
+ * tombstone's {@code deleted_at}, not its origin, to see whether the other computer deleted
+ * the row.</p>
  */
 @Component
 public class OriginStamper {

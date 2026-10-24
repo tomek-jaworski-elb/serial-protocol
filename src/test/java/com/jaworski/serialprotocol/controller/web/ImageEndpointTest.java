@@ -24,7 +24,10 @@ import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.util.Base64;
+import java.util.Map;
 import java.util.UUID;
+import javax.sql.DataSource;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -51,6 +54,8 @@ class ImageEndpointTest {
     private ThumbnailBackfill thumbnailBackfill;
     @Autowired
     private EntityManagerFactory entityManagerFactory;
+    @Autowired
+    private DataSource dataSource;
 
     @Test
     void original_isServedWithItsContentType() throws Exception {
@@ -235,6 +240,24 @@ class ImageEndpointTest {
         assertThat(refreshedThumb).isNotEqualTo(new byte[]{1, 2, 3});
         assertThat(body(get("/custom/image/{uuid}", id).param("size", "thumb")))
                 .isEqualTo(refreshedThumb);
+    }
+
+    /** A rebuild changes how the photo is shown, not the photo: no edit for the synchronisation. */
+    @Test
+    void theBackfillDoesNotCountAsAnEditOfTheImage() throws Exception {
+        UUID id = storePng(600, 450);
+        staleThumbnail(id, imageRepository.findById(id).orElseThrow());
+        Map<String, Object> before = auditColumns(id);
+
+        assertThat(thumbnailBackfill.refreshStale()).isGreaterThanOrEqualTo(1);
+
+        assertThat(imageRepository.findById(id).orElseThrow().getThumbVersion()).isEqualTo(ThumbnailGenerator.VERSION);
+        assertThat(auditColumns(id)).isEqualTo(before);
+    }
+
+    private Map<String, Object> auditColumns(UUID id) {
+        return new JdbcTemplate(dataSource).queryForMap(
+                "select version, updated_at, origin_node from image where image_uuid = ?", id);
     }
 
     /**

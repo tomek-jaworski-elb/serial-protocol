@@ -122,11 +122,20 @@ public class SyncImportService {
     SyncImportReport report = new SyncImportReport(staged.originalName(), file.manifest().node(),
         SyncValues.TIMESTAMP.format(now), backup.getFileName().toString(), outcome.inserted(), outcome.updated(),
         outcome.blobs(), analysis.tables(), analysis.notices(), resolved, outcome.changes());
+    // The rows are committed from here on: nothing below may turn the import into a failure.
     Path reportFile = SyncBackupService.reportFor(backup);
-    Files.write(reportFile, mapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(report));
-    staging.discard(staged.token());
+    try {
+      Files.write(reportFile, mapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(report));
+      LOG.info("Sync import report written: {}", reportFile.getFileName());
+    } catch (IOException | RuntimeException e) {
+      LOG.error("Sync import committed, but its report could not be written to {}", reportFile, e);
+    }
+    try {
+      staging.discard(staged.token());
+    } catch (RuntimeException e) {
+      LOG.error("Sync import committed, but the upload {} could not be discarded", staged.token(), e);
+    }
     int rebuilt = SyncHousekeeping.afterCommit(LOG, "import", backups, thumbnails);
-    LOG.info("Sync import report written: {}", reportFile.getFileName());
     return new SyncImportResult(report, backup, reportFile, rebuilt);
   }
 

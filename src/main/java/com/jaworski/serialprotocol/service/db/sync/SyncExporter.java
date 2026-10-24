@@ -46,8 +46,11 @@ import java.util.zip.ZipOutputStream;
 public class SyncExporter {
 
   private static final int FETCH_SIZE = 200;
+  /** Every fetched row of the blob query may hold two LONGBLOBs, so the driver buffers very few. */
+  private static final int BLOB_FETCH_SIZE = 2;
 
   private final JdbcTemplate jdbc;
+  private final JdbcTemplate blobJdbc;
   private final TransactionTemplate snapshot;
   private final SyncNodeService nodeService;
   private final SyncProperties properties;
@@ -62,6 +65,8 @@ public class SyncExporter {
       @Value("${application.version:unknown}") String appVersion, Clock clock) {
     this.jdbc = new JdbcTemplate(dataSource);
     this.jdbc.setFetchSize(FETCH_SIZE);
+    this.blobJdbc = new JdbcTemplate(dataSource);
+    this.blobJdbc.setFetchSize(BLOB_FETCH_SIZE);
     this.snapshot = new TransactionTemplate(transactionManager);
     this.snapshot.setIsolationLevel(TransactionDefinition.ISOLATION_REPEATABLE_READ);
     this.snapshot.setReadOnly(true);
@@ -146,7 +151,7 @@ public class SyncExporter {
   private void writeBlobs(ZipOutputStream zip) {
     String sql = "select image_uuid, image_data, image_thumb_data from " + SyncTables.BLOB_TABLE
         + " order by image_uuid";
-    jdbc.query(sql, (RowCallbackHandler) rs -> {
+    blobJdbc.query(sql, (RowCallbackHandler) rs -> {
       try {
         String id = String.valueOf(rs.getObject(1));
         copy(rs.getBinaryStream(2), SyncTables.BLOBS_DIR + id + ".bin", zip);

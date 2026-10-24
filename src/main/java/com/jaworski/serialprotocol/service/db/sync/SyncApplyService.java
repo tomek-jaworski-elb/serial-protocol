@@ -105,7 +105,6 @@ public class SyncApplyService {
     /** Local rows the resolutions change, run before any file row is written. */
     private final List<Runnable> localChanges = new ArrayList<>();
     /** File rows a C6 "skip" left out, per table; rows referring to them are left out too. */
-    private final Map<String, Set<String>> skipped = new HashMap<>();
     private final Map<String, Set<String>> revived = new HashMap<>();
     private final List<String> changes = new ArrayList<>();
     private final Map<String, Long> sequences = new LinkedHashMap<>();
@@ -227,10 +226,9 @@ public class SyncApplyService {
       localChanges.add(() -> touch(target, referenced, List.of(new Bind(SyncRow.DELETED_AT, null)), change));
     }
 
+    /** Drops the file's row from the plan; the local row, if there is one, stays as it is. */
     private void skip(String table, String key, String change) {
-      if (writes.get(table).remove(key) != null || !localByKey.get(table).containsKey(key)) {
-        skipped.computeIfAbsent(table, t -> new LinkedHashSet<>()).add(key);
-      }
+      writes.get(table).remove(key);
       changes.add(change);
     }
 
@@ -263,15 +261,17 @@ public class SyncApplyService {
 
     /**
      * Whether the row will be there for a reference after the import: written from the file, or
-     * here already and not skipped. As in {@code SyncAnalyzer.checkReference}, a local tombstone
-     * satisfies only a reference from a deleted row, unless a resolution brings it back.
+     * here already. A skipped file row leaves the local row as it is, so a live local row still
+     * satisfies the reference even when its update was skipped. As in
+     * {@code SyncAnalyzer.checkReference}, a local tombstone satisfies only a reference from a
+     * deleted row, unless a resolution brings it back.
      */
     private boolean exists(String table, String key, boolean fromDeletedRow) {
       if (writes.get(table).containsKey(key)) {
         return true;
       }
       SyncRow local = localByKey.get(table).get(key);
-      if (local == null || skipped.getOrDefault(table, Set.of()).contains(key)) {
+      if (local == null) {
         return false;
       }
       return fromDeletedRow || !local.isDeleted() || revived.getOrDefault(table, Set.of()).contains(key);

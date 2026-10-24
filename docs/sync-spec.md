@@ -167,7 +167,11 @@ local row counts as changed here"). Two facts drive the decision:
   created after `since`;
 - **changed there** = the file row's `origin_node` is not `self` and the file row differs from
   the local one. A file row whose origin *is* `self` is this node's own earlier state coming
-  back (we exported it, nobody touched it, the stick returns), never a competing change.
+  back (we exported it, nobody touched it, the stick returns), never a competing change —
+  with one exception: a soft delete is an `@SQLDelete` UPDATE that bypasses `OriginStamper`,
+  so a tombstone keeps the origin of its last edit. A tombstone in the file whose `deleted_at`
+  the local row does not have is therefore "changed there" whatever its origin says; this is
+  how a deletion made on computer B of a row created on computer A reaches A.
 
 `version` orders two states of one row; `updated_at` only breaks ties and is shown to people,
 because the computers' clocks are not synchronised.
@@ -253,15 +257,19 @@ Details settled with the implementation (`SyncApplyService`):
   on the referenced record: when the file carries the same tombstone, the file's row is written
   live (`version + 1`, `updated_at = now`, `origin_node = self`) instead of the tombstone, so
   the revival is not overwritten by the file row written afterwards.
-- A reference is satisfied by a row the import writes or by a local row that is not skipped;
-  a local tombstone satisfies only a reference from a deleted row, unless a C6 "bring back"
-  revives it (the same rule as the analyzer's). A skipped row that is a tombstone here therefore
-  takes its live dependants from the file with it.
+- A reference is satisfied by a row the import writes or by a local row; a skip only drops the
+  file's row from the plan, the local row stays as it is and still answers for its dependants.
+  A local tombstone satisfies only a reference from a deleted row, unless a C6 "bring back"
+  revives it (the same rule as the analyzer's). A skipped row that is a tombstone here or
+  absent therefore takes its live dependants from the file with it.
 - The staged upload is discarded after a successful apply and kept after an apply refused for
   a missing resolution, so the report page can be opened again.
-- Once the transaction has committed, the housekeeping that follows (pruning the backups,
-  rebuilding stale thumbnails) cannot fail the import or the restore: a failure is logged and
-  the result still reports what was written.
+- Once the transaction has committed, nothing that follows (writing the report file,
+  discarding the upload, pruning the backups, rebuilding stale thumbnails) can fail the import
+  or the restore: a failure is logged and the result still reports what was written.
+- A thumbnail rebuild (`ImageService.refreshThumbnail`, run by `ThumbnailBackfill`) writes the
+  thumbnail columns with bulk statements and leaves `version`, `updated_at` and `origin_node`
+  alone, so a generator bump on both computers does not turn every photo into a C2.
 
 ## Backups
 

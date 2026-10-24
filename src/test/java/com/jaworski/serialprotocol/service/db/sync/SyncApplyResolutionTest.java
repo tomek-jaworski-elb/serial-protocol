@@ -163,6 +163,41 @@ class SyncApplyResolutionTest {
     assertThat(result.report().inserted()).isZero();
   }
 
+  @Test
+  void skippingAnUpdateOfARecordThatIsLiveHereKeepsTheRecordsThatReferToIt() throws Exception {
+    JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+
+    // The other side gave Anna a photo that exists nowhere and booked a new course for her.
+    SyncFixture.seed(jdbc);
+    jdbc.update("insert into image (image_uuid, image_content_type, created_at, updated_at, version, origin_node)"
+        + " values (?, 'image/png', ?, ?, 0, ?)", NO_SUCH_IMAGE, AFTER, AFTER, SyncFixture.ORIGIN);
+    SyncFixture.update(jdbc, "update participants set image_uuid = ?, updated_at = ?, version = 1, origin_node = ?"
+        + " where participants_uuid = ?", NO_SUCH_IMAGE, AFTER, SyncFixture.ORIGIN, SyncFixture.PARTICIPANT);
+    course(jdbc, NEW_COURSE, 2002L, SyncFixture.PARTICIPANT, AFTER, SyncFixture.ORIGIN);
+    byte[] file = SyncFixture.fileFromOtherNode(exporter);
+    file = without(file, "tables/image.jsonl", NO_SUCH_IMAGE);
+
+    // This side still has Anna as she was: live, untouched since the last exchange.
+    SyncFixture.seed(jdbc);
+    jdbc.update("update sync_node set last_sync_at = ?", OffsetDateTime.ofInstant(SINCE, ZoneOffset.UTC));
+    SyncStaging.Staged staged = imports.staging().stage(new ByteArrayInputStream(file), "live.sync");
+    SyncAnalysis analysis = imports.analyze(staged).analysis();
+    String c6 = "C6-participants-" + SyncFixture.PARTICIPANT + "-image_uuid-" + NO_SUCH_IMAGE;
+    assertThat(analysis.collisions()).extracting(Collision::id).containsExactly(c6);
+
+    SyncImportResult result = imports.apply(staged, Map.of(c6, "skip-row"));
+
+    // Anna stays as she is here, and the course that refers to her is still written.
+    Map<String, Object> anna = jdbc.queryForMap("select * from participants where participants_uuid = ?",
+        SyncFixture.PARTICIPANT);
+    assertThat(String.valueOf(anna.get("IMAGE_UUID"))).isEqualTo(SyncFixture.IMAGE.toString());
+    assertThat(((Number) anna.get("VERSION")).longValue()).isZero();
+    assertThat(jdbc.queryForObject("select count(*) from courses where courses_uuid = ?", Long.class, NEW_COURSE))
+        .isEqualTo(1L);
+    assertThat(result.report().changes()).singleElement().asString().contains("skipped Participant Anna Nowak");
+    assertThat(result.report().inserted()).isEqualTo(1);
+  }
+
   private static void course(JdbcTemplate jdbc, UUID id, long number, UUID participant, OffsetDateTime at,
       UUID origin) {
     SyncFixture.update(jdbc, "insert into courses (courses_uuid, courses_id, courses_start_date, courses_end_date,"

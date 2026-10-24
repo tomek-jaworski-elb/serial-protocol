@@ -8,21 +8,25 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.util.FileSystemUtils;
 
 import javax.sql.DataSource;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willAnswer;
 
 /**
  * Once the import or restore transaction has committed, a failure in the housekeeping that
- * follows (pruning, thumbnails) is logged and the operation still reports what it wrote;
- * otherwise the user would see a failure for rows that were changed.
+ * follows (the report file, discarding the upload, pruning, thumbnails) is logged and the
+ * operation still reports what it wrote; otherwise the user would see a failure for rows that
+ * were changed.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestPropertySource(properties = {
@@ -37,7 +41,7 @@ class SyncHousekeepingTest {
   private SyncImportService imports;
   @Autowired
   private SyncRestoreService restores;
-  @Autowired
+  @MockitoSpyBean
   private SyncBackupService backups;
   @MockitoBean
   private ThumbnailBackfill thumbnails;
@@ -61,6 +65,28 @@ class SyncHousekeepingTest {
     assertThat(result.thumbnailsRebuilt()).isZero();
     assertThat(result.report().inserted()).isPositive();
     assertThat(jdbc.queryForObject("select count(*) from participants", Long.class)).isEqualTo(1L);
+    assertThat(imports.staging().find(staged.token())).isEmpty();
+  }
+
+  @Test
+  void anImportSucceedsWhenItsReportCannotBeWritten() throws Exception {
+    JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+    SyncFixture.seed(jdbc);
+    byte[] file = SyncFixture.fileFromOtherNode(exporter);
+    SyncFixture.wipe(jdbc);
+    SyncStaging.Staged staged = imports.staging().stage(new ByteArrayInputStream(file), "other.sync");
+    // A directory where the report file should go makes the write fail after the commit.
+    willAnswer(invocation -> {
+      Path backup = (Path) invocation.callRealMethod();
+      Files.createDirectory(SyncBackupService.reportFor(backup));
+      return backup;
+    }).given(backups).writeBackup("before-import");
+
+    SyncImportResult result = imports.apply(staged, Map.of());
+
+    assertThat(result.report().inserted()).isPositive();
+    assertThat(jdbc.queryForObject("select count(*) from participants", Long.class)).isEqualTo(1L);
+    assertThat(Files.isDirectory(result.reportFile())).isTrue();
     assertThat(imports.staging().find(staged.token())).isEmpty();
   }
 
