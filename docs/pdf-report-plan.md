@@ -729,7 +729,7 @@ shouldGenerateEmptyReportPdf_whenListIsEmpty
 **Cel:** Weryfikacja endpointów HTTP — Content-Type, status HTTP, autoryzacja  
 **Styl:** `@SpringBootTest(webEnvironment = RANDOM_PORT)` + `@AutoConfigureMockMvc`
 
-> Wzorzec identyczny z istniejącymi `MapControllerTest` i `DbUtilsControllerTest`
+> Wzorzec identyczny z istniejącym `MapControllerTest`
 
 ```
 ─── Kontrola dostępu (bez uwierzytelnienia → 401) ───────────────────

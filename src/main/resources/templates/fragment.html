@@ -183,10 +183,6 @@
     <li sec:authorize="isAuthenticated()">
         <a class="dropdown-item" th:classappend="${name == 'instructor-service'} ? 'active'" th:href="@{/instructor-service}">Instructors</a>
     </li>
-    <li sec:authorize="hasRole('ADMIN')" th:if="${@environment.getProperty('web.ui.extended') == 'true'}"><hr class="dropdown-divider"/></li>
-    <li sec:authorize="hasRole('ADMIN')">
-        <a class="dropdown-item" th:classappend="${name == 'db-utils'} ? 'active'" th:href="@{/db-utils}">DB Utils</a>
-    </li>
 </th:block>
 
 <!--

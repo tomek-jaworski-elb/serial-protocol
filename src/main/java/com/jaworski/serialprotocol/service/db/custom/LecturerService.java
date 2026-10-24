@@ -44,6 +44,7 @@ public class LecturerService {
     return lecturerRepository.findAll(pageable).map(LecturerMapper::mapToDTO);
   }
 
+  @Transactional(readOnly = true)
   public LecturerDTO findById(UUID id) {
     return lecturerRepository.findById(id)
             .map(LecturerMapper::mapToDTO)

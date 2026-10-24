@@ -7,8 +7,10 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface CourseTypeRepository extends JpaRepository<CourseType, Long> {
 
-  boolean existsByCode(String code);
+  // Case-insensitive on purpose: the MariaDB default collation already treats "abc" and "ABC"
+  // as the same unique value, so the pre-check has to agree with the constraint (H2 is case-sensitive).
+  boolean existsByCodeIgnoreCase(String code);
 
-  boolean existsByCodeAndIdNot(String code, Long id);
+  boolean existsByCodeIgnoreCaseAndIdNot(String code, Long id);
 
 }

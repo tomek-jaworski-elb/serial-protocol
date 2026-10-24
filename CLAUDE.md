@@ -119,7 +119,7 @@ A window killed by a crash never sends a close frame, so silence on the second c
 Two MVC controller families under `controller/web`:
 
 - `MapController` — serial/realtime pages: `/` (`index`), `/terminal`, `/chart`, `/tracks`, `/about`, `/greeting`, plus `/login`, `/logout`, `/name-service`, `/instructor-service`.
-- `CustomDBController` — all custom-domain CRUD; `ImageController`, `PdfReportController`, `DbUtilsController` (`DatabaseBackupService` backup/restore) round it out. `MyErrorController` + `WebExceptionHandler` handle errors.
+- `CustomDBController` — all custom-domain CRUD; `ImageController` and `PdfReportController` round it out. `MyErrorController` + `WebExceptionHandler` handle errors.
 
 `templates/fragment.html` is the shared layout — `head`, `header`, `footer`, `pagination(...)`, `toastNotifications`, `imageEditor(...)` fragments. Every page pulls in the footer, which is what makes the open-page count work. Menu entries behind `web.ui.extended=true` are gated in the template by comparing the property **as a string** (`@environment.getProperty(...) == 'true'`). `static/bootstrap-5-3-8` is the version actually referenced; `bootstrap-5-3-7` is a leftover.
 
@@ -142,7 +142,7 @@ Full reference: [`docs/follow-mode-spec.md`](docs/follow-mode-spec.md). Toggling
 
 ### Persistence
 - **Main profile**: MariaDB (`jdbc:mariadb://${DB_HOST_IP:mariadb}:3306/certificates`), credentials via env vars `DB_USER`/`DB_PASSWORD`. `spring.jpa.open-in-view=false`.
-- **Test profile**: H2 in-memory (`src/test/resources/application.properties`), `server.port=8081`, `ddl-auto=create`, `open-in-view=true`. Never hardcode prod DB assumptions in tests. Test auth: `user:user`.
+- **Test profile**: H2 in-memory (`src/test/resources/application.properties`), `server.port=8081`, `ddl-auto=create`, `open-in-view=false` (same as production, so the suite can catch `LazyInitializationException`). Never hardcode prod DB assumptions in tests. Test auth: `user:user`.
 - Schema migration: `SchemaMigrationRunner` runs on `ApplicationReadyEvent` alongside `ddl-auto=update`, issuing idempotent MariaDB `ALTER TABLE … MODIFY COLUMN` statements that relax old NOT NULL columns. It is annotated `@Profile("!test")`, but nothing activates a `test` profile, so it also runs in full-context tests — harmless only because `alter()` swallows every exception (H2 rejects the MariaDB syntax). Never assume a migration has run in tests.
 - Two domains coexist: legacy `Student`/`Instructor` (`service.db`, REST) and the custom training domain (`entity.custom`).
 
@@ -150,7 +150,7 @@ Full reference: [`docs/follow-mode-spec.md`](docs/follow-mode-spec.md). Toggling
 `RestStudent` under `/api/v1`: `POST /students`, `POST /instructors`, `GET /instructors` (JSON in/out). Secured like the rest of `/api/**`.
 
 ### Security
-In-memory users built from `custom.server.credentials.*` properties (regular + admin). Protected paths: `/name-service`, `/instructor-service`, `/api/**`, `/admin/**`, `/db-utils/**`, `/pdf/**`, and all custom domain CRUD endpoints (`/trainer-service/**`, `/lecturer-service/**`, `/technician-service/**`, `/participant-service/**`, `/courses-service/**`, `/course-type-service/**`, `/course-counter-service/**`).
+In-memory users built from `custom.server.credentials.*` properties (regular + admin). Protected paths: `/name-service`, `/instructor-service`, `/api/**`, `/admin/**`, `/pdf/**`, and all custom domain CRUD endpoints (`/trainer-service/**`, `/lecturer-service/**`, `/technician-service/**`, `/participant-service/**`, `/courses-service/**`, `/course-type-service/**`, `/course-counter-service/**`).
 
 HSTS header (`max-age=31536000; includeSubDomains; preload`) is set in `SecurityConfig`. SSL via PKCS12, port 443.
 

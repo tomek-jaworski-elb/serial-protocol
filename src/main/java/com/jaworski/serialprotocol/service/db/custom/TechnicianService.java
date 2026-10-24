@@ -44,6 +44,7 @@ public class TechnicianService {
     return technicianRepository.findAll(pageable).map(TechnicianMapper::mapToDTO);
   }
 
+  @Transactional(readOnly = true)
   public TechnicianDTO findById(UUID id) {
     return technicianRepository.findById(id)
             .map(TechnicianMapper::mapToDTO)

@@ -32,6 +32,7 @@ public class TrainerService {
   private final CoursesRepository coursesRepository;
   private final static Logger LOGGER = LoggerFactory.getLogger(TrainerService.class);
 
+  @Transactional(readOnly = true)
   public List<TrainerDTO> findAll() {
     return trainerRepository.findAll().stream()
             .map(TrainerMapper::mapToDTO)
@@ -43,6 +44,7 @@ public class TrainerService {
     return trainerRepository.findAll(pageable).map(TrainerMapper::mapToDTO);
   }
 
+  @Transactional(readOnly = true)
   public TrainerDTO findById(UUID id) {
     return trainerRepository.findById(id)
             .map(TrainerMapper::mapToDTO)

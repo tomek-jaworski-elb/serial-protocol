@@ -8,34 +8,39 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @RequiredArgsConstructor
 @Service
+@Transactional
 public class CourseTypeService {
 
   private final CourseTypeRepository courseTypeRepository;
   private final CoursesRepository coursesRepository;
 
   public CourseTypeDTO save(CourseTypeDTO courseTypeDTO) {
-    if (courseTypeRepository.existsByCode(courseTypeDTO.getCode())) {
+    if (courseTypeRepository.existsByCodeIgnoreCase(courseTypeDTO.getCode())) {
       throw new IllegalArgumentException("Course type with code '" + courseTypeDTO.getCode() + "' already exists.");
     }
     var entity = CourseTypeMapper.mapToEntity(courseTypeDTO);
     return CourseTypeMapper.mapToDTO(courseTypeRepository.save(entity));
   }
 
+  @Transactional(readOnly = true)
   public List<CourseTypeDTO> findAll() {
     return courseTypeRepository.findAll().stream()
         .map(CourseTypeMapper::mapToDTO)
         .toList();
   }
 
+  @Transactional(readOnly = true)
   public Page<CourseTypeDTO> findAll(Pageable pageable) {
     return courseTypeRepository.findAll(pageable).map(CourseTypeMapper::mapToDTO);
   }
 
+  @Transactional(readOnly = true)
   public CourseTypeDTO findById(Long id) {
     return courseTypeRepository.findById(id)
         .map(CourseTypeMapper::mapToDTO)
@@ -56,7 +61,7 @@ public class CourseTypeService {
     if (!courseTypeRepository.existsById(courseTypeDTO.getId())) {
       throw new IllegalArgumentException("Course type with id " + courseTypeDTO.getId() + " not found");
     }
-    if (courseTypeRepository.existsByCodeAndIdNot(courseTypeDTO.getCode(), courseTypeDTO.getId())) {
+    if (courseTypeRepository.existsByCodeIgnoreCaseAndIdNot(courseTypeDTO.getCode(), courseTypeDTO.getId())) {
       throw new IllegalArgumentException("Course type with code '" + courseTypeDTO.getCode() + "' already exists.");
     }
     var entity = CourseTypeMapper.mapToEntity(courseTypeDTO);
