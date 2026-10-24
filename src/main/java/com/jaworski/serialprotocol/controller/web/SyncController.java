@@ -34,7 +34,8 @@ import org.springframework.web.servlet.view.RedirectView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
@@ -86,8 +87,9 @@ public class SyncController {
   }
 
   /**
-   * Step one of the import: the file is staged on disk, analysed, and the browser is sent to
-   * the report. A file that cannot be imported is discarded with the reason as a flash message.
+   * Step one of the import: the file is moved into the work directory and the browser is sent
+   * to the report, which reads and analyses it once. A file that cannot be imported is
+   * discarded there with the reason as a flash message.
    */
   @PostMapping("/import")
   public String upload(@RequestParam("file") MultipartFile file, RedirectAttributes redirectAttributes)
@@ -96,22 +98,16 @@ public class SyncController {
       redirectAttributes.addFlashAttribute("errorMessage", "Choose a sync file first.");
       return "redirect:/sync";
     }
-    SyncStaging.Staged staged;
-    try (InputStream in = file.getInputStream()) {
-      staged = imports.staging().stage(in, file.getOriginalFilename());
-    }
-    try {
-      imports.analyze(staged);
-    } catch (SyncRefusedException e) {
-      imports.staging().discard(staged.token());
-      LOG.info("Sync file {} refused: {}", staged.originalName(), e.getMessage());
-      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-      return "redirect:/sync";
-    }
+    SyncStaging.Staged staged = imports.staging().stage(file);
     return "redirect:/sync/import/" + staged.token();
   }
 
-  /** The report for a staged file; analysed again on every view, so a refresh shows the current state. */
+  /**
+   * The report for a staged file; analysed again on every view, so a refresh shows the current
+   * state. Whatever stops the analysis discards the upload: a refusal is shown to the user, any
+   * other failure is logged and rethrown, but neither leaves a file of up to the upload limit
+   * waiting for the work-dir purge.
+   */
   @GetMapping("/import/{token}")
   public String report(@PathVariable String token, Model model, RedirectAttributes redirectAttributes) {
     SyncStaging.Staged staged = imports.staging().find(token).orElse(null);
@@ -125,8 +121,13 @@ public class SyncController {
       preview = imports.analyze(staged);
     } catch (SyncRefusedException e) {
       imports.staging().discard(token);
+      LOG.info("Sync file {} refused: {}", staged.originalName(), e.getMessage());
       redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
       return "redirect:/sync";
+    } catch (RuntimeException e) {
+      imports.staging().discard(token);
+      LOG.error("Sync file {} could not be analysed; the upload was discarded", staged.originalName(), e);
+      throw e;
     }
     model.addAttribute("name", "sync");
     model.addAttribute("preview", preview);
@@ -187,19 +188,30 @@ public class SyncController {
   }
 
   /**
-   * Streams a fresh sync file straight into the response, so a database of any size is never
-   * held in memory, and records the export once the whole file has gone out. A READ_ONLY node
+   * Writes a fresh sync file to a scratch file under the work directory inside the export's
+   * snapshot transaction, then streams that file to the browser: the database connection and
+   * the REPEATABLE READ snapshot are held for as long as the disk takes, never for as long as
+   * the download. The export is recorded once the whole file has gone out. A READ_ONLY node
    * may export too; the page warns that its file carries no edits worth passing on.
    */
   @PostMapping("/export")
   public void export(HttpServletResponse response) throws IOException {
     Instant now = Instant.now(clock);
     String fileName = SyncFileNames.exportName(nodeService.current().getName(), now, clock.getZone());
-    response.setContentType("application/zip");
-    response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
-        ContentDisposition.attachment().filename(fileName).build().toString());
-    exporter.export(response.getOutputStream(), false);
-    response.flushBuffer();
+    Path scratch = imports.staging().scratch("export-");
+    try {
+      try (OutputStream out = Files.newOutputStream(scratch)) {
+        exporter.export(out, false);
+      }
+      response.setContentType("application/zip");
+      response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
+          ContentDisposition.attachment().filename(fileName).build().toString());
+      response.setContentLengthLong(Files.size(scratch));
+      Files.copy(scratch, response.getOutputStream());
+      response.flushBuffer();
+    } finally {
+      Files.deleteIfExists(scratch);
+    }
     nodeService.markExported(now);
     LOG.info("Sync file exported: {}", fileName);
   }

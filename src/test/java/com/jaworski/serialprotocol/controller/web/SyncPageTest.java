@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.util.FileSystemUtils;
 import java.io.IOException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
@@ -46,11 +47,15 @@ class SyncPageTest {
   private MockMvc mockMvc;
   @Autowired
   private SyncBackupService backups;
+  @Value("${sync.work-dir}")
+  private Path workDir;
 
-  /** A successful import or restore prunes, so the directory must not carry over the previous runs' files. */
+  /** A successful import or restore prunes, so the directories must not carry over the previous runs' files. */
   @BeforeEach
-  void cleanDirectory() throws IOException {
+  void cleanDirectories() throws IOException {
     FileSystemUtils.deleteRecursively(backups.directory());
+    FileSystemUtils.deleteRecursively(workDir);
+    Files.createDirectories(workDir);
   }
 
   private static String auth() {
@@ -154,9 +159,45 @@ class SyncPageTest {
     try (ZipInputStream zip = new ZipInputStream(new ByteArrayInputStream(response.getContentAsByteArray()))) {
       assertThat(zip.getNextEntry().getName()).isEqualTo("manifest.json");
     }
+    // Spooled through a scratch file so the snapshot transaction ends before the download starts;
+    // the browser gets the size up front and the scratch file is gone once the response is out.
+    assertThat(response.getContentLengthLong()).isEqualTo(response.getContentAsByteArray().length);
+    try (var files = Files.list(workDir)) {
+      assertThat(files.filter(Files::isRegularFile)).isEmpty();
+    }
     String html = mockMvc.perform(get("/sync").header(HttpHeaders.AUTHORIZATION, auth()))
         .andReturn().getResponse().getContentAsString();
     assertThat(html).doesNotContain("<dd class=\"col-sm-9\">never</dd>\n                <dt class=\"col-sm-3\">Last import");
+  }
+
+  @Test
+  void aFileWithADamagedRowIsRefusedAndTheUploadIsDiscarded() throws Exception {
+    Map<String, byte[]> entries = unzip(fileFromAnotherNode());
+    // The page test's database may hold no participant, so the damaged row is appended rather than edited.
+    String damaged = "{\"participants_uuid\":\"" + UUID.randomUUID() + "\",\"participants_id\":9999,"
+        + "\"participants_name\":\"Damaged\",\"participants_surname\":\"Row\",\"image_uuid\":null,"
+        + "\"version\":0,\"created_at\":\"2026-01-01T00:00:00.000000Z\","
+        + "\"updated_at\":\"2026-01-01T00:00:00.000000Z\",\"deleted_at\":null,\"origin_node\":\"not-a-uuid\"}\n";
+    byte[] rows = entries.getOrDefault("tables/participants.jsonl", new byte[0]);
+    entries.put("tables/participants.jsonl",
+        (new String(rows, StandardCharsets.UTF_8) + damaged).getBytes(StandardCharsets.UTF_8));
+    MockMultipartFile upload = new MockMultipartFile("file", "damaged.sync", "application/zip", zip(entries));
+
+    String location = mockMvc.perform(multipart("/sync/import").file(upload).with(csrf())
+            .header(HttpHeaders.AUTHORIZATION, auth()))
+        .andExpect(redirectedUrlPattern("/sync/import/*"))
+        .andReturn().getResponse().getRedirectedUrl();
+    mockMvc.perform(get(location).header(HttpHeaders.AUTHORIZATION, auth()))
+        .andExpect(redirectedUrl("/sync"))
+        .andExpect(flash().attribute("errorMessage",
+            org.hamcrest.Matchers.startsWith("The file has a damaged row and cannot be imported")));
+
+    try (var dirs = Files.list(workDir)) {
+      assertThat(dirs.filter(Files::isDirectory)).isEmpty();
+    }
+    mockMvc.perform(get(location).header(HttpHeaders.AUTHORIZATION, auth()))
+        .andExpect(redirectedUrl("/sync"))
+        .andExpect(flash().attribute("errorMessage", "The uploaded file is no longer available; upload it again."));
   }
 
   @Test
@@ -184,17 +225,22 @@ class SyncPageTest {
   private byte[] fileFromAnotherNode() throws Exception {
     byte[] export = mockMvc.perform(post("/sync/export").with(csrf()).header(HttpHeaders.AUTHORIZATION, auth()))
         .andReturn().getResponse().getContentAsByteArray();
-    Map<String, byte[]> entries = new LinkedHashMap<>();
-    try (ZipInputStream zip = new ZipInputStream(new ByteArrayInputStream(export))) {
-      for (ZipEntry entry; (entry = zip.getNextEntry()) != null; ) {
-        entries.put(entry.getName(), zip.readAllBytes());
-      }
-    }
+    Map<String, byte[]> entries = unzip(export);
     String manifest = new String(entries.get("manifest.json"), StandardCharsets.UTF_8)
         .replaceAll("\"id\" : \"[0-9a-f-]+\"", "\"id\" : \"" + UUID.randomUUID() + "\"")
         .replace("\"name\" : \"", "\"name\" : \"Laptop-");
     entries.put("manifest.json", manifest.getBytes(StandardCharsets.UTF_8));
     return zip(entries);
+  }
+
+  private static Map<String, byte[]> unzip(byte[] bytes) throws Exception {
+    Map<String, byte[]> entries = new LinkedHashMap<>();
+    try (ZipInputStream zip = new ZipInputStream(new ByteArrayInputStream(bytes))) {
+      for (ZipEntry entry; (entry = zip.getNextEntry()) != null; ) {
+        entries.put(entry.getName(), zip.readAllBytes());
+      }
+    }
+    return entries;
   }
 
   private static byte[] zip(Map<String, byte[]> entries) throws Exception {
@@ -266,18 +312,32 @@ class SyncPageTest {
         .andReturn().getResponse().getContentAsByteArray();
     MockMultipartFile upload = new MockMultipartFile("file", "own.sync", "application/zip", export);
 
-    mockMvc.perform(multipart("/sync/import").file(upload).with(csrf()).header(HttpHeaders.AUTHORIZATION, auth()))
+    String location = mockMvc.perform(multipart("/sync/import").file(upload).with(csrf())
+            .header(HttpHeaders.AUTHORIZATION, auth()))
+        .andExpect(redirectedUrlPattern("/sync/import/*"))
+        .andReturn().getResponse().getRedirectedUrl();
+    mockMvc.perform(get(location).header(HttpHeaders.AUTHORIZATION, auth()))
         .andExpect(redirectedUrl("/sync"))
         .andExpect(flash().attribute("errorMessage", org.hamcrest.Matchers.containsString("our own export")));
+    try (var dirs = Files.list(workDir)) {
+      assertThat(dirs.filter(Files::isDirectory)).isEmpty();
+    }
   }
 
   @Test
   void somethingThatIsNotASyncFileIsRefused() throws Exception {
     MockMultipartFile upload = new MockMultipartFile("file", "notes.txt", "text/plain", "hello".getBytes());
 
-    mockMvc.perform(multipart("/sync/import").file(upload).with(csrf()).header(HttpHeaders.AUTHORIZATION, auth()))
+    String location = mockMvc.perform(multipart("/sync/import").file(upload).with(csrf())
+            .header(HttpHeaders.AUTHORIZATION, auth()))
+        .andExpect(redirectedUrlPattern("/sync/import/*"))
+        .andReturn().getResponse().getRedirectedUrl();
+    mockMvc.perform(get(location).header(HttpHeaders.AUTHORIZATION, auth()))
         .andExpect(redirectedUrl("/sync"))
-        .andExpect(flash().attributeExists("errorMessage"));
+        .andExpect(flash().attribute("errorMessage", org.hamcrest.Matchers.containsString("not a sync file")));
+    try (var dirs = Files.list(workDir)) {
+      assertThat(dirs.filter(Files::isDirectory)).isEmpty();
+    }
     mockMvc.perform(get("/sync/import/not-a-token").header(HttpHeaders.AUTHORIZATION, auth()))
         .andExpect(redirectedUrl("/sync"));
   }

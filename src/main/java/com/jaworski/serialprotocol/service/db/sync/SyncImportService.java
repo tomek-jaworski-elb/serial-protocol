@@ -13,6 +13,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -68,10 +69,22 @@ public class SyncImportService {
     }
   }
 
+  /**
+   * A row whose {@code origin_node} is not a UUID or whose timestamp does not parse is a
+   * damaged file, not a server fault: the reader accepts any JSON object as a row and the
+   * values are first interpreted here, so the failure becomes a refusal with the reason.
+   */
   private SyncAnalysis analyze(SyncFile file, SyncNode self, Map<String, List<SyncRow>> local) {
-    return SyncAnalyzer.analyze(new SyncAnalyzer.Input(self.getId(), self.getName(),
-        self.getLastSyncAt(), properties.isReadOnly(), file.manifest().node(), local, file.tables(),
-        ZoneId.systemDefault()));
+    try {
+      // Every audited row's timestamps and origin are parsed here, so a damaged one is refused
+      // before the report is shown rather than failing halfway through the apply.
+      file.tables().values().forEach(rows -> rows.forEach(SyncRow::checkAudit));
+      return SyncAnalyzer.analyze(new SyncAnalyzer.Input(self.getId(), self.getName(),
+          self.getLastSyncAt(), properties.isReadOnly(), file.manifest().node(), local, file.tables(),
+          ZoneId.systemDefault()));
+    } catch (IllegalArgumentException | DateTimeException e) {
+      throw new SyncRefusedException("The file has a damaged row and cannot be imported: " + e.getMessage(), e);
+    }
   }
 
   /**
@@ -93,11 +106,7 @@ public class SyncImportService {
     Map<String, List<SyncRow>> local = localReader.read();
     SyncAnalysis analysis = analyze(file, self, local);
     for (Collision collision : analysis.collisions()) {
-      String code = resolutions.get(collision.id());
-      if (code == null || collision.resolutions().stream().noneMatch(r -> r.code().equals(code))) {
-        throw new SyncRefusedException("Choose what to do with every collision before applying the import ("
-            + collision.tableLabel() + " " + collision.record() + ").");
-      }
+      collision.chosen(resolutions);
     }
     Path backup = backups.writeBackup("before-import");
     Instant now = Instant.now(clock);

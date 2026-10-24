@@ -1,6 +1,7 @@
 package com.jaworski.serialprotocol.service.db.sync;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * One blocking finding of the analysis (docs/sync-spec.md § The report), worded for the
@@ -29,6 +30,21 @@ public record Collision(
     Side local,
     Side file,
     List<Resolution> resolutions) {
+
+  /**
+   * The resolution the form chose for this collision.
+   *
+   * @param resolutions collision id to resolution code, as posted
+   * @throws SyncRefusedException when the form carries no decision, or one this collision does not offer
+   */
+  public String chosen(Map<String, String> resolutions) {
+    String code = resolutions.get(id);
+    if (code == null || this.resolutions.stream().noneMatch(r -> r.code().equals(code))) {
+      throw new SyncRefusedException("Choose what to do with every collision before applying the import ("
+          + tableLabel + " " + record + ").");
+    }
+    return code;
+  }
 
   public enum Type {
     C1("created on a read-only computer"),

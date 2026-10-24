@@ -96,6 +96,20 @@ class SyncCollisionTest {
   // ---- the decision table ---------------------------------------------------------------
 
   @Test
+  void aCollisionAcceptsOnlyAResolutionItOffers() {
+    local("participants", participant(key(1), 1001, "Anna", SELF, 1, AFTER, null));
+    file("participants", participant(key(1), 1001, "Ania", OTHER, 1, AFTER, null));
+    Collision c = analyze().collisions().getFirst();
+
+    assertThat(c.chosen(java.util.Map.of(c.id(), "take-file"))).isEqualTo("take-file");
+    assertThatThrownBy(() -> c.chosen(java.util.Map.of()))
+        .isInstanceOf(SyncRefusedException.class)
+        .hasMessageContaining("Choose what to do with every collision");
+    assertThatThrownBy(() -> c.chosen(java.util.Map.of(c.id(), "skip-row")))
+        .isInstanceOf(SyncRefusedException.class);
+  }
+
+  @Test
   void aRowOnlyInTheFileIsInserted() {
     file("participants", participant(key(1), 1001, "Anna", OTHER, 0, AFTER, null));
 

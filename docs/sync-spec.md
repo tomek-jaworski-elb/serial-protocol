@@ -87,9 +87,10 @@ name because H2 reports it as BINARY(16). Join-table rows have no audit
 columns; they belong to their owning row (a course's crew, a person's photo set) and are replaced
 together with it.
 
-Streaming on both sides: the exporter writes the ZIP entry by entry straight into the HTTP
-response or the backup file; the importer reads the staged file entry by entry. Nothing holds all
-blobs in memory.
+Streaming on both sides: the exporter writes the ZIP entry by entry into the backup file or, for
+a download, into a scratch file under `sync.work-dir` that is copied to the HTTP response once the
+snapshot transaction has ended; the importer reads the staged file entry by entry. Nothing holds
+all blobs in memory.
 
 ## Schema changes (`V10__sync.sql`)
 
@@ -133,17 +134,23 @@ changing the property (or the environment variable) and restarting; there is no 
 ## Export
 
 `GET /sync` shows node id, name, mode, last export, last import and the backup list.
-`POST /sync/export` streams the file as a download and sets `last_export_at` and
-`last_sync_at` **after** the stream completed without error. The export reads inside one `REPEATABLE READ`
-transaction so the file is a consistent snapshot even if someone saves during the download.
+`POST /sync/export` writes the file to a scratch file under `sync.work-dir` inside one
+`REPEATABLE READ` transaction, so the file is a consistent snapshot even if someone saves
+meanwhile, then sends it as a download with a known length and sets `last_export_at` and
+`last_sync_at` **after** the download completed without error. The transaction and its connection
+end before the download starts, so a slow client never holds a snapshot open; the scratch file is
+deleted whatever happens.
 
 ## Import
 
 Two steps, so nothing is written before a human has seen the report.
 
-1. `POST /sync/import` uploads the file to `sync.work-dir` under a random token, runs the
-   **analysis** and shows `/sync/import/{token}`: the manifest, counts, and the collision
-   report. Staged files older than `sync.work-ttl` (default 2 h) are removed.
+1. `POST /sync/import` moves the upload to `sync.work-dir` under a random token and redirects
+   to `/sync/import/{token}`, which runs the **analysis** and shows the manifest, counts, and
+   the collision report. A file that cannot be imported (not a sync file, our own export, another
+   schema version, a row whose timestamps or origin cannot be parsed) is refused there and the
+   upload is discarded at once, as it is on any other failure of the analysis. Staged files and
+   export scratch files older than `sync.work-ttl` (default 2 h) are removed.
 2. The report page lists every collision with a resolution to choose; `POST
    /sync/import/{token}/apply` refuses while any blocking collision has no resolution, then
    writes the backup, applies everything in one transaction, updates `sync_node` and shows a
@@ -245,8 +252,8 @@ Details settled with the implementation (`SyncApplyService`):
   on the referenced record: when the file carries the same tombstone, the file's row is written
   live (`version + 1`, `updated_at = now`, `origin_node = self`) instead of the tombstone, so
   the revival is not overwritten by the file row written afterwards.
-- The staged upload is discarded after a successful apply and kept after a refusal, so the
-  report page can be opened again.
+- The staged upload is discarded after a successful apply and kept after an apply refused for
+  a missing resolution, so the report page can be opened again.
 
 ## Backups
 
@@ -369,5 +376,5 @@ Settled in stage 3:
   "changed here", so a node's first import after the upgrade cannot collide on history;
 - the report page is `sync-report.html` under `/sync/import/{token}`; the upload is staged under
   `sync.work-dir` (`SyncStaging`, token in the URL, purged after `sync.work-ttl`) and analysed
-  again on every view. The analysis is `SyncAnalyzer`, a pure class over `SyncRow` maps, so the
+  on every view of the report, never on the upload itself. The analysis is `SyncAnalyzer`, a pure class over `SyncRow` maps, so the
   decision table is tested without a database.

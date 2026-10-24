@@ -60,6 +60,22 @@ public record SyncRow(Map<String, Object> values) {
     return value == null ? null : UUID.fromString(value.toString());
   }
 
+  /**
+   * Parses the audit columns and the origin, so a row that cannot be imported fails here.
+   *
+   * @throws IllegalArgumentException on an origin that is not a uuid
+   * @throws java.time.DateTimeException on a timestamp that cannot be parsed
+   */
+  public void checkAudit() {
+    if (!isAudited()) {
+      return;
+    }
+    createdAt();
+    updatedAt();
+    deletedAt();
+    originNode();
+  }
+
   /** Whether the row carries the audit columns at all (join tables and {@code id_sequence} do not). */
   public boolean isAudited() {
     return values.containsKey(VERSION) && values.containsKey(UPDATED_AT);

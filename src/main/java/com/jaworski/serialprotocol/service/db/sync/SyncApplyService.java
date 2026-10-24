@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -164,11 +165,7 @@ public class SyncApplyService {
     // ---- resolutions ---------------------------------------------------------------------
 
     private void resolve(Collision c) {
-      String code = resolutions.get(c.id());
-      if (code == null || c.resolutions().stream().noneMatch(r -> r.code().equals(code))) {
-        throw new SyncRefusedException("Choose what to do with every collision before applying the import ("
-            + c.tableLabel() + " " + c.record() + ").");
-      }
+      String code = c.chosen(resolutions);
       SyncTable table = table(c.table());
       String key = keyOf(c);
       switch (c.type()) {
@@ -473,12 +470,15 @@ public class SyncApplyService {
 
     private void replaceJoinRows(SyncTable table, JoinTable join) {
       Map<String, Column> cols = columns(table.name());
+      Map<String, List<SyncRow>> byOwner = new HashMap<>();
+      for (SyncRow row : fileByKey.get(table.name()).values()) {
+        byOwner.computeIfAbsent(row.text(join.ownerColumn()), k -> new ArrayList<>()).add(row);
+      }
       for (String owner : writes.get(join.ownerTable()).keySet()) {
         execute(table.name(), "delete from " + table.name() + " where " + join.ownerColumn() + " = ?",
             List.of(new Bind(join.ownerColumn(), owner)));
-        for (SyncRow row : fileByKey.get(table.name()).values()) {
-          if (!owner.equals(row.text(join.ownerColumn()))
-              || !exists(join.memberTable(), row.text(join.memberColumn()))) {
+        for (SyncRow row : byOwner.getOrDefault(owner, List.of())) {
+          if (!exists(join.memberTable(), row.text(join.memberColumn()))) {
             continue;
           }
           List<Bind> binds = new ArrayList<>();
@@ -494,16 +494,19 @@ public class SyncApplyService {
 
     // ---- blobs -----------------------------------------------------------------------------
 
-    /** A photo's bytes are loaded only for an {@code image} row that exists and has no bytes yet. */
+    /**
+     * A photo's bytes are loaded only for an {@code image} row that exists and has no bytes yet.
+     * The ids already present are read once (a uuid per photo), not with a query per file blob.
+     */
     private void writeBlobs() {
+      if (file.blobIds().isEmpty()) {
+        return;
+      }
+      Set<String> present = new HashSet<>(jdbc.query("select image_uuid from " + SyncTables.BLOB_TABLE,
+          (rs, i) -> SyncRow.canonical(rs.getObject(1))));
       for (String id : file.blobIds()) {
         boolean imageKnown = localByKey.get("image").containsKey(id) || writes.get("image").containsKey(id);
-        if (!imageKnown) {
-          continue;
-        }
-        Integer present = jdbc.queryForObject("select count(*) from " + SyncTables.BLOB_TABLE
-            + " where image_uuid = ?", Integer.class, UUID.fromString(id));
-        if (present != null && present > 0) {
+        if (!imageKnown || present.contains(id)) {
           continue;
         }
         writer.insertBlob(zip, id, file.thumbIds().contains(id));
