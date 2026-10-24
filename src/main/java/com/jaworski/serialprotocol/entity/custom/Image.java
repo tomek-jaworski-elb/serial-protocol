@@ -54,8 +54,8 @@ public class Image {
    * Downscaled copy, generated on first request and stored so it is produced once.
    * Nullable on purpose: rows created before this column existed, and formats
    * ImageIO cannot read (webp, svg), simply never get one and fall back to the
-   * original. ddl-auto=update adds a nullable column on its own, so this needs no
-   * entry in SchemaMigrationRunner.
+   * original. Added by a Flyway migration like every other column (the baseline carries it);
+   * ddl-auto=validate only checks that it is there.
    */
   @Lob
   @Column(name = TABLE_NAME + "_thumb_data", columnDefinition = "LONGBLOB")
