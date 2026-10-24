@@ -6,6 +6,7 @@ import com.jaworski.serialprotocol.service.db.sync.SyncBackupService;
 import com.jaworski.serialprotocol.service.db.sync.SyncExporter;
 import com.jaworski.serialprotocol.service.db.sync.SyncFileNames;
 import com.jaworski.serialprotocol.service.db.sync.SyncImportPreview;
+import com.jaworski.serialprotocol.service.db.sync.SyncImportResult;
 import com.jaworski.serialprotocol.service.db.sync.SyncImportService;
 import com.jaworski.serialprotocol.service.db.sync.SyncNodeService;
 import com.jaworski.serialprotocol.service.db.sync.SyncRefusedException;
@@ -37,6 +38,8 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * The synchronisation page (docs/sync-spec.md): node status, export, backups, and the import
@@ -131,6 +134,41 @@ public class SyncController {
     model.addAttribute("collisionsByTable", preview.analysis().collisionsByTable());
     model.addAttribute("node", nodeService.current());
     return "sync-report";
+  }
+
+  /**
+   * Step two: every form field except the CSRF token is a collision id with the chosen
+   * resolution. A refusal (a decision missing, the database changed since the report) sends
+   * the browser back to the report, which is analysed afresh.
+   */
+  @PostMapping("/import/{token}/apply")
+  public String apply(@PathVariable String token, @RequestParam Map<String, String> form,
+      RedirectAttributes redirectAttributes) throws IOException {
+    SyncStaging.Staged staged = imports.staging().find(token).orElse(null);
+    if (staged == null) {
+      redirectAttributes.addFlashAttribute("errorMessage",
+          "The uploaded file is no longer available; upload it again.");
+      return "redirect:/sync";
+    }
+    Map<String, String> resolutions = new LinkedHashMap<>(form);
+    resolutions.remove("_csrf");
+    SyncImportResult result;
+    try {
+      result = imports.apply(staged, resolutions);
+    } catch (SyncRefusedException e) {
+      LOG.info("Sync file {} not applied: {}", staged.originalName(), e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+      return "redirect:/sync/import/" + token;
+    }
+    var report = result.report();
+    StringBuilder message = new StringBuilder("Imported " + report.file() + ": " + report.inserted()
+        + " record(s) added, " + report.updated() + " updated");
+    if (!report.collisions().isEmpty()) {
+      message.append(", ").append(report.collisions().size()).append(" collision(s) resolved");
+    }
+    message.append(". Backup: ").append(result.backup().getFileName()).append('.');
+    redirectAttributes.addFlashAttribute("successMessage", message.toString());
+    return "redirect:/sync";
   }
 
   @PostMapping("/import/{token}/discard")

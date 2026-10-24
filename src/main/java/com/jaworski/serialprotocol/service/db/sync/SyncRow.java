@@ -65,6 +65,13 @@ public record SyncRow(Map<String, Object> values) {
     return values.containsKey(VERSION) && values.containsKey(UPDATED_AT);
   }
 
+  /** A copy with one column replaced; the apply renumbers a file row this way before writing it. */
+  public SyncRow with(String column, Object value) {
+    Map<String, Object> copy = new java.util.LinkedHashMap<>(values);
+    copy.put(column, value);
+    return new SyncRow(copy);
+  }
+
   /** The primary key as one string, the map key the analysis matches rows by. */
   public String key(SyncTable table) {
     StringBuilder key = new StringBuilder();

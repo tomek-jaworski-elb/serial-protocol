@@ -153,12 +153,38 @@ class SyncPageTest {
         .andReturn().getResponse().getContentAsString();
     assertThat(html).contains("id=\"syncReportFile\"").contains("laptop.sync").contains("Laptop-");
     assertThat(html).contains("<strong id=\"syncReportCollisions\">0</strong>");
-    assertThat(html).contains("id=\"syncApplyBtn\" type=\"submit\" class=\"btn btn-primary\" disabled");
+    assertThat(html).contains("id=\"syncApplyBtn\" type=\"submit\" class=\"btn btn-primary\"").doesNotContain("syncApplyBtn\" type=\"submit\" class=\"btn btn-primary\" disabled");
     assertThat(html).doesNotContain("syncCollision\"");
 
     mockMvc.perform(post(location + "/discard").with(csrf()).header(HttpHeaders.AUTHORIZATION, auth()))
         .andExpect(redirectedUrl("/sync"));
     mockMvc.perform(get(location).header(HttpHeaders.AUTHORIZATION, auth()))
+        .andExpect(redirectedUrl("/sync"))
+        .andExpect(flash().attributeExists("errorMessage"));
+  }
+
+  @Test
+  void applyingTheReportLoadsTheFileWritesABackupAndDiscardsTheUpload() throws Exception {
+    MockMultipartFile upload = new MockMultipartFile("file", "laptop.sync", "application/zip", fileFromAnotherNode());
+    String location = mockMvc.perform(multipart("/sync/import").file(upload).with(csrf())
+            .header(HttpHeaders.AUTHORIZATION, auth()))
+        .andReturn().getResponse().getRedirectedUrl();
+    int backupsBefore = backups.list().size();
+
+    mockMvc.perform(post(location + "/apply").with(csrf()).header(HttpHeaders.AUTHORIZATION, auth()))
+        .andExpect(redirectedUrl("/sync"))
+        .andExpect(flash().attribute("successMessage", org.hamcrest.Matchers.allOf(
+            org.hamcrest.Matchers.startsWith("Imported laptop.sync:"),
+            org.hamcrest.Matchers.containsString("Backup: "))));
+
+    assertThat(backups.list()).hasSize(backupsBefore + 1);
+    Path backup = backups.directory().resolve(backups.list().getFirst().name());
+    assertThat(backup.getFileName().toString()).contains("before-import");
+    assertThat(SyncBackupService.reportFor(backup)).exists();
+    mockMvc.perform(get(location).header(HttpHeaders.AUTHORIZATION, auth()))
+        .andExpect(redirectedUrl("/sync"))
+        .andExpect(flash().attributeExists("errorMessage"));
+    mockMvc.perform(post(location + "/apply").with(csrf()).header(HttpHeaders.AUTHORIZATION, auth()))
         .andExpect(redirectedUrl("/sync"))
         .andExpect(flash().attributeExists("errorMessage"));
   }

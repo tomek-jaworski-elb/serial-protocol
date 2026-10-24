@@ -1,5 +1,6 @@
 package com.jaworski.serialprotocol.service.db.sync;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -76,6 +77,43 @@ public final class SyncValues {
   /** H2 reports its native {@code UUID} type as BINARY(16); MariaDB as CHAR. Both name it UUID. */
   private static boolean isUuid(ResultSetMetaData meta, int column) throws SQLException {
     return "UUID".equalsIgnoreCase(meta.getColumnTypeName(column));
+  }
+
+  /**
+   * Binds a file value to a column, the inverse of {@link #read}: again decided by the JDBC
+   * type, so the text written by one database is accepted by the other. Numbers may arrive as
+   * any {@code Number} (Jackson picks the smallest that fits) or as text (a key parsed out of
+   * a collision id).
+   */
+  public static void bind(PreparedStatement ps, int index, Object value, int jdbcType, String typeName)
+      throws SQLException {
+    if (value == null) {
+      ps.setNull(index, jdbcType);
+      return;
+    }
+    switch (jdbcType) {
+      case Types.TIMESTAMP_WITH_TIMEZONE ->
+          ps.setObject(index, OffsetDateTime.ofInstant(parseTimestamp(value.toString()), ZoneOffset.UTC));
+      case Types.TIMESTAMP ->
+          ps.setTimestamp(index, Timestamp.from(parseTimestamp(value.toString())), (Calendar) UTC.clone());
+      case Types.DATE -> ps.setObject(index, LocalDate.parse(value.toString()));
+      case Types.BLOB, Types.BINARY, Types.VARBINARY, Types.LONGVARBINARY -> {
+        if ("UUID".equalsIgnoreCase(typeName)) {
+          ps.setObject(index, UUID.fromString(value.toString()));
+        } else {
+          ps.setBytes(index, Base64.getDecoder().decode(value.toString()));
+        }
+      }
+      case Types.TINYINT, Types.SMALLINT, Types.INTEGER, Types.BIGINT ->
+          ps.setLong(index, value instanceof Number number ? number.longValue() : Long.parseLong(value.toString()));
+      default -> {
+        if ("UUID".equalsIgnoreCase(typeName)) {
+          ps.setObject(index, UUID.fromString(value.toString()));
+        } else {
+          ps.setObject(index, value);
+        }
+      }
+    }
   }
 
   /** Parses what {@link #TIMESTAMP} wrote. */

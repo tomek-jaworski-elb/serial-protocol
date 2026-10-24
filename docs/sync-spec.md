@@ -206,7 +206,7 @@ One entry per collision:
   with codes; C6 skip the referencing row / keep the referenced tombstone alive again.
 
 Entries are grouped by table, blocking ones first. The same report is written as
-`<file>.report.json` next to the backup for the record.
+`<backup>.report.json` next to the backup written for that import, for the record.
 
 ### Apply
 
@@ -217,6 +217,24 @@ on every node keep working. The transaction also updates `sync_node`
 (`last_import_at`, `last_import_file`, `last_sync_at`). Any failure rolls everything back;
 the backup written just before stays. Thumbnails arrive with the file; `ThumbnailBackfill` is
 triggered once afterwards for rows that came without one.
+
+Details settled with the implementation (`SyncApplyService`):
+
+- The file is analysed again inside the apply, against the database as it is now; a decision
+  whose collision is gone refuses the import with "read the file again".
+- A local row a resolution changes (a discarded C1 edit, a renumbered C4/C5 record, a C6
+  record brought back) is written as an edit made here now: `version + 1`, `updated_at = now`,
+  `origin_node = self`. It then travels with the next export, and the next analysis sees it
+  as this computer's. Such local changes run before any file row is written.
+- A row the file renumbers (C4 "keep local's number", C5 "keep local's code") is written with
+  the new number and otherwise as in the file, so its `version` stays the file's.
+- Renumbering takes from the sequence as it will be after the import: `max(file next, local
+  next, highest number on either side + 1)`, then one up per renumbering. C5 renames to
+  `CODE-2`, `CODE-3`, ... the first free case-insensitively on either side.
+- A C6 "skip the row" also skips its join-table rows; a C6 "bring back" clears `deleted_at`
+  on the referenced record.
+- The staged upload is discarded after a successful apply and kept after a refusal, so the
+  report page can be opened again.
 
 ## Backups
 

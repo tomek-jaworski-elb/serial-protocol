@@ -104,7 +104,12 @@ public class SyncBackupService {
     return java.util.Optional.of(path);
   }
 
-  /** Deletes the oldest backups beyond {@code sync.backup-keep}; 0 keeps every file. */
+  /** The import report kept next to a backup: {@code <backup>.report.json}. */
+  public static Path reportFor(Path backup) {
+    return backup.resolveSibling(backup.getFileName() + ".report.json");
+  }
+
+  /** Deletes the oldest backups beyond {@code sync.backup-keep}, with their import reports; 0 keeps every file. */
   public int prune() throws IOException {
     int keep = properties.getBackupKeep();
     if (keep <= 0) {
@@ -113,7 +118,9 @@ public class SyncBackupService {
     List<BackupFile> files = list();
     int deleted = 0;
     for (BackupFile old : files.subList(Math.min(keep, files.size()), files.size())) {
-      Files.deleteIfExists(directory().resolve(old.name()));
+      Path path = directory().resolve(old.name());
+      Files.deleteIfExists(path);
+      Files.deleteIfExists(reportFor(path));
       deleted++;
       LOG.info("Backup pruned: {}", old.name());
     }

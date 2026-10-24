@@ -74,6 +74,15 @@ public class SyncNodeService implements NodeIdentity {
     repository.save(node);
   }
 
+  /** Records a completed import: what was loaded and when, and {@code last_sync_at} with it. */
+  public void markImported(Instant at, String fileName) {
+    SyncNode node = current();
+    node.setLastImportAt(at);
+    node.setLastImportFile(fileName);
+    node.setLastSyncAt(at);
+    repository.save(node);
+  }
+
   @Override
   public UUID currentNodeId() {
     return nodeId;
