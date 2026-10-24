@@ -1,18 +1,23 @@
 package com.jaworski.serialprotocol.mappers.custom;
 
 import com.jaworski.serialprotocol.dto.custom.TrainerDTO;
-import com.jaworski.serialprotocol.entity.custom.Image;
 import com.jaworski.serialprotocol.entity.custom.Trainer;
 
 import java.util.HashSet;
-import java.util.stream.Collectors;
+import java.util.Set;
+import java.util.UUID;
 
 public class TrainerMapper {
 
   private TrainerMapper() {
   }
 
-  public static TrainerDTO mapToDTO(Trainer trainer) {
+  /**
+   * @param imageIds the ids of the photos, fetched separately (see {@code ImageLink}). The mapper
+   *   never reads {@code getImages()}: initialising that collection loads every photo's LONGBLOB,
+   *   and the list pages need only the ids.
+   */
+  public static TrainerDTO mapToDTO(Trainer trainer, Set<UUID> imageIds) {
     if (trainer == null) {
       return null;
     }
@@ -26,9 +31,7 @@ public class TrainerMapper {
     dto.setPhoneNumber(trainer.getPhoneNumber());
     dto.setAddress(trainer.getAddress());
     dto.setPrimaryImageUuid(trainer.getPrimaryImageUuid());
-    dto.setImagesUuid(trainer.getImages() == null
-            ? new HashSet<>()
-            : trainer.getImages().stream().map(Image::getId).collect(Collectors.toSet()));
+    dto.setImagesUuid(imageIds == null ? new HashSet<>() : new HashSet<>(imageIds));
     return dto;
   }
 

@@ -16,10 +16,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import com.jaworski.serialprotocol.repository.custom.ImageLink;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -34,21 +37,21 @@ public class TechnicianService {
 
   @Transactional(readOnly = true)
   public List<TechnicianDTO> findAll() {
-    return technicianRepository.findAll().stream()
-            .map(TechnicianMapper::mapToDTO)
-            .toList();
+    return toDTOs(technicianRepository.findAll());
   }
 
   @Transactional(readOnly = true)
   public Page<TechnicianDTO> findAll(Pageable pageable) {
-    return technicianRepository.findAll(pageable).map(TechnicianMapper::mapToDTO);
+    Page<Technician> page = technicianRepository.findAll(pageable);
+    Map<UUID, Set<UUID>> images = imageIdsOf(page.getContent());
+    return page.map(p -> TechnicianMapper.mapToDTO(p, images.get(p.getUuid())));
   }
 
   @Transactional(readOnly = true)
   public TechnicianDTO findById(UUID id) {
     return technicianRepository.findById(id)
-            .map(TechnicianMapper::mapToDTO)
-            .orElse(null);
+        .map(p -> TechnicianMapper.mapToDTO(p, imageIdsOf(List.of(p)).get(id)))
+        .orElse(null);
   }
 
   public TechnicianDTO save(TechnicianDTO dto) {
@@ -59,7 +62,7 @@ public class TechnicianService {
     technician.setPrimaryImageUuid(
         imageService.resolveNewPrimaryImage(dto.getPrimaryImageUuid(), dto.getImagesUuid()));
     Technician saved = technicianRepository.save(technician);
-    return TechnicianMapper.mapToDTO(saved);
+    return TechnicianMapper.mapToDTO(saved, dto.getImagesUuid());
   }
 
   public void deleteById(UUID id) {
@@ -101,7 +104,27 @@ public class TechnicianService {
     Technician updated = technicianRepository.save(existing);
 
     imageService.deleteRemovedImages(previousImages, requestedImages);
-    return TechnicianMapper.mapToDTO(updated);
+    return TechnicianMapper.mapToDTO(updated, idsOf(requestedImages));
+  }
+
+  private List<TechnicianDTO> toDTOs(List<Technician> people) {
+    Map<UUID, Set<UUID>> images = imageIdsOf(people);
+    return people.stream().map(p -> TechnicianMapper.mapToDTO(p, images.get(p.getUuid()))).toList();
+  }
+
+  /**
+   * Image ids for all given people in one query. Never {@code getImages()}: that would load
+   * every photo's blob (see {@link ImageLink}).
+   */
+  private Map<UUID, Set<UUID>> imageIdsOf(List<Technician> people) {
+    if (people.isEmpty()) {
+      return Map.of();
+    }
+    return ImageLink.groupByOwner(technicianRepository.findImageLinks(people.stream().map(Technician::getUuid).toList()));
+  }
+
+  private static Set<UUID> idsOf(Set<Image> images) {
+    return images.stream().map(Image::getId).collect(Collectors.toSet());
   }
 }
 

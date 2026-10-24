@@ -4,6 +4,7 @@ import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
@@ -48,7 +49,9 @@ public class Participant extends PersonBase {
   @Column(name = TABLE_NAME + "_birth_date", nullable = true)
   private LocalDate birthDate;
 
-  @OneToOne
+  // LAZY on purpose: Image carries two LONGBLOBs and field-level laziness is inactive in this
+  // build, so an eager association would read every photo whenever a participant is listed.
+  @OneToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "image_uuid")
   @EqualsAndHashCode.Exclude
   @ToString.Exclude

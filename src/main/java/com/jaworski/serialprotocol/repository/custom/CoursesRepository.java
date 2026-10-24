@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -13,7 +14,12 @@ public interface CoursesRepository extends JpaRepository<Courses, UUID> {
 
   List<Courses> findByParticipant_Uuid(UUID participantUuid);
 
+  /** One query for every participant on a page, instead of one per row. */
+  List<Courses> findByParticipant_UuidIn(Collection<UUID> participantUuids);
+
   List<Courses> findByCourseCounter_Uuid(UUID courseCounterUuid);
+
+  List<Courses> findByCourseCounter_UuidIn(Collection<UUID> courseCounterUuids);
 
   boolean existsByCourseType_Id(Long courseTypeId);
 

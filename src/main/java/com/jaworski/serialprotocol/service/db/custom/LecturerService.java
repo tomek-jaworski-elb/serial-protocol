@@ -16,10 +16,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import com.jaworski.serialprotocol.repository.custom.ImageLink;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -34,21 +37,21 @@ public class LecturerService {
 
   @Transactional(readOnly = true)
   public List<LecturerDTO> findAll() {
-    return lecturerRepository.findAll().stream()
-            .map(LecturerMapper::mapToDTO)
-            .toList();
+    return toDTOs(lecturerRepository.findAll());
   }
 
   @Transactional(readOnly = true)
   public Page<LecturerDTO> findAll(Pageable pageable) {
-    return lecturerRepository.findAll(pageable).map(LecturerMapper::mapToDTO);
+    Page<Lecturer> page = lecturerRepository.findAll(pageable);
+    Map<UUID, Set<UUID>> images = imageIdsOf(page.getContent());
+    return page.map(p -> LecturerMapper.mapToDTO(p, images.get(p.getUuid())));
   }
 
   @Transactional(readOnly = true)
   public LecturerDTO findById(UUID id) {
     return lecturerRepository.findById(id)
-            .map(LecturerMapper::mapToDTO)
-            .orElse(null);
+        .map(p -> LecturerMapper.mapToDTO(p, imageIdsOf(List.of(p)).get(id)))
+        .orElse(null);
   }
 
   public LecturerDTO save(LecturerDTO dto) {
@@ -59,7 +62,7 @@ public class LecturerService {
     lecturer.setPrimaryImageUuid(
         imageService.resolveNewPrimaryImage(dto.getPrimaryImageUuid(), dto.getImagesUuid()));
     Lecturer savedLecturer = lecturerRepository.save(lecturer);
-    return LecturerMapper.mapToDTO(savedLecturer);
+    return LecturerMapper.mapToDTO(savedLecturer, dto.getImagesUuid());
   }
 
   public void deleteById(UUID id) {
@@ -101,6 +104,26 @@ public class LecturerService {
     Lecturer updatedLecturer = lecturerRepository.save(existingLecturer);
 
     imageService.deleteRemovedImages(previousImages, requestedImages);
-    return LecturerMapper.mapToDTO(updatedLecturer);
+    return LecturerMapper.mapToDTO(updatedLecturer, idsOf(requestedImages));
+  }
+
+  private List<LecturerDTO> toDTOs(List<Lecturer> people) {
+    Map<UUID, Set<UUID>> images = imageIdsOf(people);
+    return people.stream().map(p -> LecturerMapper.mapToDTO(p, images.get(p.getUuid()))).toList();
+  }
+
+  /**
+   * Image ids for all given people in one query. Never {@code getImages()}: that would load
+   * every photo's blob (see {@link ImageLink}).
+   */
+  private Map<UUID, Set<UUID>> imageIdsOf(List<Lecturer> people) {
+    if (people.isEmpty()) {
+      return Map.of();
+    }
+    return ImageLink.groupByOwner(lecturerRepository.findImageLinks(people.stream().map(Lecturer::getUuid).toList()));
+  }
+
+  private static Set<UUID> idsOf(Set<Image> images) {
+    return images.stream().map(Image::getId).collect(Collectors.toSet());
   }
 }

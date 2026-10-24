@@ -16,10 +16,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import com.jaworski.serialprotocol.repository.custom.ImageLink;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -34,21 +37,21 @@ public class TrainerService {
 
   @Transactional(readOnly = true)
   public List<TrainerDTO> findAll() {
-    return trainerRepository.findAll().stream()
-            .map(TrainerMapper::mapToDTO)
-            .toList();
+    return toDTOs(trainerRepository.findAll());
   }
 
   @Transactional(readOnly = true)
   public Page<TrainerDTO> findAll(Pageable pageable) {
-    return trainerRepository.findAll(pageable).map(TrainerMapper::mapToDTO);
+    Page<Trainer> page = trainerRepository.findAll(pageable);
+    Map<UUID, Set<UUID>> images = imageIdsOf(page.getContent());
+    return page.map(p -> TrainerMapper.mapToDTO(p, images.get(p.getUuid())));
   }
 
   @Transactional(readOnly = true)
   public TrainerDTO findById(UUID id) {
     return trainerRepository.findById(id)
-            .map(TrainerMapper::mapToDTO)
-            .orElse(null);
+        .map(p -> TrainerMapper.mapToDTO(p, imageIdsOf(List.of(p)).get(id)))
+        .orElse(null);
   }
 
   public TrainerDTO save(TrainerDTO trainerDTO) {
@@ -59,7 +62,7 @@ public class TrainerService {
     entityToSave.setPrimaryImageUuid(imageService.resolveNewPrimaryImage(
         trainerDTO.getPrimaryImageUuid(), trainerDTO.getImagesUuid()));
     Trainer trainer = trainerRepository.save(entityToSave);
-    return TrainerMapper.mapToDTO(trainer);
+    return TrainerMapper.mapToDTO(trainer, trainerDTO.getImagesUuid());
   }
 
   public void deleteById(UUID id) {
@@ -104,6 +107,26 @@ public class TrainerService {
     Trainer updatedTrainer = trainerRepository.save(existingTrainer);
 
     imageService.deleteRemovedImages(previousImages, requestedImages);
-    return TrainerMapper.mapToDTO(updatedTrainer);
+    return TrainerMapper.mapToDTO(updatedTrainer, idsOf(requestedImages));
+  }
+
+  private List<TrainerDTO> toDTOs(List<Trainer> people) {
+    Map<UUID, Set<UUID>> images = imageIdsOf(people);
+    return people.stream().map(p -> TrainerMapper.mapToDTO(p, images.get(p.getUuid()))).toList();
+  }
+
+  /**
+   * Image ids for all given people in one query. Never {@code getImages()}: that would load
+   * every photo's blob (see {@link ImageLink}).
+   */
+  private Map<UUID, Set<UUID>> imageIdsOf(List<Trainer> people) {
+    if (people.isEmpty()) {
+      return Map.of();
+    }
+    return ImageLink.groupByOwner(trainerRepository.findImageLinks(people.stream().map(Trainer::getUuid).toList()));
+  }
+
+  private static Set<UUID> idsOf(Set<Image> images) {
+    return images.stream().map(Image::getId).collect(Collectors.toSet());
   }
 }

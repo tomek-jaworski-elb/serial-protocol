@@ -1,18 +1,23 @@
 package com.jaworski.serialprotocol.mappers.custom;
 
 import com.jaworski.serialprotocol.dto.custom.LecturerDTO;
-import com.jaworski.serialprotocol.entity.custom.Image;
 import com.jaworski.serialprotocol.entity.custom.Lecturer;
 
 import java.util.HashSet;
-import java.util.stream.Collectors;
+import java.util.Set;
+import java.util.UUID;
 
 public class LecturerMapper {
 
   private LecturerMapper() {
   }
 
-  public static LecturerDTO mapToDTO(Lecturer lecturer) {
+  /**
+   * @param imageIds the ids of the photos, fetched separately (see {@code ImageLink}). The mapper
+   *   never reads {@code getImages()}: initialising that collection loads every photo's LONGBLOB,
+   *   and the list pages need only the ids.
+   */
+  public static LecturerDTO mapToDTO(Lecturer lecturer, Set<UUID> imageIds) {
     if (lecturer == null) {
       return null;
     }
@@ -26,9 +31,7 @@ public class LecturerMapper {
     dto.setPhoneNumber(lecturer.getPhoneNumber());
     dto.setAddress(lecturer.getAddress());
     dto.setPrimaryImageUuid(lecturer.getPrimaryImageUuid());
-    dto.setImagesUuid(lecturer.getImages() == null
-            ? new HashSet<>()
-            : lecturer.getImages().stream().map(Image::getId).collect(Collectors.toSet()));
+    dto.setImagesUuid(imageIds == null ? new HashSet<>() : new HashSet<>(imageIds));
     return dto;
   }
 

@@ -3,6 +3,7 @@ package com.jaworski.serialprotocol.entity.custom;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -39,12 +40,14 @@ public class Courses {
   @Positive
   private Long id;
 
-  @ManyToOne(optional = false)
+  // The to-one associations are LAZY: the mapper only needs their ids, and an eager participant
+  // or counter would pull its (eager by default) photo along for every course row listed.
+  @ManyToOne(optional = false, fetch = FetchType.LAZY)
   @JoinColumn(name = TABLE_NAME + "_participant_id", nullable = false)
   @NotNull
   private Participant participant;
 
-  @ManyToOne(optional = false)
+  @ManyToOne(optional = false, fetch = FetchType.LAZY)
   @JoinColumn(name = TABLE_NAME + "_course_type_id", nullable = false)
   @NotNull
   private CourseType courseType;
@@ -84,7 +87,7 @@ public class Courses {
   @NotNull
   private Set<Technician> technicians = new HashSet<>();
 
-  @ManyToOne()
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = CourseCounter.TABLE_NAME + "_uuid")
   private CourseCounter courseCounter;
 

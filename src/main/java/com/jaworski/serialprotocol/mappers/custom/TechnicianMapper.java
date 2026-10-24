@@ -1,18 +1,23 @@
 package com.jaworski.serialprotocol.mappers.custom;
 
 import com.jaworski.serialprotocol.dto.custom.TechnicianDTO;
-import com.jaworski.serialprotocol.entity.custom.Image;
 import com.jaworski.serialprotocol.entity.custom.Technician;
 
 import java.util.HashSet;
-import java.util.stream.Collectors;
+import java.util.Set;
+import java.util.UUID;
 
 public class TechnicianMapper {
 
   private TechnicianMapper() {
   }
 
-  public static TechnicianDTO mapToDTO(Technician technician) {
+  /**
+   * @param imageIds the ids of the photos, fetched separately (see {@code ImageLink}). The mapper
+   *   never reads {@code getImages()}: initialising that collection loads every photo's LONGBLOB,
+   *   and the list pages need only the ids.
+   */
+  public static TechnicianDTO mapToDTO(Technician technician, Set<UUID> imageIds) {
     if (technician == null) {
       return null;
     }
@@ -26,9 +31,7 @@ public class TechnicianMapper {
     dto.setPhoneNumber(technician.getPhoneNumber());
     dto.setAddress(technician.getAddress());
     dto.setPrimaryImageUuid(technician.getPrimaryImageUuid());
-    dto.setImagesUuid(technician.getImages() == null
-            ? new HashSet<>()
-            : technician.getImages().stream().map(Image::getId).collect(Collectors.toSet()));
+    dto.setImagesUuid(imageIds == null ? new HashSet<>() : new HashSet<>(imageIds));
     return dto;
   }
 

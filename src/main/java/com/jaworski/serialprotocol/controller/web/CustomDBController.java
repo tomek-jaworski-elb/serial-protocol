@@ -32,7 +32,6 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.beans.PropertyEditorSupport;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -451,9 +450,8 @@ public class CustomDBController {
     model.addAttribute("pageSize", size);
     model.addAttribute("nextId", participantService.nextId());
     model.addAttribute("courseTypes", courseTypeService.findAll());
-    Map<UUID, List<CoursesDTO>> coursesByParticipant = new HashMap<>();
-    participants.forEach(p -> coursesByParticipant.put(p.getParticipantUuid(), coursesService.findByParticipantUuid(p.getParticipantUuid())));
-    model.addAttribute("coursesByParticipant", coursesByParticipant);
+    model.addAttribute("coursesByParticipant", coursesService.findByParticipantUuids(
+        participants.stream().map(ParticipantDTO::getParticipantUuid).toList()));
     model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
     return "custom/participant-service";
   }
@@ -552,9 +550,8 @@ public class CustomDBController {
     model.addAttribute("currentPage", page);
     model.addAttribute("pageSize", size);
     model.addAttribute("nextCounter", courseCounterService.nextCounter());
-    Map<UUID, List<CoursesDTO>> coursesByCourseCounter = new HashMap<>();
-    counters.forEach(cc -> coursesByCourseCounter.put(cc.uuid(), coursesService.findByCourseCounterUuid(cc.uuid())));
-    model.addAttribute("coursesByCourseCounter", coursesByCourseCounter);
+    model.addAttribute("coursesByCourseCounter", coursesService.findByCourseCounterUuids(
+        counters.stream().map(CourseCounterDTO::uuid).toList()));
     model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
     return "custom/course-counter-service";
   }
