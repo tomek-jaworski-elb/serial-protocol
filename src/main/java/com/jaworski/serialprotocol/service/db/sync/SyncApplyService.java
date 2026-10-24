@@ -106,6 +106,7 @@ public class SyncApplyService {
     private final List<Runnable> localChanges = new ArrayList<>();
     /** File rows a C6 "skip" left out, per table; rows referring to them are left out too. */
     private final Map<String, Set<String>> skipped = new HashMap<>();
+    private final Map<String, Set<String>> revived = new HashMap<>();
     private final List<String> changes = new ArrayList<>();
     private final Map<String, Long> sequences = new LinkedHashMap<>();
     private final SyncJdbcWriter writer = new SyncJdbcWriter(jdbc);
@@ -222,6 +223,7 @@ public class SyncApplyService {
         changes.add(change);
         return;
       }
+      revived.computeIfAbsent(referencedTable, t -> new LinkedHashSet<>()).add(referenced);
       localChanges.add(() -> touch(target, referenced, List.of(new Bind(SyncRow.DELETED_AT, null)), change));
     }
 
@@ -245,7 +247,7 @@ public class SyncApplyService {
           for (Map.Entry<String, SyncRow> entry : List.copyOf(writes.get(refs.getKey()).entrySet())) {
             for (Map.Entry<String, String> ref : refs.getValue().entrySet()) {
               String referenced = entry.getValue().text(ref.getKey());
-              if (referenced != null && !exists(ref.getValue(), referenced)) {
+              if (referenced != null && !exists(ref.getValue(), referenced, entry.getValue().isDeleted())) {
                 SyncTable table = table(refs.getKey());
                 skip(refs.getKey(), entry.getKey(), "skipped " + SyncAnalyzer.label(table).toLowerCase(Locale.ROOT)
                     + " " + entry.getKey() + " from the file: the "
@@ -259,10 +261,20 @@ public class SyncApplyService {
       }
     }
 
-    /** Whether the row will be in the database after the import: here already, or written from the file. */
-    private boolean exists(String table, String key) {
-      return (localByKey.get(table).containsKey(key) && !skipped.getOrDefault(table, Set.of()).contains(key))
-          || writes.get(table).containsKey(key);
+    /**
+     * Whether the row will be there for a reference after the import: written from the file, or
+     * here already and not skipped. As in {@code SyncAnalyzer.checkReference}, a local tombstone
+     * satisfies only a reference from a deleted row, unless a resolution brings it back.
+     */
+    private boolean exists(String table, String key, boolean fromDeletedRow) {
+      if (writes.get(table).containsKey(key)) {
+        return true;
+      }
+      SyncRow local = localByKey.get(table).get(key);
+      if (local == null || skipped.getOrDefault(table, Set.of()).contains(key)) {
+        return false;
+      }
+      return fromDeletedRow || !local.isDeleted() || revived.getOrDefault(table, Set.of()).contains(key);
     }
 
     private void renumber(Collision c, SyncTable table, String fileKey, String code) {
@@ -474,11 +486,12 @@ public class SyncApplyService {
       for (SyncRow row : fileByKey.get(table.name()).values()) {
         byOwner.computeIfAbsent(row.text(join.ownerColumn()), k -> new ArrayList<>()).add(row);
       }
-      for (String owner : writes.get(join.ownerTable()).keySet()) {
+      for (Map.Entry<String, SyncRow> written : writes.get(join.ownerTable()).entrySet()) {
+        String owner = written.getKey();
         execute(table.name(), "delete from " + table.name() + " where " + join.ownerColumn() + " = ?",
             List.of(new Bind(join.ownerColumn(), owner)));
         for (SyncRow row : byOwner.getOrDefault(owner, List.of())) {
-          if (!exists(join.memberTable(), row.text(join.memberColumn()))) {
+          if (!exists(join.memberTable(), row.text(join.memberColumn()), written.getValue().isDeleted())) {
             continue;
           }
           List<Bind> binds = new ArrayList<>();

@@ -16,6 +16,9 @@ import java.io.ByteArrayInputStream;
 import java.util.zip.ZipInputStream;
 import java.nio.file.Path;
 import java.nio.file.Files;
+import java.nio.file.attribute.FileTime;
+import java.time.Duration;
+import java.time.Instant;
 import com.jaworski.serialprotocol.service.db.sync.SyncBackupService;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.mock.web.MockMultipartFile;
@@ -150,6 +153,11 @@ class SyncPageTest {
 
   @Test
   void exportDownloadsASyncFileAndRecordsTheExport() throws Exception {
+    // A spool left behind by a crash (older than the work TTL) is purged when the next scratch file is made.
+    Path stale = workDir.resolve("export-stale.part");
+    Files.writeString(stale, "half an export");
+    Files.setLastModifiedTime(stale, FileTime.from(Instant.now().minus(Duration.ofHours(3))));
+
     var response = mockMvc.perform(post("/sync/export").with(csrf()).header(HttpHeaders.AUTHORIZATION, auth()))
         .andExpect(status().isOk())
         .andReturn().getResponse();
@@ -165,6 +173,7 @@ class SyncPageTest {
     try (var files = Files.list(workDir)) {
       assertThat(files.filter(Files::isRegularFile)).isEmpty();
     }
+    assertThat(stale).doesNotExist();
     String html = mockMvc.perform(get("/sync").header(HttpHeaders.AUTHORIZATION, auth()))
         .andReturn().getResponse().getContentAsString();
     assertThat(html).doesNotContain("<dd class=\"col-sm-9\">never</dd>\n                <dt class=\"col-sm-3\">Last import");

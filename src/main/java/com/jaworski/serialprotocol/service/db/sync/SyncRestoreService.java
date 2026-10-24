@@ -74,8 +74,7 @@ public class SyncRestoreService {
         throw new UncheckedIOException(e);
       }
     });
-    backups.prune();
-    int rebuilt = thumbnails.refreshStale();
+    int rebuilt = SyncHousekeeping.afterCommit(LOG, "restore", backups, thumbnails);
     LOG.info("Restored {}: {} row(s), {} photo(s); the state before it is in {}", name, counts[0], counts[1],
         before.getFileName());
     return new SyncRestoreResult(name, before, counts[0], counts[1], rebuilt);

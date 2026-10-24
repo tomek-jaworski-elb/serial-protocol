@@ -75,16 +75,17 @@ public class SyncImportService {
    * values are first interpreted here, so the failure becomes a refusal with the reason.
    */
   private SyncAnalysis analyze(SyncFile file, SyncNode self, Map<String, List<SyncRow>> local) {
+    // Every audited row's timestamps and origin are parsed here, so a damaged one is refused
+    // before the report is shown rather than failing halfway through the apply. Only this
+    // check is a refusal: a failure inside the analyzer itself is a fault, not a damaged file.
     try {
-      // Every audited row's timestamps and origin are parsed here, so a damaged one is refused
-      // before the report is shown rather than failing halfway through the apply.
       file.tables().values().forEach(rows -> rows.forEach(SyncRow::checkAudit));
-      return SyncAnalyzer.analyze(new SyncAnalyzer.Input(self.getId(), self.getName(),
-          self.getLastSyncAt(), properties.isReadOnly(), file.manifest().node(), local, file.tables(),
-          ZoneId.systemDefault()));
     } catch (IllegalArgumentException | DateTimeException e) {
       throw new SyncRefusedException("The file has a damaged row and cannot be imported: " + e.getMessage(), e);
     }
+    return SyncAnalyzer.analyze(new SyncAnalyzer.Input(self.getId(), self.getName(),
+        self.getLastSyncAt(), properties.isReadOnly(), file.manifest().node(), local, file.tables(),
+        ZoneId.systemDefault()));
   }
 
   /**
@@ -124,8 +125,7 @@ public class SyncImportService {
     Path reportFile = SyncBackupService.reportFor(backup);
     Files.write(reportFile, mapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(report));
     staging.discard(staged.token());
-    backups.prune();
-    int rebuilt = thumbnails.refreshStale();
+    int rebuilt = SyncHousekeeping.afterCommit(LOG, "import", backups, thumbnails);
     LOG.info("Sync import report written: {}", reportFile.getFileName());
     return new SyncImportResult(report, backup, reportFile, rebuilt);
   }

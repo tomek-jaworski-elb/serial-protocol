@@ -104,9 +104,9 @@ public class SyncController {
 
   /**
    * The report for a staged file; analysed again on every view, so a refresh shows the current
-   * state. Whatever stops the analysis discards the upload: a refusal is shown to the user, any
-   * other failure is logged and rethrown, but neither leaves a file of up to the upload limit
-   * waiting for the work-dir purge.
+   * state. A refusal discards the upload and tells the user why, so a file that can never be
+   * imported does not wait for the work-dir purge; a server fault (a database hiccup, a bug)
+   * keeps it, so a refresh can succeed without uploading again.
    */
   @GetMapping("/import/{token}")
   public String report(@PathVariable String token, Model model, RedirectAttributes redirectAttributes) {
@@ -124,10 +124,6 @@ public class SyncController {
       LOG.info("Sync file {} refused: {}", staged.originalName(), e.getMessage());
       redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
       return "redirect:/sync";
-    } catch (RuntimeException e) {
-      imports.staging().discard(token);
-      LOG.error("Sync file {} could not be analysed; the upload was discarded", staged.originalName(), e);
-      throw e;
     }
     model.addAttribute("name", "sync");
     model.addAttribute("preview", preview);

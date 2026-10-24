@@ -120,6 +120,49 @@ class SyncApplyResolutionTest {
     assertThat(result.report().inserted()).isZero();
   }
 
+  @Test
+  void skippingARecordThatIsDeletedHereAlsoSkipsTheRecordsThatReferToIt() throws Exception {
+    JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+    UUID self = nodeService.current().getId();
+
+    // The other side brought the participant back (version 2) with a photo that exists nowhere,
+    // and booked a course for them.
+    SyncFixture.seed(jdbc);
+    jdbc.update("insert into image (image_uuid, image_content_type, created_at, updated_at, version, origin_node)"
+        + " values (?, 'image/png', ?, ?, 0, ?)", NO_SUCH_IMAGE, AFTER, AFTER, SyncFixture.ORIGIN);
+    SyncFixture.update(jdbc, "insert into participants (participants_uuid, participants_id, participants_name,"
+        + " participants_surname, image_uuid, created_at, updated_at, version, origin_node)"
+        + " values (?, ?, ?, ?, ?, ?, ?, 2, ?)", NEW_PARTICIPANT, 1002L, "Ola", "New", NO_SUCH_IMAGE, AFTER, AFTER,
+        SyncFixture.ORIGIN);
+    course(jdbc, NEW_COURSE, 2002L, NEW_PARTICIPANT, AFTER, SyncFixture.ORIGIN);
+    byte[] file = SyncFixture.fileFromOtherNode(exporter);
+    file = without(file, "tables/image.jsonl", NO_SUCH_IMAGE);
+
+    // This side knows the participant only as a tombstone (deleted before the last sync) and has no course.
+    SyncFixture.seed(jdbc);
+    jdbc.update("update sync_node set last_sync_at = ?", OffsetDateTime.ofInstant(SINCE, ZoneOffset.UTC));
+    OffsetDateTime before = OffsetDateTime.ofInstant(SINCE.minusSeconds(3600), ZoneOffset.UTC);
+    SyncFixture.update(jdbc, "insert into participants (participants_uuid, participants_id, participants_name,"
+        + " participants_surname, image_uuid, created_at, updated_at, deleted_at, version, origin_node)"
+        + " values (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)", NEW_PARTICIPANT, 1002L, "Ola", "New", null, before, before,
+        before, self);
+
+    SyncStaging.Staged staged = imports.staging().stage(new ByteArrayInputStream(file), "tombstone.sync");
+    SyncAnalysis analysis = imports.analyze(staged).analysis();
+    String c6 = "C6-participants-" + NEW_PARTICIPANT + "-image_uuid-" + NO_SUCH_IMAGE;
+    assertThat(analysis.collisions()).extracting(Collision::id).containsExactly(c6);
+
+    SyncImportResult result = imports.apply(staged, Map.of(c6, "skip-row"));
+
+    // The skipped row stays a tombstone here, so the course that refers to it must not be written.
+    assertThat(jdbc.queryForObject("select deleted_at from participants where participants_uuid = ?", Object.class,
+        NEW_PARTICIPANT)).isNotNull();
+    assertThat(jdbc.queryForObject("select count(*) from courses", Long.class)).isEqualTo(1L);
+    assertThat(result.report().changes())
+        .anySatisfy(change -> assertThat(change).contains("skipped course").contains("was skipped"));
+    assertThat(result.report().inserted()).isZero();
+  }
+
   private static void course(JdbcTemplate jdbc, UUID id, long number, UUID participant, OffsetDateTime at,
       UUID origin) {
     SyncFixture.update(jdbc, "insert into courses (courses_uuid, courses_id, courses_start_date, courses_end_date,"

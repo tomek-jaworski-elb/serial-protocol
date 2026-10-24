@@ -83,6 +83,7 @@ public class SyncStaging {
    * {@code sync.work-ttl} is removed by {@link #purgeExpired}.
    */
   public Path scratch(String prefix) throws IOException {
+    purgeExpired();
     Path work = Files.createDirectories(properties.getWorkDir());
     return Files.createTempFile(work, prefix, SCRATCH_SUFFIX);
   }

@@ -149,8 +149,9 @@ Two steps, so nothing is written before a human has seen the report.
    to `/sync/import/{token}`, which runs the **analysis** and shows the manifest, counts, and
    the collision report. A file that cannot be imported (not a sync file, our own export, another
    schema version, a row whose timestamps or origin cannot be parsed) is refused there and the
-   upload is discarded at once, as it is on any other failure of the analysis. Staged files and
-   export scratch files older than `sync.work-ttl` (default 2 h) are removed.
+   upload is discarded at once; a server fault during the analysis keeps it, so a refresh can
+   succeed. Staged files and export scratch files older than `sync.work-ttl` (default 2 h) are
+   removed before an upload is staged or an export scratch file is made.
 2. The report page lists every collision with a resolution to choose; `POST
    /sync/import/{token}/apply` refuses while any blocking collision has no resolution, then
    writes the backup, applies everything in one transaction, updates `sync_node` and shows a
@@ -252,8 +253,15 @@ Details settled with the implementation (`SyncApplyService`):
   on the referenced record: when the file carries the same tombstone, the file's row is written
   live (`version + 1`, `updated_at = now`, `origin_node = self`) instead of the tombstone, so
   the revival is not overwritten by the file row written afterwards.
+- A reference is satisfied by a row the import writes or by a local row that is not skipped;
+  a local tombstone satisfies only a reference from a deleted row, unless a C6 "bring back"
+  revives it (the same rule as the analyzer's). A skipped row that is a tombstone here therefore
+  takes its live dependants from the file with it.
 - The staged upload is discarded after a successful apply and kept after an apply refused for
   a missing resolution, so the report page can be opened again.
+- Once the transaction has committed, the housekeeping that follows (pruning the backups,
+  rebuilding stale thumbnails) cannot fail the import or the restore: a failure is logged and
+  the result still reports what was written.
 
 ## Backups
 
