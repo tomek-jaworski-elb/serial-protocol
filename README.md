@@ -101,8 +101,11 @@ Katalog `simulator/` zawiera osobną aplikację `ship-sim`, która karmi serwer 
 ### Generowanie raportów PDF
 Aplikacja umożliwia generowanie raportów PDF z danych kursów (`PdfReportController` → `PdfReportService`). Konfiguracja czcionek i limitów w `application.properties` (prefiks `pdf.report.*`).
 
+### Synchronizacja bazy między komputerami
+Baza certyfikatów przenosi się między instalacjami bez sieci, jako jeden plik `.sync` na pendrivie (menu **More → Sync**, `/sync`). Edytuje jeden komputer naraz; import porównuje plik z lokalną bazą, pokazuje raport kolizji i zapisuje dopiero po decyzji, a wcześniej robi kopię `.bak` (katalog `SYNC_BACKUP_DIR`, w Dockerze wolumen `server-sync-backups`). Komputer tylko do przeglądania uruchamia się z `SYNC_MODE=READ_ONLY`. Instrukcja dla operatora: [`docs/sync-howto.md`](docs/sync-howto.md), projekt: [`docs/sync-spec.md`](docs/sync-spec.md).
+
 ### Bezpieczeństwo
-Uwierzytelnianie in-memory z konfiguracją przez właściwości (`custom.server.credentials.*`). Chronione ścieżki: `/name-service`, `/instructor-service`, `/api/**`, `/admin/**`, `/pdf/**`, oraz wszystkie endpointy CRUD domeny custom (`/trainer-service/**`, `/lecturer-service/**`, `/technician-service/**`, `/participant-service/**`, `/courses-service/**`, `/course-type-service/**`, `/course-counter-service/**`).
+Uwierzytelnianie in-memory z konfiguracją przez właściwości (`custom.server.credentials.*`). Chronione ścieżki: `/name-service`, `/instructor-service`, `/api/**`, `/admin/**`, `/pdf/**`, `/sync/**`, oraz wszystkie endpointy CRUD domeny custom (`/trainer-service/**`, `/lecturer-service/**`, `/technician-service/**`, `/participant-service/**`, `/courses-service/**`, `/course-type-service/**`, `/course-counter-service/**`).
 
 ## Dokumentacja szczegółowa
 
@@ -113,6 +116,8 @@ Katalog [`docs/`](docs/) zawiera dodatkowe materiały opisujące implementację 
 | [`chart-map-view.md`](docs/chart-map-view.md) | Implementacja interaktywnej mapy (`/chart`) – architektura warstw Konva, formaty obrazu mapy (AVIF/WebP/JPG), zoom/pan/pinch, kalibracja pozycji statków, optymalizacje transferu HTTP, wersje bibliotek |
 | [`custom-domain-analysis.md`](docs/custom-domain-analysis.md) | Pełna analiza domenowa modułu `custom` – hierarchia encji (`PersonBase`, `Lecturer`, `Trainer`, `Technician`, `Participant`, `Courses`, `CourseType`, `CourseCounter`, `Image`), mapowanie DTO, szablony Thymeleaf, lista naprawionych bugów i ostrzeżeń |
 | [`pdf-report-plan.md`](docs/pdf-report-plan.md) | Plan implementacji raportów PDF – porównanie bibliotek (OpenPDF, iText, PDFBox, Openhtmltopdf), architektura rozwiązania, API endpointów `/pdf/**`, layout i kolorystyka raportów |
+| [`sync-spec.md`](docs/sync-spec.md) | Projekt synchronizacji bazy przez pendrive – decyzje, format pliku `.sync`/`.bak`, tabela decyzyjna importu i kolizje C1–C6, kopie i przywracanie, właściwości `sync.*`, plan etapów |
+| [`sync-howto.md`](docs/sync-howto.md) | Instrukcja operatora synchronizacji – eksport, import z raportem kolizji, kopie, przywracanie (admin), nowy komputer, zmienne środowiskowe |
 | [`Opis RS232.txt`](docs/Opis%20RS232.txt) | Przykładowe logi z transmisji szeregowej – format ramek, odkrywanie portów na Linux (Futro 720) i Windows 10, zdarzenia `serialEvent` |
 | [`js.navigator.userAgent.txt`](docs/js.navigator.userAgent.txt) | Referencja User-Agent dla testowanych urządzeń i przeglądarek (Chrome, Edge, Safari, Samsung Internet na Windows, Android, iPhone, iPad) |
 

@@ -3,7 +3,10 @@
 Specification for moving the certificates database between installations that share no network,
 agreed 2026-10-24 and to be implemented over the seven stages listed at the end. It builds on the
 database repair (Flyway, `Auditable`, tombstones, `IdAllocator`, `ImageBlob`) described in
-`.claude/rules/domain-persistence.md`.
+`.claude/rules/domain-persistence.md`. The operator's view (what to click, what a collision
+means) is [`sync-howto.md`](sync-howto.md); the code map is the "USB-stick synchronisation"
+section of `.claude/rules/domain-persistence.md`; the invariants are in `CLAUDE.md`, mirrored
+in `AGENTS.md`.
 
 ## Decisions this rests on
 
@@ -321,7 +324,7 @@ the same message the container used to produce.
   `admin`, the two-step import.
 - `ListPagesLoadNoImageBlobsTest` keeps guarding that none of this makes a list load blobs.
 
-## Invariants to add to `CLAUDE.md` once implemented
+## Invariants (in `CLAUDE.md`, mirrored in `AGENTS.md`)
 
 - Sync and backup files are written and read through JDBC, never through entities; audit columns
   travel verbatim.
