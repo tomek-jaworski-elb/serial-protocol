@@ -11,12 +11,15 @@ import java.util.UUID;
 @Repository
 public interface ParticipantRepository extends JpaRepository<Participant, UUID> {
 
-  @Query("SELECT COALESCE(MAX(p.id), 0) FROM Participant p")
+  // Native on purpose: these must see soft-deleted rows. A number that belongs to a deleted
+  // participant is still taken in the unique index, and the allocator must never go below it.
+  @Query(value = "SELECT COALESCE(MAX(participants_id), 0) FROM participants", nativeQuery = true)
   Long findMaxParticipantId();
 
-  @Query("SELECT COUNT(p) FROM Participant p WHERE p.id = :id")
+  @Query(value = "SELECT COUNT(*) FROM participants WHERE participants_id = :id", nativeQuery = true)
   long countWithParticipantId(@Param("id") Long id);
 
-  @Query("SELECT COUNT(p) FROM Participant p WHERE p.id = :id AND p.uuid <> :uuid")
+  @Query(value = "SELECT COUNT(*) FROM participants WHERE participants_id = :id AND participants_uuid <> :uuid",
+      nativeQuery = true)
   long countWithParticipantIdExcludingUuid(@Param("id") Long id, @Param("uuid") UUID uuid);
 }

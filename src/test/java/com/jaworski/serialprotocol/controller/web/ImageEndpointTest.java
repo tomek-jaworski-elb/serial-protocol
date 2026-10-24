@@ -1,6 +1,8 @@
 package com.jaworski.serialprotocol.controller.web;
 
 import com.jaworski.serialprotocol.entity.custom.Image;
+import com.jaworski.serialprotocol.entity.custom.ImageBlob;
+import com.jaworski.serialprotocol.repository.custom.ImageBlobRepository;
 import com.jaworski.serialprotocol.repository.custom.ImageRepository;
 import com.jaworski.serialprotocol.service.db.custom.ImageService;
 import com.jaworski.serialprotocol.service.db.custom.ThumbnailBackfill;
@@ -43,6 +45,8 @@ class ImageEndpointTest {
     private ImageService imageService;
     @Autowired
     private ImageRepository imageRepository;
+    @Autowired
+    private ImageBlobRepository imageBlobRepository;
     @Autowired
     private ThumbnailBackfill thumbnailBackfill;
     @Autowired
@@ -106,15 +110,14 @@ class ImageEndpointTest {
     @Test
     void thumb_isSmallerThanTheOriginalAndIsStoredOnce() throws Exception {
         UUID id = storePng(600, 450);
-        int originalSize = imageService.getImageById(id).getData().length;
+        int originalSize = imageService.getOriginal(id).data().length;
 
         byte[] first = body(get("/custom/image/{uuid}", id).param("size", "thumb"));
 
         assertThat(first.length).isLessThan(originalSize);
-        Image stored = imageRepository.findById(id).orElseThrow();
-        assertThat(stored.getThumbData())
+        assertThat(imageBlobRepository.findThumbData(id))
                 .as("generated once and kept, not rebuilt per request")
-                .isNotNull();
+                .isPresent();
 
         byte[] second = body(get("/custom/image/{uuid}", id).param("size", "thumb"));
         assertThat(second).isEqualTo(first);
@@ -123,7 +126,7 @@ class ImageEndpointTest {
     @Test
     void thumb_ofAnAlreadySmallImage_fallsBackToTheOriginal() throws Exception {
         UUID id = storePng(80, 60);
-        byte[] original = imageService.getImageById(id).getData();
+        byte[] original = imageService.getOriginal(id).data();
 
         byte[] thumb = body(get("/custom/image/{uuid}", id).param("size", "thumb"));
 
@@ -182,7 +185,7 @@ class ImageEndpointTest {
         assertThat(stored.getThumbVersion())
                 .as("attempt recorded against the generator version, not a borrowed field")
                 .isEqualTo(ThumbnailGenerator.VERSION);
-        assertThat(stored.getThumbData()).as("original not duplicated").isNull();
+        assertThat(imageBlobRepository.findThumbData(id)).as("original not duplicated").isEmpty();
 
         assertThat(body(get("/custom/image/{uuid}", id).param("size", "thumb")))
                 .as("still serves the original")
@@ -200,9 +203,7 @@ class ImageEndpointTest {
         UUID id = storePng(600, 450);
         Image stored = imageRepository.findById(id).orElseThrow();
         assertThat(stored.getThumbVersion()).as("made at upload").isEqualTo(ThumbnailGenerator.VERSION);
-        stored.setThumbData(new byte[]{1, 2, 3});
-        stored.setThumbVersion("v0");
-        imageRepository.save(stored);
+        staleThumbnail(id, stored);
         Statistics statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
         statistics.setStatisticsEnabled(true);
         long updatesBefore = statistics.getEntityUpdateCount();
@@ -224,18 +225,16 @@ class ImageEndpointTest {
     @Test
     void theBackfillRebuildsThumbnailsOfOlderVersions() throws Exception {
         UUID id = storePng(600, 450);
-        Image stored = imageRepository.findById(id).orElseThrow();
-        stored.setThumbData(new byte[]{1, 2, 3});
-        stored.setThumbVersion("v0");
-        imageRepository.save(stored);
+        staleThumbnail(id, imageRepository.findById(id).orElseThrow());
 
         assertThat(thumbnailBackfill.refreshStale()).isGreaterThanOrEqualTo(1);
 
         Image refreshed = imageRepository.findById(id).orElseThrow();
+        byte[] refreshedThumb = imageBlobRepository.findThumbData(id).orElseThrow();
         assertThat(refreshed.getThumbVersion()).isEqualTo(ThumbnailGenerator.VERSION);
-        assertThat(refreshed.getThumbData()).isNotEqualTo(new byte[]{1, 2, 3});
+        assertThat(refreshedThumb).isNotEqualTo(new byte[]{1, 2, 3});
         assertThat(body(get("/custom/image/{uuid}", id).param("size", "thumb")))
-                .isEqualTo(refreshed.getThumbData());
+                .isEqualTo(refreshedThumb);
     }
 
     /**
@@ -284,6 +283,15 @@ class ImageEndpointTest {
     }
 
     // --- helpers ---
+
+    /** Makes the stored thumbnail look like the product of an older generator. */
+    private void staleThumbnail(UUID id, Image stored) {
+        ImageBlob blob = imageBlobRepository.findById(id).orElseThrow();
+        blob.setThumbData(new byte[]{1, 2, 3});
+        imageBlobRepository.save(blob);
+        stored.setThumbVersion("v0");
+        imageRepository.save(stored);
+    }
 
     private UUID storePng(int width, int height) throws Exception {
         BufferedImage img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);

@@ -408,7 +408,6 @@ class ParticipantServiceTest {
 
     private UUID createAndSaveImageId() {
       Image image = new Image();
-      image.setData(new byte[]{1, 2, 3, 4});
       image.setContentType("context");
       return imageRepository.save(image).getId();
     }

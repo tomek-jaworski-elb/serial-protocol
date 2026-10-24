@@ -2,6 +2,8 @@ package com.jaworski.serialprotocol.service.db.custom;
 
 import com.jaworski.serialprotocol.dto.custom.PrimaryImage;
 import com.jaworski.serialprotocol.entity.custom.Image;
+import com.jaworski.serialprotocol.entity.custom.ImageBlob;
+import com.jaworski.serialprotocol.repository.custom.ImageBlobRepository;
 import com.jaworski.serialprotocol.repository.custom.ImageRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -45,6 +47,7 @@ public class ImageService {
   }
 
   private final ImageRepository imageRepository;
+  private final ImageBlobRepository blobRepository;
 
   /**
    * Normalizes an uploaded or stored content type to one of the allowed image types,
@@ -80,13 +83,32 @@ public class ImageService {
     }
   }
 
+  /** The metadata row only; never the bytes. */
   @Transactional(readOnly = true)
   public Image getImageById(UUID id) {
     return imageRepository.findById(id).orElse(null);
   }
 
+  /** Bytes plus the content type they should be served with. */
+  public record ImageContent(byte[] data, String contentType) {
+  }
+
+  /** The full-size bytes, or {@code null} when the image does not exist (or was deleted). */
+  @Transactional(readOnly = true)
+  public ImageContent getOriginal(UUID id) {
+    Image image = imageRepository.findById(id).orElse(null);
+    if (image == null) {
+      return null;
+    }
+    ImageBlob blob = blobRepository.findById(id).orElse(null);
+    if (blob == null || blob.getData() == null || blob.getData().length == 0) {
+      return null;
+    }
+    return new ImageContent(blob.getData(), image.getContentType());
+  }
+
   /**
-   * Stores a photo together with its thumbnail.
+   * Stores a photo: the metadata row, its bytes, and the thumbnail.
    *
    * <p>The thumbnail is produced here, at upload, so that serving one is a pure read. It
    * used to be generated on the first GET and written back then, which made a GET a write
@@ -94,10 +116,12 @@ public class ImageService {
    */
   public Image saveImage(byte[] data, String contentType) {
     Image image = new Image();
-    image.setData(data);
     image.setContentType(contentType);
-    applyThumbnail(image);
-    return imageRepository.save(image);
+    image = imageRepository.save(image);
+    ImageBlob blob = new ImageBlob(image.getId(), data);
+    applyThumbnail(image, blob);
+    blobRepository.save(blob);
+    return image;
   }
 
   /** {@link #saveImage} for every upload of a request; ids in upload order. */
@@ -114,25 +138,22 @@ public class ImageService {
     return (int) imageRepository.count();
   }
 
+  /** A tombstone on the metadata row; the bytes stay (see {@link ImageBlob}). */
   public void delete(UUID id) {
     imageRepository.deleteById(id);
   }
 
-  /** Primary-key lookup only — deliberately does not touch the blob columns. */
+  /** Primary-key lookup only — deliberately does not touch the blob table. */
   @Transactional(readOnly = true)
   public boolean exists(UUID id) {
     return imageRepository.existsById(id);
-  }
-
-  /** Bytes plus the content type they should be served with. */
-  public record ImageContent(byte[] data, String contentType) {
   }
 
   /**
    * Fetches images by id, validating every id exists.
    *
    * <p>Shared by {@code LecturerService}/{@code TrainerService}/{@code TechnicianService}
-   * when resolving the image set a create/update request asked for.</p>
+   * when resolving the image set a create/update request asked for. Metadata rows only.</p>
    *
    * @throws IllegalArgumentException if any id has no matching image
    */
@@ -193,30 +214,29 @@ public class ImageService {
    */
   @Transactional(readOnly = true)
   public ImageContent getThumbnail(UUID id) {
-    ImageRepository.ThumbnailView stored = imageRepository.findThumbnailById(id).orElse(null);
-    if (stored == null) {
-      return null;
-    }
-    if (ThumbnailGenerator.VERSION.equals(stored.getThumbVersion())) {
-      // A current verdict: either real thumbnail bytes, or "cannot be done", in which case
-      // the original is the answer and is read below.
-      if (stored.getThumbData() != null && stored.getThumbData().length > 0) {
-        return new ImageContent(stored.getThumbData(), stored.getThumbContentType());
-      }
-    }
-
     Image image = imageRepository.findById(id).orElse(null);
-    if (image == null || image.getData() == null || image.getData().length == 0) {
+    if (image == null) {
       return null;
     }
-    if (ThumbnailGenerator.VERSION.equals(image.getThumbVersion())) {
-      return new ImageContent(image.getData(), image.getContentType());
+    boolean current = ThumbnailGenerator.VERSION.equals(image.getThumbVersion());
+    if (current) {
+      // A current verdict: either real thumbnail bytes, or "cannot be done", in which case
+      // the original is the answer.
+      byte[] thumb = blobRepository.findThumbData(id).orElse(null);
+      if (thumb != null && thumb.length > 0) {
+        return new ImageContent(thumb, image.getThumbContentType());
+      }
+      return getOriginal(id);
     }
 
+    ImageBlob blob = blobRepository.findById(id).orElse(null);
+    if (blob == null || blob.getData() == null || blob.getData().length == 0) {
+      return null;
+    }
     // Stale or absent: serve a freshly scaled copy without recording it.
-    byte[] scaled = scaleQuietly(image);
+    byte[] scaled = scaleQuietly(id, blob.getData(), image.getContentType());
     return scaled == null
-        ? new ImageContent(image.getData(), image.getContentType())
+        ? new ImageContent(blob.getData(), image.getContentType())
         : new ImageContent(scaled, ThumbnailGenerator.outputContentType(image.getContentType()));
   }
 
@@ -228,11 +248,13 @@ public class ImageService {
    */
   public boolean refreshThumbnail(UUID id) {
     Image image = imageRepository.findById(id).orElse(null);
-    if (image == null) {
+    ImageBlob blob = blobRepository.findById(id).orElse(null);
+    if (image == null || blob == null) {
       return false;
     }
-    boolean recorded = applyThumbnail(image);
+    boolean recorded = applyThumbnail(image, blob);
     if (recorded) {
+      blobRepository.save(blob);
       imageRepository.save(image);
     }
     return recorded;
@@ -256,25 +278,25 @@ public class ImageService {
    *
    * @return whether a verdict was recorded
    */
-  private boolean applyThumbnail(Image image) {
+  private boolean applyThumbnail(Image image, ImageBlob blob) {
     byte[] scaled;
     try {
-      scaled = ThumbnailGenerator.scale(image.getData(), image.getContentType());
+      scaled = ThumbnailGenerator.scale(blob.getData(), image.getContentType());
     } catch (ThumbnailGenerator.ThumbnailFailedException e) {
       LOG.warn("Thumbnail generation failed for image {}, leaving it unrecorded", image.getId());
       return false;
     }
-    image.setThumbData(scaled);
+    blob.setThumbData(scaled);
     image.setThumbContentType(scaled == null ? null : ThumbnailGenerator.outputContentType(image.getContentType()));
     image.setThumbVersion(ThumbnailGenerator.VERSION);
     return true;
   }
 
-  private static byte[] scaleQuietly(Image image) {
+  private static byte[] scaleQuietly(UUID id, byte[] data, String contentType) {
     try {
-      return ThumbnailGenerator.scale(image.getData(), image.getContentType());
+      return ThumbnailGenerator.scale(data, contentType);
     } catch (ThumbnailGenerator.ThumbnailFailedException e) {
-      LOG.warn("Thumbnail generation failed for image {}, serving the original", image.getId());
+      LOG.warn("Thumbnail generation failed for image {}, serving the original", id);
       return null;
     }
   }

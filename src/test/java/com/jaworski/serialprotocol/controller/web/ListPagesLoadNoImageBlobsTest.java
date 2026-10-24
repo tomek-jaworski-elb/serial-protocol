@@ -7,7 +7,7 @@ import com.jaworski.serialprotocol.dto.custom.LecturerDTO;
 import com.jaworski.serialprotocol.dto.custom.ParticipantDTO;
 import com.jaworski.serialprotocol.dto.custom.TechnicianDTO;
 import com.jaworski.serialprotocol.dto.custom.TrainerDTO;
-import com.jaworski.serialprotocol.entity.custom.Image;
+import com.jaworski.serialprotocol.entity.custom.ImageBlob;
 import com.jaworski.serialprotocol.service.db.custom.CourseCounterService;
 import com.jaworski.serialprotocol.service.db.custom.CourseTypeService;
 import com.jaworski.serialprotocol.service.db.custom.CoursesService;
@@ -39,15 +39,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Rendering a list page must never load an {@link Image} entity.
+ * Rendering a list page must never load an {@link ImageBlob}.
  *
- * <p>Field-level laziness on {@code Image.data} is inactive in this build (no
- * hibernate-enhance-maven-plugin), so every {@code Image} that Hibernate loads carries its
- * LONGBLOB columns with it. Before this test existed the trainer page initialised each
- * person's image collection just to collect ids, and the participant and course pages
- * reached their photos through eager to-one associations: one render read every photo in
- * the database. The pages now get image ids from id-only projections and the associations
- * are lazy; this test is what keeps it that way.</p>
+ * <p>Field-level laziness is inactive in this build (no hibernate-enhance-maven-plugin), so a
+ * photo's bytes live in their own table and only {@code ImageService} reads it. Before this
+ * test existed the trainer page initialised each person's image collection just to collect
+ * ids, and the participant and course pages reached their photos through eager to-one
+ * associations: one render read every photo in the database. The {@code Image} row itself is
+ * metadata and may be loaded; the blob row may not. This test is what keeps it that way.</p>
  *
  * <p>Measured with Hibernate statistics rather than by timing, so the assertion is exact and
  * independent of the machine.</p>
@@ -87,8 +86,8 @@ class ListPagesLoadNoImageBlobsTest {
             statistics.clear();
             mockMvc.perform(get(page).param("size", "50").header(HttpHeaders.AUTHORIZATION, auth()))
                 .andExpect(status().isOk());
-            assertThat(statistics.getEntityStatistics(Image.class.getName()).getLoadCount())
-                .as("Image entities loaded while rendering %s", page)
+            assertThat(statistics.getEntityStatistics(ImageBlob.class.getName()).getLoadCount())
+                .as("ImageBlob rows loaded while rendering %s", page)
                 .isZero();
         }
     }

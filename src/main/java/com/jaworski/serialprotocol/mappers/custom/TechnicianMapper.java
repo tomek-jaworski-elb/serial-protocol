@@ -31,6 +31,7 @@ public class TechnicianMapper {
     dto.setPhoneNumber(technician.getPhoneNumber());
     dto.setAddress(technician.getAddress());
     dto.setPrimaryImageUuid(technician.getPrimaryImageUuid());
+    dto.setVersion(technician.getVersion());
     dto.setImagesUuid(imageIds == null ? new HashSet<>() : new HashSet<>(imageIds));
     return dto;
   }

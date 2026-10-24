@@ -435,7 +435,6 @@ class CoursesServiceTest {
 
   private UUID getImage() {
     Image image = new Image();
-    image.setData(new byte[]{7, 7, 7, 7});
     image.setContentType("participant-context");
     return imageRepository.save(image).getId();
   }
@@ -488,10 +487,8 @@ class CoursesServiceTest {
 
   private Set<UUID> createImages() {
     var img1 = new Image();
-    img1.setData(new byte[]{1, 2, 3, 4, 55, 54, 3, 1});
     img1.setContentType("content");
     var img2 = new Image();
-    img2.setData(new byte[]{1, 2, 3, 4, 55, 54, 3, 10, 0, 0, 0, 0, 0});
     img2.setContentType("text content");
     return imageRepository.saveAll(List.of(img1, img2)).stream()
         .map(Image::getId)

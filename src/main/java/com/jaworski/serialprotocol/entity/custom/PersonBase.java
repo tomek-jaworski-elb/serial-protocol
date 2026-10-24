@@ -9,6 +9,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.util.UUID;
@@ -19,8 +20,9 @@ import java.util.UUID;
  */
 @MappedSuperclass
 @Data
+@EqualsAndHashCode(callSuper = false)
 @NoArgsConstructor
-public abstract class PersonBase {
+public abstract class PersonBase extends Auditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

@@ -11,6 +11,8 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Positive;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -21,6 +23,8 @@ import java.time.LocalDate;
 import static com.jaworski.serialprotocol.entity.custom.Participant.TABLE_NAME;
 
 @Entity
+@SQLRestriction("deleted_at is null")
+@SQLDelete(sql = "UPDATE participants SET deleted_at = CURRENT_TIMESTAMP(6) WHERE participants_uuid = ? AND version = ?")
 @Data
 @Table(name = TABLE_NAME)
 @NoArgsConstructor
@@ -49,8 +53,7 @@ public class Participant extends PersonBase {
   @Column(name = TABLE_NAME + "_birth_date", nullable = true)
   private LocalDate birthDate;
 
-  // LAZY on purpose: Image carries two LONGBLOBs and field-level laziness is inactive in this
-  // build, so an eager association would read every photo whenever a participant is listed.
+  // LAZY: a list of participants needs the photo's id (read off the proxy), never its row.
   @OneToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "image_uuid")
   @EqualsAndHashCode.Exclude

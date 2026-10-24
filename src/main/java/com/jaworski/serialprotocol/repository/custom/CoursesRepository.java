@@ -33,7 +33,8 @@ public interface CoursesRepository extends JpaRepository<Courses, UUID> {
 
   boolean existsByCourseCounter_Uuid(UUID courseCounterUuid);
 
-  @Query("SELECT COALESCE(MAX(c.id), 0) FROM Courses c")
+  /** Native: must see soft-deleted rows, whose numbers stay taken in the unique index. */
+  @Query(value = "SELECT COALESCE(MAX(courses_id), 0) FROM courses", nativeQuery = true)
   Long findMaxCoursesId();
 
   void deleteCoursesByUuid(UUID uuid);

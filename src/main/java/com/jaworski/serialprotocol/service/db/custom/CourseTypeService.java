@@ -22,7 +22,7 @@ public class CourseTypeService {
   private final CoursesRepository coursesRepository;
 
   public CourseTypeDTO save(CourseTypeDTO courseTypeDTO) {
-    if (courseTypeRepository.existsByCodeIgnoreCase(courseTypeDTO.getCode())) {
+    if (courseTypeRepository.countWithCode(courseTypeDTO.getCode()) > 0) {
       throw new IllegalArgumentException("Course type with code '" + courseTypeDTO.getCode() + "' already exists.");
     }
     var entity = CourseTypeMapper.mapToEntity(courseTypeDTO);
@@ -59,13 +59,15 @@ public class CourseTypeService {
     if (courseTypeDTO.getId() == null) {
       throw new IllegalArgumentException("Course type id is required for update");
     }
-    if (!courseTypeRepository.existsById(courseTypeDTO.getId())) {
-      throw new IllegalArgumentException("Course type with id " + courseTypeDTO.getId() + " not found");
-    }
-    if (courseTypeRepository.existsByCodeIgnoreCaseAndIdNot(courseTypeDTO.getCode(), courseTypeDTO.getId())) {
+    var entity = courseTypeRepository.findById(courseTypeDTO.getId())
+        .orElseThrow(() -> new IllegalArgumentException("Course type with id " + courseTypeDTO.getId() + " not found"));
+    OptimisticLock.check(courseTypeDTO.getVersion(), entity.getVersion(), "Course type");
+    if (courseTypeRepository.countWithCodeExcludingId(courseTypeDTO.getCode(), courseTypeDTO.getId()) > 0) {
       throw new IllegalArgumentException("Course type with code '" + courseTypeDTO.getCode() + "' already exists.");
     }
-    var entity = CourseTypeMapper.mapToEntity(courseTypeDTO);
+    entity.setCode(courseTypeDTO.getCode());
+    entity.setDescription(courseTypeDTO.getDescription());
+    entity.setLongDescription(courseTypeDTO.getLongDescription());
     return CourseTypeMapper.mapToDTO(courseTypeRepository.save(entity));
   }
 }

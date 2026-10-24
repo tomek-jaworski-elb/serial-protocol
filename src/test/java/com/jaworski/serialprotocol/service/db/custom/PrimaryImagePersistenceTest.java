@@ -232,7 +232,6 @@ class PrimaryImagePersistenceTest {
 
     private UUID newImage() {
         Image image = new Image();
-        image.setData(new byte[]{1, 2, 3});
         image.setContentType("image/jpeg");
         return imageRepository.save(image).getId();
     }

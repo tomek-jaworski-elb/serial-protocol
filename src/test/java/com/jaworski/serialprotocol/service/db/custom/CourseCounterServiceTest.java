@@ -125,7 +125,9 @@ class CourseCounterServiceTest {
     CourseCounterDTO toSave = new CourseCounterDTO(5L, image.getId());
     CourseCounterDTO save = courseCounterService.save(toSave);
     assertNotNull(save);
-    imageService.delete(image.getId());
+    // The old photo is not deleted by hand: replacing it is the service's job (asserted by the
+    // count below), and a tombstone on a photo a live record still points at is not a state
+    // the application ever produces.
     var updatedImage = imageService.saveImage(new byte[]{1, 2, 33,4,5,6,7,7,8}, "context text new");
     CourseCounterDTO updated = new CourseCounterDTO(save.uuid() ,7L, updatedImage.getId());
 

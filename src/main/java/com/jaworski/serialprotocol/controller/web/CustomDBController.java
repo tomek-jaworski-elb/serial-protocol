@@ -16,6 +16,7 @@ import com.jaworski.serialprotocol.service.db.custom.ParticipantService;
 import com.jaworski.serialprotocol.service.db.custom.TechnicianService;
 import com.jaworski.serialprotocol.service.db.custom.TrainerService;
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import com.jaworski.serialprotocol.service.WebSocketPublisher;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -124,6 +125,9 @@ public class CustomDBController {
       }
       coursesService.update(coursesDTO);
       redirectAttributes.addFlashAttribute("successMessage", "Course updated successfully.");
+    } catch (OptimisticLockingFailureException e) {
+      LOG.warn("Cannot update course: stale version. {}", e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (IllegalArgumentException e) {
       LOG.error("Cannot update course. payload={}", coursesDTO, e);
       redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
@@ -206,6 +210,9 @@ public class CustomDBController {
       }
       trainerService.update(trainerDTO, MultipartImages.read(imageFiles), removeImageUuids);
       redirectAttributes.addFlashAttribute("successMessage", "Trainer updated successfully.");
+    } catch (OptimisticLockingFailureException e) {
+      LOG.warn("Cannot update trainer: stale version. {}", e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (ImageService.ImageLimitExceededException e) {
       // Only this type is surfaced verbatim. The generic message below would leave the user
       // guessing which field was at fault, but service-layer messages carry uuids and internal
@@ -275,6 +282,9 @@ public class CustomDBController {
       }
       lecturerService.updateById(lecturerDTO, MultipartImages.read(imageFiles), removeImageUuids);
       redirectAttributes.addFlashAttribute("successMessage", "Lecturer updated successfully.");
+    } catch (OptimisticLockingFailureException e) {
+      LOG.warn("Cannot update lecturer: stale version. {}", e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (ImageService.ImageLimitExceededException e) {
       // Only this type is surfaced verbatim. The generic message below would leave the user
       // guessing which field was at fault, but service-layer messages carry uuids and internal
@@ -344,6 +354,9 @@ public class CustomDBController {
       }
       technicianService.updateById(technicianDTO, MultipartImages.read(imageFiles), removeImageUuids);
       redirectAttributes.addFlashAttribute("successMessage", "Technician updated successfully.");
+    } catch (OptimisticLockingFailureException e) {
+      LOG.warn("Cannot update technician: stale version. {}", e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (ImageService.ImageLimitExceededException e) {
       // Only this type is surfaced verbatim. The generic message below would leave the user
       // guessing which field was at fault, but service-layer messages carry uuids and internal
@@ -406,6 +419,9 @@ public class CustomDBController {
 
       courseTypeService.update(courseTypeDTO);
       redirectAttributes.addFlashAttribute("successMessage", "Course type updated successfully.");
+    } catch (OptimisticLockingFailureException e) {
+      LOG.warn("Cannot update course type: stale version. {}", e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (RuntimeException e) {
       LOG.error("Cannot update course type. payload={}", courseTypeDTO, e);
       redirectAttributes.addFlashAttribute("errorMessage", "Failed to update course type. Please verify your input.");
@@ -482,6 +498,9 @@ public class CustomDBController {
       }
       participantService.updateByUuid(participantDTO, MultipartImages.read(imageFile), removeImage);
       redirectAttributes.addFlashAttribute("successMessage", "Participant updated successfully.");
+    } catch (OptimisticLockingFailureException e) {
+      LOG.warn("Cannot update participant: stale version. {}", e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (IllegalArgumentException e) {
       LOG.error("Cannot update participant. payload={}", participantDTO, e);
       redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
@@ -559,6 +578,9 @@ public class CustomDBController {
       }
       courseCounterService.update(courseCounterDTO, MultipartImages.read(imageFile), removeImage);
       redirectAttributes.addFlashAttribute("successMessage", "Course counter updated successfully.");
+    } catch (OptimisticLockingFailureException e) {
+      LOG.warn("Cannot update course counter: stale version. {}", e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (IllegalArgumentException e) {
       LOG.error("Cannot update course counter. payload={}", courseCounterDTO, e);
       redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());

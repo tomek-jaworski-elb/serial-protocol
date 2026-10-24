@@ -17,6 +17,7 @@ public class CourseTypeMapper {
     dto.setCode(courseType.getCode());
     dto.setDescription(courseType.getDescription());
     dto.setLongDescription(courseType.getLongDescription());
+    dto.setVersion(courseType.getVersion());
     return dto;
   }
 

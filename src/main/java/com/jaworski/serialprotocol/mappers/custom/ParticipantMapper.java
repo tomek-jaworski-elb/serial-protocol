@@ -23,6 +23,7 @@ public class ParticipantMapper {
     dto.setPhoneNumber(participant.getPhoneNumber());
     dto.setAddress(participant.getAddress());
     dto.setBirthDate(participant.getBirthDate());
+    dto.setVersion(participant.getVersion());
     dto.setImage(participant.getImage() == null ? null : participant.getImage().getId());
     return dto;
   }

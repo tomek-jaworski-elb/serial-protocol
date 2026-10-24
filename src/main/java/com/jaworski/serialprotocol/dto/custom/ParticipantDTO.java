@@ -24,6 +24,9 @@ public class ParticipantDTO {
   private String email;
   private String phoneNumber;
   private String address;
+
+  /** Optimistic-lock version of the stored record; posted back by the update form, null = unchecked. */
+  private Long version;
   @DateTimeFormat(pattern = "dd/MM/yyyy")
   private LocalDate birthDate;
 

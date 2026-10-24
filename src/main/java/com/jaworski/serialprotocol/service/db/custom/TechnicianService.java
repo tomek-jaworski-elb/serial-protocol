@@ -84,6 +84,8 @@ public class TechnicianService {
     Technician existing = technicianRepository.findById(dto.getId())
         .orElseThrow(() -> new IllegalArgumentException("Technician with id " + dto.getId() + " not found"));
 
+    OptimisticLock.check(dto.getVersion(), existing.getVersion(), "Technician");
+
     Set<Image> previousImages = new HashSet<>(existing.getImages());
     Set<Image> requestedImages = imageService.resolveImages(dto.getImagesUuid());
 

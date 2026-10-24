@@ -87,6 +87,8 @@ public class TrainerService {
     Trainer existingTrainer = trainerRepository.findById(trainerDTO.getId())
         .orElseThrow(() -> new IllegalArgumentException("Trainer with id " + trainerDTO.getId() + " not found"));
 
+    OptimisticLock.check(trainerDTO.getVersion(), existingTrainer.getVersion(), "Trainer");
+
     Set<Image> previousImages = new HashSet<>(existingTrainer.getImages());
     Set<Image> requestedImages = imageService.resolveImages(trainerDTO.getImagesUuid());
 

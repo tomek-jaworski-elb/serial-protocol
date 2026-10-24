@@ -19,7 +19,8 @@ public class CourseCounterMapper {
             entity.getCounter(),
             entity.getImage() == null
                     ? null
-                    : entity.getImage().getId()
+                    : entity.getImage().getId(),
+            entity.getVersion()
     );
   }
 }

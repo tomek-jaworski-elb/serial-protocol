@@ -8,6 +8,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -20,6 +22,8 @@ import java.util.UUID;
 import static com.jaworski.serialprotocol.entity.custom.Technician.TABLE_NAME;
 
 @Entity
+@SQLRestriction("deleted_at is null")
+@SQLDelete(sql = "UPDATE technician SET deleted_at = CURRENT_TIMESTAMP(6) WHERE technician_uuid = ? AND version = ?")
 @Data
 @NoArgsConstructor
 @Table(name = TABLE_NAME)

@@ -28,6 +28,9 @@ public class CoursesDTO {
   private Set<UUID> lecturerIds = new HashSet<>();
   private Set<UUID> technicianIds = new HashSet<>();
 
+  /** Optimistic-lock version of the stored record; posted back by the update form, null = unchecked. */
+  private Long version;
+
   public String getTrainerIdsString() {
     return trainerIds == null ? "" : trainerIds.stream().map(String::valueOf).collect(Collectors.joining(","));
   }

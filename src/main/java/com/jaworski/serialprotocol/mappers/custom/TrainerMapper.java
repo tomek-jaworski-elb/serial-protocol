@@ -31,6 +31,7 @@ public class TrainerMapper {
     dto.setPhoneNumber(trainer.getPhoneNumber());
     dto.setAddress(trainer.getAddress());
     dto.setPrimaryImageUuid(trainer.getPrimaryImageUuid());
+    dto.setVersion(trainer.getVersion());
     dto.setImagesUuid(imageIds == null ? new HashSet<>() : new HashSet<>(imageIds));
     return dto;
   }

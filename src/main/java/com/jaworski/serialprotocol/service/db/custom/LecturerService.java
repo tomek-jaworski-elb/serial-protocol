@@ -84,6 +84,8 @@ public class LecturerService {
     Lecturer existingLecturer = lecturerRepository.findById(dto.getId())
         .orElseThrow(() -> new IllegalArgumentException("Lecturer with id " + dto.getId() + " not found"));
 
+    OptimisticLock.check(dto.getVersion(), existingLecturer.getVersion(), "Lecturer");
+
     Set<Image> previousImages = new HashSet<>(existingLecturer.getImages());
     Set<Image> requestedImages = imageService.resolveImages(dto.getImagesUuid());
 

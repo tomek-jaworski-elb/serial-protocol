@@ -269,7 +269,6 @@ class TrainerServiceTest {
     Set<Image> images = new java.util.HashSet<>();
     for (int i = 0; i < count; i++) {
       Image image = new Image();
-      image.setData(new byte[]{11, 22, 1, 2, 3, 4, (byte) (50 + i)});
       image.setContentType("context-" + i);
       images.add(image);
     }

@@ -31,6 +31,7 @@ public class LecturerMapper {
     dto.setPhoneNumber(lecturer.getPhoneNumber());
     dto.setAddress(lecturer.getAddress());
     dto.setPrimaryImageUuid(lecturer.getPrimaryImageUuid());
+    dto.setVersion(lecturer.getVersion());
     dto.setImagesUuid(imageIds == null ? new HashSet<>() : new HashSet<>(imageIds));
     return dto;
   }

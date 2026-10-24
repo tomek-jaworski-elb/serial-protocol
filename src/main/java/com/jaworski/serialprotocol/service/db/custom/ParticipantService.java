@@ -102,15 +102,25 @@ public class ParticipantService {
       throw new IllegalArgumentException("Participant id " + dto.getId() + " is already used by another participant");
     }
 
-    // Remember old image UUID before any changes
-    UUID oldImageId = participantRepository.findById(dto.getParticipantUuid())
-            .map(p -> p.getImage() != null ? p.getImage().getId() : null)
-            .orElse(null);
+    // Load-and-copy rather than merging a detached copy: the version is checked against what is
+    // stored, and a record deleted meanwhile is reported instead of silently recreated.
+    Participant participant = participantRepository.findById(dto.getParticipantUuid())
+            .orElseThrow(() -> new IllegalArgumentException("Participant with uuid " + dto.getParticipantUuid() + " not found"));
+    OptimisticLock.check(dto.getVersion(), participant.getVersion(), "Participant");
+    UUID oldImageId = participant.getImage() != null ? participant.getImage().getId() : null;
 
     Image requestedImage = resolveImage(dto.getImage());
 
-    // First: save participant with new image to update the FK
-    Participant participant = ParticipantMapper.mapToEntity(dto);
+    participant.setId(dto.getId());
+    participant.setName(dto.getName());
+    participant.setSurname(dto.getSurname());
+    participant.setNotes(dto.getNotes());
+    participant.setNickname(dto.getNickname());
+    participant.setEmail(dto.getEmail());
+    participant.setPhoneNumber(dto.getPhoneNumber());
+    participant.setAddress(dto.getAddress());
+    participant.setBirthDate(dto.getBirthDate());
+    // First: flush the participant with the new image so the FK moves before the old row goes
     participant.setImage(requestedImage);
     Participant updated = participantRepository.saveAndFlush(participant);
 

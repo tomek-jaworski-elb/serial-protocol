@@ -153,15 +153,24 @@ public class CoursesService {
       throw new IllegalArgumentException("Course type ID is required");
     }
     validateDates(dto);
+    OptimisticLock.check(dto.getVersion(), existing.getVersion(), "Course");
     // The course number is assigned once, on creation; whatever the request carries is ignored.
     dto.setId(existing.getId());
-    Courses courses = buildCourses(dto);
-    Courses updated = coursesRepository.save(courses);
+    applyTo(existing, dto);
+    Courses updated = coursesRepository.save(existing);
     LOGGER.info("Updated course with uuid={}", updated.getUuid());
     return CoursesMapper.mapToDTO(updated);
   }
 
   private Courses buildCourses(CoursesDTO dto) {
+    Courses courses = new Courses();
+    courses.setUuid(dto.getUuid());
+    applyTo(courses, dto);
+    return courses;
+  }
+
+  /** Copies the request onto the entity; used for a new course and, on update, the managed one. */
+  private void applyTo(Courses courses, CoursesDTO dto) {
     Participant participant = participantRepository.getReferenceById(dto.getParticipantUuid());
     CourseType courseType = courseTypeRepository.getReferenceById(dto.getCourseTypeId());
 
@@ -185,8 +194,6 @@ public class CoursesService {
 
     CourseCounter courseCounter = resolveCourseCounter(dto);
 
-    Courses courses = new Courses();
-    courses.setUuid(dto.getUuid());
     courses.setId(dto.getId());
     courses.setParticipant(participant);
     courses.setCourseType(courseType);
@@ -196,7 +203,6 @@ public class CoursesService {
     courses.setTrainers(trainers);
     courses.setLecturers(lecturers);
     courses.setTechnicians(technicians);
-    return courses;
   }
 
   private CourseCounter resolveCourseCounter(CoursesDTO dto) {

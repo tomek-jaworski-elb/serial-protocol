@@ -44,6 +44,7 @@ public class CoursesMapper {
     dto.setCounter(courseCounter == null ? null : courseCounter.getCounter());
     dto.setStartDate(courses.getStartDate());
     dto.setEndDate(courses.getEndDate());
+    dto.setVersion(courses.getVersion());
 
     Set<UUID> trainerIds = courses.getTrainers() == null
             ? new HashSet<>()

@@ -36,6 +36,14 @@ public class CourseCounterService {
           idAllocator.next(IdAllocator.COURSE_COUNTER, courseCounterRepository::findMaxCounter),
           courseCounterDTO.imageUuid());
     }
+    // save() with a uuid is an update through the merge path (older callers do that), so the
+    // record's own number must not count as a duplicate.
+    long clashes = courseCounterDTO.uuid() == null
+        ? courseCounterRepository.countWithCounter(courseCounterDTO.counter())
+        : courseCounterRepository.countWithCounterExcludingUuid(courseCounterDTO.counter(), courseCounterDTO.uuid());
+    if (clashes > 0) {
+      throw new IllegalArgumentException("Course counter " + courseCounterDTO.counter() + " already exists");
+    }
     CourseCounter entity = CourseCounterMapper.toEntity(courseCounterDTO);
     UUID uuid = courseCounterDTO.imageUuid();
     Image image = resolveImage(uuid);
@@ -125,6 +133,11 @@ public class CourseCounterService {
   public CourseCounterDTO update(CourseCounterDTO toSave) {
     CourseCounter courseCounter = courseCounterRepository.findById(toSave.uuid())
             .orElseThrow(() -> new IllegalArgumentException("CourseCounter with id " + toSave.uuid() + " not found"));
+    OptimisticLock.check(toSave.version(), courseCounter.getVersion(), "Course counter");
+    if (toSave.counter() != null
+        && courseCounterRepository.countWithCounterExcludingUuid(toSave.counter(), toSave.uuid()) > 0) {
+      throw new IllegalArgumentException("Course counter " + toSave.counter() + " is already used by another record");
+    }
     UUID oldImageId = courseCounter.getImage() != null ? courseCounter.getImage().getId() : null;
     courseCounter.setImage(resolveImage(toSave.imageUuid()));
     courseCounter.setCounter(toSave.counter());

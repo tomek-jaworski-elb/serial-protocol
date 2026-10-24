@@ -16,5 +16,8 @@ public class CourseTypeDTO {
   private String description;
   private String longDescription;
 
+  /** Optimistic-lock version of the stored record; posted back by the update form, null = unchecked. */
+  private Long version;
+
 }
 
