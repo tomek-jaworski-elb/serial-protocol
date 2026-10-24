@@ -23,7 +23,9 @@ import java.util.stream.Stream;
  *
  * <p>A backup is an ordinary sync file with {@code backup=true} in its manifest, written to a
  * temporary name first and renamed when complete, so a crash mid-way never leaves a half file
- * that looks restorable.</p>
+ * that looks restorable. Writing never prunes: the caller calls {@link #prune()} once the import
+ * or restore the backup was taken for has succeeded, so a refused import does not evict an older
+ * backup and a restore never deletes the file it is loading.</p>
  */
 @Service
 public class SyncBackupService {
@@ -65,7 +67,6 @@ public class SyncBackupService {
     }
     Files.move(partial, target);
     LOG.info("Backup written: {} ({} bytes)", target.getFileName(), Files.size(target));
-    prune();
     return target;
   }
 

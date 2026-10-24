@@ -24,8 +24,9 @@ import java.util.zip.ZipFile;
  * Puts the database back to what a backup holds (docs/sync-spec.md § Backups): <em>replace</em>
  * mode, the answer to "the last import was a mistake".
  *
- * <p>Its own {@code before-restore} backup is written first, so a restore is itself undoable.
- * Then, inside one transaction, every synchronised table is emptied in reverse foreign-key
+ * <p>Its own {@code before-restore} backup is written first, so a restore is itself undoable;
+ * the backup directory is pruned only after the restore succeeded, so the file being restored is
+ * never deleted from under it. Then, inside one transaction, every synchronised table is emptied in reverse foreign-key
  * order and loaded from the file row by row, the photo bytes and the sequences with them. It
  * never runs the collision analysis: the file is not merged, it wins outright. The node keeps
  * its id ({@code sync_node} is not in the file) and only records the restore as its last
@@ -62,7 +63,7 @@ public class SyncRestoreService {
    */
   public SyncRestoreResult restore(Path backup) throws IOException {
     SyncFile file = SyncReader.read(backup);
-    check(file.manifest());
+    check(file);
     Path before = backups.writeBackup("before-restore");
     Instant now = Instant.now(clock);
     String name = backup.getFileName().toString();
@@ -73,13 +74,19 @@ public class SyncRestoreService {
         throw new UncheckedIOException(e);
       }
     });
+    backups.prune();
     int rebuilt = thumbnails.refreshStale();
     LOG.info("Restored {}: {} row(s), {} photo(s); the state before it is in {}", name, counts[0], counts[1],
         before.getFileName());
     return new SyncRestoreResult(name, before, counts[0], counts[1], rebuilt);
   }
 
-  private void check(SyncManifest manifest) {
+  /**
+   * A restore empties every table before reloading it, so a backup that lacks a table's entry
+   * (a truncated or hand-edited file) would silently empty that table; it is refused instead.
+   */
+  private void check(SyncFile file) {
+    SyncManifest manifest = file.manifest();
     if (!manifest.backup()) {
       throw new SyncRefusedException("The file is a sync file from another installation, not a backup; "
           + "load it with Import, which reports the collisions first.");
@@ -88,6 +95,10 @@ public class SyncRestoreService {
       throw new SyncRefusedException("The backup was made with database schema version "
           + String.valueOf(manifest.schemaVersion()) + " and this computer runs version "
           + String.valueOf(exporter.schemaVersion()) + "; it cannot be restored into this program.");
+    }
+    if (!file.missingTables().isEmpty()) {
+      throw new SyncRefusedException("The backup is incomplete: it has no entry for "
+          + String.join(", ", file.missingTables()) + "; restoring it would empty those tables.");
     }
   }
 

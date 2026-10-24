@@ -383,6 +383,39 @@ class SyncCollisionTest {
   }
 
   @Test
+  void c6NamesTheReferencedRecordSoTwoDanglingMembersOfOneOwnerGetTwoDecisions() {
+    file("trainer", row(key(1), OTHER, 0, AFTER, null, "trainer_uuid", key(1), "trainer_name", "Jan",
+        "trainer_surname", "Kowalski", "trainer_primary_image_uuid", null));
+    file("trainer_image", new SyncRow(Map.of("trainer_uuid", key(1), "image_uuid", key(8))));
+    file("trainer_image", new SyncRow(Map.of("trainer_uuid", key(1), "image_uuid", key(9))));
+
+    assertThat(analyze().collisions()).extracting(Collision::id).containsExactlyInAnyOrder(
+        "C6-trainer-" + key(1) + "-trainer_image-" + key(8),
+        "C6-trainer-" + key(1) + "-trainer_image-" + key(9));
+  }
+
+  @Test
+  void c6ChecksTheFileSideOfARowEditedOnBothComputers() {
+    local("participants", participant(key(1), 1001, "Anna", SELF, 1, AFTER, null));
+    file("participants", participant(key(1), 1001, "Anna", OTHER, 1, AFTER, null).with("image_uuid", key(9)));
+
+    SyncAnalysis analysis = analyze();
+
+    assertThat(analysis.plan()).isEmpty();
+    assertThat(analysis.collisions()).extracting(Collision::id).containsExactlyInAnyOrder(
+        "C2-participants-" + key(1),
+        "C6-participants-" + key(1) + "-image_uuid-" + key(9));
+  }
+
+  @Test
+  void c6ChecksTheFileSideOfARowDeletedHereAndEditedThere() {
+    local("participants", participant(key(1), 1001, "Anna", SELF, 1, AFTER, AFTER));
+    file("participants", participant(key(1), 1001, "Anna", OTHER, 1, AFTER, null).with("image_uuid", key(9)));
+
+    assertThat(analyze().collisions()).extracting(Collision::type).containsExactlyInAnyOrder(Type.C3, Type.C6);
+  }
+
+  @Test
   void aReferenceSatisfiedByTheFileItselfIsNotACollision() {
     file("course_type", courseType(key(1), "SYNC", OTHER, AFTER));
     file("participants", participant(key(3), 1001, "Anna", OTHER, 0, AFTER, null));

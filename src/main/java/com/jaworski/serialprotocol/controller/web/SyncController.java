@@ -207,6 +207,7 @@ public class SyncController {
   @PostMapping("/backup")
   public String backup(RedirectAttributes redirectAttributes) throws IOException {
     Path written = backups.writeBackup("manual");
+    backups.prune();
     redirectAttributes.addFlashAttribute("successMessage", "Backup written: " + written.getFileName());
     return "redirect:/sync";
   }

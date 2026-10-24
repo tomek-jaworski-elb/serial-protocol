@@ -1,6 +1,9 @@
 package com.jaworski.serialprotocol.controller.web;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.util.FileSystemUtils;
+import java.io.IOException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -43,6 +46,12 @@ class SyncPageTest {
   private MockMvc mockMvc;
   @Autowired
   private SyncBackupService backups;
+
+  /** A successful import or restore prunes, so the directory must not carry over the previous runs' files. */
+  @BeforeEach
+  void cleanDirectory() throws IOException {
+    FileSystemUtils.deleteRecursively(backups.directory());
+  }
 
   private static String auth() {
     return "Basic " + Base64.getEncoder().encodeToString("user:user".getBytes());

@@ -9,19 +9,13 @@ import org.springframework.test.context.TestPropertySource;
 
 import javax.sql.DataSource;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -187,28 +181,7 @@ class SyncRoundTripTest {
     return value == null ? -1 : value;
   }
 
-  /** The current database exported and re-labelled as another node's file. */
   private byte[] fileFromOtherNode() throws Exception {
-    ByteArrayOutputStream export = new ByteArrayOutputStream();
-    exporter.export(export, false);
-    Map<String, byte[]> entries = new LinkedHashMap<>();
-    try (ZipInputStream zip = new ZipInputStream(new ByteArrayInputStream(export.toByteArray()))) {
-      for (ZipEntry entry; (entry = zip.getNextEntry()) != null; ) {
-        entries.put(entry.getName(), zip.readAllBytes());
-      }
-    }
-    String manifest = new String(entries.get("manifest.json"), StandardCharsets.UTF_8)
-        .replaceAll("\"id\" : \"[0-9a-f-]+\"", "\"id\" : \"" + SyncFixture.ORIGIN + "\"")
-        .replaceAll("\"name\" : \"[^\"]*\"", "\"name\" : \"Other\"");
-    entries.put("manifest.json", manifest.getBytes(StandardCharsets.UTF_8));
-    ByteArrayOutputStream out = new ByteArrayOutputStream();
-    try (ZipOutputStream zip = new ZipOutputStream(out)) {
-      for (var entry : entries.entrySet()) {
-        zip.putNextEntry(new ZipEntry(entry.getKey()));
-        zip.write(entry.getValue());
-        zip.closeEntry();
-      }
-    }
-    return out.toByteArray();
+    return SyncFixture.fileFromOtherNode(exporter);
   }
 }

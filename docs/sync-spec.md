@@ -234,8 +234,17 @@ Details settled with the implementation (`SyncApplyService`):
 - Renumbering takes from the sequence as it will be after the import: `max(file next, local
   next, highest number on either side + 1)`, then one up per renumbering. C5 renames to
   `CODE-2`, `CODE-3`, ... the first free case-insensitively on either side.
-- A C6 "skip the row" also skips its join-table rows; a C6 "bring back" clears `deleted_at`
-  on the referenced record.
+- The reference check covers the planned rows and the file side of every C2/C3 row, so a
+  resolution that takes the file's version cannot bring a dangling reference in behind the
+  report's back. The C6 id names the referenced record too
+  (`C6-<table>-<key>-<column or join table>-<referenced key>`), so two dangling members of one
+  owner get two decisions.
+- A C6 "skip the row" also skips its join-table rows and, transitively, every file row that
+  refers to the skipped one (a course of a skipped participant, the crew rows of a skipped
+  course); each skip is listed in the report's changes. A C6 "bring back" clears `deleted_at`
+  on the referenced record: when the file carries the same tombstone, the file's row is written
+  live (`version + 1`, `updated_at = now`, `origin_node = self`) instead of the tombstone, so
+  the revival is not overwritten by the file row written afterwards.
 - The staged upload is discarded after a successful apply and kept after a refusal, so the
   report page can be opened again.
 
@@ -243,8 +252,11 @@ Details settled with the implementation (`SyncApplyService`):
 
 - `SyncBackupService.writeBackup(reason)` runs the exporter into
   `${sync.backup-dir}/<node-name>-<yyyyMMdd-HHmmss>-<reason>.bak` (`reason` ∈ `before-import`,
-  `before-restore`, `manual`), then deletes the oldest files beyond `sync.backup-keep`
-  (`0` keeps every file). The exporter writes to a `.part` name and renames when complete, so a
+  `before-restore`, `manual`). `prune()` deletes the oldest files beyond `sync.backup-keep`
+  (`0` keeps every file) and is called by the import, the restore and the manual backup only
+  after they succeeded: a refused import keeps every backup, and restoring the oldest of
+  `sync.backup-keep` files does not delete the file being restored under its own
+  `before-restore` backup. The exporter writes to a `.part` name and renames when complete, so a
   crash never leaves a half file that looks restorable; a second backup within the same second
   gets a `-2`, `-3` suffix instead of overwriting. Only `.bak` files in the directory count.
 - Called before every import apply and every restore; also from a "Back up now" button.
@@ -255,7 +267,9 @@ Details settled with the implementation (`SyncApplyService`):
   inside one transaction. It never runs the collision analysis; it answers "the last import was a
   mistake". The node keeps its id.
 - Details settled with the implementation (`SyncRestoreService`): only a file whose manifest says
-  `backup=true` is restored (a `.sync` from another node is refused with a pointer to Import), and
+  `backup=true` is restored (a `.sync` from another node is refused with a pointer to Import), a
+  file whose ZIP lacks a `tables/<name>.jsonl` entry is refused as incomplete (the reload would
+  empty that table), and
   the schema version must match as for an import. `image_blob` is emptied first and reloaded from
   `blobs/` and `thumbs/` in full. The restore is recorded as the node's last import (`last_import_file`
   is the backup's name) so the page shows it; no `.report.json` is written. `ThumbnailBackfill`

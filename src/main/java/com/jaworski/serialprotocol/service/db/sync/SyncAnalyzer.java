@@ -371,21 +371,32 @@ public final class SyncAnalyzer {
     }
   }
 
+  /**
+   * Every file row the apply may write is checked: the planned ones, and the file side of a C2
+   * or C3 collision, which a "take the file's version" or "keep edited" decision writes as well.
+   */
   private void checkReferences() {
-    for (RowPlan planned : List.copyOf(plan)) {
-      SyncTable table = table(planned.table());
-      SyncRow row = planned.fileRow();
-      Map<String, String> refs = REFERENCES.getOrDefault(planned.table(), Map.of());
+    List<RowPlan> candidates = new ArrayList<>(plan);
+    for (Collision c : List.copyOf(collisions)) {
+      if (c.type() == Type.C2 || c.type() == Type.C3) {
+        String key = c.id().substring(c.type().name().length() + 1 + c.table().length() + 1);
+        candidates.add(new RowPlan(c.table(), key, Action.UPDATE, fileByKey.get(c.table()).get(key)));
+      }
+    }
+    for (RowPlan candidate : candidates) {
+      SyncTable table = table(candidate.table());
+      SyncRow row = candidate.fileRow();
+      Map<String, String> refs = REFERENCES.getOrDefault(candidate.table(), Map.of());
       for (Map.Entry<String, String> ref : refs.entrySet()) {
-        checkReference(table, planned.key(), row, row.text(ref.getKey()), ref.getValue(), ref.getKey());
+        checkReference(table, candidate.key(), row, row.text(ref.getKey()), ref.getValue(), ref.getKey());
       }
       for (Map.Entry<String, JoinTable> join : JOIN_TABLES.entrySet()) {
-        if (!join.getValue().ownerTable().equals(planned.table())) {
+        if (!join.getValue().ownerTable().equals(candidate.table())) {
           continue;
         }
         for (SyncRow member : fileByKey.get(join.getKey()).values()) {
-          if (planned.key().equals(member.text(join.getValue().ownerColumn()))) {
-            checkReference(table, planned.key(), row, member.text(join.getValue().memberColumn()),
+          if (candidate.key().equals(member.text(join.getValue().ownerColumn()))) {
+            checkReference(table, candidate.key(), row, member.text(join.getValue().memberColumn()),
                 join.getValue().memberTable(), join.getKey());
           }
         }
@@ -414,7 +425,8 @@ public final class SyncAnalyzer {
     if (tombstone) {
       options.add(new Resolution("revive", "Bring the deleted " + what + " back and take the record"));
     }
-    collisions.add(new Collision(id(Type.C6, table, key) + "-" + via, Type.C6, table.name(), label(table),
+    collisions.add(new Collision(id(Type.C6, table, key) + "-" + via + "-" + referenced, Type.C6, table.name(),
+        label(table),
         name(table.name(), row), reason, List.of(new FieldDiff(via, null, referenced)), null, side(row), options));
   }
 

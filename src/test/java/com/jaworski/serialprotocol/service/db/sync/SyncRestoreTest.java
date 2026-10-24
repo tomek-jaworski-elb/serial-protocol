@@ -1,13 +1,16 @@
 package com.jaworski.serialprotocol.service.db.sync;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.util.FileSystemUtils;
 
 import javax.sql.DataSource;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -40,6 +43,12 @@ class SyncRestoreTest {
   private SyncNodeService nodeService;
   @Autowired
   private SyncExporter exporter;
+
+  /** A successful restore prunes, so the directory must not carry over the previous runs' files. */
+  @BeforeEach
+  void cleanDirectory() throws IOException {
+    FileSystemUtils.deleteRecursively(backups.directory());
+  }
 
   @Test
   void aRestoreBringsBackTheBackedUpStateAndKeepsTheNodeId() throws Exception {
@@ -99,6 +108,27 @@ class SyncRestoreTest {
 
     restores.restore(first.beforeRestore());
     assertThat(localReader.read()).isEqualTo(newer);
+  }
+
+  @Test
+  void aBackupWithoutATableEntryIsRefusedInsteadOfEmptyingThatTable() throws Exception {
+    JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+    SyncFixture.seed(jdbc);
+    Map<String, List<SyncRow>> before = localReader.read();
+    Path whole = backups.writeBackup("manual");
+    Map<String, byte[]> entries = SyncFormatTest.unzip(Files.readAllBytes(whole));
+    entries.remove(SyncTables.tableEntry("courses"));
+    entries.remove(SyncTables.tableEntry("courses_trainers"));
+    Path cut = backups.directory().resolve("cut.bak");
+    Files.write(cut, SyncFixture.zip(entries));
+    int backupsBefore = backups.list().size();
+
+    assertThatThrownBy(() -> restores.restore(cut))
+        .isInstanceOf(SyncRefusedException.class)
+        .hasMessageContaining("incomplete").hasMessageContaining("courses, courses_trainers");
+
+    assertThat(localReader.read()).isEqualTo(before);
+    assertThat(backups.list()).hasSize(backupsBefore);
   }
 
   @Test

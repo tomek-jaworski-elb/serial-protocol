@@ -103,6 +103,8 @@ public class SyncApplyService {
     private final Map<String, Map<String, SyncRow>> writes = new LinkedHashMap<>();
     /** Local rows the resolutions change, run before any file row is written. */
     private final List<Runnable> localChanges = new ArrayList<>();
+    /** File rows a C6 "skip" left out, per table; rows referring to them are left out too. */
+    private final Map<String, Set<String>> skipped = new HashMap<>();
     private final List<String> changes = new ArrayList<>();
     private final Map<String, Long> sequences = new LinkedHashMap<>();
     private final SyncJdbcWriter writer = new SyncJdbcWriter(jdbc);
@@ -141,6 +143,7 @@ public class SyncApplyService {
       for (Collision collision : analysis.collisions()) {
         resolve(collision);
       }
+      skipDependants();
       localChanges.forEach(Runnable::run);
       for (SyncTable table : SyncTables.TABLES) {
         JoinTable join = SyncAnalyzer.JOIN_TABLES.get(table.name());
@@ -191,21 +194,78 @@ public class SyncApplyService {
         case C5 -> recode(c, table, key, code);
         case C6 -> {
           if (code.equals("skip-row")) {
-            writes.get(c.table()).remove(key);
-            changes.add("skipped " + c.tableLabel() + " " + c.record() + " from the file");
+            skip(c.table(), key, "skipped " + c.tableLabel() + " " + c.record() + " from the file");
           } else {
-            String via = c.fields().getFirst().field();
-            String referenced = c.fields().getFirst().fileValue();
-            JoinTable join = SyncAnalyzer.JOIN_TABLES.get(via);
-            String referencedTable = join != null ? join.memberTable()
-                : SyncAnalyzer.REFERENCES.get(c.table()).get(via);
-            SyncTable target = table(referencedTable);
-            localChanges.add(() -> touch(target, referenced, List.of(new Bind(SyncRow.DELETED_AT, null)),
-                "brought back the deleted " + SyncAnalyzer.label(target).toLowerCase(Locale.ROOT)
-                    + " that " + c.tableLabel() + " " + c.record() + " refers to"));
+            revive(c);
           }
         }
       }
+    }
+
+    /**
+     * A C6 "bring back": the referenced tombstone becomes live. When the file carries that row
+     * and the plan writes it, the file row is written live instead of the local tombstone being
+     * touched, or the write would put the tombstone straight back; the row still counts as an
+     * edit made here now. Otherwise the local tombstone is touched as any other resolution.
+     */
+    private void revive(Collision c) {
+      String via = c.fields().getFirst().field();
+      String referenced = c.fields().getFirst().fileValue();
+      JoinTable join = SyncAnalyzer.JOIN_TABLES.get(via);
+      String referencedTable = join != null ? join.memberTable() : SyncAnalyzer.REFERENCES.get(c.table()).get(via);
+      SyncTable target = table(referencedTable);
+      String change = "brought back the deleted " + SyncAnalyzer.label(target).toLowerCase(Locale.ROOT)
+          + " that " + c.tableLabel() + " " + c.record() + " refers to";
+      SyncRow planned = writes.get(referencedTable).get(referenced);
+      if (planned != null) {
+        Long version = planned.version();
+        writes.get(referencedTable).put(referenced, planned.with(SyncRow.DELETED_AT, null)
+            .with(SyncRow.UPDATED_AT, now).with(SyncRow.ORIGIN_NODE, self.toString())
+            .with(SyncRow.VERSION, version == null ? 1L : version + 1));
+        changes.add(change);
+        return;
+      }
+      localChanges.add(() -> touch(target, referenced, List.of(new Bind(SyncRow.DELETED_AT, null)), change));
+    }
+
+    private void skip(String table, String key, String change) {
+      if (writes.get(table).remove(key) != null || !localByKey.get(table).containsKey(key)) {
+        skipped.computeIfAbsent(table, t -> new LinkedHashSet<>()).add(key);
+      }
+      changes.add(change);
+    }
+
+    /**
+     * A skipped row that is not here either cannot be referred to, so every planned row pointing
+     * at it is left out as well, and so on down the chain; join rows follow their owner and are
+     * filtered against the members that will exist in {@link #replaceJoinRows}.
+     */
+    private void skipDependants() {
+      boolean more = true;
+      while (more) {
+        more = false;
+        for (Map.Entry<String, Map<String, String>> refs : SyncAnalyzer.REFERENCES.entrySet()) {
+          for (Map.Entry<String, SyncRow> entry : List.copyOf(writes.get(refs.getKey()).entrySet())) {
+            for (Map.Entry<String, String> ref : refs.getValue().entrySet()) {
+              String referenced = entry.getValue().text(ref.getKey());
+              if (referenced != null && !exists(ref.getValue(), referenced)) {
+                SyncTable table = table(refs.getKey());
+                skip(refs.getKey(), entry.getKey(), "skipped " + SyncAnalyzer.label(table).toLowerCase(Locale.ROOT)
+                    + " " + entry.getKey() + " from the file: the "
+                    + SyncAnalyzer.label(table(ref.getValue())).toLowerCase(Locale.ROOT) + " it refers to was skipped");
+                more = true;
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    /** Whether the row will be in the database after the import: here already, or written from the file. */
+    private boolean exists(String table, String key) {
+      return (localByKey.get(table).containsKey(key) && !skipped.getOrDefault(table, Set.of()).contains(key))
+          || writes.get(table).containsKey(key);
     }
 
     private void renumber(Collision c, SyncTable table, String fileKey, String code) {
@@ -270,12 +330,15 @@ public class SyncApplyService {
       }
     }
 
-    /** The key inside a collision id: {@code TYPE-table-key}, with {@code -via} appended for C6. */
+    /**
+     * The key inside a collision id: {@code TYPE-table-key}, with {@code -via-referenced}
+     * appended for C6 so that two dangling references of one record get two decisions.
+     */
     private static String keyOf(Collision c) {
       String rest = c.id().substring(c.type().name().length() + 1 + c.table().length() + 1);
       if (c.type() == Collision.Type.C6) {
-        String via = c.fields().getFirst().field();
-        rest = rest.substring(0, rest.length() - via.length() - 1);
+        String suffix = "-" + c.fields().getFirst().field() + "-" + c.fields().getFirst().fileValue();
+        rest = rest.substring(0, rest.length() - suffix.length());
       }
       return rest;
     }
@@ -414,7 +477,8 @@ public class SyncApplyService {
         execute(table.name(), "delete from " + table.name() + " where " + join.ownerColumn() + " = ?",
             List.of(new Bind(join.ownerColumn(), owner)));
         for (SyncRow row : fileByKey.get(table.name()).values()) {
-          if (!owner.equals(row.text(join.ownerColumn()))) {
+          if (!owner.equals(row.text(join.ownerColumn()))
+              || !exists(join.memberTable(), row.text(join.memberColumn()))) {
             continue;
           }
           List<Bind> binds = new ArrayList<>();

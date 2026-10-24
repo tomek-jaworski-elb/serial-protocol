@@ -115,6 +115,7 @@ public class SyncImportService {
     Path reportFile = SyncBackupService.reportFor(backup);
     Files.write(reportFile, mapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(report));
     staging.discard(staged.token());
+    backups.prune();
     int rebuilt = thumbnails.refreshStale();
     LOG.info("Sync import report written: {}", reportFile.getFileName());
     return new SyncImportResult(report, backup, reportFile, rebuilt);

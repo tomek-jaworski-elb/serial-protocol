@@ -51,7 +51,11 @@ public final class SyncReader {
         throw new SyncRefusedException("This is not a sync file: the manifest names no node.");
       }
       Map<String, List<SyncRow>> tables = new LinkedHashMap<>();
+      Set<String> missing = new LinkedHashSet<>();
       for (SyncTable table : SyncTables.TABLES) {
+        if (zip.getEntry(SyncTables.tableEntry(table.name())) == null) {
+          missing.add(table.name());
+        }
         tables.put(table.name(), readRows(zip, table));
       }
       Set<String> blobs = new LinkedHashSet<>();
@@ -64,7 +68,7 @@ public final class SyncReader {
           thumbs.add(name.substring(SyncTables.THUMBS_DIR.length(), name.length() - 4));
         }
       }
-      return new SyncFile(manifest, tables, blobs, thumbs);
+      return new SyncFile(manifest, tables, blobs, thumbs, missing);
     } catch (ZipException e) {
       throw new SyncRefusedException("This is not a sync file: it is not a ZIP archive.", e);
     } catch (IOException e) {

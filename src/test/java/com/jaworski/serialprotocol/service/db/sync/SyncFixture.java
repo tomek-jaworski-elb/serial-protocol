@@ -3,6 +3,9 @@ package com.jaworski.serialprotocol.service.db.sync;
 import org.springframework.jdbc.core.ArgumentPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -11,8 +14,11 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Map;
 import java.util.TimeZone;
 import java.util.UUID;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 /**
  * One deterministic row in every synchronised table, so an export is byte-for-byte
@@ -149,6 +155,31 @@ final class SyncFixture {
     System.arraycopy(values, 0, all, 0, values.length - 1);
     System.arraycopy(audit, 0, all, values.length - 1, audit.length);
     return all;
+  }
+
+  /** The current database exported and re-labelled as another node's ({@link #ORIGIN}, "Other") file. */
+  static byte[] fileFromOtherNode(SyncExporter exporter) throws IOException {
+    ByteArrayOutputStream export = new ByteArrayOutputStream();
+    exporter.export(export, false);
+    Map<String, byte[]> entries = SyncFormatTest.unzip(export.toByteArray());
+    String manifest = new String(entries.get(SyncTables.MANIFEST_ENTRY), StandardCharsets.UTF_8)
+        .replaceAll("\"id\" : \"[0-9a-f-]+\"", "\"id\" : \"" + ORIGIN + "\"")
+        .replaceAll("\"name\" : \"[^\"]*\"", "\"name\" : \"Other\"");
+    entries.put(SyncTables.MANIFEST_ENTRY, manifest.getBytes(StandardCharsets.UTF_8));
+    return zip(entries);
+  }
+
+  /** The entries of {@link SyncFormatTest#unzip} back into one ZIP. */
+  static byte[] zip(Map<String, byte[]> entries) throws IOException {
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    try (ZipOutputStream zip = new ZipOutputStream(out)) {
+      for (var entry : entries.entrySet()) {
+        zip.putNextEntry(new ZipEntry(entry.getKey()));
+        zip.write(entry.getValue());
+        zip.closeEntry();
+      }
+    }
+    return out.toByteArray();
   }
 
   private SyncFixture() {
