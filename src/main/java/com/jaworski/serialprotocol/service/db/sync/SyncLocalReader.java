@@ -26,14 +26,23 @@ public class SyncLocalReader {
 
   @Transactional(readOnly = true)
   public Map<String, List<SyncRow>> read() {
-    return readInTransaction();
+    return read(false);
   }
 
-  /** The same read inside a transaction the caller owns ({@code SyncApplyService} checks nothing moved). */
-  Map<String, List<SyncRow>> readInTransaction() {
+  /**
+   * The same read inside a transaction the caller owns, with every row locked until that
+   * transaction ends: {@code SyncApplyService} checks nothing moved since the report and must
+   * not let an edit slip in between the check and its writes.
+   */
+  Map<String, List<SyncRow>> readLocked() {
+    return read(true);
+  }
+
+  private Map<String, List<SyncRow>> read(boolean locked) {
     Map<String, List<SyncRow>> tables = new LinkedHashMap<>();
     for (SyncTable table : SyncTables.TABLES) {
-      tables.put(table.name(), jdbc.query("SELECT * FROM " + table.name() + " ORDER BY " + table.orderBy(),
+      tables.put(table.name(), jdbc.query("SELECT * FROM " + table.name() + " ORDER BY " + table.orderBy()
+              + (locked ? " FOR UPDATE" : ""),
           (rs, i) -> {
             ResultSetMetaData meta = rs.getMetaData();
             Map<String, Object> values = new LinkedHashMap<>();

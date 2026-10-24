@@ -2,6 +2,7 @@ package com.jaworski.serialprotocol.service.db.sync;
 
 import com.jaworski.serialprotocol.service.db.sync.Collision.Type;
 import com.jaworski.serialprotocol.service.db.sync.SyncAnalysis.Action;
+import com.jaworski.serialprotocol.service.db.sync.SyncAnalysis.RowPlan;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -516,6 +517,22 @@ class SyncCollisionTest {
     assertThat(analysis.plan()).isEmpty();
     assertThat(analysis.hasCollisions()).isFalse();
     assertThat(analysis.notices()).isEmpty();
+  }
+
+  @Test
+  void aRowTheFileRelaysFromAThirdComputerIsAChangeThereHoweverOldItLooks() {
+    // The third computer's clock stamped it before the last file from this node was exported,
+    // but that file did not carry it: this computer has never seen it.
+    local("participants", participant(key(1), 1001, "Ania", SELF, 1, BEFORE, null),
+        participant(key(2), 1002, "Basia", SELF, 2, LATER, null));
+    file("participants", participant(key(1), 1001, "Anna", THIRD, 2, AFTER, null),
+        participant(key(2), 1002, "Barbara", THIRD, 3, AFTER, null));
+
+    SyncAnalysis analysis = analyze(SINCE, false, SEEN);
+
+    assertThat(analysis.plan()).extracting(RowPlan::key, RowPlan::action)
+        .containsExactly(tuple(key(1), Action.UPDATE));
+    assertThat(analysis.collisions()).extracting(Collision::id).containsExactly("C2-participants-" + key(2));
   }
 
   @Test

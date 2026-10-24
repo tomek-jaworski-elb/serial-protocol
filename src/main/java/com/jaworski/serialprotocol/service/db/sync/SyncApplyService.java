@@ -48,7 +48,6 @@ public class SyncApplyService {
 
   private static final Logger LOG = LoggerFactory.getLogger(SyncApplyService.class);
 
-  /** The {@code id_sequence} row behind each numbered table. */
   /** The business column each table keeps unique, which the write order has to respect. */
   static final Map<String, String> UNIQUE_COLUMNS;
 
@@ -58,6 +57,7 @@ public class SyncApplyService {
     UNIQUE_COLUMNS = Map.copyOf(columns);
   }
 
+  /** The {@code id_sequence} row behind each numbered table. */
   static final Map<String, String> SEQUENCES = Map.of(
       "participants", "participant",
       "courses", "courses",
@@ -96,7 +96,7 @@ public class SyncApplyService {
   public Outcome apply(Path path, SyncFile file, SyncAnalysis analysis, Map<String, String> resolutions,
       Map<String, List<SyncRow>> local, UUID self, Instant now, String fileName) {
     return transaction.execute(status -> {
-      checkUnchanged(local, localReader.readInTransaction());
+      checkUnchanged(local, localReader.readLocked());
       try (ZipFile zip = new ZipFile(path.toFile(), StandardCharsets.UTF_8)) {
         return new Run(zip, file, analysis, resolutions, local, self, now).run(fileName);
       } catch (IOException e) {
@@ -193,10 +193,12 @@ public class SyncApplyService {
 
     Outcome run(String fileName) {
       prepareSequences();
-      // C6 last: a dangling reference raised for the file side of a C2/C3 only matters when
-      // that side was taken, which the C2/C3 decision settles first.
+      // C1–C3 decide which file rows are written; C6 then skips or revives among those and
+      // drags the dependants along; C4/C5 last, because whether a number's local holder is
+      // replaced by the file or stays (and must be renumbered) is only known by then.
       for (Collision collision : analysis.collisions()) {
-        if (collision.type() != Collision.Type.C6) {
+        if (collision.type() == Collision.Type.C1 || collision.type() == Collision.Type.C2
+            || collision.type() == Collision.Type.C3) {
           resolve(collision);
         }
       }
@@ -206,6 +208,11 @@ public class SyncApplyService {
         }
       }
       skipDependants();
+      for (Collision collision : analysis.collisions()) {
+        if (collision.type() == Collision.Type.C4 || collision.type() == Collision.Type.C5) {
+          resolve(collision);
+        }
+      }
       localChanges.forEach(Runnable::run);
       for (SyncTable table : SyncTables.TABLES) {
         JoinTable join = SyncAnalyzer.JOIN_TABLES.get(table.name());

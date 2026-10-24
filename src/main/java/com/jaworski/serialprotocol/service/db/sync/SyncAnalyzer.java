@@ -259,8 +259,9 @@ public final class SyncAnalyzer {
    * <p>Either way the file row must be newer than {@code seen}, the export time of the last
    * file taken from the same node: a row that node wrote, which this computer imported and
    * then edited, comes back unchanged in the next file (another origin, a lower version) and is
-   * not a competing change. Clocks differ between computers, but here both timestamps come
-   * from the exporting one.</p>
+   * not a competing change. Clocks differ between computers, so this holds only for rows the
+   * exporting node wrote itself, where both timestamps come from its clock; a row it relays from
+   * a third computer carries that computer's clock and may be new here however old it looks.</p>
    */
   private boolean changedThere(SyncRow local, SyncRow file) {
     if (alreadySeen(file)) {
@@ -274,7 +275,7 @@ public final class SyncAnalyzer {
 
   private boolean alreadySeen(SyncRow file) {
     Instant seen = in.seen();
-    if (seen == null) {
+    if (seen == null || file.createdAt() == null || !in.fileNode().id().equals(file.originNode())) {
       return false;
     }
     return !after(file.createdAt(), seen) && !after(file.updatedAt(), seen) && !after(file.deletedAt(), seen);

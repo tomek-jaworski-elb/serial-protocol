@@ -270,6 +270,50 @@ class SyncApplyResolutionTest {
   }
 
   @Test
+  void keepingTheFileNumberRenumbersTheLocalHolderWhenItsFileCopyEndsUpSkipped() throws Exception {
+    JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+    UUID self = nodeService.current().getId();
+
+    // The other side moved Anna to 1005, gave her a photo the file will not carry, and 1001 to Ola.
+    SyncFixture.seed(jdbc);
+    jdbc.update("insert into image (image_uuid, image_content_type, created_at, updated_at, version, origin_node)"
+        + " values (?, 'image/png', ?, ?, 0, ?)", NO_SUCH_IMAGE, AFTER, AFTER, SyncFixture.ORIGIN);
+    SyncFixture.update(jdbc, "update participants set participants_id = 1005, image_uuid = ?, updated_at = ?,"
+        + " version = 1, origin_node = ? where participants_uuid = ?", NO_SUCH_IMAGE, AFTER, SyncFixture.ORIGIN,
+        SyncFixture.PARTICIPANT);
+    SyncFixture.update(jdbc, "insert into participants (participants_uuid, participants_id, participants_name,"
+        + " participants_surname, created_at, updated_at, version, origin_node) values (?, ?, ?, ?, ?, ?, 0, ?)",
+        NEW_PARTICIPANT, 1001L, "Ola", "New", AFTER, AFTER, SyncFixture.ORIGIN);
+    byte[] file = without(SyncFixture.fileFromOtherNode(exporter), "tables/image.jsonl", NO_SUCH_IMAGE);
+
+    // This side edited Anna, who still holds 1001 here.
+    SyncFixture.seed(jdbc);
+    jdbc.update("update sync_node set last_sync_at = ?", OffsetDateTime.ofInstant(SINCE, ZoneOffset.UTC));
+    SyncFixture.update(jdbc, "update participants set participants_email = ?, updated_at = ?, version = 1,"
+        + " origin_node = ? where participants_uuid = ?", "here@example", LATER, self, SyncFixture.PARTICIPANT);
+
+    SyncStaging.Staged staged = imports.staging().stage(new ByteArrayInputStream(file), "skipped.sync");
+    SyncAnalysis analysis = imports.analyze(staged).analysis();
+    String c2 = "C2-participants-" + SyncFixture.PARTICIPANT;
+    String c4 = "C4-participants-" + NEW_PARTICIPANT;
+    String c6 = "C6-participants-" + SyncFixture.PARTICIPANT + "-image_uuid-" + NO_SUCH_IMAGE;
+    assertThat(analysis.collisions()).extracting(Collision::id).containsExactlyInAnyOrder(c2, c4, c6);
+
+    // The file's Anna is taken and then skipped for her missing photo: the local Anna stays and
+    // still holds 1001, so she has to move for Ola to get it.
+    SyncImportResult result = imports.apply(staged, Map.of(c2, "take-file", c6, "skip-row", c4, "keep-file-number"));
+
+    Map<String, Object> anna = jdbc.queryForMap("select * from participants where participants_uuid = ?",
+        SyncFixture.PARTICIPANT);
+    assertThat(anna.get("PARTICIPANTS_EMAIL")).isEqualTo("here@example");
+    assertThat(((Number) anna.get("PARTICIPANTS_ID")).longValue()).isGreaterThan(1005L);
+    assertThat(jdbc.queryForObject("select participants_id from participants where participants_uuid = ?",
+        Long.class, NEW_PARTICIPANT)).isEqualTo(1001L);
+    assertThat(result.report().changes()).anySatisfy(change -> assertThat(change).contains("skipped Participant"))
+        .anySatisfy(change -> assertThat(change).contains("made here was given number"));
+  }
+
+  @Test
   void twoParticipantsWhoSwappedNumbersInTheFileAreWrittenInAnOrderTheUniqueIndexAllows() throws Exception {
     JdbcTemplate jdbc = new JdbcTemplate(dataSource);
     UUID self = nodeService.current().getId();

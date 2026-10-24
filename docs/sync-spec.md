@@ -178,9 +178,12 @@ local row counts as changed here"). Two facts drive the decision:
   whose row was not created, edited or deleted after that moment carries nothing this computer
   has not already seen, so it is "not changed there" even if its origin is the other node: a row
   authored on B, imported here and edited here since must not collide with B's next file, which
-  still carries the old copy. A file from another node, or a node that never imported, has no
-  base and every differing row of another origin counts as changed there. A restore clears the
-  base (`SyncNodeService.markRestored`).
+  still carries the old copy. The base holds only for rows whose `origin_node` is the file's
+  node: a row B relays from a third computer C carries C's clock, and B's previous file may not
+  have carried it at all, so it counts as changed there however old its timestamps look. A row
+  without a `created_at` is never "already seen". A file from another node, or a node that
+  never imported, has no base and every differing row of another origin counts as changed
+  there. A restore clears the base (`SyncNodeService.markRestored`).
 
 `version` orders two states of one row; `updated_at` only breaks ties and is shown to people,
 because the computers' clocks are not synchronised.
@@ -258,7 +261,14 @@ Details settled with the implementation (`SyncApplyService`):
   park one of them on a fresh number first.
 
 - The file is analysed again inside the apply, against the database as it is now; a decision
-  whose collision is gone refuses the import with "read the file again".
+  whose collision is gone refuses the import with "read the file again". Inside the apply
+  transaction the local tables are read once more with `SELECT ... FOR UPDATE`
+  (`SyncLocalReader.readLocked`): an audited row that differs from the analysed state refuses
+  the import, and the lock keeps a page from editing a row between that check and the writes.
+- Resolutions are applied in three passes: C1–C3 decide which file rows are written; C6 then
+  skips or brings back among those and drags the dependants of a skipped row along; C4/C5
+  last, because whether a number's local holder is replaced by the file's copy (nothing to
+  renumber) or stays (and must move) is only known once the skips are final.
 - A local row a resolution changes (a discarded C1 edit, a renumbered C4/C5 record, a C6
   record brought back) is written as an edit made here now: `version + 1`, `updated_at = now`,
   `origin_node = self`. It then travels with the next export, and the next analysis sees it
