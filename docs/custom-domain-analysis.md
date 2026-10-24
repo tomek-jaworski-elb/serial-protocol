@@ -534,8 +534,8 @@ GET /participant-service
 POST /participant-service/add
   → @ModelAttribute ParticipantDTO + MultipartFile imageFile
   → ⚠️ BUG-01: birthDate type="date" → binding error
-  → uploadSingleImage(imageFile) → Image zapisany w DB → UUID
-  → participantService.save(dto):
+  → MultipartImages.read(imageFile) → UploadedImage (bajty, content type; nic nie zapisane)
+  → participantService.save(dto, upload)  — jedna transakcja: Image (z miniaturą) + Participant
      - sprawdź unikalność id
      - mapToEntity + setImage
      - save
@@ -559,9 +559,11 @@ POST /courses-service/add-participant
 ### 4.5 Obsługa obrazów
 
 ```
-Upload:
-  uploadSingleImage(MultipartFile) → Image { data, contentType } → imageService.saveImage() → Image.id (UUID)
-  uploadImages(MultipartFile[], maxFiles) → Set<UUID>
+Upload (od etapu 3 naprawy warstwy bazodanowej):
+  MultipartImages.read(MultipartFile)   → UploadedImage        (kontroler tylko czyta bajty)
+  MultipartImages.read(MultipartFile[]) → List<UploadedImage>
+  serwis: save(dto, uploads) / update(dto, uploads, removals) → imageService.saveImage() w tej samej
+  transakcji co encja; miniatura powstaje przy zapisie, GET /custom/image nigdy nie zapisuje
 
 Serwowanie:
   GET /custom/image/{uuid} → imageService.getImageById(uuid) → ResponseEntity<byte[]> + ContentType

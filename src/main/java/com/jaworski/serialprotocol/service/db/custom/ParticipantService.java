@@ -27,6 +27,7 @@ public class ParticipantService {
   private static final Logger LOGGER = LoggerFactory.getLogger(ParticipantService.class);
   private final ParticipantRepository participantRepository;
   private final ImageRepository imageRepository;
+  private final ImageService imageService;
   private final CoursesRepository coursesRepository;
 
   @Transactional(readOnly = true)
@@ -115,6 +116,35 @@ public class ParticipantService {
     }
 
     return ParticipantMapper.mapToDTO(updated);
+  }
+
+  /** Creates the participant and stores the uploaded photo, if any, in the same transaction. */
+  public ParticipantDTO save(ParticipantDTO dto, UploadedImage upload) {
+    if (upload != null) {
+      dto.setImage(imageService.saveImage(upload.data(), upload.contentType()).getId());
+    }
+    return save(dto);
+  }
+
+  /**
+   * Updates the participant together with its photo. A newly uploaded file outranks the remove
+   * flag: it is the more explicit intent, and the form should not offer both at once anyway. A
+   * request that asks for neither keeps the photo that is there.
+   */
+  public ParticipantDTO updateByUuid(ParticipantDTO dto, UploadedImage upload, boolean removeImage) {
+    if (dto.getParticipantUuid() == null) {
+      throw new IllegalArgumentException("UUID is required for update");
+    }
+    if (upload != null) {
+      dto.setImage(imageService.saveImage(upload.data(), upload.contentType()).getId());
+    } else if (removeImage) {
+      dto.setImage(null);
+    } else {
+      dto.setImage(participantRepository.findById(dto.getParticipantUuid())
+          .map(p -> p.getImage() != null ? p.getImage().getId() : null)
+          .orElse(null));
+    }
+    return updateByUuid(dto);
   }
 
   private Image resolveImage(UUID imageId) {

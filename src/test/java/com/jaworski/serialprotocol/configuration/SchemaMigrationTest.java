@@ -57,7 +57,8 @@ class SchemaMigrationTest {
         assertThat(applied).extracting(MigrationInfo::getVersion)
             .extracting(Object::toString)
             .as("every script in db/migration ran, in order")
-            .containsExactly("1", "2");
+            .startsWith("1", "2")
+            .hasSize(flyway.info().all().length);
         assertThat(applied).extracting(MigrationInfo::getState)
             .containsOnly(MigrationState.SUCCESS);
         assertThat(flyway.info().pending()).as("nothing left to apply").isEmpty();

@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -24,6 +25,10 @@ public interface ImageRepository extends JpaRepository<Image, UUID> {
   @Query("select i.thumbData as thumbData, i.thumbContentType as thumbContentType, "
       + "i.thumbVersion as thumbVersion from Image i where i.id = :id")
   Optional<ThumbnailView> findThumbnailById(@Param("id") UUID id);
+
+  /** Rows whose thumbnail state was produced by another generator version, or never. */
+  @Query("select i.id from Image i where i.thumbVersion is null or i.thumbVersion <> :version")
+  List<UUID> findIdsWithStaleThumbnail(@Param("version") String version);
 
   interface ThumbnailView {
     byte[] getThumbData();

@@ -8,6 +8,7 @@ import com.jaworski.serialprotocol.dto.custom.ParticipantDTO;
 import com.jaworski.serialprotocol.dto.custom.TechnicianDTO;
 import com.jaworski.serialprotocol.dto.custom.TrainerDTO;
 import com.jaworski.serialprotocol.service.db.custom.CourseTypeService;
+import com.jaworski.serialprotocol.service.db.custom.ImageService;
 import com.jaworski.serialprotocol.service.db.custom.CourseCounterService;
 import com.jaworski.serialprotocol.service.db.custom.CoursesService;
 import com.jaworski.serialprotocol.service.db.custom.LecturerService;
@@ -34,7 +35,6 @@ import java.beans.PropertyEditorSupport;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -57,7 +57,6 @@ public class CustomDBController {
   private final LecturerService lecturerService;
   private final TechnicianService technicianService;
   private final ParticipantService participantService;
-  private final ImageUploadCoordinator imageUploads;
   private static final int DEFAULT_PAGE_SIZE = 10;
 
   /**
@@ -184,10 +183,11 @@ public class CustomDBController {
                            RedirectAttributes redirectAttributes) {
     try {
       trainerDTO.setId(null);
-      Set<UUID> uploadedImages = imageUploads.uploadImages(imageFiles, ImageUploadCoordinator.MAX_UPLOAD_IMAGES);
-      trainerDTO.setImagesUuid(uploadedImages);
-      imageUploads.persistOrDiscard(uploadedImages, () -> trainerService.save(trainerDTO));
+      trainerService.save(trainerDTO, MultipartImages.read(imageFiles));
       redirectAttributes.addFlashAttribute("successMessage", "Trainer added successfully.");
+    } catch (ImageService.ImageLimitExceededException e) {
+      LOG.warn("Cannot add trainer. payload={}: {}", trainerDTO, e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (RuntimeException e) {
       LOG.error("Cannot add trainer. payload={}", trainerDTO, e);
       redirectAttributes.addFlashAttribute("errorMessage", "Failed to add trainer. Please verify your input.");
@@ -204,13 +204,9 @@ public class CustomDBController {
       if (trainerDTO.getId() == null) {
         throw new IllegalArgumentException("Trainer id is required for update");
       }
-      TrainerDTO existingTrainer = trainerService.findById(trainerDTO.getId());
-      Set<UUID> existingImages = existingTrainer != null ? existingTrainer.getImagesUuid() : null;
-      ImageUploadCoordinator.MergedImages images = imageUploads.mergeImages(existingImages, removeImageUuids, imageFiles);
-      trainerDTO.setImagesUuid(images.merged());
-      imageUploads.persistOrDiscard(images.uploaded(), () -> trainerService.update(trainerDTO));
+      trainerService.update(trainerDTO, MultipartImages.read(imageFiles), removeImageUuids);
       redirectAttributes.addFlashAttribute("successMessage", "Trainer updated successfully.");
-    } catch (ImageUploadCoordinator.ImageLimitExceededException e) {
+    } catch (ImageService.ImageLimitExceededException e) {
       // Only this type is surfaced verbatim. The generic message below would leave the user
       // guessing which field was at fault, but service-layer messages carry uuids and internal
       // phrasing and are not written for a toast.
@@ -256,10 +252,11 @@ public class CustomDBController {
                             RedirectAttributes redirectAttributes) {
     try {
       lecturerDTO.setId(null);
-      Set<UUID> uploadedImages = imageUploads.uploadImages(imageFiles, ImageUploadCoordinator.MAX_UPLOAD_IMAGES);
-      lecturerDTO.setImagesUuid(uploadedImages);
-      imageUploads.persistOrDiscard(uploadedImages, () -> lecturerService.save(lecturerDTO));
+      lecturerService.save(lecturerDTO, MultipartImages.read(imageFiles));
       redirectAttributes.addFlashAttribute("successMessage", "Lecturer added successfully.");
+    } catch (ImageService.ImageLimitExceededException e) {
+      LOG.warn("Cannot add lecturer. payload={}: {}", lecturerDTO, e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (RuntimeException e) {
       LOG.error("Cannot add lecturer. payload={}", lecturerDTO, e);
       redirectAttributes.addFlashAttribute("errorMessage", "Failed to add lecturer. Please verify your input.");
@@ -276,13 +273,9 @@ public class CustomDBController {
       if (lecturerDTO.getId() == null) {
         throw new IllegalArgumentException("Lecturer id is required for update");
       }
-      LecturerDTO existingLecturer = lecturerService.findById(lecturerDTO.getId());
-      Set<UUID> existingImages = existingLecturer != null ? existingLecturer.getImagesUuid() : null;
-      ImageUploadCoordinator.MergedImages images = imageUploads.mergeImages(existingImages, removeImageUuids, imageFiles);
-      lecturerDTO.setImagesUuid(images.merged());
-      imageUploads.persistOrDiscard(images.uploaded(), () -> lecturerService.updateById(lecturerDTO));
+      lecturerService.updateById(lecturerDTO, MultipartImages.read(imageFiles), removeImageUuids);
       redirectAttributes.addFlashAttribute("successMessage", "Lecturer updated successfully.");
-    } catch (ImageUploadCoordinator.ImageLimitExceededException e) {
+    } catch (ImageService.ImageLimitExceededException e) {
       // Only this type is surfaced verbatim. The generic message below would leave the user
       // guessing which field was at fault, but service-layer messages carry uuids and internal
       // phrasing and are not written for a toast.
@@ -328,10 +321,11 @@ public class CustomDBController {
                               RedirectAttributes redirectAttributes) {
     try {
       technicianDTO.setId(null);
-      Set<UUID> uploadedImages = imageUploads.uploadImages(imageFiles, ImageUploadCoordinator.MAX_UPLOAD_IMAGES);
-      technicianDTO.setImagesUuid(uploadedImages);
-      imageUploads.persistOrDiscard(uploadedImages, () -> technicianService.save(technicianDTO));
+      technicianService.save(technicianDTO, MultipartImages.read(imageFiles));
       redirectAttributes.addFlashAttribute("successMessage", "Technician added successfully.");
+    } catch (ImageService.ImageLimitExceededException e) {
+      LOG.warn("Cannot add technician. payload={}: {}", technicianDTO, e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (RuntimeException e) {
       LOG.error("Cannot add technician. payload={}", technicianDTO, e);
       redirectAttributes.addFlashAttribute("errorMessage", "Failed to add technician. Please verify your input.");
@@ -348,13 +342,9 @@ public class CustomDBController {
       if (technicianDTO.getId() == null) {
         throw new IllegalArgumentException("Technician id is required for update");
       }
-      TechnicianDTO existing = technicianService.findById(technicianDTO.getId());
-      Set<UUID> existingImages = existing != null ? existing.getImagesUuid() : null;
-      ImageUploadCoordinator.MergedImages images = imageUploads.mergeImages(existingImages, removeImageUuids, imageFiles);
-      technicianDTO.setImagesUuid(images.merged());
-      imageUploads.persistOrDiscard(images.uploaded(), () -> technicianService.updateById(technicianDTO));
+      technicianService.updateById(technicianDTO, MultipartImages.read(imageFiles), removeImageUuids);
       redirectAttributes.addFlashAttribute("successMessage", "Technician updated successfully.");
-    } catch (ImageUploadCoordinator.ImageLimitExceededException e) {
+    } catch (ImageService.ImageLimitExceededException e) {
       // Only this type is surfaced verbatim. The generic message below would leave the user
       // guessing which field was at fault, but service-layer messages carry uuids and internal
       // phrasing and are not written for a toast.
@@ -462,9 +452,7 @@ public class CustomDBController {
                                RedirectAttributes redirectAttributes) {
     try {
       participantDTO.setParticipantUuid(null);
-      UUID uploadedImage = imageUploads.uploadSingleImage(imageFile);
-      participantDTO.setImage(uploadedImage);
-      imageUploads.persistOrDiscard(ImageUploadCoordinator.justUploaded(uploadedImage), () -> participantService.save(participantDTO));
+      participantService.save(participantDTO, MultipartImages.read(imageFile));
       redirectAttributes.addFlashAttribute("successMessage", "Participant added successfully.");
     } catch (IllegalArgumentException e) {
       LOG.error("Cannot add participant. payload={}", participantDTO, e);
@@ -492,20 +480,7 @@ public class CustomDBController {
       if (participantDTO.getParticipantUuid() == null) {
         throw new IllegalArgumentException("UUID is required for update");
       }
-      UUID uploadedImage = imageUploads.uploadSingleImage(imageFile);
-      if (uploadedImage != null) {
-        // A newly uploaded file outranks the remove checkbox: it is the more
-        // explicit intent, and the form should not offer both at once anyway.
-        participantDTO.setImage(uploadedImage);
-      } else if (removeImage) {
-        participantDTO.setImage(null);
-      } else {
-        ParticipantDTO existingParticipant = participantService.findByUuid(participantDTO.getParticipantUuid());
-        if (existingParticipant != null) {
-          participantDTO.setImage(existingParticipant.getImage());
-        }
-      }
-      imageUploads.persistOrDiscard(ImageUploadCoordinator.justUploaded(uploadedImage), () -> participantService.updateByUuid(participantDTO));
+      participantService.updateByUuid(participantDTO, MultipartImages.read(imageFile), removeImage);
       redirectAttributes.addFlashAttribute("successMessage", "Participant updated successfully.");
     } catch (IllegalArgumentException e) {
       LOG.error("Cannot update participant. payload={}", participantDTO, e);
@@ -561,9 +536,7 @@ public class CustomDBController {
                                  @RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
                                  RedirectAttributes redirectAttributes) {
     try {
-      UUID uploadedImage = imageUploads.uploadSingleImage(imageFile);
-      CourseCounterDTO toSave = new CourseCounterDTO(null, courseCounterDTO.counter(), uploadedImage);
-      imageUploads.persistOrDiscard(ImageUploadCoordinator.justUploaded(uploadedImage), () -> courseCounterService.save(toSave));
+      courseCounterService.save(new CourseCounterDTO(null, courseCounterDTO.counter(), null), MultipartImages.read(imageFile));
       redirectAttributes.addFlashAttribute("successMessage", "Course counter added successfully.");
     } catch (IllegalArgumentException e) {
       LOG.error("Cannot add course counter. payload={}", courseCounterDTO, e);
@@ -584,18 +557,7 @@ public class CustomDBController {
       if (courseCounterDTO.uuid() == null) {
         throw new IllegalArgumentException("UUID is required for update");
       }
-      UUID uploadedImage = imageUploads.uploadSingleImage(imageFile);
-      UUID imageUuid = uploadedImage;
-      if (uploadedImage == null && !removeImage) {
-        // Same precedence as elsewhere: an uploaded file wins, then an explicit
-        // remove, and only a request that asks for neither keeps what is there.
-        CourseCounterDTO existing = courseCounterService.getByUuid(courseCounterDTO.uuid())
-                .orElseThrow(() -> new IllegalArgumentException("CourseCounter with id " + courseCounterDTO.uuid() + " not found"));
-        imageUuid = existing.imageUuid();
-      }
-
-      CourseCounterDTO toUpdate = new CourseCounterDTO(courseCounterDTO.uuid(), courseCounterDTO.counter(), imageUuid);
-      imageUploads.persistOrDiscard(ImageUploadCoordinator.justUploaded(uploadedImage), () -> courseCounterService.update(toUpdate));
+      courseCounterService.update(courseCounterDTO, MultipartImages.read(imageFile), removeImage);
       redirectAttributes.addFlashAttribute("successMessage", "Course counter updated successfully.");
     } catch (IllegalArgumentException e) {
       LOG.error("Cannot update course counter. payload={}", courseCounterDTO, e);

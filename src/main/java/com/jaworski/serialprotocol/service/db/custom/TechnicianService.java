@@ -107,6 +107,45 @@ public class TechnicianService {
     return TechnicianMapper.mapToDTO(updated, idsOf(requestedImages));
   }
 
+  /** Creates the technician and stores the uploaded photos in the same transaction. */
+  public TechnicianDTO save(TechnicianDTO dto, List<UploadedImage> uploads) {
+    Set<UUID> images = dto.getImagesUuid() == null ? new HashSet<>() : new HashSet<>(dto.getImagesUuid());
+    ImageService.assertWithinLimit(images.size(), uploads.size());
+    images.addAll(imageService.saveImages(uploads));
+    dto.setImagesUuid(images);
+    return save(dto);
+  }
+
+  /**
+   * Updates the technician; the photos it ends up with are the ones it had, minus {@code removals},
+   * plus {@code uploads}, all committed together with the record.
+   *
+   * <p>The request carries the images to <em>remove</em>, never the ones to keep. That direction
+   * matters: the edit form builds its thumbnails in JavaScript, so a "keep these" list would turn
+   * any rendering failure into data loss — an empty editor would submit an empty keep-list and
+   * wipe every photo. With removals, a broken editor simply removes nothing, and a missing
+   * parameter means "leave the images alone". Ids outside the record's own set are ignored, so a
+   * forged uuid can only ever subtract from its photos, never attach someone else's.</p>
+   */
+  public TechnicianDTO updateById(TechnicianDTO dto, List<UploadedImage> uploads, List<UUID> removals) {
+    if (dto.getId() == null) {
+      throw new IllegalArgumentException("Technician id is required for update");
+    }
+    if (!technicianRepository.existsById(dto.getId())) {
+      throw new IllegalArgumentException("Technician with id " + dto.getId() + " not found");
+    }
+    // Ids only: initialising the image collection would read every photo's blob.
+    Set<UUID> kept = new HashSet<>(ImageLink.groupByOwner(technicianRepository.findImageLinks(List.of(dto.getId())))
+        .getOrDefault(dto.getId(), Set.of()));
+    if (removals != null) {
+      kept.removeAll(removals);
+    }
+    ImageService.assertWithinLimit(kept.size(), uploads.size());
+    kept.addAll(imageService.saveImages(uploads));
+    dto.setImagesUuid(kept);
+    return updateById(dto);
+  }
+
   private List<TechnicianDTO> toDTOs(List<Technician> people) {
     Map<UUID, Set<UUID>> images = imageIdsOf(people);
     return people.stream().map(p -> TechnicianMapper.mapToDTO(p, images.get(p.getUuid()))).toList();

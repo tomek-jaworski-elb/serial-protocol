@@ -26,6 +26,7 @@ public class CourseCounterService {
 
   private final CourseCounterRepository courseCounterRepository;
   private final ImageRepository imageRepository;
+  private final ImageService imageService;
   private final CoursesRepository coursesRepository;
 
   public CourseCounterDTO save(CourseCounterDTO courseCounterDTO) {
@@ -49,6 +50,36 @@ public class CourseCounterService {
 
   public Long nextCounter() {
     return courseCounterRepository.findMaxCounter() + 1;
+  }
+
+  /** Creates the counter and stores the uploaded photo, if any, in the same transaction. */
+  public CourseCounterDTO save(CourseCounterDTO dto, UploadedImage upload) {
+    UUID image = upload == null
+        ? dto.imageUuid()
+        : imageService.saveImage(upload.data(), upload.contentType()).getId();
+    return save(new CourseCounterDTO(dto.uuid(), dto.counter(), image));
+  }
+
+  /**
+   * Updates the counter together with its photo. Same precedence as for participants: an
+   * uploaded file wins, then an explicit remove, and only a request that asks for neither
+   * keeps what is there.
+   */
+  public CourseCounterDTO update(CourseCounterDTO dto, UploadedImage upload, boolean removeImage) {
+    if (dto.uuid() == null) {
+      throw new IllegalArgumentException("UUID is required for update");
+    }
+    UUID image;
+    if (upload != null) {
+      image = imageService.saveImage(upload.data(), upload.contentType()).getId();
+    } else if (removeImage) {
+      image = null;
+    } else {
+      CourseCounter existing = courseCounterRepository.findById(dto.uuid())
+          .orElseThrow(() -> new IllegalArgumentException("CourseCounter with id " + dto.uuid() + " not found"));
+      image = existing.getImage() == null ? null : existing.getImage().getId();
+    }
+    return update(new CourseCounterDTO(dto.uuid(), dto.counter(), image));
   }
 
   private Image resolveImage(UUID imageId) {
