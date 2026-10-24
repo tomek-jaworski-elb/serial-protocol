@@ -83,6 +83,22 @@ public class SyncNodeService implements NodeIdentity {
     repository.save(node);
   }
 
+  /**
+   * Gives this installation a fresh id, for the case a database volume was cloned and two
+   * installations share one: each other's files would otherwise be refused as "our own export".
+   * The row is replaced, so the sync history starts over, but the name stays.
+   */
+  @Transactional
+  public SyncNode renewId() {
+    SyncNode old = current();
+    repository.delete(old);
+    repository.flush();
+    SyncNode fresh = repository.save(new SyncNode(UUID.randomUUID(), old.getName()));
+    nodeId = fresh.getId();
+    LOG.info("Sync node id renewed: {} -> {}", old.getId(), fresh.getId());
+    return fresh;
+  }
+
   @Override
   public UUID currentNodeId() {
     return nodeId;

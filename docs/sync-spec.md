@@ -251,6 +251,15 @@ Details settled with the implementation (`SyncApplyService`):
   backup, then every synchronised table is emptied in reverse order and loaded from the file
   inside one transaction. It never runs the collision analysis; it answers "the last import was a
   mistake". The node keeps its id.
+- Details settled with the implementation (`SyncRestoreService`): only a file whose manifest says
+  `backup=true` is restored (a `.sync` from another node is refused with a pointer to Import), and
+  the schema version must match as for an import. `image_blob` is emptied first and reloaded from
+  `blobs/` and `thumbs/` in full. The restore is recorded as the node's last import (`last_import_file`
+  is the backup's name) so the page shows it; no `.report.json` is written. `ThumbnailBackfill`
+  runs once afterwards. The `before-restore` backup restores the state before the restore, so a
+  restore is itself undoable.
+- **New node id** (`POST /admin/sync/node-id`, `ROLE_ADMIN`, `SyncNodeService.renewId`) replaces the
+  `sync_node` row with a fresh random id and the same name; the export/import history starts over.
 
 ## Properties
 

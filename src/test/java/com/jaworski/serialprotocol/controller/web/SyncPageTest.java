@@ -48,6 +48,68 @@ class SyncPageTest {
     return "Basic " + Base64.getEncoder().encodeToString("user:user".getBytes());
   }
 
+  private static String adminAuth() {
+    return "Basic " + Base64.getEncoder().encodeToString("admin:admin".getBytes());
+  }
+
+  @Test
+  void onlyAnAdminSeesTheRestoreAndNewNodeIdControls() throws Exception {
+    backups.writeBackup("manual");
+    String asUser = mockMvc.perform(get("/sync").header(HttpHeaders.AUTHORIZATION, auth()))
+        .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+    assertThat(asUser).doesNotContain("/admin/sync/").doesNotContain("syncNewNodeIdBtn");
+
+    String asAdmin = mockMvc.perform(get("/sync").header(HttpHeaders.AUTHORIZATION, adminAuth()))
+        .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+    assertThat(asAdmin).contains("action=\"/admin/sync/restore/").contains("id=\"syncNewNodeIdBtn\"")
+        .contains("action=\"/admin/sync/node-id\"");
+  }
+
+  @Test
+  void restoreIsRefusedForAUserAndRunsForAnAdmin() throws Exception {
+    Path backup = backups.writeBackup("manual");
+    String name = backup.getFileName().toString();
+
+    mockMvc.perform(post("/admin/sync/restore/" + name).with(csrf()).header(HttpHeaders.AUTHORIZATION, auth()))
+        .andExpect(status().isForbidden());
+
+    mockMvc.perform(post("/admin/sync/restore/" + name).with(csrf()).header(HttpHeaders.AUTHORIZATION, adminAuth()))
+        .andExpect(redirectedUrl("/sync"))
+        .andExpect(flash().attribute("successMessage", org.hamcrest.Matchers.allOf(
+            org.hamcrest.Matchers.startsWith("Restored " + name + ":"),
+            org.hamcrest.Matchers.containsString("before-restore"))));
+    assertThat(backups.list().getFirst().name()).contains("before-restore");
+
+    mockMvc.perform(post("/admin/sync/restore/missing.bak").with(csrf()).header(HttpHeaders.AUTHORIZATION, adminAuth()))
+        .andExpect(redirectedUrl("/sync"))
+        .andExpect(flash().attributeExists("errorMessage"));
+  }
+
+  @Test
+  void aNewNodeIdIsAnAdminActionThatKeepsTheName() throws Exception {
+    mockMvc.perform(post("/admin/sync/node-id").with(csrf()).header(HttpHeaders.AUTHORIZATION, auth()))
+        .andExpect(status().isForbidden());
+
+    String before = mockMvc.perform(get("/sync").header(HttpHeaders.AUTHORIZATION, auth()))
+        .andReturn().getResponse().getContentAsString();
+    String oldId = between(before, "id=\"syncNodeId\">", "<");
+    String oldName = between(before, "id=\"syncNodeName\">", "<");
+
+    mockMvc.perform(post("/admin/sync/node-id").with(csrf()).header(HttpHeaders.AUTHORIZATION, adminAuth()))
+        .andExpect(redirectedUrl("/sync"))
+        .andExpect(flash().attribute("successMessage", org.hamcrest.Matchers.startsWith("This installation now has node id ")));
+
+    String after = mockMvc.perform(get("/sync").header(HttpHeaders.AUTHORIZATION, auth()))
+        .andReturn().getResponse().getContentAsString();
+    assertThat(between(after, "id=\"syncNodeId\">", "<")).isNotEqualTo(oldId).hasSize(36);
+    assertThat(between(after, "id=\"syncNodeName\">", "<")).isEqualTo(oldName);
+  }
+
+  private static String between(String html, String start, String end) {
+    int from = html.indexOf(start) + start.length();
+    return html.substring(from, html.indexOf(end, from));
+  }
+
   @Test
   void aLoggedInUserSeesTheStatusPageWithoutTheReadOnlyBar() throws Exception {
     String html = mockMvc.perform(get("/sync").header(HttpHeaders.AUTHORIZATION, auth()))

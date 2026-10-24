@@ -2,23 +2,21 @@ package com.jaworski.serialprotocol.service.db.sync;
 
 import com.jaworski.serialprotocol.service.db.sync.SyncAnalysis.RowPlan;
 import com.jaworski.serialprotocol.service.db.sync.SyncAnalyzer.JoinTable;
+import com.jaworski.serialprotocol.service.db.sync.SyncJdbcWriter.Bind;
+import com.jaworski.serialprotocol.service.db.sync.SyncJdbcWriter.Column;
 import com.jaworski.serialprotocol.service.db.sync.SyncTables.SyncTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.sql.DataSource;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,7 +27,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 /**
@@ -91,12 +88,6 @@ public class SyncApplyService {
     });
   }
 
-  private record Column(int type, String typeName) {
-  }
-
-  private record Bind(String column, Object value) {
-  }
-
   /** One transaction's state: what to write, and what the resolutions change first. */
   private final class Run {
 
@@ -114,7 +105,7 @@ public class SyncApplyService {
     private final List<Runnable> localChanges = new ArrayList<>();
     private final List<String> changes = new ArrayList<>();
     private final Map<String, Long> sequences = new LinkedHashMap<>();
-    private final Map<String, Map<String, Column>> columns = new HashMap<>();
+    private final SyncJdbcWriter writer = new SyncJdbcWriter(jdbc);
     private int inserted;
     private int updated;
     private int blobs;
@@ -371,13 +362,7 @@ public class SyncApplyService {
     }
 
     private void insert(SyncTable table, List<Bind> binds) {
-      StringBuilder names = new StringBuilder();
-      StringBuilder marks = new StringBuilder();
-      for (Bind bind : binds) {
-        names.append(names.isEmpty() ? "" : ", ").append(bind.column());
-        marks.append(marks.isEmpty() ? "" : ", ").append('?');
-      }
-      execute(table.name(), "insert into " + table.name() + " (" + names + ") values (" + marks + ")", binds);
+      writer.insert(table, binds);
     }
 
     private void update(SyncTable table, List<Bind> binds) {
@@ -457,23 +442,7 @@ public class SyncApplyService {
         if (present != null && present > 0) {
           continue;
         }
-        ZipEntry data = zip.getEntry(SyncTables.BLOBS_DIR + id + ".bin");
-        ZipEntry thumb = file.thumbIds().contains(id) ? zip.getEntry(SyncTables.THUMBS_DIR + id + ".bin") : null;
-        try (InputStream dataIn = zip.getInputStream(data);
-             InputStream thumbIn = thumb == null ? null : zip.getInputStream(thumb)) {
-          jdbc.update("insert into " + SyncTables.BLOB_TABLE + " (image_uuid, image_data, image_thumb_data)"
-              + " values (?, ?, ?)", ps -> {
-            ps.setObject(1, UUID.fromString(id));
-            ps.setBinaryStream(2, dataIn, data.getSize());
-            if (thumbIn == null) {
-              ps.setNull(3, java.sql.Types.LONGVARBINARY);
-            } else {
-              ps.setBinaryStream(3, thumbIn, thumb.getSize());
-            }
-          });
-        } catch (IOException e) {
-          throw new UncheckedIOException(e);
-        }
+        writer.insertBlob(zip, id, file.thumbIds().contains(id));
         blobs++;
       }
     }
@@ -481,29 +450,11 @@ public class SyncApplyService {
     // ---- JDBC ------------------------------------------------------------------------------
 
     private int execute(String table, String sql, List<Bind> binds) {
-      Map<String, Column> cols = columns(table);
-      return jdbc.update(sql, ps -> {
-        for (int i = 0; i < binds.size(); i++) {
-          Bind bind = binds.get(i);
-          Column column = cols.get(bind.column());
-          if (column == null) {
-            throw new SQLException("Unknown column " + table + "." + bind.column());
-          }
-          SyncValues.bind(ps, i + 1, bind.value(), column.type(), column.typeName());
-        }
-      });
+      return writer.execute(table, sql, binds);
     }
 
     private Map<String, Column> columns(String table) {
-      return columns.computeIfAbsent(table, t -> jdbc.query("select * from " + t + " where 1 = 0",
-          (ResultSetExtractor<Map<String, Column>>) rs -> {
-            ResultSetMetaData meta = rs.getMetaData();
-            Map<String, Column> result = new LinkedHashMap<>();
-            for (int c = 1; c <= meta.getColumnCount(); c++) {
-              result.put(SyncValues.columnName(meta, c), new Column(meta.getColumnType(c), meta.getColumnTypeName(c)));
-            }
-            return result;
-          }));
+      return writer.columns(table);
     }
 
     private static SyncTable table(String name) {
