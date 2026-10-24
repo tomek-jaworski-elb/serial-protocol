@@ -69,6 +69,7 @@ public class SecurityConfig {
                                 .requestMatchers("/name-service").hasRole(SecurityRoles.ROLE_USER.getName())
                                 .requestMatchers("/instructor-service").hasRole(SecurityRoles.ROLE_USER.getName())
                                 .requestMatchers("/api/**").hasRole(SecurityRoles.ROLE_USER.getName())
+                                .requestMatchers("/sync/**").hasRole(SecurityRoles.ROLE_USER.getName())
                                 .requestMatchers("/admin/**").hasRole(SecurityRoles.ROLE_ADMIN.getName())
                                 .anyRequest().permitAll()
                 )

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:text="${@environment.getProperty('spring.application.name')} + ' : Sync'">Serial port server</title>
+    <th:block th:replace="~{fragment::headContent}"></th:block>
+</head>
+<body>
+<header th:replace="~{fragment::header}"></header>
+<div class="container mb-4">
+    <h1 class="h3 mb-3">Synchronisation</h1>
+    <p class="text-muted">
+        The database travels between installations as a file on a USB stick. One installation edits at a time;
+        the others browse until the next file arrives.
+    </p>
+
+    <div class="card mb-3">
+        <div class="card-header">This installation</div>
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-3">Name</dt>
+                <dd class="col-sm-9" id="syncNodeName" th:text="${node.name}">node</dd>
+                <dt class="col-sm-3">Node id</dt>
+                <dd class="col-sm-9"><code id="syncNodeId" th:text="${node.id}">uuid</code></dd>
+                <dt class="col-sm-3">Mode</dt>
+                <dd class="col-sm-9">
+                    <span id="syncMode" th:text="${syncMode}"
+                          th:classappend="${syncReadOnly} ? 'badge text-bg-warning' : 'badge text-bg-success'">ACTIVE</span>
+                    <span class="text-muted small ms-2" th:if="${syncReadOnly}">edits made here are reported as collisions on import</span>
+                    <span class="text-muted small ms-2" th:unless="${syncReadOnly}">this is the installation that edits</span>
+                </dd>
+                <dt class="col-sm-3">Last export</dt>
+                <dd class="col-sm-9" th:text="${node.lastExportAt != null} ? ${#temporals.format(node.lastExportAt, 'dd/MM/yyyy HH:mm')} : 'never'">never</dd>
+                <dt class="col-sm-3">Last import</dt>
+                <dd class="col-sm-9">
+                    <span th:text="${node.lastImportAt != null} ? ${#temporals.format(node.lastImportAt, 'dd/MM/yyyy HH:mm')} : 'never'">never</span>
+                    <span class="text-muted" th:if="${node.lastImportFile != null}" th:text="'(' + ${node.lastImportFile} + ')'"></span>
+                </dd>
+                <dt class="col-sm-3">Backups</dt>
+                <dd class="col-sm-9">
+                    <code th:text="${backupDir}">./sync-backups</code>,
+                    <span th:text="${backupKeep == 0} ? 'kept forever' : 'newest ' + ${backupKeep} + ' kept'"></span>
+                </dd>
+            </dl>
+        </div>
+    </div>
+
+    <p class="text-muted small">Export, import and backups arrive with the next stages of the synchronisation.</p>
+</div>
+<footer th:replace="~{fragment::footer}"></footer>
+</body>
+</html>

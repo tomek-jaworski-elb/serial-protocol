@@ -131,6 +131,14 @@
             </ul>
         </div>
     </div>
+    <!--
+      sync.mode=READ_ONLY (SyncModelAdvice puts syncReadOnly into every model). Edits are not
+      blocked; the next sync import lists them as collisions, so the bar says so on every page.
+    -->
+    <div th:if="${syncReadOnly}" id="syncReadOnlyBar" class="alert alert-warning rounded-0 mb-0 py-2 text-center small" role="alert">
+        <strong>Read-only copy.</strong> This computer is configured as read-only; changes made here will be
+        reported as collisions on the next import. <a th:href="@{/sync}" class="alert-link">Synchronisation</a>
+    </div>
 </header>
 
 <footer th:fragment="footer" class="footer p-3">
@@ -182,6 +190,10 @@
     </li>
     <li sec:authorize="isAuthenticated()">
         <a class="dropdown-item" th:classappend="${name == 'instructor-service'} ? 'active'" th:href="@{/instructor-service}">Instructors</a>
+    </li>
+    <li sec:authorize="isAuthenticated()"><hr class="dropdown-divider"/></li>
+    <li sec:authorize="isAuthenticated()">
+        <a class="dropdown-item" th:classappend="${name == 'sync'} ? 'active'" th:href="@{/sync}">Sync</a>
     </li>
 </th:block>
 
@@ -295,6 +307,15 @@
                     <span th:text="${successMessage}"></span>
                 </div>
                 <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+        <div th:if="${syncReadOnly and successMessage != null}" id="syncReadOnlyToast" class="toast align-items-center text-bg-warning border-0"
+             role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="12000">
+            <div class="d-flex">
+                <div class="toast-body">
+                    Saved on a read-only copy: this change will be reported as a collision on the next sync import.
+                </div>
+                <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
             </div>
         </div>
         <div th:if="${errorMessage}" id="errorToast" class="toast align-items-center text-bg-danger border-0"
