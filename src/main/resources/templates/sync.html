@@ -44,7 +44,51 @@
         </div>
     </div>
 
-    <p class="text-muted small">Export, import and backups arrive with the next stages of the synchronisation.</p>
+    <div class="card mb-3">
+        <div class="card-header">Export</div>
+        <div class="card-body">
+            <p class="mb-2">Writes the whole database into one <code>.sync</code> file for the USB stick. The other
+                installations load it with <em>Import</em>.</p>
+            <div id="syncExportWarning" class="alert alert-warning py-2" th:if="${syncReadOnly}">
+                This is a read-only copy: a file exported here carries nothing the editing installation does not
+                already have, and any edits made here are reported as collisions when it is imported.
+            </div>
+            <form th:action="@{/sync/export}" method="post" class="d-inline">
+                <button id="syncExportBtn" type="submit" class="btn btn-primary btn-sm">Export sync file</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Backups</div>
+        <div class="card-body">
+            <p class="mb-2">A backup is written before every import and restore. Kept in
+                <code th:text="${backupDir}">./sync-backups</code>,
+                <span th:text="${backupKeep == 0} ? 'all of them' : 'the newest ' + ${backupKeep}"></span>.</p>
+            <form th:action="@{/sync/backup}" method="post" class="mb-3">
+                <button id="syncBackupBtn" type="submit" class="btn btn-outline-secondary btn-sm">Back up now</button>
+            </form>
+            <p class="text-muted small mb-0" th:if="${#lists.isEmpty(backups)}">No backups yet.</p>
+            <table class="table table-sm table-hover mb-0" id="syncBackupTable" th:unless="${#lists.isEmpty(backups)}">
+                <thead>
+                <tr>
+                    <th scope="col">File</th>
+                    <th scope="col" class="text-end">Size</th>
+                    <th scope="col">Written</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="b : ${backups}">
+                    <td><a th:href="@{/sync/backup/{file}(file=${b.name})}" th:text="${b.name}">node-20260101-120000-manual.bak</a></td>
+                    <td class="text-end" th:text="${#numbers.formatDecimal(b.size / 1024.0, 1, 'DEFAULT', 1, 'POINT')} + ' KB'">12.3 KB</td>
+                    <td th:text="${#temporals.format(b.modified, 'dd/MM/yyyy HH:mm:ss')}">01/01/2026 12:00:00</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <p class="text-muted small">Import arrives with the next stage of the synchronisation.</p>
 </div>
 <footer th:replace="~{fragment::footer}"></footer>
 </body>

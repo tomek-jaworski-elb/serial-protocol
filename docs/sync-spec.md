@@ -76,7 +76,11 @@ Synchronised tables, in foreign-key order (import inserts in this order, deletes
 Rows are exported and imported **through JDBC, never through Hibernate**: the file carries
 `version`, `created_at`, `updated_at`, `deleted_at` and `origin_node` verbatim, and an entity save
 would overwrite all of them. Values are written as JSON strings for UUID, timestamps (ISO-8601
-UTC, microseconds) and dates, numbers for the rest, `null` for NULL. Join-table rows have no audit
+UTC with six fraction digits, `2026-01-02T03:04:05.123456Z`) and dates, Base64 strings for the
+in-row binary columns of the legacy tables (`student_photo`, `instructor_photo1..4`), numbers
+for the rest, `null` for NULL. The encoding follows the JDBC column type, not the Java class the
+driver returns, so H2 and MariaDB write the same text; a UUID column is told apart by its type
+name because H2 reports it as BINARY(16). Join-table rows have no audit
 columns; they belong to their owning row (a course's crew, a person's photo set) and are replaced
 together with it.
 
@@ -126,8 +130,8 @@ changing the property (or the environment variable) and restarting; there is no 
 ## Export
 
 `GET /sync` shows node id, name, mode, last export, last import and the backup list.
-`POST /sync/export` streams the file as a download and sets `last_export_at`
-**after** the stream completed without error. The export reads inside one `REPEATABLE READ`
+`POST /sync/export` streams the file as a download and sets `last_export_at` and
+`last_sync_at` **after** the stream completed without error. The export reads inside one `REPEATABLE READ`
 transaction so the file is a consistent snapshot even if someone saves during the download.
 
 ## Import
@@ -218,7 +222,10 @@ triggered once afterwards for rows that came without one.
 
 - `SyncBackupService.writeBackup(reason)` runs the exporter into
   `${sync.backup-dir}/<node-name>-<yyyyMMdd-HHmmss>-<reason>.bak` (`reason` ∈ `before-import`,
-  `before-restore`, `manual`), then deletes the oldest files beyond `sync.backup-keep`.
+  `before-restore`, `manual`), then deletes the oldest files beyond `sync.backup-keep`
+  (`0` keeps every file). The exporter writes to a `.part` name and renames when complete, so a
+  crash never leaves a half file that looks restorable; a second backup within the same second
+  gets a `-2`, `-3` suffix instead of overwriting. Only `.bak` files in the directory count.
 - Called before every import apply and every restore; also from a "Back up now" button.
 - `/sync` lists the backups with size and date and offers **download** to everyone and
   **restore** to admins.

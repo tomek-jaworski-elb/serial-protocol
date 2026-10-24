@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -57,8 +58,20 @@ public class SyncNodeService implements NodeIdentity {
 
   @Transactional(readOnly = true)
   public SyncNode current() {
-    return repository.findFirstByOrderByIdAsc()
+    SyncNode node = repository.findFirstByOrderByIdAsc()
         .orElseThrow(() -> new IllegalStateException("sync_node row is missing; ensureNode() has not run"));
+    // Keeps the cache honest when the row was replaced underneath (a new node id, or a test
+    // context that recreated the shared in-memory schema).
+    nodeId = node.getId();
+    return node;
+  }
+
+  /** Records a completed export: {@code last_export_at} and, since it is the newer exchange, {@code last_sync_at}. */
+  public void markExported(Instant at) {
+    SyncNode node = current();
+    node.setLastExportAt(at);
+    node.setLastSyncAt(at);
+    repository.save(node);
   }
 
   @Override
