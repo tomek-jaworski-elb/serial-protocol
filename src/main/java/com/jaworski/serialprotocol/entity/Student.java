@@ -1,5 +1,6 @@
 package com.jaworski.serialprotocol.entity;
 
+import com.jaworski.serialprotocol.entity.custom.Auditable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -12,15 +13,25 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.util.Date;
 
+/**
+ * Legacy record fed by the external REST client ({@code /api/v1/students}). Kept, so it carries
+ * the same version, timestamps and tombstone as the custom domain. The {@code int} id is
+ * assigned by the sending system and is therefore unique by origin, which is what a merge needs.
+ */
 @Entity
 @Table(name = Student.TABLE_NAME)
+@SQLRestriction("deleted_at is null")
+@SQLDelete(sql = "UPDATE student SET deleted_at = CURRENT_TIMESTAMP(6) WHERE student_id = ? AND version = ?")
 @Data
+@EqualsAndHashCode(callSuper = false)
 @NoArgsConstructor
 @AllArgsConstructor
-public class Student {
+public class Student extends Auditable {
 
     public static final String TABLE_NAME = "student";
 

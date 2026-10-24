@@ -2,8 +2,6 @@ package com.jaworski.serialprotocol.rest;
 
 import com.jaworski.serialprotocol.dto.InstructorDto;
 import com.jaworski.serialprotocol.dto.StudentDTO;
-import com.jaworski.serialprotocol.entity.Instructor;
-import com.jaworski.serialprotocol.entity.Student;
 import com.jaworski.serialprotocol.mappers.InstructorMapper;
 import com.jaworski.serialprotocol.mappers.StudentMapper;
 import com.jaworski.serialprotocol.rest.paths.Paths;
@@ -14,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,14 +19,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Legacy import endpoints. Access is governed by the {@code /api/**} rule in {@code SecurityConfig};
+ * the class used to carry a {@code @PreAuthorize} whose expression was malformed and only ever
+ * harmless because method security is not enabled anywhere.
+ */
 @RestController
 @RequestMapping(Paths.ROOT)
 @RequiredArgsConstructor
-@PreAuthorize(value = "hasRole(hasRole(T(com.jaworski.serialprotocol.authorization.SecurityRoles).ROLE_USER.getRole()) or" +
-        " hasRole(T(com.jaworski.serialprotocol.authorization.SecurityRoles).ROLE_USER.getName() + '_T')")
 public class RestStudent {
 
     private static final Logger LOG = LoggerFactory.getLogger(RestStudent.class);
@@ -39,36 +38,16 @@ public class RestStudent {
     @PostMapping(path = Paths.STUDENT, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public List<Integer> saveStudent(@RequestBody(required = true) List<StudentDTO> studentDTOS) {
         LOG.info("Received student collection size {}", studentDTOS.size());
-        List<Integer> ids = new ArrayList<>();
-        studentDTOS
-                .forEach(studentDTO -> {
-                    Student studentById = studentService.getStudentById(studentDTO.getId());
-                    if (studentById == null) {
-                        Student student = StudentMapper.mapToEntity(studentDTO);
-                        Student save = studentService.save(student);
-                        ids.add(save.getId());
-                        LOG.info("Saved student {}", student);
-                    }
-                });
+        List<Integer> ids = studentService.saveNew(studentDTOS.stream().map(StudentMapper::mapToEntity).toList());
+        LOG.info("Saved students {}", ids);
         return ids;
     }
 
     @PostMapping(path = Paths.INSTRUCTOR, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public List<Integer> saveInstructors(@RequestBody(required = true) List<InstructorDto> instructorsDTO) {
         LOG.info("Received instructor collection size {}", instructorsDTO.size());
-        List<Integer> result = new ArrayList<>();
-        instructorsDTO.stream()
-                .map(InstructorMapper::mapToEntity)
-                .filter(instructor -> instructorService.findByNameAndSurname(instructor).isEmpty())
-                .forEach(instructor -> {
-                    try {
-                        Instructor save = instructorService.save(instructor);
-                        result.add(save.getNo());
-                        LOG.info("Saved instructor {}", save.getNo());
-                    } catch (Exception e) {
-                        LOG.error("Error saving instructor {}", instructor.toString(), e);
-                    }
-                });
+        List<Integer> result = instructorService.saveNew(instructorsDTO.stream().map(InstructorMapper::mapToEntity).toList());
+        LOG.info("Saved instructors {}", result);
         return result;
     }
 
