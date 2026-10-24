@@ -5,7 +5,13 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Data;
+import jakarta.persistence.PostLoad;
+import jakarta.persistence.PostPersist;
+import jakarta.persistence.Transient;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
+import org.springframework.data.domain.Persistable;
 
 /**
  * The next free value of one human-visible business number (participant id, course id,
@@ -21,7 +27,7 @@ import lombok.NoArgsConstructor;
 @Table(name = IdSequence.TABLE_NAME)
 @Data
 @NoArgsConstructor
-public class IdSequence {
+public class IdSequence implements Persistable<String> {
 
   public static final String TABLE_NAME = "id_sequence";
 
@@ -35,5 +41,32 @@ public class IdSequence {
   public IdSequence(String name, long next) {
     this.name = name;
     this.next = next;
+  }
+
+  /**
+   * Spring Data cannot tell a new row from a detached one when the id is assigned and there is
+   * no version, so save() would merge: a SELECT that never matches plus a copy of the whole
+   * state. Saying "new until persisted or loaded" turns that into a plain INSERT.
+   */
+  @Transient
+  @EqualsAndHashCode.Exclude
+  @ToString.Exclude
+  private boolean persisted;
+
+  /** The name is the key; Persistable asks for it under this name. */
+  @Override
+  public String getId() {
+    return name;
+  }
+
+  @Override
+  public boolean isNew() {
+    return !persisted;
+  }
+
+  @PostPersist
+  @PostLoad
+  void markPersisted() {
+    persisted = true;
   }
 }

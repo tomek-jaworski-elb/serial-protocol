@@ -1,5 +1,6 @@
 package com.jaworski.serialprotocol.service.db.custom;
 
+import com.jaworski.serialprotocol.dto.custom.CourseCounterDTO;
 import com.jaworski.serialprotocol.dto.custom.CourseTypeDTO;
 import com.jaworski.serialprotocol.dto.custom.CoursesDTO;
 import com.jaworski.serialprotocol.dto.custom.ParticipantDTO;
@@ -30,12 +31,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @DataJpaTest
 @Import({IdAllocator.class, ParticipantService.class, CoursesService.class, CourseTypeService.class,
-    TrainerService.class, LecturerService.class, ImageService.class})
+    TrainerService.class, LecturerService.class, ImageService.class, CourseCounterService.class})
 class AuditAndSoftDeleteTest {
 
     @Autowired private ParticipantService participantService;
     @Autowired private CoursesService coursesService;
     @Autowired private CourseTypeService courseTypeService;
+    @Autowired private CourseCounterService courseCounterService;
     @Autowired private ParticipantRepository participantRepository;
     @Autowired private EntityManager entityManager;
 
@@ -120,6 +122,19 @@ class AuditAndSoftDeleteTest {
 
         saved.setEndDate(LocalDate.of(2026, 3, 4));
         assertThrows(OptimisticLockingFailureException.class, () -> coursesService.update(saved));
+    }
+
+    /** The upload-aware overload rebuilds the record DTO; it must carry the version along. */
+    @Test
+    void theCounterFormPathCarriesTheVersion() {
+        CourseCounterDTO saved = courseCounterService.save(new CourseCounterDTO(null, 9_900_001L, null));
+        entityManager.flush();
+
+        courseCounterService.update(new CourseCounterDTO(saved.uuid(), 9_900_002L, null, saved.version()), null, false);
+        entityManager.flush();
+
+        CourseCounterDTO stale = new CourseCounterDTO(saved.uuid(), 9_900_003L, null, saved.version());
+        assertThrows(OptimisticLockingFailureException.class, () -> courseCounterService.update(stale, null, false));
     }
 
     @Test

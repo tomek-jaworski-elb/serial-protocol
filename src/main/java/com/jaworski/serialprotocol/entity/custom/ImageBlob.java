@@ -7,8 +7,13 @@ import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import jakarta.persistence.PostLoad;
+import jakarta.persistence.PostPersist;
+import jakarta.persistence.Transient;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.springframework.data.domain.Persistable;
 import org.hibernate.annotations.DynamicUpdate;
 
 import java.util.UUID;
@@ -31,7 +36,7 @@ import java.util.UUID;
  */
 @DynamicUpdate
 @Table(name = ImageBlob.TABLE_NAME)
-public class ImageBlob {
+public class ImageBlob implements Persistable<UUID> {
 
   public static final String TABLE_NAME = "image_blob";
 
@@ -59,5 +64,26 @@ public class ImageBlob {
   public ImageBlob(UUID id, byte[] data) {
     this.id = id;
     this.data = data;
+  }
+
+  /**
+   * Spring Data cannot tell a new row from a detached one when the id is assigned and there is
+   * no version, so save() would merge: a SELECT that never matches plus a copy of the whole
+   * state. Saying "new until persisted or loaded" turns that into a plain INSERT.
+   */
+  @Transient
+  @EqualsAndHashCode.Exclude
+  @ToString.Exclude
+  private boolean persisted;
+
+  @Override
+  public boolean isNew() {
+    return !persisted;
+  }
+
+  @PostPersist
+  @PostLoad
+  void markPersisted() {
+    persisted = true;
   }
 }

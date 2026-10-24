@@ -54,7 +54,9 @@ public class InstructorService {
     public List<Integer> saveNew(Collection<Instructor> instructors) {
         List<Integer> saved = new ArrayList<>();
         for (Instructor instructor : instructors) {
-            if (findByNameAndSurname(instructor).isEmpty()) {
+            // Known by name among the live rows, or by number among all rows including tombstones:
+            // the number is the primary key and a re-sent deleted instructor must not break the batch.
+            if (findByNameAndSurname(instructor).isEmpty() && instructorRepository.countAnyByNo(instructor.getNo()) == 0) {
                 saved.add(instructorRepository.save(instructor).getNo());
             }
         }

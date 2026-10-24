@@ -3,9 +3,12 @@ package com.jaworski.serialprotocol.service.db.custom;
 import com.jaworski.serialprotocol.entity.custom.IdSequence;
 import com.jaworski.serialprotocol.repository.custom.IdSequenceRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.function.LongSupplier;
 
 /**
@@ -29,6 +32,22 @@ public class IdAllocator {
   public static final String COURSE_COUNTER = "course_counter";
 
   private final IdSequenceRepository repository;
+
+  /**
+   * Makes sure the three sequence rows exist before anybody allocates.
+   *
+   * <p>V5 seeds them in MariaDB; this covers the H2 profile and an installation whose migration
+   * has not run. Without a row there is nothing to lock, and two first allocations would both
+   * try to insert it. Starting at 1 is safe because {@link #next} consults the highest value in use.</p>
+   */
+  @EventListener(ApplicationReadyEvent.class)
+  public void ensureSequences() {
+    for (String sequence : List.of(PARTICIPANT, COURSES, COURSE_COUNTER)) {
+      if (!repository.existsById(sequence)) {
+        repository.save(new IdSequence(sequence, 1));
+      }
+    }
+  }
 
   /**
    * Reserves the next free value of {@code sequence}.

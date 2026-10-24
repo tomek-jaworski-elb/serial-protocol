@@ -166,7 +166,7 @@ Full reference: [`docs/custom-domain-analysis.md`](docs/custom-domain-analysis.m
 
 Entity hierarchy:
 ```
-Auditable (@MappedSuperclass) — version (@Version), createdAt, updatedAt; every entity below extends it and is @SoftDelete(deleted_at)
+Auditable (@MappedSuperclass) — version (@Version), createdAt, updatedAt, deletedAt; every entity below extends it and carries @SQLRestriction("deleted_at is null") + an @SQLDelete UPDATE (never Hibernate's @SoftDelete)
 PersonBase (@MappedSuperclass, extends Auditable) — uuid (@Id), name, surname, notes, nickname, email, phoneNumber, address
   ├── Lecturer   @ManyToMany images + primaryImageUuid
   ├── Trainer    @ManyToMany images + primaryImageUuid
@@ -191,8 +191,8 @@ Key conventions:
 - `CoursesMapper.mapToEntity()` is deprecated; use `CoursesService.buildCourses()` with `repository.getReferenceById()`.
 - `CoursesDTO` has dual counter fields: `courseCounterUuid` (read-only, set by mapper) and `counter` (Long, from forms). `resolveCourseCounter()` prefers UUID.
 - Participant deletion is guarded: throws `IllegalStateException` if linked courses exist.
-- **Deletes are tombstones** (`V7__audit_columns.sql`): `deleteById` becomes `UPDATE … SET deleted_at`, rows never leave the table, and `count()`/`existsById`/`findById` no longer see them. Soft-deleted images keep their blobs; a purge is a separate, later decision. Updates are load-and-copy everywhere (`ParticipantService.updateByUuid`, `CoursesService.applyTo`, `CourseTypeService.update`), never a merge of a detached DTO-built entity, so the version check and a "not found" for a deleted record both work. Every DTO carries `version`; the templates post it from `data-version` into a hidden input, and the controllers turn `OptimisticLockingFailureException` into a toast.
-- `CourseType.code` is unique at DB level and checked in `CourseTypeService` through `existsByCode()` / `existsByCodeAndIdNot()`.
+- **Deletes are tombstones** (`V7__audit_columns.sql`): `deleteById` becomes `UPDATE … SET deleted_at`, rows never leave the table, and `count()`/`existsById`/`findById` no longer see them. Soft-deleted images keep their blobs; a purge is a separate, later decision. **Join-table rows are hard-deleted**: soft-deleting a course removes its `courses_trainers`/`courses_lecturers`/`courses_technicians` rows, and dropping a photo from a person removes the `*_image` row. Chosen deliberately (Hibernate's `@SoftDelete` tombstoned them and then collided on re-add); a future merge therefore treats a course's crew and a person's photo set as part of the owning row, versioned by it, not as rows of their own. Updates are load-and-copy everywhere (`ParticipantService.updateByUuid`, `CoursesService.applyTo`, `CourseTypeService.update`), never a merge of a detached DTO-built entity, so the version check and a "not found" for a deleted record both work. Every DTO carries `version`; the templates post it from `data-version` into a hidden input, and the controllers turn `OptimisticLockingFailureException` into a toast.
+- `CourseType.code` is unique at DB level and pre-checked in `CourseTypeService` through the native, case-insensitive `countWithCode()` / `countWithCodeExcludingId()` (native so a tombstoned type's code still counts as taken).
 - `CourseCounterDTO` is a Java `record` (Spring 6.1+ constructor binding required).
 
 ### Images and avatars

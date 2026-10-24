@@ -73,6 +73,31 @@ class LegacyAuditTest {
     }
 
     @Test
+    void aReSentStudentThatWasDeletedHereIsSkipped_notReinserted() {
+        Student student = new Student();
+        student.setId(77);
+        student.setName("Gone");
+        student.setLastName("Student");
+        studentService.save(student);
+        entityManager.flush();
+        entityManager.remove(entityManager.find(Student.class, 77));
+        entityManager.flush();
+        entityManager.clear();
+
+        Student again = new Student();
+        again.setId(77);
+        again.setName("Gone");
+        again.setLastName("Student");
+        Student fresh = new Student();
+        fresh.setId(78);
+        fresh.setName("New");
+        fresh.setLastName("Student");
+
+        assertEquals(List.of(78), studentService.saveNew(List.of(again, fresh)),
+            "the tombstone still owns id 77, so only 78 is stored and the batch succeeds");
+    }
+
+    @Test
     void theImportDeduplicatesInstructorsByName_andAuditsThem() {
         Instructor first = instructor(10, "Anna", "Nowak");
         Instructor sameName = instructor(11, "Anna", "Nowak");

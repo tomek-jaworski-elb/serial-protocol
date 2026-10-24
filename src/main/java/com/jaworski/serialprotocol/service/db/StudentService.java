@@ -36,12 +36,17 @@ public class StudentService implements Repository<Student> {
      * <p>The REST endpoint used to look each one up and save it in separate transactions, so a
      * batch could be half-applied. Now either every new student of the batch is stored or none.</p>
      *
+     * <p>"Known" means any row with that id, including a tombstoned one: the sending system owns
+     * the ids and may re-send a student this installation has deleted.</p>
+     *
      * @return the ids that were stored
      */
     public List<Integer> saveNew(Collection<Student> students) {
         List<Integer> saved = new ArrayList<>();
         for (Student student : students) {
-            if (getStudentById(student.getId()) == null) {
+            // Native count: a soft-deleted student is hidden from getStudentById but still owns
+            // its id, and re-inserting it would fail the whole batch on the primary key.
+            if (studentRepository.countAnyById(student.getId()) == 0) {
                 saved.add(studentRepository.save(student).getId());
             }
         }

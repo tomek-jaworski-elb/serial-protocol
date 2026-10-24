@@ -73,7 +73,7 @@ public class CourseCounterService {
     UUID image = upload == null
         ? dto.imageUuid()
         : imageService.saveImage(upload.data(), upload.contentType()).getId();
-    return save(new CourseCounterDTO(dto.uuid(), dto.counter(), image));
+    return save(new CourseCounterDTO(dto.uuid(), dto.counter(), image, dto.version()));
   }
 
   /**
@@ -95,7 +95,7 @@ public class CourseCounterService {
           .orElseThrow(() -> new IllegalArgumentException("CourseCounter with id " + dto.uuid() + " not found"));
       image = existing.getImage() == null ? null : existing.getImage().getId();
     }
-    return update(new CourseCounterDTO(dto.uuid(), dto.counter(), image));
+    return update(new CourseCounterDTO(dto.uuid(), dto.counter(), image, dto.version()));
   }
 
   private Image resolveImage(UUID imageId) {

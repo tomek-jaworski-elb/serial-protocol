@@ -374,29 +374,6 @@ public class PdfReportController {
         return result;
     }
 
-    /**
-     * Parses a comma-separated string of {@code Long} IDs.
-     *
-     * @param raw raw request parameter value
-     * @return list of parsed Longs (empty list when {@code raw} is blank)
-     * @throws IllegalArgumentException if any token is not a valid long
-     */
-    private static List<Long> parseLongs(String raw) {
-        if (raw == null || raw.isBlank()) {
-            return List.of();
-        }
-        List<Long> result = new ArrayList<>();
-        for (String token : raw.split(",")) {
-            String trimmed = token.trim();
-            if (trimmed.isBlank()) continue;
-            try {
-                result.add(Long.parseLong(trimmed));
-            } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("'" + trimmed + "' is not a valid numeric ID", e);
-            }
-        }
-        return result;
-    }
 
     /** Returns {@code true} when the list exceeds the configured max-records limit. */
     private boolean exceedsMax(List<?> list) {

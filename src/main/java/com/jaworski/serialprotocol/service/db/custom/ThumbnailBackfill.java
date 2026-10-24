@@ -33,10 +33,16 @@ public class ThumbnailBackfill {
     this.onStart = onStart;
   }
 
+  /**
+   * Off the start-up thread: SpringApplication.run() waits for this listener, and the serial
+   * ports are opened only after it returns, so a long rebuild would delay frame ingestion.
+   */
   @EventListener(ApplicationReadyEvent.class)
   public void onApplicationReady() {
     if (onStart) {
-      refreshStale();
+      Thread thread = new Thread(this::refreshStale, "thumbnail-backfill");
+      thread.setDaemon(true);
+      thread.start();
     }
   }
 
@@ -49,8 +55,13 @@ public class ThumbnailBackfill {
     LOG.info("Rebuilding {} thumbnail(s) for generator version {}", stale.size(), ThumbnailGenerator.VERSION);
     int done = 0;
     for (UUID id : stale) {
-      if (imageService.refreshThumbnail(id)) {
-        done++;
+      try {
+        if (imageService.refreshThumbnail(id)) {
+          done++;
+        }
+      } catch (RuntimeException e) {
+        // One bad row (a blob missing after a partial migration, say) must not stop the rest.
+        LOG.warn("Thumbnail rebuild failed for image {}", id, e);
       }
     }
     LOG.info("Thumbnail backfill finished: {} of {} rebuilt", done, stale.size());
