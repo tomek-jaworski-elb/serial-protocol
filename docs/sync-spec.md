@@ -302,6 +302,21 @@ the same message the container used to produce.
   reproduces its manifest and row shapes (the contract).
 - `SyncMariaDbTest` (Testcontainers, skipped without Docker): the round trip on MariaDB, because
   UUID and timestamp types come back through JDBC differently from H2.
+- Details settled with the implementation (stage 6): `SyncMariaDbTest` runs the Flyway schema on
+  `mariadb:11.8`, seeds the fixture plus 120 photos of 64 KB, exports, imports into the emptied
+  database, then damages rows and restores the backup; every row and every photo must come back
+  byte for byte. Hibernate stores an `Instant` audit column as the **UTC wall-clock time** in
+  `DATETIME(6)` on MariaDB (and as an offset value in H2's `TIMESTAMP WITH TIME ZONE`), so the
+  exporter's read through a UTC calendar is the exact inverse on both databases and a file
+  carries the same `...Z` text whichever database and JVM time zone wrote it. The fixture binds
+  its seed instants the same way (`SyncFixture.update`); plain `setObject(OffsetDateTime)` through
+  the MariaDB driver would store the *local* wall time and shift every audit column by the zone
+  offset. Only `deleted_at` is set by the database itself (`CURRENT_TIMESTAMP(6)` in `@SQLDelete`),
+  so it follows the server's session time zone; the Docker image runs in UTC. The reader keeps
+  table rows in memory and streams blobs through the work directory, which fits a database an
+  order of magnitude larger than today's; `JAVA_TOOL_OPTIONS` in docker-compose stays at 512 MB.
+  The backup directory in docker-compose is the named volume `server-sync-backups` mounted on
+  `/app/sync-backups` (`SYNC_BACKUP_DIR`), created in the image so that it belongs to `aisuser`.
 - `SyncPageTest`: the page as `user`, the mode bar, restore refused for `user` and allowed for
   `admin`, the two-step import.
 - `ListPagesLoadNoImageBlobsTest` keeps guarding that none of this makes a list load blobs.
