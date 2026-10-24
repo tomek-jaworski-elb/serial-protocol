@@ -16,6 +16,7 @@ import com.jaworski.serialprotocol.service.db.custom.ParticipantService;
 import com.jaworski.serialprotocol.service.db.custom.TechnicianService;
 import com.jaworski.serialprotocol.service.db.custom.TrainerService;
 import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Valid;
 import org.springframework.dao.OptimisticLockingFailureException;
 import com.jaworski.serialprotocol.service.WebSocketPublisher;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.InitBinder;
@@ -102,7 +105,11 @@ public class CustomDBController {
   }
 
   @PostMapping("/courses-service/add")
-  public String addCourse(@ModelAttribute CoursesDTO coursesDTO, RedirectAttributes redirectAttributes) {
+  public String addCourse(@Valid @ModelAttribute CoursesDTO coursesDTO, BindingResult binding, RedirectAttributes redirectAttributes) {
+    if (binding.hasErrors()) {
+      redirectAttributes.addFlashAttribute("errorMessage", validationMessage(binding));
+      return "redirect:/courses-service";
+    }
     try {
       coursesDTO.setUuid(null);
       coursesService.save(coursesDTO);
@@ -118,7 +125,11 @@ public class CustomDBController {
   }
 
   @PostMapping("/courses-service/update")
-  public String updateCourse(@ModelAttribute CoursesDTO coursesDTO, RedirectAttributes redirectAttributes) {
+  public String updateCourse(@Valid @ModelAttribute CoursesDTO coursesDTO, BindingResult binding, RedirectAttributes redirectAttributes) {
+    if (binding.hasErrors()) {
+      redirectAttributes.addFlashAttribute("errorMessage", validationMessage(binding));
+      return "redirect:/courses-service";
+    }
     try {
       if (coursesDTO.getUuid() == null) {
         throw new IllegalArgumentException("UUID is required for update");
@@ -151,7 +162,11 @@ public class CustomDBController {
   }
 
   @PostMapping("/courses-service/add-participant")
-  public String addParticipantToCourse(@ModelAttribute CoursesDTO coursesDTO, RedirectAttributes redirectAttributes) {
+  public String addParticipantToCourse(@Valid @ModelAttribute CoursesDTO coursesDTO, BindingResult binding, RedirectAttributes redirectAttributes) {
+    if (binding.hasErrors()) {
+      redirectAttributes.addFlashAttribute("errorMessage", validationMessage(binding));
+      return "redirect:/participant-service";
+    }
     try {
       coursesDTO.setUuid(null);
       coursesService.save(coursesDTO);
@@ -182,9 +197,13 @@ public class CustomDBController {
   }
 
   @PostMapping("/trainer-service/add")
-  public String addTrainer(@ModelAttribute TrainerDTO trainerDTO,
+  public String addTrainer(@Valid @ModelAttribute TrainerDTO trainerDTO, BindingResult binding,
                            @RequestParam(value = "imageFiles", required = false) MultipartFile[] imageFiles,
                            RedirectAttributes redirectAttributes) {
+    if (binding.hasErrors()) {
+      redirectAttributes.addFlashAttribute("errorMessage", validationMessage(binding));
+      return "redirect:/trainer-service";
+    }
     try {
       trainerDTO.setId(null);
       trainerService.save(trainerDTO, MultipartImages.read(imageFiles));
@@ -200,10 +219,14 @@ public class CustomDBController {
   }
 
   @PostMapping("/trainer-service/update")
-  public String updateTrainer(@ModelAttribute TrainerDTO trainerDTO,
+  public String updateTrainer(@Valid @ModelAttribute TrainerDTO trainerDTO, BindingResult binding,
                               @RequestParam(value = "imageFiles", required = false) MultipartFile[] imageFiles,
                               @RequestParam(value = "removeImageUuids", required = false) List<UUID> removeImageUuids,
                               RedirectAttributes redirectAttributes) {
+    if (binding.hasErrors()) {
+      redirectAttributes.addFlashAttribute("errorMessage", validationMessage(binding));
+      return "redirect:/trainer-service";
+    }
     try {
       if (trainerDTO.getId() == null) {
         throw new IllegalArgumentException("Trainer id is required for update");
@@ -254,9 +277,13 @@ public class CustomDBController {
   }
 
   @PostMapping("/lecturer-service/add")
-  public String addLecturer(@ModelAttribute LecturerDTO lecturerDTO,
+  public String addLecturer(@Valid @ModelAttribute LecturerDTO lecturerDTO, BindingResult binding,
                             @RequestParam(value = "imageFiles", required = false) MultipartFile[] imageFiles,
                             RedirectAttributes redirectAttributes) {
+    if (binding.hasErrors()) {
+      redirectAttributes.addFlashAttribute("errorMessage", validationMessage(binding));
+      return "redirect:/lecturer-service";
+    }
     try {
       lecturerDTO.setId(null);
       lecturerService.save(lecturerDTO, MultipartImages.read(imageFiles));
@@ -272,10 +299,14 @@ public class CustomDBController {
   }
 
   @PostMapping("/lecturer-service/update")
-  public String updateLecturer(@ModelAttribute LecturerDTO lecturerDTO,
+  public String updateLecturer(@Valid @ModelAttribute LecturerDTO lecturerDTO, BindingResult binding,
                                @RequestParam(value = "imageFiles", required = false) MultipartFile[] imageFiles,
                                @RequestParam(value = "removeImageUuids", required = false) List<UUID> removeImageUuids,
                                RedirectAttributes redirectAttributes) {
+    if (binding.hasErrors()) {
+      redirectAttributes.addFlashAttribute("errorMessage", validationMessage(binding));
+      return "redirect:/lecturer-service";
+    }
     try {
       if (lecturerDTO.getId() == null) {
         throw new IllegalArgumentException("Lecturer id is required for update");
@@ -326,9 +357,13 @@ public class CustomDBController {
   }
 
   @PostMapping("/technician-service/add")
-  public String addTechnician(@ModelAttribute TechnicianDTO technicianDTO,
+  public String addTechnician(@Valid @ModelAttribute TechnicianDTO technicianDTO, BindingResult binding,
                               @RequestParam(value = "imageFiles", required = false) MultipartFile[] imageFiles,
                               RedirectAttributes redirectAttributes) {
+    if (binding.hasErrors()) {
+      redirectAttributes.addFlashAttribute("errorMessage", validationMessage(binding));
+      return "redirect:/technician-service";
+    }
     try {
       technicianDTO.setId(null);
       technicianService.save(technicianDTO, MultipartImages.read(imageFiles));
@@ -344,10 +379,14 @@ public class CustomDBController {
   }
 
   @PostMapping("/technician-service/update")
-  public String updateTechnician(@ModelAttribute TechnicianDTO technicianDTO,
+  public String updateTechnician(@Valid @ModelAttribute TechnicianDTO technicianDTO, BindingResult binding,
                                  @RequestParam(value = "imageFiles", required = false) MultipartFile[] imageFiles,
                                  @RequestParam(value = "removeImageUuids", required = false) List<UUID> removeImageUuids,
                                  RedirectAttributes redirectAttributes) {
+    if (binding.hasErrors()) {
+      redirectAttributes.addFlashAttribute("errorMessage", validationMessage(binding));
+      return "redirect:/technician-service";
+    }
     try {
       if (technicianDTO.getId() == null) {
         throw new IllegalArgumentException("Technician id is required for update");
@@ -398,7 +437,11 @@ public class CustomDBController {
   }
 
   @PostMapping("/course-type-service/add")
-  public String addCourseType(@ModelAttribute CourseTypeDTO courseTypeDTO, RedirectAttributes redirectAttributes) {
+  public String addCourseType(@Valid @ModelAttribute CourseTypeDTO courseTypeDTO, BindingResult binding, RedirectAttributes redirectAttributes) {
+    if (binding.hasErrors()) {
+      redirectAttributes.addFlashAttribute("errorMessage", validationMessage(binding));
+      return "redirect:/course-type-service";
+    }
     try {
       courseTypeDTO.setId(null);
       courseTypeService.save(courseTypeDTO);
@@ -411,7 +454,11 @@ public class CustomDBController {
   }
 
   @PostMapping("/course-type-service/update")
-  public String updateCourseType(@ModelAttribute CourseTypeDTO courseTypeDTO, RedirectAttributes redirectAttributes) {
+  public String updateCourseType(@Valid @ModelAttribute CourseTypeDTO courseTypeDTO, BindingResult binding, RedirectAttributes redirectAttributes) {
+    if (binding.hasErrors()) {
+      redirectAttributes.addFlashAttribute("errorMessage", validationMessage(binding));
+      return "redirect:/course-type-service";
+    }
     try {
       if (courseTypeDTO.getId() == null) {
         throw new IllegalArgumentException("Course type id is required for update");
@@ -463,9 +510,13 @@ public class CustomDBController {
   }
 
   @PostMapping("/participant-service/add")
-  public String addParticipant(@ModelAttribute ParticipantDTO participantDTO,
+  public String addParticipant(@Valid @ModelAttribute ParticipantDTO participantDTO, BindingResult binding,
                                @RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
                                RedirectAttributes redirectAttributes) {
+    if (binding.hasErrors()) {
+      redirectAttributes.addFlashAttribute("errorMessage", validationMessage(binding));
+      return "redirect:/participant-service";
+    }
     try {
       participantDTO.setParticipantUuid(null);
       participantService.save(participantDTO, MultipartImages.read(imageFile));
@@ -488,10 +539,14 @@ public class CustomDBController {
   }
 
   @PostMapping("/participant-service/update")
-  public String updateParticipant(@ModelAttribute ParticipantDTO participantDTO,
+  public String updateParticipant(@Valid @ModelAttribute ParticipantDTO participantDTO, BindingResult binding,
                                   @RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
                                   @RequestParam(value = "removeImage", required = false) boolean removeImage,
                                   RedirectAttributes redirectAttributes) {
+    if (binding.hasErrors()) {
+      redirectAttributes.addFlashAttribute("errorMessage", validationMessage(binding));
+      return "redirect:/participant-service";
+    }
     try {
       if (participantDTO.getParticipantUuid() == null) {
         throw new IllegalArgumentException("UUID is required for update");
@@ -551,9 +606,13 @@ public class CustomDBController {
   }
 
   @PostMapping("/course-counter-service/add")
-  public String addCourseCounter(@ModelAttribute CourseCounterDTO courseCounterDTO,
+  public String addCourseCounter(@Valid @ModelAttribute CourseCounterDTO courseCounterDTO, BindingResult binding,
                                  @RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
                                  RedirectAttributes redirectAttributes) {
+    if (binding.hasErrors()) {
+      redirectAttributes.addFlashAttribute("errorMessage", validationMessage(binding));
+      return "redirect:/course-counter-service";
+    }
     try {
       courseCounterService.save(new CourseCounterDTO(null, courseCounterDTO.counter(), null), MultipartImages.read(imageFile));
       redirectAttributes.addFlashAttribute("successMessage", "Course counter added successfully.");
@@ -568,10 +627,14 @@ public class CustomDBController {
   }
 
   @PostMapping("/course-counter-service/update")
-  public String updateCourseCounter(@ModelAttribute CourseCounterDTO courseCounterDTO,
+  public String updateCourseCounter(@Valid @ModelAttribute CourseCounterDTO courseCounterDTO, BindingResult binding,
                                     @RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
                                     @RequestParam(value = "removeImage", required = false) boolean removeImage,
                                     RedirectAttributes redirectAttributes) {
+    if (binding.hasErrors()) {
+      redirectAttributes.addFlashAttribute("errorMessage", validationMessage(binding));
+      return "redirect:/course-counter-service";
+    }
     try {
       if (courseCounterDTO.uuid() == null) {
         throw new IllegalArgumentException("UUID is required for update");
@@ -601,6 +664,30 @@ public class CustomDBController {
       redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete course counter.");
     }
     return "redirect:/course-counter-service";
+  }
+
+
+  /**
+   * One line per rejected field, in the words of the constraint, for the toast.
+   *
+   * <p>Bean Validation runs here, on the DTO, before any service is called. It used to run only
+   * when Hibernate flushed the entity, so the user got "Please verify your input" with no field
+   * named, and for the people with photos the upload had already happened.</p>
+   */
+  private static String validationMessage(BindingResult binding) {
+    StringBuilder message = new StringBuilder("Validation error: ");
+    boolean first = true;
+    for (FieldError error : binding.getFieldErrors()) {
+      if (!first) {
+        message.append("; ");
+      }
+      first = false;
+      message.append(error.getField()).append(' ').append(error.getDefaultMessage());
+    }
+    if (binding.getFieldErrors().isEmpty()) {
+      message.append(binding.getAllErrors().isEmpty() ? "invalid input" : binding.getAllErrors().get(0).getDefaultMessage());
+    }
+    return message.toString();
   }
 
 }

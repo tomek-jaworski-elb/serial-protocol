@@ -187,6 +187,7 @@ Key conventions:
 - All `@AttributeOverride` for UUID includes `nullable=false, updatable=false, unique=true`.
 - Date format is `dd/MM/yyyy` (EU). HTML forms use Flatpickr on `type="text"` — never `type="date"`.
 - `@InitBinder` in `CustomDBController` registers an anonymous `PropertyEditorSupport` for `String.class` only, turning blank input into `null` — required for optional field validation. (It is *not* `StringTrimmerEditor`; that class appears nowhere in the code. Non-`String` types such as `UUID` go through Spring's default converters.)
+- **Validation runs on the DTOs, before any service is called**: every `CustomDBController` POST handler binds `@Valid @ModelAttribute` plus `BindingResult` and, on errors, redirects with a flash `errorMessage` of `field message` pairs (`validationMessage(...)`). The constraints on `dto.custom` mirror the entity columns (`@NotBlank`/`@Size` on person fields, `@Email`, `@Past birthDate`, `@Positive` numbers, `@NotNull` course references and dates, `CoursesDTO.isDateRange()` as `@AssertTrue`). The flush-time `ConstraintViolationException` handling stays as a safety net only. `CustomDBControllerValidationTest` pins the messages.
 - `CoursesMapper.mapToEntity()` is deprecated; use `CoursesService.buildCourses()` with `repository.getReferenceById()`.
 - `CoursesDTO` has dual counter fields: `courseCounterUuid` (read-only, set by mapper) and `counter` (Long, from forms). `resolveCourseCounter()` prefers UUID.
 - Participant deletion is guarded: throws `IllegalStateException` if linked courses exist.
