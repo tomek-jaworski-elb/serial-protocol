@@ -243,6 +243,12 @@ public class ImageService {
   /**
    * Rebuilds the stored thumbnail of one image against the current generator version.
    *
+   * <p>Written with bulk statements, not entity saves: a rebuild changes how the photo is
+   * shown, not the photo, so it must not bump {@code version}, touch {@code updated_at} or
+   * stamp {@code origin_node}. Otherwise a generator bump on both computers would make every
+   * photo "edited on both" at the next exchange, and the rows rebuilt after an import would
+   * count as changed here.</p>
+   *
    * @return whether the row now carries a current thumbnail state (a transient failure
    *     leaves it untouched so a later run can retry)
    */
@@ -252,12 +258,13 @@ public class ImageService {
     if (image == null || blob == null) {
       return false;
     }
-    boolean recorded = applyThumbnail(image, blob);
-    if (recorded) {
-      blobRepository.save(blob);
-      imageRepository.save(image);
+    Thumbnail thumbnail = thumbnailOf(image, blob);
+    if (thumbnail == null) {
+      return false;
     }
-    return recorded;
+    blobRepository.updateThumbData(id, thumbnail.data());
+    imageRepository.updateThumbnailState(id, thumbnail.contentType(), ThumbnailGenerator.VERSION);
+    return true;
   }
 
   /** Ids of images whose thumbnail state was produced by another generator version, or never. */
@@ -279,17 +286,29 @@ public class ImageService {
    * @return whether a verdict was recorded
    */
   private boolean applyThumbnail(Image image, ImageBlob blob) {
+    Thumbnail thumbnail = thumbnailOf(image, blob);
+    if (thumbnail == null) {
+      return false;
+    }
+    blob.setThumbData(thumbnail.data());
+    image.setThumbContentType(thumbnail.contentType());
+    image.setThumbVersion(ThumbnailGenerator.VERSION);
+    return true;
+  }
+
+  /** The verdict for the current generator version; both fields null when there is no thumbnail. */
+  private record Thumbnail(byte[] data, String contentType) {}
+
+  /** @return the verdict, or null when the generation failed and nothing should be recorded */
+  private static Thumbnail thumbnailOf(Image image, ImageBlob blob) {
     byte[] scaled;
     try {
       scaled = ThumbnailGenerator.scale(blob.getData(), image.getContentType());
     } catch (ThumbnailGenerator.ThumbnailFailedException e) {
       LOG.warn("Thumbnail generation failed for image {}, leaving it unrecorded", image.getId());
-      return false;
+      return null;
     }
-    blob.setThumbData(scaled);
-    image.setThumbContentType(scaled == null ? null : ThumbnailGenerator.outputContentType(image.getContentType()));
-    image.setThumbVersion(ThumbnailGenerator.VERSION);
-    return true;
+    return new Thumbnail(scaled, scaled == null ? null : ThumbnailGenerator.outputContentType(image.getContentType()));
   }
 
   private static byte[] scaleQuietly(UUID id, byte[] data, String contentType) {

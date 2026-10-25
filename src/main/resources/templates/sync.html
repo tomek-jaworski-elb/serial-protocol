@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <title th:text="${@environment.getProperty('spring.application.name')} + ' : Sync'">Serial port server</title>
+    <th:block th:replace="~{fragment::headContent}"></th:block>
+</head>
+<body>
+<header th:replace="~{fragment::header}"></header>
+<div class="container mb-4">
+    <h1 class="h3 mb-3">Synchronisation</h1>
+    <p class="text-muted">
+        The database travels between installations as a file on a USB stick. One installation edits at a time;
+        the others browse until the next file arrives.
+    </p>
+
+    <div class="card mb-3">
+        <div class="card-header">This installation</div>
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-3">Name</dt>
+                <dd class="col-sm-9" id="syncNodeName" th:text="${node.name}">node</dd>
+                <dt class="col-sm-3">Node id</dt>
+                <dd class="col-sm-9">
+                    <code id="syncNodeId" th:text="${node.id}">uuid</code>
+                    <form th:action="@{/admin/sync/node-id}" method="post" class="d-inline ms-2"
+                          sec:authorize="hasRole('ADMIN')"
+                          onsubmit="return confirm('Give this installation a new node id? Do this only when its database was copied from another installation. Its sync history starts over.');">
+                        <button id="syncNewNodeIdBtn" type="submit" class="btn btn-outline-danger btn-sm">New node id</button>
+                    </form>
+                </dd>
+                <dt class="col-sm-3">Mode</dt>
+                <dd class="col-sm-9">
+                    <span id="syncMode" th:text="${syncMode}"
+                          th:classappend="${syncReadOnly} ? 'badge text-bg-warning' : 'badge text-bg-success'">ACTIVE</span>
+                    <span class="text-muted small ms-2" th:if="${syncReadOnly}">edits made here are reported as collisions on import</span>
+                    <span class="text-muted small ms-2" th:unless="${syncReadOnly}">this is the installation that edits</span>
+                </dd>
+                <dt class="col-sm-3">Last export</dt>
+                <dd class="col-sm-9" th:text="${node.lastExportAt != null} ? ${#temporals.format(node.lastExportAt, 'dd/MM/yyyy HH:mm')} : 'never'">never</dd>
+                <dt class="col-sm-3">Last import</dt>
+                <dd class="col-sm-9">
+                    <span th:text="${node.lastImportAt != null} ? ${#temporals.format(node.lastImportAt, 'dd/MM/yyyy HH:mm')} : 'never'">never</span>
+                    <span class="text-muted" th:if="${node.lastImportFile != null}" th:text="'(' + ${node.lastImportFile} + ')'"></span>
+                </dd>
+                <dt class="col-sm-3">Backups</dt>
+                <dd class="col-sm-9">
+                    <code th:text="${backupDir}">./sync-backups</code>,
+                    <span th:text="${backupKeep == 0} ? 'kept forever' : 'newest ' + ${backupKeep} + ' kept'"></span>
+                </dd>
+            </dl>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Export</div>
+        <div class="card-body">
+            <p class="mb-2">Writes the whole database into one <code>.sync</code> file for the USB stick. The other
+                installations load it with <em>Import</em>.</p>
+            <div id="syncExportWarning" class="alert alert-warning py-2" th:if="${syncReadOnly}">
+                This is a read-only copy: a file exported here carries nothing the editing installation does not
+                already have, and any edits made here are reported as collisions when it is imported.
+            </div>
+            <form th:action="@{/sync/export}" method="post" class="d-inline">
+                <button id="syncExportBtn" type="submit" class="btn btn-primary btn-sm">Export sync file</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Backups</div>
+        <div class="card-body">
+            <p class="mb-2">A backup is written before every import and restore. Kept in
+                <code th:text="${backupDir}">./sync-backups</code>,
+                <span th:text="${backupKeep == 0} ? 'all of them' : 'the newest ' + ${backupKeep}"></span>.
+                <span sec:authorize="hasRole('ADMIN')"><em>Restore</em> replaces the whole database with the backup
+                    without any merging: it is the way back when the last import was a mistake.</span></p>
+            <form th:action="@{/sync/backup}" method="post" class="mb-3">
+                <button id="syncBackupBtn" type="submit" class="btn btn-outline-secondary btn-sm">Back up now</button>
+            </form>
+            <p class="text-muted small mb-0" th:if="${#lists.isEmpty(backups)}">No backups yet.</p>
+            <table class="table table-sm table-hover mb-0" id="syncBackupTable" th:unless="${#lists.isEmpty(backups)}">
+                <thead>
+                <tr>
+                    <th scope="col">File</th>
+                    <th scope="col" class="text-end">Size</th>
+                    <th scope="col">Written</th>
+                    <th scope="col" sec:authorize="hasRole('ADMIN')"></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="b : ${backups}">
+                    <td><a th:href="@{/sync/backup/{file}(file=${b.name})}" th:text="${b.name}">node-20260101-120000-manual.bak</a></td>
+                    <td class="text-end" th:text="${#numbers.formatDecimal(b.size / 1024.0, 1, 'DEFAULT', 1, 'POINT')} + ' KB'">12.3 KB</td>
+                    <td th:text="${#temporals.format(b.modified, 'dd/MM/yyyy HH:mm:ss')}">01/01/2026 12:00:00</td>
+                    <td class="text-end" sec:authorize="hasRole('ADMIN')">
+                        <form th:action="@{/admin/sync/restore/{file}(file=${b.name})}" method="post" class="d-inline"
+                              onsubmit="return confirm('Replace the whole database with ' + this.dataset.file + '? Everything changed since it was written is lost (a backup of the current state is taken first).');"
+                              th:attr="data-file=${b.name}">
+                            <button type="submit" class="btn btn-outline-danger btn-sm sync-restore-btn">Restore</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Import</div>
+        <div class="card-body">
+            <p class="mb-2">Loads a <code>.sync</code> file made on another installation. Nothing is changed before
+                you have seen the report and confirmed it; a backup is written first.</p>
+            <form id="syncImportForm" th:action="@{/sync/import}" method="post" enctype="multipart/form-data"
+                  class="row g-2 align-items-center">
+                <div class="col-auto">
+                    <input id="syncImportFile" type="file" name="file" class="form-control form-control-sm"
+                           accept=".sync,.bak,.zip" required>
+                </div>
+                <div class="col-auto">
+                    <button id="syncImportBtn" type="submit" class="btn btn-primary btn-sm">Read the file</button>
+                </div>
+                <div class="col-12 text-muted small">Up to <span th:text="${maxFileSize}">2 GB</span>.</div>
+            </form>
+        </div>
+    </div>
+</div>
+<footer th:replace="~{fragment::footer}"></footer>
+</body>
+</html>

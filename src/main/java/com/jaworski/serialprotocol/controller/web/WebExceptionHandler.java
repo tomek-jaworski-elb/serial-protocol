@@ -5,6 +5,7 @@ import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
+import org.springframework.util.unit.DataSize;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
@@ -16,11 +17,25 @@ public class WebExceptionHandler {
   private static final String DEFAULT_REDIRECT = "redirect:/trainer-service";
   private static final Logger LOG = LoggerFactory.getLogger(WebExceptionHandler.class);
 
+  private final String tooLargeMessage;
+
+  public WebExceptionHandler(MultipartImages multipartImages) {
+    this.tooLargeMessage = "Selected file is too large. Maximum allowed size is "
+        + megabytes(multipartImages.maxUploadSize()) + ".";
+  }
+
+  /** The photo cap is enforced by {@link MultipartImages}; the message names its value. */
   @ExceptionHandler(MaxUploadSizeExceededException.class)
   public String handleMaxUploadSizeExceeded(HttpServletRequest request,
                                              RedirectAttributes redirectAttributes) {
-    redirectAttributes.addFlashAttribute("errorMessage", "Selected file is too large. Maximum allowed size is 10 MB.");
+    redirectAttributes.addFlashAttribute("errorMessage", tooLargeMessage);
     return resolveRedirect(request);
+  }
+
+  static String megabytes(DataSize size) {
+    long bytes = size.toBytes();
+    long mb = bytes / (1024 * 1024);
+    return mb * 1024 * 1024 == bytes ? mb + " MB" : (bytes / 1024) + " KB";
   }
 
   @ExceptionHandler(ConstraintViolationException.class)

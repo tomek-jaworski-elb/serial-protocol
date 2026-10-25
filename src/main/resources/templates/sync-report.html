@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:text="${@environment.getProperty('spring.application.name')} + ' : Sync report'">Serial port server</title>
+    <th:block th:replace="~{fragment::headContent}"></th:block>
+</head>
+<body>
+<header th:replace="~{fragment::header}"></header>
+<div class="container mb-4">
+    <h1 class="h3 mb-3">Import report</h1>
+
+    <div class="card mb-3" id="syncReportFile">
+        <div class="card-header">The file</div>
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-3">File</dt>
+                <dd class="col-sm-9"><span th:text="${preview.fileName}">node.sync</span>
+                    (<span th:text="${#numbers.formatDecimal(preview.size / 1024.0, 1, 'DEFAULT', 1, 'POINT')} + ' KB'">12.3 KB</span>)</dd>
+                <dt class="col-sm-3">Made on</dt>
+                <dd class="col-sm-9"><span th:text="${preview.manifest.node.name}">other</span>
+                    <small class="text-muted" th:text="${preview.manifest.node.id}">uuid</small>,
+                    <span th:text="${preview.manifest.exportedAt}">2026-01-01T00:00:00Z</span>,
+                    mode <span th:text="${preview.manifest.mode}">ACTIVE</span>,
+                    program <span th:text="${preview.manifest.appVersion}">3.0</span></dd>
+                <dt class="col-sm-3">Into</dt>
+                <dd class="col-sm-9"><span th:text="${node.name}">this</span>,
+                    last exchange <span th:text="${node.lastSyncAt == null} ? 'never' : ${#temporals.format(node.lastSyncAt, 'dd/MM/yyyy HH:mm')}">never</span></dd>
+            </dl>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">What the import would do</div>
+        <div class="card-body">
+            <p class="mb-2">
+                <strong id="syncReportInserts" th:text="${analysis.inserts()}">0</strong> new records,
+                <strong id="syncReportUpdates" th:text="${analysis.updates()}">0</strong> updated,
+                <strong id="syncReportCollisions" th:text="${#lists.size(analysis.collisions)}">0</strong> collisions to decide.
+            </p>
+            <table class="table table-sm mb-0" id="syncReportTables">
+                <thead>
+                <tr>
+                    <th scope="col">Table</th>
+                    <th scope="col" class="text-end">In file</th>
+                    <th scope="col" class="text-end">Here</th>
+                    <th scope="col" class="text-end">New</th>
+                    <th scope="col" class="text-end">Updated</th>
+                    <th scope="col" class="text-end">Same</th>
+                    <th scope="col" class="text-end">Kept</th>
+                    <th scope="col" class="text-end">Collisions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="t : ${analysis.tables}">
+                    <td th:text="${t.label}">Participant</td>
+                    <td class="text-end" th:text="${t.fileRows}">0</td>
+                    <td class="text-end" th:text="${t.localRows}">0</td>
+                    <th:block th:if="${t.note == null}">
+                        <td class="text-end" th:text="${t.inserts}">0</td>
+                        <td class="text-end" th:text="${t.updates}">0</td>
+                        <td class="text-end" th:text="${t.unchanged}">0</td>
+                        <td class="text-end" th:text="${t.kept}">0</td>
+                        <td class="text-end" th:text="${t.collisions}">0</td>
+                    </th:block>
+                    <td colspan="5" class="text-muted small" th:if="${t.note != null}" th:text="${t.note}">note</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card mb-3" id="syncReportNotices" th:unless="${#lists.isEmpty(analysis.notices)}">
+        <div class="card-header">Kept as they are here</div>
+        <div class="card-body">
+            <ul class="mb-0">
+                <li th:each="n : ${analysis.notices}">
+                    <span th:text="${n.tableLabel}">Participant</span>
+                    <strong th:text="${n.record}">Anna Nowak</strong>:
+                    <span th:text="${n.text}">not in file</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <form id="syncApplyForm" th:action="@{/sync/import/{token}/apply(token=${preview.token})}" method="post">
+        <div th:each="group : ${collisionsByTable}" class="card mb-3 border-warning">
+            <div class="card-header" th:text="${group.key} + ': ' + ${#lists.size(group.value)} + ' collision(s)'">Participant: 1 collision</div>
+            <div class="card-body">
+                <div th:each="c, stat : ${group.value}" class="mb-3 pb-3 syncCollision"
+                     th:classappend="${stat.last} ? '' : 'border-bottom'" th:attr="data-type=${c.type.name()}">
+                    <h2 class="h6 mb-1">
+                        <span class="badge text-bg-warning" th:text="${c.type.name()}">C2</span>
+                        <span th:text="${c.type.title()}">edited on both computers</span>:
+                        <strong th:text="${c.record}">Anna Nowak (no. 1001)</strong>
+                    </h2>
+                    <p class="mb-2" th:text="${c.explanation}">Both computers edited this record.</p>
+                    <ul class="list-unstyled small mb-2">
+                        <li th:if="${c.local != null}">Here: <span th:text="${c.local.describe()}">changed on A on date</span></li>
+                        <li th:if="${c.file != null}">File: <span th:text="${c.file.describe()}">changed on B on date</span></li>
+                    </ul>
+                    <table class="table table-sm table-borderless w-auto small mb-2" th:unless="${#lists.isEmpty(c.fields)}">
+                        <thead><tr><th scope="col">Field</th><th scope="col">Here</th><th scope="col">In file</th></tr></thead>
+                        <tbody>
+                        <tr th:each="f : ${c.fields}">
+                            <td th:text="${f.field}">name</td>
+                            <td th:text="${f.localValue}">a</td>
+                            <td th:text="${f.fileValue}">b</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <div class="form-check" th:each="r, rs : ${c.resolutions}">
+                        <input class="form-check-input" type="radio" th:name="${c.id}" th:value="${r.code}"
+                               th:id="${c.id} + '-' + ${r.code}" th:checked="${rs.first}">
+                        <label class="form-check-label" th:for="${c.id} + '-' + ${r.code}" th:text="${r.label}">Keep</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 align-items-center">
+            <button id="syncApplyBtn" type="submit" class="btn btn-primary"
+                    onclick="return confirm('Apply the import? A backup is written first; the file\'s records and your decisions are then loaded in one step.')">Apply the import</button>
+            <button id="syncDiscardBtn" type="submit" class="btn btn-outline-secondary"
+                    th:formaction="@{/sync/import/{token}/discard(token=${preview.token})}">Discard the file</button>
+            <span class="text-muted small">Nothing has been changed yet. A backup is written before the import, and
+                the report is kept next to it.</span>
+        </div>
+    </form>
+</div>
+<footer th:replace="~{fragment::footer}"></footer>
+</body>
+</html>

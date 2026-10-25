@@ -12,7 +12,8 @@ RUN apt update && \
     rm -rf /var/lib/apt/lists/* && \
     useradd -m -s /usr/sbin/nologin aisuser && \
     mkdir -p /app/logs && \
-    mkdir -p /app/cert
+    mkdir -p /app/cert && \
+    mkdir -p /app/sync-backups
 
 # Copy application files
 COPY cert/server.p12 cert/server.p12
@@ -26,6 +27,7 @@ RUN chown -R aisuser:aisuser /app && \
     chmod 750 /app && \
     chmod 750 /app/logs && \
     chmod 750 /app/cert && \
+    chmod 750 /app/sync-backups && \
     chmod 600 /app/cert/server.p12 && \
     chmod 644 /app/app.jar
 

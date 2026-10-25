@@ -41,3 +41,8 @@ build/
 /logs/
 /logs /
 /cert/
+
+### Synchronisation files ###
+/sync-backups/
+*.sync
+*.bak

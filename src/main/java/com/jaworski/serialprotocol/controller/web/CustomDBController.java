@@ -61,6 +61,7 @@ public class CustomDBController {
   private final LecturerService lecturerService;
   private final TechnicianService technicianService;
   private final ParticipantService participantService;
+  private final MultipartImages multipartImages;
   private static final int DEFAULT_PAGE_SIZE = 10;
 
   /**
@@ -206,7 +207,7 @@ public class CustomDBController {
     }
     try {
       trainerDTO.setId(null);
-      trainerService.save(trainerDTO, MultipartImages.read(imageFiles));
+      trainerService.save(trainerDTO, multipartImages.read(imageFiles));
       redirectAttributes.addFlashAttribute("successMessage", "Trainer added successfully.");
     } catch (ImageService.ImageLimitExceededException e) {
       LOG.warn("Cannot add trainer. payload={}: {}", trainerDTO, e.getMessage());
@@ -231,7 +232,7 @@ public class CustomDBController {
       if (trainerDTO.getId() == null) {
         throw new IllegalArgumentException("Trainer id is required for update");
       }
-      trainerService.update(trainerDTO, MultipartImages.read(imageFiles), removeImageUuids);
+      trainerService.update(trainerDTO, multipartImages.read(imageFiles), removeImageUuids);
       redirectAttributes.addFlashAttribute("successMessage", "Trainer updated successfully.");
     } catch (OptimisticLockingFailureException e) {
       LOG.warn("Cannot update trainer: stale version. {}", e.getMessage());
@@ -286,7 +287,7 @@ public class CustomDBController {
     }
     try {
       lecturerDTO.setId(null);
-      lecturerService.save(lecturerDTO, MultipartImages.read(imageFiles));
+      lecturerService.save(lecturerDTO, multipartImages.read(imageFiles));
       redirectAttributes.addFlashAttribute("successMessage", "Lecturer added successfully.");
     } catch (ImageService.ImageLimitExceededException e) {
       LOG.warn("Cannot add lecturer. payload={}: {}", lecturerDTO, e.getMessage());
@@ -311,7 +312,7 @@ public class CustomDBController {
       if (lecturerDTO.getId() == null) {
         throw new IllegalArgumentException("Lecturer id is required for update");
       }
-      lecturerService.updateById(lecturerDTO, MultipartImages.read(imageFiles), removeImageUuids);
+      lecturerService.updateById(lecturerDTO, multipartImages.read(imageFiles), removeImageUuids);
       redirectAttributes.addFlashAttribute("successMessage", "Lecturer updated successfully.");
     } catch (OptimisticLockingFailureException e) {
       LOG.warn("Cannot update lecturer: stale version. {}", e.getMessage());
@@ -366,7 +367,7 @@ public class CustomDBController {
     }
     try {
       technicianDTO.setId(null);
-      technicianService.save(technicianDTO, MultipartImages.read(imageFiles));
+      technicianService.save(technicianDTO, multipartImages.read(imageFiles));
       redirectAttributes.addFlashAttribute("successMessage", "Technician added successfully.");
     } catch (ImageService.ImageLimitExceededException e) {
       LOG.warn("Cannot add technician. payload={}: {}", technicianDTO, e.getMessage());
@@ -391,7 +392,7 @@ public class CustomDBController {
       if (technicianDTO.getId() == null) {
         throw new IllegalArgumentException("Technician id is required for update");
       }
-      technicianService.updateById(technicianDTO, MultipartImages.read(imageFiles), removeImageUuids);
+      technicianService.updateById(technicianDTO, multipartImages.read(imageFiles), removeImageUuids);
       redirectAttributes.addFlashAttribute("successMessage", "Technician updated successfully.");
     } catch (OptimisticLockingFailureException e) {
       LOG.warn("Cannot update technician: stale version. {}", e.getMessage());
@@ -519,7 +520,7 @@ public class CustomDBController {
     }
     try {
       participantDTO.setParticipantUuid(null);
-      participantService.save(participantDTO, MultipartImages.read(imageFile));
+      participantService.save(participantDTO, multipartImages.read(imageFile));
       redirectAttributes.addFlashAttribute("successMessage", "Participant added successfully.");
     } catch (IllegalArgumentException e) {
       LOG.error("Cannot add participant. payload={}", participantDTO, e);
@@ -551,7 +552,7 @@ public class CustomDBController {
       if (participantDTO.getParticipantUuid() == null) {
         throw new IllegalArgumentException("UUID is required for update");
       }
-      participantService.updateByUuid(participantDTO, MultipartImages.read(imageFile), removeImage);
+      participantService.updateByUuid(participantDTO, multipartImages.read(imageFile), removeImage);
       redirectAttributes.addFlashAttribute("successMessage", "Participant updated successfully.");
     } catch (OptimisticLockingFailureException e) {
       LOG.warn("Cannot update participant: stale version. {}", e.getMessage());
@@ -614,7 +615,7 @@ public class CustomDBController {
       return "redirect:/course-counter-service";
     }
     try {
-      courseCounterService.save(new CourseCounterDTO(null, courseCounterDTO.counter(), null), MultipartImages.read(imageFile));
+      courseCounterService.save(new CourseCounterDTO(null, courseCounterDTO.counter(), null), multipartImages.read(imageFile));
       redirectAttributes.addFlashAttribute("successMessage", "Course counter added successfully.");
     } catch (IllegalArgumentException e) {
       LOG.error("Cannot add course counter. payload={}", courseCounterDTO, e);
@@ -639,7 +640,7 @@ public class CustomDBController {
       if (courseCounterDTO.uuid() == null) {
         throw new IllegalArgumentException("UUID is required for update");
       }
-      courseCounterService.update(courseCounterDTO, MultipartImages.read(imageFile), removeImage);
+      courseCounterService.update(courseCounterDTO, multipartImages.read(imageFile), removeImage);
       redirectAttributes.addFlashAttribute("successMessage", "Course counter updated successfully.");
     } catch (OptimisticLockingFailureException e) {
       LOG.warn("Cannot update course counter: stale version. {}", e.getMessage());

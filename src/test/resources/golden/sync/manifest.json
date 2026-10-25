@@ -1,0 +1,32 @@
+{
+  "format" : 1,
+  "schemaVersion" : null,
+  "appVersion" : "@project.version@",
+  "node" : {
+    "id" : "5821085e-c933-4888-a2cb-8ea7a9b54910",
+    "name" : "tomaszja"
+  },
+  "exportedAt" : "2026-10-24T17:32:17.308861Z",
+  "mode" : "ACTIVE",
+  "backup" : false,
+  "rows" : {
+    "course_type" : 1,
+    "image" : 1,
+    "participants" : 1,
+    "course_counter" : 1,
+    "trainer" : 1,
+    "lecturer" : 1,
+    "technician" : 1,
+    "trainer_image" : 1,
+    "lecturer_image" : 1,
+    "technician_image" : 1,
+    "courses" : 1,
+    "courses_trainers" : 1,
+    "courses_lecturers" : 1,
+    "courses_technicians" : 1,
+    "student" : 1,
+    "instructor" : 1,
+    "id_sequence" : 3
+  },
+  "blobs" : 1
+}

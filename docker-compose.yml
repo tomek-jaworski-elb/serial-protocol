@@ -10,6 +10,8 @@ services:
             - rs.message_delimiter=13,10  # 10 = \n, 13 = \r
             - ws.heartbeat.interval=2000  # value in ms > 1
             - ip.db-client=192.168.2.4:8085
+            # Sync backups (docs/sync-spec.md) outlive the container on the volume below.
+            - SYNC_BACKUP_DIR=/app/sync-backups
         ports:
             - "8081:443"
         networks:
@@ -22,6 +24,7 @@ services:
           start_period: 10s
         volumes:
             - logs:/app/logs
+            - sync-backups:/app/sync-backups
         devices:
             - /dev/ttyS0:/dev/ttyS0
             - /dev/ttyS2:/dev/ttyS2
@@ -85,3 +88,5 @@ volumes:
     name: server-data
   logs:
     name: server-logs
+  sync-backups:
+    name: server-sync-backups
