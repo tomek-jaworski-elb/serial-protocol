@@ -46,6 +46,12 @@ class SyncLocalReaderTest {
     }
   }
 
+  @Test
+  void theLockedReadRefusesToRunOutsideATransaction() {
+    assertThatThrownBy(reader::readLocked).isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("transaction");
+  }
+
   private static int editAnnaFromAnotherConnection(JdbcTemplate jdbc) {
     return jdbc.execute((ConnectionCallback<Integer>) connection -> {
       try (Statement statement = connection.createStatement()) {

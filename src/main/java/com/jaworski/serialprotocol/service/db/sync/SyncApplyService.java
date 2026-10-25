@@ -256,12 +256,20 @@ public class SyncApplyService {
             writes.get(c.table()).put(key, fileRow);
           }
         }
-        case C4 -> renumber(c, table, key, code);
-        case C5 -> recode(c, table, key, code);
+        case C4 -> {
+          // A skipped file row's number never reaches the database, so nothing makes room for it.
+          if (fileRowIsWritten(c, key)) {
+            renumber(c, table, key, code);
+          }
+        }
+        case C5 -> {
+          if (fileRowIsWritten(c, key)) {
+            recode(c, table, key, code);
+          }
+        }
         case C6 -> {
-          if (!writes.get(c.table()).containsKey(key)) {
-            // The file row is not being written (the local version was kept, or the row was
-            // already skipped), so the reference it carries never reaches the database.
+          if (!fileRowIsWritten(c, key)) {
+            // The reference the file row carries never reaches the database.
             return;
           }
           if (code.equals("skip-row")) {
@@ -271,6 +279,15 @@ public class SyncApplyService {
           }
         }
       }
+    }
+
+    /**
+     * Whether the file row a collision is about still reaches the database. The local version
+     * may have been kept (a C2/C3 decided here), or the row skipped (a C6, or a dependant of
+     * one), and a resolution about a row that is not written has nothing to do.
+     */
+    private boolean fileRowIsWritten(Collision c, String key) {
+      return writes.get(c.table()).containsKey(key);
     }
 
     /**

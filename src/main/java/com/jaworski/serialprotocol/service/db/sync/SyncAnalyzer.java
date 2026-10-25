@@ -275,7 +275,8 @@ public final class SyncAnalyzer {
 
   private boolean alreadySeen(SyncRow file) {
     Instant seen = in.seen();
-    if (seen == null || file.createdAt() == null || !in.fileNode().id().equals(file.originNode())) {
+    if (seen == null || in.fileNode() == null || file.createdAt() == null
+        || !in.fileNode().id().equals(file.originNode())) {
       return false;
     }
     return !after(file.createdAt(), seen) && !after(file.updatedAt(), seen) && !after(file.deletedAt(), seen);

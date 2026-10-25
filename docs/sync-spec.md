@@ -263,12 +263,16 @@ Details settled with the implementation (`SyncApplyService`):
 - The file is analysed again inside the apply, against the database as it is now; a decision
   whose collision is gone refuses the import with "read the file again". Inside the apply
   transaction the local tables are read once more with `SELECT ... FOR UPDATE`
-  (`SyncLocalReader.readLocked`): an audited row that differs from the analysed state refuses
-  the import, and the lock keeps a page from editing a row between that check and the writes.
+  (`SyncLocalReader.readLocked`, which refuses to run outside a transaction, because
+  `FOR UPDATE` locks nothing in autocommit): an audited row that differs from the analysed
+  state refuses the import, and the lock keeps a page from editing a row between that check
+  and the writes.
 - Resolutions are applied in three passes: C1–C3 decide which file rows are written; C6 then
   skips or brings back among those and drags the dependants of a skipped row along; C4/C5
   last, because whether a number's local holder is replaced by the file's copy (nothing to
-  renumber) or stays (and must move) is only known once the skips are final.
+  renumber) or stays (and must move) is only known once the skips are final. A C4/C5 whose
+  own file row was skipped meanwhile (a C6 "skip row" or a dependant of one) renumbers
+  nothing either way: the number or code never reaches the database.
 - A local row a resolution changes (a discarded C1 edit, a renumbered C4/C5 record, a C6
   record brought back) is written as an edit made here now: `version + 1`, `updated_at = now`,
   `origin_node = self`. It then travels with the next export, and the next analysis sees it

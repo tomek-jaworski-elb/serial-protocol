@@ -4,6 +4,7 @@ import com.jaworski.serialprotocol.service.db.sync.SyncTables.SyncTable;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import javax.sql.DataSource;
 import java.sql.ResultSetMetaData;
@@ -35,6 +36,9 @@ public class SyncLocalReader {
    * not let an edit slip in between the check and its writes.
    */
   Map<String, List<SyncRow>> readLocked() {
+    if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+      throw new IllegalStateException("readLocked needs the caller's transaction: FOR UPDATE locks nothing in autocommit");
+    }
     return read(true);
   }
 

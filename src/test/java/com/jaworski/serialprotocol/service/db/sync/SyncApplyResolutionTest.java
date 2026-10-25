@@ -270,6 +270,103 @@ class SyncApplyResolutionTest {
   }
 
   @Test
+  void aNumberCollisionOfAFileRowSkippedForItsPhotoRenumbersNothingEitherWay() throws Exception {
+    for (String numberChoice : List.of("keep-local-number", "keep-file-number")) {
+      JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+      UUID self = nodeService.current().getId();
+
+      // The other side made Ola with Anna's number 1001 and a photo the file will not carry.
+      SyncFixture.seed(jdbc);
+      jdbc.update("insert into image (image_uuid, image_content_type, created_at, updated_at, version, origin_node)"
+          + " values (?, 'image/png', ?, ?, 0, ?)", NO_SUCH_IMAGE, AFTER, AFTER, SyncFixture.ORIGIN);
+      SyncFixture.update(jdbc, "update participants set participants_id = 1005, updated_at = ?, version = 1,"
+          + " origin_node = ? where participants_uuid = ?", AFTER, SyncFixture.ORIGIN, SyncFixture.PARTICIPANT);
+      SyncFixture.update(jdbc, "insert into participants (participants_uuid, participants_id, participants_name,"
+          + " participants_surname, image_uuid, created_at, updated_at, version, origin_node)"
+          + " values (?, ?, ?, ?, ?, ?, ?, 0, ?)",
+          NEW_PARTICIPANT, 1001L, "Ola", "New", NO_SUCH_IMAGE, AFTER, AFTER, SyncFixture.ORIGIN);
+      byte[] file = without(SyncFixture.fileFromOtherNode(exporter), "tables/image.jsonl", NO_SUCH_IMAGE);
+
+      // This side edited Anna, who keeps 1001 here, and will keep its own version of her.
+      SyncFixture.seed(jdbc);
+      jdbc.update("update sync_node set last_sync_at = ?", OffsetDateTime.ofInstant(SINCE, ZoneOffset.UTC));
+      SyncFixture.update(jdbc, "update participants set participants_email = ?, updated_at = ?, version = 1,"
+          + " origin_node = ? where participants_uuid = ?", "here@example", LATER, self, SyncFixture.PARTICIPANT);
+
+      SyncStaging.Staged staged = imports.staging().stage(new ByteArrayInputStream(file), "ola.sync");
+      SyncAnalysis analysis = imports.analyze(staged).analysis();
+      String c2 = "C2-participants-" + SyncFixture.PARTICIPANT;
+      String c4 = "C4-participants-" + NEW_PARTICIPANT;
+      String c6 = "C6-participants-" + NEW_PARTICIPANT + "-image_uuid-" + NO_SUCH_IMAGE;
+      assertThat(analysis.collisions()).extracting(Collision::id).containsExactlyInAnyOrder(c2, c4, c6);
+
+      // Ola is skipped for her missing photo, so her number never arrives: whichever side the
+      // number decision favours, Anna stays on 1001 and nobody is given a fresh number.
+      SyncImportResult result = imports.apply(staged,
+          Map.of(c2, "keep-local", c4, numberChoice, c6, "skip-row"));
+
+      assertThat(jdbc.queryForObject("select count(*) from participants where participants_uuid = ?", Long.class,
+          NEW_PARTICIPANT)).as(numberChoice).isZero();
+      assertThat(jdbc.queryForObject("select participants_id from participants where participants_uuid = ?",
+          Long.class, SyncFixture.PARTICIPANT)).as(numberChoice).isEqualTo(1001L);
+      assertThat(result.report().changes()).as(numberChoice)
+          .noneSatisfy(change -> assertThat(change).contains("was given number"))
+          .anySatisfy(change -> assertThat(change).contains("skipped Participant"));
+    }
+  }
+
+  @Test
+  void aNumberCollisionOfAFileRowSkippedWithItsParticipantRenumbersNothingEitherWay() throws Exception {
+    for (String numberChoice : List.of("keep-local-number", "keep-file-number")) {
+      JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+      UUID self = nodeService.current().getId();
+
+      // The other side made Ola with a photo the file will not carry, moved the course off 2001
+      // and booked Ola's course under that number.
+      SyncFixture.seed(jdbc);
+      jdbc.update("insert into image (image_uuid, image_content_type, created_at, updated_at, version, origin_node)"
+          + " values (?, 'image/png', ?, ?, 0, ?)", NO_SUCH_IMAGE, AFTER, AFTER, SyncFixture.ORIGIN);
+      SyncFixture.update(jdbc, "insert into participants (participants_uuid, participants_id, participants_name,"
+          + " participants_surname, image_uuid, created_at, updated_at, version, origin_node)"
+          + " values (?, ?, ?, ?, ?, ?, ?, 0, ?)",
+          NEW_PARTICIPANT, 1002L, "Ola", "New", NO_SUCH_IMAGE, AFTER, AFTER, SyncFixture.ORIGIN);
+      SyncFixture.update(jdbc, "update courses set courses_id = 2005, updated_at = ?, version = 1,"
+          + " origin_node = ? where courses_uuid = ?", AFTER, SyncFixture.ORIGIN, SyncFixture.COURSE);
+      course(jdbc, NEW_COURSE, 2001L, NEW_PARTICIPANT, AFTER, SyncFixture.ORIGIN);
+      byte[] file = without(SyncFixture.fileFromOtherNode(exporter), "tables/image.jsonl", NO_SUCH_IMAGE);
+
+      // This side edited the course, which keeps 2001 here, and will keep its own version of it.
+      SyncFixture.seed(jdbc);
+      jdbc.update("update sync_node set last_sync_at = ?", OffsetDateTime.ofInstant(SINCE, ZoneOffset.UTC));
+      SyncFixture.update(jdbc, "update courses set courses_end_date = ?, updated_at = ?, version = 1,"
+          + " origin_node = ? where courses_uuid = ?", LocalDate.of(2026, 3, 6), LATER, self, SyncFixture.COURSE);
+
+      SyncStaging.Staged staged = imports.staging().stage(new ByteArrayInputStream(file), "ola-course.sync");
+      SyncAnalysis analysis = imports.analyze(staged).analysis();
+      String c2 = "C2-courses-" + SyncFixture.COURSE;
+      String c4 = "C4-courses-" + NEW_COURSE;
+      String c6 = "C6-participants-" + NEW_PARTICIPANT + "-image_uuid-" + NO_SUCH_IMAGE;
+      assertThat(analysis.collisions()).extracting(Collision::id).containsExactlyInAnyOrder(c2, c4, c6);
+
+      // Ola is skipped for her missing photo and her course goes with her, so the course's number
+      // never arrives: whichever side the number decision favours, the local course stays on 2001.
+      SyncImportResult result = imports.apply(staged,
+          Map.of(c2, "keep-local", c4, numberChoice, c6, "skip-row"));
+
+      assertThat(jdbc.queryForObject("select count(*) from participants where participants_uuid = ?", Long.class,
+          NEW_PARTICIPANT)).as(numberChoice).isZero();
+      assertThat(jdbc.queryForObject("select count(*) from courses where courses_uuid = ?", Long.class,
+          NEW_COURSE)).as(numberChoice).isZero();
+      assertThat(jdbc.queryForObject("select courses_id from courses where courses_uuid = ?",
+          Long.class, SyncFixture.COURSE)).as(numberChoice).isEqualTo(2001L);
+      assertThat(result.report().changes()).as(numberChoice)
+          .noneSatisfy(change -> assertThat(change).contains("was given number"))
+          .anySatisfy(change -> assertThat(change).contains("skipped Participant"))
+          .anySatisfy(change -> assertThat(change).contains("skipped course").contains("was skipped"));
+    }
+  }
+
+  @Test
   void keepingTheFileNumberRenumbersTheLocalHolderWhenItsFileCopyEndsUpSkipped() throws Exception {
     JdbcTemplate jdbc = new JdbcTemplate(dataSource);
     UUID self = nodeService.current().getId();
