@@ -142,7 +142,7 @@ public class DeletedRecordsService {
   private SoftDeletable loadDeleted(DeletedKind kind, String key) {
     SoftDeletable entity = entityManager.find(kind.getEntityClass(), kind.parseKey(key));
     if (entity == null || !entity.isDeleted()) {
-      throw new IllegalArgumentException(kind.getSingular() + " " + key + " is not in the trash.");
+      throw new IllegalArgumentException("This " + kind.getSingular().toLowerCase() + " is not in the trash.");
     }
     return entity;
   }

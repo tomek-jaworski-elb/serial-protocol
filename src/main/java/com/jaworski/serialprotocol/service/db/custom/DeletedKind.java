@@ -56,7 +56,7 @@ public enum DeletedKind {
     try {
       return uuidKey ? UUID.fromString(key) : Long.valueOf(key);
     } catch (IllegalArgumentException e) {
-      throw new IllegalArgumentException("'" + key + "' is not a valid " + singular.toLowerCase() + " key.");
+      throw new IllegalArgumentException("Not a valid " + singular.toLowerCase() + " key.");
     }
   }
 }

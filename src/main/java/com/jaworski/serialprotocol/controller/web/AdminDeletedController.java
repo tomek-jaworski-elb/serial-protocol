@@ -33,7 +33,7 @@ public class AdminDeletedController {
   private static final String BASE = "/admin/deleted/";
 
   private final DeletedRecordsService deletedRecords;
-  private final WebSocketPublisher webSockerService;
+  private final WebSocketPublisher webSocketPublisher;
 
   @GetMapping
   public String index() {
@@ -48,7 +48,7 @@ public class AdminDeletedController {
     DeletedKind kind = kindOr404(entity);
     Page<DeletedRecordDTO> rows = deletedRecords.list(kind, PageRequest.of(page, size));
     model.addAttribute("name", "admin-deleted");
-    model.addAttribute("sessions", webSockerService.openPageCount());
+    model.addAttribute("sessions", webSocketPublisher.openPageCount());
     model.addAttribute("kinds", DeletedKind.values());
     model.addAttribute("kind", kind);
     model.addAttribute("baseUrl", BASE + kind.getPath());
