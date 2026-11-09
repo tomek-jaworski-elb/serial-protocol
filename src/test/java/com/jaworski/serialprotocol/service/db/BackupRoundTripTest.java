@@ -23,21 +23,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
+import org.springframework.boot.test.autoconfigure.json.AutoConfigureJson;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
-import tools.jackson.databind.DeserializationFeature;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.cfg.DateTimeFeature;
-import tools.jackson.databind.json.JsonMapper;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.List;
@@ -49,30 +45,19 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Backup and restore with real data: active and deleted rows, photos, a course that points at all of them.
- * Every step commits, because the restore runs each batch in a transaction of its own.
+ * Every step commits, because the restore runs in a transaction of its own.
  */
 @DataJpaTest
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 @Import({DatabaseBackupService.class, SoftDeleteSupport.class, DeletedRecordsService.class, ParticipantService.class,
-    CourseTypeService.class, CourseCounterService.class, CoursesService.class, TrainerService.class, ImageService.class,
-    BackupRoundTripTest.JsonConfig.class})
+    CourseTypeService.class, CourseCounterService.class, CoursesService.class, TrainerService.class, ImageService.class})
+@AutoConfigureJson // the application's own mapper: a hand-built one once hid a restore that failed in production
 class BackupRoundTripTest {
-
-  @TestConfiguration
-  static class JsonConfig {
-    @Bean
-    ObjectMapper objectMapper() {
-      return JsonMapper.builder()
-          .configure(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-          .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-          .configure(DeserializationFeature.FAIL_ON_TRAILING_TOKENS, false)
-          .build();
-    }
-  }
 
   private static final List<String> TABLES = List.of(
       "courses_trainers", "courses_lecturers", "courses_technicians", "courses", "participants",
@@ -180,6 +165,20 @@ class BackupRoundTripTest {
 
     assertNotNull(participantService.findByUuid(saved.getParticipantUuid()), "a 1.0 row is an active row");
     assertEquals(0, trash.list(DeletedKind.PARTICIPANTS, FIRST_PAGE).getTotalElements());
+  }
+
+  @Test
+  void aRestoreThatFailsHalfWayLeavesTheDataAsItWas() throws Exception {
+    ParticipantDTO kept = participantService.save(participant("Kept"));
+    // participants come before courses in the file, so this fails after the wipe and after inserts
+    String broken = gunzip(backupService.createBackup())
+        .replace("\"courses\":[", "\"courses\":[{\"uuid\":\"not-a-uuid\"},");
+    assertTrue(broken.contains("not-a-uuid"), "the courses array is where the file breaks");
+
+    assertThrows(IOException.class, () -> backupService.restoreFromBackup(gzip(broken)));
+
+    assertNotNull(participantService.findByUuid(kept.getParticipantUuid()), "the wipe was rolled back");
+    assertEquals(1L, count("select count(*) from participants"));
   }
 
   @Test

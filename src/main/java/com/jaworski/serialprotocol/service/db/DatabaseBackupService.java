@@ -8,6 +8,7 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.core.JsonGenerator;
 import tools.jackson.core.JsonParser;
 import tools.jackson.core.JsonToken;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
 import com.jaworski.serialprotocol.dto.backup.ImageBackupDTO;
 import com.jaworski.serialprotocol.dto.backup.InstructorBackupDTO;
@@ -62,6 +63,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -84,8 +86,8 @@ import java.util.zip.GZIPOutputStream;
  *   <li>Backup uses Jackson {@link JsonGenerator} + JPA pagination ({@value #BATCH_SIZE} rows/page)
  *       to write JSON directly to the output stream without loading all entities into heap.</li>
  *   <li>Restore uses Jackson {@link JsonParser} streaming to read one element at a time and
- *       commits inserts in batches of {@value #BATCH_SIZE} rows using {@link TransactionTemplate},
- *       so no single transaction ever grows unbounded.</li>
+ *       flushes and clears the persistence context every {@value #BATCH_SIZE} rows, so heap stays
+ *       bounded. The whole restore is one transaction: a failure rolls back to the data it started from.</li>
  * </ul>
  *
  * <p>Restore strategy:
@@ -104,7 +106,7 @@ public class DatabaseBackupService {
     public static final String SCHEMA_VERSION = "1.1";
     static final Set<String> READABLE_SCHEMA_VERSIONS = Set.of("1.0", SCHEMA_VERSION);
 
-    /** Number of rows read/written per page during backup, and flushed per transaction during restore. */
+    /** Number of rows read/written per page during backup, and flushed per batch during restore. */
     static final int BATCH_SIZE = 200;
 
     /** Custom-domain tables in delete order: join tables, then children, then what they point at. */
@@ -394,19 +396,36 @@ public class DatabaseBackupService {
     /**
      * Restores the full database from a GZIP-compressed JSON backup stream.
      *
-     * <p>The JSON is parsed element-by-element using {@link JsonParser}.  Inserts are
-     * committed in independent transactions of at most {@value #BATCH_SIZE} rows so heap
-     * and transaction-log growth are bounded regardless of database size.
+     * <p>The JSON is parsed element-by-element using {@link JsonParser}; the persistence context is
+     * flushed and cleared every {@value #BATCH_SIZE} rows so heap stays bounded.
      *
-     * <p>If any batch fails the method attempts a best-effort cleanup by clearing all
-     * tables, then re-throws the original exception.
+     * <p>The wipe and every insert run in one transaction (the per-batch templates join it), so a
+     * restore that fails anywhere rolls back and leaves the database as it was.
      *
      * @param inputStream source stream (e.g. {@code MultipartFile.getInputStream()}).
      *                    The stream is NOT closed by this method.
      */
     public void restoreFromBackup(InputStream inputStream) throws IOException {
         TransactionTemplate txTemplate = new TransactionTemplate(transactionManager);
+        try {
+            txTemplate.executeWithoutResult(status -> {
+                try {
+                    restoreInTransaction(inputStream, txTemplate);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            });
+        } catch (UncheckedIOException e) {
+            throw e.getCause();
+        } catch (JacksonException e) {
+            // In Jackson 3.x JacksonException extends RuntimeException (not IOException).
+            // Wrap it so the public API consistently throws IOException for parse errors.
+            throw new IOException("JSON processing error during restore: " + e.getMessage(), e);
+        }
+        LOG.info("DB restore completed successfully.");
+    }
 
+    private void restoreInTransaction(InputStream inputStream, TransactionTemplate txTemplate) throws IOException {
         try (GZIPInputStream gzis = new GZIPInputStream(inputStream);
              JsonParser parser = objectMapper.createParser(gzis)) {
 
@@ -478,25 +497,7 @@ public class DatabaseBackupService {
                         break;
                 }
             }
-        } catch (RuntimeException | IOException e) {
-            LOG.error("Restore failed – attempting cleanup of partial data", e);
-            try {
-                TransactionTemplate cleanup = new TransactionTemplate(transactionManager);
-                cleanup.execute(status -> {
-                    clearAllTables();
-                    return null;
-                });
-            } catch (Exception cleanupEx) {
-                LOG.error("Cleanup after failed restore also failed", cleanupEx);
-            }
-            // In Jackson 3.x JacksonException extends RuntimeException (not IOException).
-            // Wrap it so the public API consistently throws IOException for parse errors.
-            if (e instanceof JacksonException je) {
-                throw new IOException("JSON processing error during restore: " + je.getMessage(), je);
-            }
-            throw e;
         }
-        LOG.info("DB restore completed successfully.");
     }
 
     /**
@@ -514,7 +515,7 @@ public class DatabaseBackupService {
         List<ImageBackupDTO> batch = new ArrayList<>(BATCH_SIZE);
         long total = 0;
         while (parser.nextToken() != JsonToken.END_ARRAY) {
-            batch.add(objectMapper.readValue(parser, ImageBackupDTO.class));
+            batch.add(readElement(parser, objectMapper.constructType(ImageBackupDTO.class)));
             if (batch.size() >= BATCH_SIZE) {
                 List<ImageBackupDTO> toFlush = new ArrayList<>(batch);
                 txTemplate.execute(status -> { persistImages(toFlush); return null; });
@@ -550,7 +551,7 @@ public class DatabaseBackupService {
         Map<Long, Long> idMap = new HashMap<>();
         List<BackupRow<CourseTypeDTO>> batch = new ArrayList<>(BATCH_SIZE);
         while (parser.nextToken() != JsonToken.END_ARRAY) {
-            batch.add(objectMapper.readValue(parser, rowOf(CourseTypeDTO.class)));
+            batch.add(readElement(parser, rowOf(CourseTypeDTO.class)));
             if (batch.size() >= BATCH_SIZE) {
                 List<BackupRow<CourseTypeDTO>> toFlush = new ArrayList<>(batch);
                 Map<Long, Long> partial = txTemplate.execute(status -> persistCourseTypes(toFlush));
@@ -590,7 +591,7 @@ public class DatabaseBackupService {
         List<BackupRow<CourseCounterDTO>> batch = new ArrayList<>(BATCH_SIZE);
         long total = 0;
         while (parser.nextToken() != JsonToken.END_ARRAY) {
-            batch.add(objectMapper.readValue(parser, rowOf(CourseCounterDTO.class)));
+            batch.add(readElement(parser, rowOf(CourseCounterDTO.class)));
             if (batch.size() >= BATCH_SIZE) {
                 List<BackupRow<CourseCounterDTO>> toFlush = new ArrayList<>(batch);
                 txTemplate.execute(status -> { persistCourseCounters(toFlush); return null; });
@@ -626,7 +627,7 @@ public class DatabaseBackupService {
         List<BackupRow<TrainerDTO>> batch = new ArrayList<>(BATCH_SIZE);
         long total = 0;
         while (parser.nextToken() != JsonToken.END_ARRAY) {
-            batch.add(objectMapper.readValue(parser, rowOf(TrainerDTO.class)));
+            batch.add(readElement(parser, rowOf(TrainerDTO.class)));
             if (batch.size() >= BATCH_SIZE) {
                 List<BackupRow<TrainerDTO>> toFlush = new ArrayList<>(batch);
                 txTemplate.execute(status -> { persistTrainers(toFlush); return null; });
@@ -670,7 +671,7 @@ public class DatabaseBackupService {
         List<BackupRow<LecturerDTO>> batch = new ArrayList<>(BATCH_SIZE);
         long total = 0;
         while (parser.nextToken() != JsonToken.END_ARRAY) {
-            batch.add(objectMapper.readValue(parser, rowOf(LecturerDTO.class)));
+            batch.add(readElement(parser, rowOf(LecturerDTO.class)));
             if (batch.size() >= BATCH_SIZE) {
                 List<BackupRow<LecturerDTO>> toFlush = new ArrayList<>(batch);
                 txTemplate.execute(status -> { persistLecturers(toFlush); return null; });
@@ -714,7 +715,7 @@ public class DatabaseBackupService {
         List<BackupRow<TechnicianDTO>> batch = new ArrayList<>(BATCH_SIZE);
         long total = 0;
         while (parser.nextToken() != JsonToken.END_ARRAY) {
-            batch.add(objectMapper.readValue(parser, rowOf(TechnicianDTO.class)));
+            batch.add(readElement(parser, rowOf(TechnicianDTO.class)));
             if (batch.size() >= BATCH_SIZE) {
                 List<BackupRow<TechnicianDTO>> toFlush = new ArrayList<>(batch);
                 txTemplate.execute(status -> { persistTechnicians(toFlush); return null; });
@@ -758,7 +759,7 @@ public class DatabaseBackupService {
         List<BackupRow<ParticipantDTO>> batch = new ArrayList<>(BATCH_SIZE);
         long total = 0;
         while (parser.nextToken() != JsonToken.END_ARRAY) {
-            batch.add(objectMapper.readValue(parser, rowOf(ParticipantDTO.class)));
+            batch.add(readElement(parser, rowOf(ParticipantDTO.class)));
             if (batch.size() >= BATCH_SIZE) {
                 List<BackupRow<ParticipantDTO>> toFlush = new ArrayList<>(batch);
                 txTemplate.execute(status -> { persistParticipants(toFlush); return null; });
@@ -803,7 +804,7 @@ public class DatabaseBackupService {
         List<BackupRow<CoursesDTO>> batch = new ArrayList<>(BATCH_SIZE);
         long total = 0;
         while (parser.nextToken() != JsonToken.END_ARRAY) {
-            batch.add(objectMapper.readValue(parser, rowOf(CoursesDTO.class)));
+            batch.add(readElement(parser, rowOf(CoursesDTO.class)));
             if (batch.size() >= BATCH_SIZE) {
                 List<BackupRow<CoursesDTO>> toFlush = new ArrayList<>(batch);
                 txTemplate.execute(status -> { persistCourses(toFlush, courseTypeIdMap); return null; });
@@ -873,7 +874,7 @@ public class DatabaseBackupService {
         List<StudentBackupDTO> batch = new ArrayList<>(BATCH_SIZE);
         long total = 0;
         while (parser.nextToken() != JsonToken.END_ARRAY) {
-            batch.add(objectMapper.readValue(parser, StudentBackupDTO.class));
+            batch.add(readElement(parser, objectMapper.constructType(StudentBackupDTO.class)));
             if (batch.size() >= BATCH_SIZE) {
                 List<StudentBackupDTO> toFlush = new ArrayList<>(batch);
                 txTemplate.execute(status -> { persistStudents(toFlush); return null; });
@@ -904,7 +905,7 @@ public class DatabaseBackupService {
         List<InstructorBackupDTO> batch = new ArrayList<>(BATCH_SIZE);
         long total = 0;
         while (parser.nextToken() != JsonToken.END_ARRAY) {
-            batch.add(objectMapper.readValue(parser, InstructorBackupDTO.class));
+            batch.add(readElement(parser, objectMapper.constructType(InstructorBackupDTO.class)));
             if (batch.size() >= BATCH_SIZE) {
                 List<InstructorBackupDTO> toFlush = new ArrayList<>(batch);
                 txTemplate.execute(status -> { persistInstructors(toFlush); return null; });
@@ -962,6 +963,11 @@ public class DatabaseBackupService {
 
     private JavaType rowOf(Class<?> record) {
         return objectMapper.getTypeFactory().constructParametricType(BackupRow.class, record);
+    }
+
+    /** Reads one array element; Jackson 3 fails on trailing tokens by default and the next element is one. */
+    private <T> T readElement(JsonParser parser, JavaType type) {
+        return objectMapper.readerFor(type).without(DeserializationFeature.FAIL_ON_TRAILING_TOKENS).readValue(parser);
     }
 
     private Set<Image> resolveImageRefs(Set<UUID> uuids) {

@@ -35,6 +35,8 @@ public class DbUtilsController {
 
     private static final Logger LOG = LoggerFactory.getLogger(DbUtilsController.class);
     private static final String ACTIVE_SESSION = "sessions";
+    /** A restore runs in one transaction, so a failed one leaves the data as it was. */
+    private static final String NOT_CHANGED = " The database was not changed.";
     private static final DateTimeFormatter FILENAME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
 
@@ -92,15 +94,15 @@ public class DbUtilsController {
         } catch (IllegalArgumentException e) {
             LOG.error("Restore failed – invalid backup file: {}", e.getMessage());
             redirectAttributes.addFlashAttribute("errorMessage",
-                    "Restore failed: " + e.getMessage());
+                    "Restore failed: " + e.getMessage() + NOT_CHANGED);
         } catch (IOException e) {
             LOG.error("Restore failed – I/O error", e);
             redirectAttributes.addFlashAttribute("errorMessage",
-                    "Restore failed (I/O error): " + e.getMessage());
+                    "Restore failed (I/O error): " + e.getMessage() + NOT_CHANGED);
         } catch (Exception e) {
             LOG.error("Restore failed – unexpected error", e);
             redirectAttributes.addFlashAttribute("errorMessage",
-                    "Restore failed: " + e.getMessage());
+                    "Restore failed: " + e.getMessage() + NOT_CHANGED);
         }
 
         return "redirect:/db-utils";

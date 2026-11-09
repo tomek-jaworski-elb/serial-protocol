@@ -1,9 +1,6 @@
 package com.jaworski.serialprotocol.service.db;
 
-import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.cfg.DateTimeFeature;
-import tools.jackson.databind.json.JsonMapper;
 import com.jaworski.serialprotocol.dto.backup.DatabaseBackupDTO;
 import com.jaworski.serialprotocol.entity.Instructor;
 import com.jaworski.serialprotocol.entity.Student;
@@ -27,8 +24,7 @@ import com.jaworski.serialprotocol.service.db.custom.SoftDeleteSupport;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
+import org.springframework.boot.test.autoconfigure.json.AutoConfigureJson;
 import org.springframework.context.annotation.Import;
 
 import java.io.ByteArrayInputStream;
@@ -58,20 +54,8 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @DataJpaTest
 @Import({DatabaseBackupService.class, SoftDeleteSupport.class})
+@AutoConfigureJson // the application's own mapper, not a hand-built one
 class DatabaseBackupServiceTest {
-
-    // ---- Test-only ObjectMapper (JavaTimeModule for LocalDate/LocalDateTime) ----
-
-    @TestConfiguration
-    static class TestConfig {
-        @Bean
-        ObjectMapper objectMapper() {
-            return JsonMapper.builder()
-                    .configure(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                    .build();
-        }
-    }
 
     // ---- Injections ----------------------------------------------------------
 

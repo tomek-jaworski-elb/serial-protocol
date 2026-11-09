@@ -26,8 +26,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
+import org.springframework.boot.test.autoconfigure.json.AutoConfigureJson;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -38,10 +37,6 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
-import tools.jackson.databind.DeserializationFeature;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.cfg.DateTimeFeature;
-import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -66,22 +61,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @DataJpaTest
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
-@Import({SoftDeleteSupport.class, DatabaseBackupService.class, SoftDeleteFoundationTest.JsonConfig.class})
+@Import({SoftDeleteSupport.class, DatabaseBackupService.class})
+@AutoConfigureJson // the application's own mapper, not a hand-built one
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SoftDeleteFoundationTest {
-
-  @TestConfiguration
-  static class JsonConfig {
-    @Bean
-    ObjectMapper objectMapper() {
-      return JsonMapper.builder()
-          .configure(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-          .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-          // restore reads one element at a time from a larger document, as Spring Boot's mapper allows
-          .configure(DeserializationFeature.FAIL_ON_TRAILING_TOKENS, false)
-          .build();
-    }
-  }
 
   /** Children before parents, join tables first. */
   private static final List<String> TABLES = List.of(
