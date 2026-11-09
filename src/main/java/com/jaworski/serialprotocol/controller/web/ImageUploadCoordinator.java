@@ -5,7 +5,9 @@ import com.jaworski.serialprotocol.service.db.custom.ImageService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -35,8 +37,12 @@ public class ImageUploadCoordinator {
 
   private final ImageService imageService;
 
+  /** Per photo. The multipart limit is far higher, because a backup restore uploads through it too. */
+  @Value("${custom.upload.max-image-size:10MB}")
+  private DataSize maxImageSize;
+
   /**
-   * Raised when a request would push a record past its photo limit.
+   * Raised when a request would push a record past its photo limit, or a photo is over the size limit.
    *
    * <p>Its own type so the handlers can surface its message verbatim without also leaking
    * internal ones — {@code "Trainer with id <uuid> not found"} or {@code "One or more image
@@ -140,6 +146,8 @@ public class ImageUploadCoordinator {
     if (nonEmpty.size() > maxFiles) {
       throw new IllegalArgumentException("Maximum " + maxFiles + " images allowed");
     }
+    // All sizes before any save: each save commits on its own.
+    nonEmpty.forEach(this::requireWithinSizeLimit);
 
     List<Image> images = nonEmpty.stream().map(file -> {
       try {
@@ -163,6 +171,7 @@ public class ImageUploadCoordinator {
     if (file == null || file.isEmpty()) {
       return null;
     }
+    requireWithinSizeLimit(file);
     try {
       Image image = imageService.saveImage(
           file.getBytes(),
@@ -172,5 +181,24 @@ public class ImageUploadCoordinator {
     } catch (IOException e) {
       throw new UncheckedIOException("Failed to read uploaded photo", e);
     }
+  }
+
+  private void requireWithinSizeLimit(MultipartFile file) {
+    if (file.getSize() > maxImageSize.toBytes()) {
+      throw new ImageLimitExceededException(
+          "A photo is too large. Maximum allowed size is " + describe(maxImageSize) + ".");
+    }
+  }
+
+  /** "10 MB", "500 KB" or "300 bytes": a limit as a person would write it. */
+  static String describe(DataSize size) {
+    long bytes = size.toBytes();
+    if (bytes >= 1024 * 1024 && bytes % (1024 * 1024) == 0) {
+      return size.toMegabytes() + " MB";
+    }
+    if (bytes >= 1024 && bytes % 1024 == 0) {
+      return size.toKilobytes() + " KB";
+    }
+    return bytes + " bytes";
   }
 }

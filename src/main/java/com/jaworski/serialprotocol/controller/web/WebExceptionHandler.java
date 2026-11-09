@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.util.unit.DataSize;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
@@ -22,9 +23,12 @@ public class WebExceptionHandler {
   private static final Logger LOG = LoggerFactory.getLogger(WebExceptionHandler.class);
 
   @ExceptionHandler(MaxUploadSizeExceededException.class)
-  public String handleMaxUploadSizeExceeded(HttpServletRequest request,
+  public String handleMaxUploadSizeExceeded(MaxUploadSizeExceededException e,
+                                             HttpServletRequest request,
                                              RedirectAttributes redirectAttributes) {
-    redirectAttributes.addFlashAttribute("errorMessage", "Selected file is too large. Maximum allowed size is 10 MB.");
+    long max = e.getMaxUploadSize();   // -1 when the container did not say
+    redirectAttributes.addFlashAttribute("errorMessage", "Selected file is too large."
+        + (max > 0 ? " Maximum allowed size is " + ImageUploadCoordinator.describe(DataSize.ofBytes(max)) + "." : ""));
     return resolveRedirect(request);
   }
 

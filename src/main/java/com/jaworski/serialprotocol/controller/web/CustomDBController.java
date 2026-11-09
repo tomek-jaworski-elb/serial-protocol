@@ -199,6 +199,9 @@ public class CustomDBController {
       trainerDTO.setImagesUuid(uploadedImages);
       imageUploads.persistOrDiscard(uploadedImages, () -> trainerService.save(trainerDTO));
       redirectAttributes.addFlashAttribute("successMessage", "Trainer added successfully.");
+    } catch (ImageUploadCoordinator.ImageLimitExceededException e) {
+      LOG.warn("Cannot add trainer. payload={}: {}", trainerDTO, e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (RuntimeException e) {
       LOG.error("Cannot add trainer. payload={}", trainerDTO, e);
       redirectAttributes.addFlashAttribute("errorMessage", "Failed to add trainer. Please verify your input.");
@@ -276,6 +279,9 @@ public class CustomDBController {
       lecturerDTO.setImagesUuid(uploadedImages);
       imageUploads.persistOrDiscard(uploadedImages, () -> lecturerService.save(lecturerDTO));
       redirectAttributes.addFlashAttribute("successMessage", "Lecturer added successfully.");
+    } catch (ImageUploadCoordinator.ImageLimitExceededException e) {
+      LOG.warn("Cannot add lecturer. payload={}: {}", lecturerDTO, e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (RuntimeException e) {
       LOG.error("Cannot add lecturer. payload={}", lecturerDTO, e);
       redirectAttributes.addFlashAttribute("errorMessage", "Failed to add lecturer. Please verify your input.");
@@ -353,6 +359,9 @@ public class CustomDBController {
       technicianDTO.setImagesUuid(uploadedImages);
       imageUploads.persistOrDiscard(uploadedImages, () -> technicianService.save(technicianDTO));
       redirectAttributes.addFlashAttribute("successMessage", "Technician added successfully.");
+    } catch (ImageUploadCoordinator.ImageLimitExceededException e) {
+      LOG.warn("Cannot add technician. payload={}: {}", technicianDTO, e.getMessage());
+      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (RuntimeException e) {
       LOG.error("Cannot add technician. payload={}", technicianDTO, e);
       redirectAttributes.addFlashAttribute("errorMessage", "Failed to add technician. Please verify your input.");

@@ -73,7 +73,8 @@ public class DbUtilsController {
     /**
      * Accepts a previously created backup file and restores the database.
      * The uploaded file is read as a stream – no full byte[] copy in memory.
-     * All existing data is replaced.
+     * All existing data is replaced. Unlike the backup, the upload is capped by the multipart
+     * limit ({@code UPLOAD_MAX_SIZE}, 200 MB by default): a larger backup cannot be restored.
      */
     @PostMapping("/restore")
     public String restore(
