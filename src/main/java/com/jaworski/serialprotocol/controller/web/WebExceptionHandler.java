@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+
 @ControllerAdvice(assignableTypes = {CustomDBController.class, MapController.class, DbUtilsController.class,
     AdminDeletedController.class})
 public class WebExceptionHandler {
@@ -58,18 +61,25 @@ public class WebExceptionHandler {
       return DEFAULT_REDIRECT;
     }
 
+    URI uri;
+    try {
+      uri = new URI(referer);
+    } catch (URISyntaxException e) {
+      return DEFAULT_REDIRECT;
+    }
+
+    // Browsers send an absolute URL; only its path is kept, so the redirect never leaves this host.
+    String path = uri.getRawPath();
     String contextPath = request.getContextPath();
-    int contextIndex = referer.indexOf(contextPath);
-    if (contextIndex < 0) {
+    if (path == null || !path.startsWith(contextPath + "/")) {
       return DEFAULT_REDIRECT;
     }
-
-    String pathWithQuery = referer.substring(contextIndex + contextPath.length());
-    if (pathWithQuery.isBlank() || !pathWithQuery.startsWith("/")) {
-      return DEFAULT_REDIRECT;
+    path = path.substring(contextPath.length());
+    if (path.startsWith("//")) {
+      return DEFAULT_REDIRECT; // a browser would read "//host/..." as another host
     }
 
-    return "redirect:" + pathWithQuery;
+    return "redirect:" + path + (uri.getRawQuery() == null ? "" : "?" + uri.getRawQuery());
   }
 }
 

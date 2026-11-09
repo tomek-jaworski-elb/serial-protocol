@@ -26,6 +26,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class StaleFormTest {
 
   private static final String LIST_PAGE = "/course-type-service?page=0&size=10";
+  /** What a browser actually sends: an absolute URL, not a path. */
+  private static final String REFERER = "https://localhost" + LIST_PAGE;
 
   @Autowired
   private MockMvc mockMvc;
@@ -44,7 +46,7 @@ class StaleFormTest {
             .param("code", "STALE-1")
             .param("description", "my stale edit")
             .param("version", String.valueOf(opened.getVersion()))
-            .header(HttpHeaders.REFERER, LIST_PAGE)
+            .header(HttpHeaders.REFERER, REFERER)
             .header(HttpHeaders.AUTHORIZATION, user())
             .with(csrf()))
         .andExpect(status().is3xxRedirection())
