@@ -90,9 +90,10 @@ Drawing tracks must not delay, block or lose a single frame of live ingest or it
 
 ### Shared geometry
 
-Calibration, hull vertices, hull dimensions and colours move out of `chart-script.js` into
+Calibration, hull vertices and hull dimensions (`SHIP_HULLS`) move out of `chart-script.js` into
 `static/js/common/ship-geometry.js`, shared by `/chart` and `/tracks`. `/chart` behaviour must not
-change.
+change. Colours and names do not move: `/tracks` takes them from the server (`Models`), `/chart`
+keeps its `ModelsOfShips` copy, as the `CLAUDE.md` ship-id invariant says.
 
 ## 3. Layout
 

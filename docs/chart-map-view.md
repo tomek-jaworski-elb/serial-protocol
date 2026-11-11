@@ -108,18 +108,18 @@ Rules enforced by `clampScale()` and `clampStagePosition()`:
 ## Ship silhouettes and calibration
 
 Ship positions arrive over WebSocket (`/json`) in model coordinates and are
-converted to map pixels by `getScaledPoints()` using the calibration constants
+converted to map pixels by `getScaledPoints()` (`static/js/common/ship-geometry.js`) using the calibration constants
 (`mapa_x = 2.407`, static shifts). **Do not change these constants** unless
 the map raster itself changes — they map real-world positions to pixels on
 the 2666 × 4000 chart.
 
-Silhouettes are drawn with a constant scale (`modelsConfig[id].scale`) in map
+Silhouettes are drawn with a constant scale (`SHIP_HULLS[id].scale`, shared geometry file) in map
 coordinates, so a ship keeps the same size relative to the chart at every zoom
 level. **Do not add any zoom-dependent scaling here** — a ship that grows and
 shrinks against the chart it sits on is the thing this rule exists to prevent,
 and it is a functional requirement. `ChartShipListTest`
 (`theHullIsSizedFromTheChartAndNotFromTheZoom`) parses this rule out of
-`chart-script.js` and fails if hull geometry is ever built from the live stage
+`chart-script.js` and `ship-geometry.js` and fails if hull geometry is ever built from the live stage
 scale — the temptation is real, because the LOD arrow four lines away is
 deliberately given a constant on-screen size.
 

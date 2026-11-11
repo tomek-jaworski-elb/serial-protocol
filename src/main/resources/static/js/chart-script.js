@@ -1321,8 +1321,6 @@ function bindDiagnosticsToggle() {
 }
 bindDiagnosticsToggle();
 
-let mapa_x = 2.407; /// było 2.4   = kalibracja mapy
-
 const path = '/json';
 // Set up the text field
 const textField = document.getElementById("textField");
@@ -1331,12 +1329,12 @@ const textField = document.getElementById("textField");
 // MODELS CONFIG (używane też do przechowywania obiektów Konva)
 // ------------------------------------------------------------------
 const modelsConfig = {
-    1: { headingField: "heading1", speedField: "speed1", led: "led1", rsField: "rs_model1_no", track: [], scale: 2, shipParams: [12.21, 2, 0] },
-    2: { headingField: "heading2", speedField: "speed2", led: "led2", rsField: "rs_model2_no", track: [], scale: 2, shipParams: [13.78, 2.38, 0] },
-    3: { headingField: "heading3", speedField: "speed3", led: "led3", rsField: "rs_model3_no", track: [], scale: 2, shipParams: [11.55, 1.8, 0] },
-    4: { headingField: "heading4", speedField: "speed4", led: "led4", rsField: "rs_model4_no", track: [], scale: 2, shipParams: [15.5, 1.79, 0] },
-    5: { headingField: "heading5", speedField: "speed5", led: "led5", rsField: "rs_model5_no", track: [], scale: 2, shipParams: [10.98, 1.78, 1] },
-    6: { headingField: "heading6", speedField: "speed6", led: "led6", rsField: "rs_model6_no", track: [], scale: 2, shipParams: [16.43, 2.23, 0] },
+    1: { headingField: "heading1", speedField: "speed1", led: "led1", rsField: "rs_model1_no", track: [], ...SHIP_HULLS[1] },
+    2: { headingField: "heading2", speedField: "speed2", led: "led2", rsField: "rs_model2_no", track: [], ...SHIP_HULLS[2] },
+    3: { headingField: "heading3", speedField: "speed3", led: "led3", rsField: "rs_model3_no", track: [], ...SHIP_HULLS[3] },
+    4: { headingField: "heading4", speedField: "speed4", led: "led4", rsField: "rs_model4_no", track: [], ...SHIP_HULLS[4] },
+    5: { headingField: "heading5", speedField: "speed5", led: "led5", rsField: "rs_model5_no", track: [], ...SHIP_HULLS[5] },
+    6: { headingField: "heading6", speedField: "speed6", led: "led6", rsField: "rs_model6_no", track: [], ...SHIP_HULLS[6] },
 };
 
 // kolor i informacje o modelach
@@ -1388,43 +1386,8 @@ const ShipCounter = (function () {
 // ------------------------------------------------------------------
 // Konva - funkcje pomocnicze do rysowania statku i trasy
 // ------------------------------------------------------------------
-const ANGLE_CORRECTION = 9; // zgodnie z Twoim oryginalnym kodem
-
 // obiekt przechowujący instancje Konva dla każdego modelu
 const KonvaObjects = {};
-
-// Shared rotate+translate+flatten step for both the hull and the LOD arrow:
-// rotates by (angle + ANGLE_CORRECTION), translates to (x,y), then flattens to
-// Konva's [x1,y1,x2,y2,...] point format. Kept in one place so a future change
-// to that convention only has to happen once — the ship-list arrow
-// (renderShipListArrow) deliberately does NOT use this helper, see the
-// comment there for why.
-function rotateTranslateFlatten(vertices, angle, x, y) {
-    const radians = (angle + ANGLE_CORRECTION) * Math.PI / 180;
-    const flat = [];
-    for (const v of vertices) {
-        flat.push(v.x * Math.cos(radians) - v.y * Math.sin(radians) + x);
-        flat.push(v.x * Math.sin(radians) + v.y * Math.cos(radians) + y);
-    }
-    return flat;
-}
-
-// funkcja obliczająca wierzchołki statku (używana dla Konva)
-function computeShipVerticesForKonva(x, y, scale, angle, yy, xx, pp) {
-    // Twój oryginalny zbiór wierzchołków (bez kopiowania ctx)
-    let vertices = [
-        {x:       0, y: -0.5*yy + pp*(yy/10)},
-        {x:  0.5*xx, y: -0.4*yy + pp*(yy/10)},
-        {x:  0.5*xx, y:  0.5*yy + pp*(yy/10)},
-        {x: -0.5*xx, y:  0.5*yy + pp*(yy/10)},
-        {x: -0.5*xx, y: -0.4*yy + pp*(yy/10)}
-    ];
-
-    // Scale
-    vertices = vertices.map(vertex => ({ x: vertex.x * scale * 1.1, y: vertex.y * scale }));
-
-    return rotateTranslateFlatten(vertices, angle, x, y);
-}
 
 // LOD arrow shown instead of the hull silhouette at low zoom — same triangle as
 // the ship-list arrow (chart.html), M12 2 L18 20 L12 16 L6 20 Z, viewBox 24x24,
@@ -1750,16 +1713,6 @@ function scheduleReconnect() {
     }, wsReconnectDelay);
 }
 socket = createWebSocket();
-
-function getScaledPoints(oldX, oldY) {
-    const staticShift_y = 506;
-    const staticShift_x = 64;
-    const scaleX = mapa_x;
-    const scaleY = mapa_x;
-    const y = (-oldX + staticShift_y) * scaleY;
-    const x = (oldY + staticShift_x ) * scaleX;
-    return {x, y};
-}
 
 // ------------------------------------------------------------------
 // Pozostałe pomocnicze funkcje (LED, pola)

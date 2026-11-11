@@ -27,7 +27,7 @@ Full reference: [`docs/chart-map-view.md`](docs/chart-map-view.md)
 
 A single Konva stage with four layers bottom-to-top: map image → tracks → ship polygons (clickable) → tooltip. Ships live in **map coordinates** (2666 × 4000, `MAP_WIDTH`/`MAP_HEIGHT`); zoom/pan transforms the whole stage, so calibration is resolution-independent. The map raster has three identically-sized variants loaded as a fallback chain (`.avif` ~109 KB → `.webp` ~143 KB → `.jpg` ~1 MB). Konva wipes its container on stage creation, so the zoom buttons must be siblings of `#konvaContainer`, never children.
 
-Hull size is fixed in map coordinates (`modelsConfig[id].scale`) and must never be derived from the live stage scale. The tooltip layer, by contrast, is counter-scaled to keep a constant on-screen size.
+Hull size is fixed in map coordinates (`SHIP_HULLS[id].scale` in `static/js/common/ship-geometry.js`, copied into `modelsConfig`) and must never be derived from the live stage scale. The tooltip layer, by contrast, is counter-scaled to keep a constant on-screen size.
 
 ### Follow mode
 Full reference: [`docs/follow-mode-spec.md`](docs/follow-mode-spec.md). Toggling a ship in the list makes the camera hold that ship, with the chart turned so its course (COG, default) or heading (HDG) points up.
