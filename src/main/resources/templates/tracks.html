@@ -33,16 +33,17 @@
         <!-- A form for layout and grouping only: nothing is submitted, tracks-script.js reads the fields. -->
         <form id="tracksForm" class="p-3" novalidate
               th:data-now="${#temporals.format(now, 'yyyy-MM-dd''T''HH:mm:ss')}"
+              th:data-zone="${displayZone}"
               onsubmit="return false">
             <h5 class="tracks-heading">Ships</h5>
             <ul class="list-unstyled m-0 mb-3">
                 <li th:each="ship : ${ships}">
                     <label class="ship-row" th:style="'--ship-color: ' + ${ship.color}">
                         <input class="form-check-input m-0" type="checkbox" name="ship" th:value="${ship.id}"
-                               th:data-ship-id="${ship.id}">
+                               th:data-ship-id="${ship.id}" th:data-color="${ship.color}">
                         <span class="ship-chip"></span>
                         <span class="ship-name" th:text="${ship.name}">Ship Name</span>
-                        <!-- "no data" after a draw (stage 4) -->
+                        <!-- "no data" after a draw -->
                         <small class="ship-note text-muted ms-auto" th:data-ship-note="${ship.id}"></small>
                     </label>
                 </li>
@@ -65,26 +66,28 @@
             <div class="text-muted small mb-3">Times in <span th:text="${displayZone}">Europe/Warsaw</span>, at most 24 h.</div>
 
             <h5 class="tracks-heading">Silhouettes</h5>
-            <!-- Disabled until the drawing is wired in. -->
             <label for="periodSlider" class="form-label small mb-1">
                 Period: <output id="periodValue" for="periodSlider">10</output> s (0 = every point)
             </label>
-            <input type="range" class="form-range" id="periodSlider" min="0" max="60" step="1" value="10" disabled>
+            <input type="range" class="form-range" id="periodSlider" min="0" max="60" step="1" value="10">
             <div class="form-check form-check-inline">
-                <input class="form-check-input" type="checkbox" id="showSilhouettes" checked disabled>
+                <input class="form-check-input" type="checkbox" id="showSilhouettes" checked>
                 <label class="form-check-label" for="showSilhouettes">Show silhouettes</label>
             </div>
             <div class="form-check form-check-inline mb-3">
-                <input class="form-check-input" type="checkbox" id="timeLabels" disabled>
+                <input class="form-check-input" type="checkbox" id="timeLabels">
                 <label class="form-check-label" for="timeLabels">Time labels</label>
             </div>
 
             <label for="gapInput" class="form-label small mb-1">Break a line after a gap longer than (s)</label>
             <input type="number" class="form-control form-control-sm mb-3" id="gapInput" min="1" max="600" step="1"
-                   th:value="${gapSeconds}" disabled>
+                   th:value="${gapSeconds}">
 
             <div class="d-flex flex-wrap gap-2 mb-3">
-                <button type="button" id="refreshBtn" class="btn btn-primary btn-sm" disabled>Refresh</button>
+                <button type="button" id="refreshBtn" class="btn btn-primary btn-sm" disabled>
+                    <span class="spinner-border spinner-border-sm d-none" aria-hidden="true"></span>
+                    Refresh
+                </button>
                 <button type="button" id="clearBtn" class="btn btn-outline-secondary btn-sm" disabled>Clear</button>
                 <button type="button" id="printBtn" class="btn btn-outline-secondary btn-sm" disabled>Print</button>
             </div>
@@ -103,6 +106,7 @@
 <script type="text/javascript" th:src="@{/flatpickr/flatpickr.min.js}"></script>
 <script type="text/javascript" th:src="@{/js/common/ship-geometry.js}"></script>
 <script type="text/javascript" th:src="@{/js/common/map-image.js}"></script>
+<script type="text/javascript" th:src="@{/js/tracks-draw.js}"></script>
 <script type="text/javascript" th:src="@{/js/tracks-script.js}"></script>
 </body>
 </html>

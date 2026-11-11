@@ -82,3 +82,8 @@
     border: 2px solid var(--fb-ink, #151a22);
     border-top: 0;
 }
+
+/* The message can hold several lines (result and silhouette period). */
+#tracksMessage {
+    white-space: pre-line;
+}

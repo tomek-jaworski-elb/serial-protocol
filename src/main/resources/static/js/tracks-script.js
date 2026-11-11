@@ -1,4 +1,4 @@
-// /tracks: form, validation and the A4 map. Drawing the tracks is not wired in yet.
+// /tracks: form, validation, the A4 map and the Refresh/Clear flow; tracks-draw.js draws what comes back.
 // Dates are wall-clock values in the server's display zone, held in local Date objects only so that
 // Flatpickr can show them; the browser's own zone never enters a calculation.
 
@@ -26,14 +26,24 @@ function wallClockNow() {
 }
 
 function dayKey(date) {
-    const two = (n) => String(n).padStart(2, '0');
     return date.getFullYear() + '-' + two(date.getMonth() + 1) + '-' + two(date.getDate());
+}
+
+// "2026-11-11T14:03:05": the picker's wall clock as the server reads it, never converted through UTC.
+function isoLocal(date) {
+    return dayKey(date) + 'T' + two(date.getHours()) + ':' + two(date.getMinutes()) + ':' + two(date.getSeconds());
+}
+
+// a picker's wall clock in the units of tracks-draw.js
+function pickerWallMs(date) {
+    return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), date.getMinutes(), date.getSeconds());
 }
 
 const fromInput = document.getElementById('fromInput');
 const toInput = document.getElementById('toInput');
 const rangeError = document.getElementById('rangeError');
 const refreshBtn = document.getElementById('refreshBtn');
+let loading = false;
 let fromPicker = null;
 let toPicker = null;
 
@@ -53,7 +63,7 @@ function validateRange() {
     rangeError.textContent = problem;
     fromInput.classList.toggle('is-invalid', problem !== '');
     toInput.classList.toggle('is-invalid', problem !== '');
-    refreshBtn.disabled = problem !== '';
+    refreshBtn.disabled = loading || problem !== '';
 }
 
 async function initPickers() {
@@ -154,7 +164,6 @@ function bindMapControls() {
 
 // ---------------------------------------------------------------- print frame
 
-// Layers, bottom to top. Tracks and silhouettes stay empty until the drawing is wired in.
 let printLayer = null;
 let printFrame = null;       // Konva.Rect in map coordinates, or null
 let frameTransformer = null;
@@ -250,6 +259,231 @@ function getPrintArea() {
     return {x: -konvaStage.x() / scale, y: -konvaStage.y() / scale, width: konvaStage.width() / scale, height: konvaStage.height() / scale};
 }
 
+// ---------------------------------------------------------------- settings
+
+const periodSlider = document.getElementById('periodSlider');
+let chosenPeriod = Number(periodSlider.value); // the user's own choice; the range may raise the slider above it
+const periodValue = document.getElementById('periodValue');
+const showSilhouettes = document.getElementById('showSilhouettes');
+const timeLabels = document.getElementById('timeLabels');
+const gapInput = document.getElementById('gapInput');
+const clearBtn = document.getElementById('clearBtn');
+const printBtn = document.getElementById('printBtn');
+const shipBoxes = [...form.querySelectorAll('input[name="ship"]')];
+const SETTINGS_KEY = 'tracks.settings';
+const MIN_TIME_LABEL_PERIOD = 10; // below this the labels would overlap
+
+// The range, frame and view always start fresh; only these are remembered.
+function loadSettings() {
+    try {
+        return JSON.parse(localStorage.getItem(SETTINGS_KEY)) ?? {};
+    } catch (e) {
+        return {};
+    }
+}
+
+function saveSettings() {
+    try {
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+            ships: shipBoxes.filter((box) => box.checked).map((box) => Number(box.value)),
+            period: chosenPeriod, showSilhouettes: showSilhouettes.checked, timeLabels: timeLabels.checked, gap: gapInput.value
+        }));
+    } catch (e) {
+        // storage blocked: the page works with its defaults
+    }
+}
+
+function restoreSettings() {
+    const saved = loadSettings();
+    if (Array.isArray(saved.ships)) shipBoxes.forEach((box) => box.checked = saved.ships.includes(Number(box.value)));
+    if (Number.isInteger(saved.period) && saved.period >= 0 && saved.period <= MAX_PERIOD_S) periodSlider.value = saved.period;
+    chosenPeriod = Number(periodSlider.value);
+    if (typeof saved.showSilhouettes === 'boolean') showSilhouettes.checked = saved.showSilhouettes;
+    if (typeof saved.timeLabels === 'boolean') timeLabels.checked = saved.timeLabels;
+    if (Number.isInteger(+saved.gap) && saved.gap >= 1 && saved.gap <= 600) gapInput.value = saved.gap;
+}
+
+// the controls are the source of truth; drawSettings is what tracks-draw.js reads
+function readSettings() {
+    const period = Number(periodSlider.value);
+    periodValue.textContent = period;
+    timeLabels.disabled = period < MIN_TIME_LABEL_PERIOD;
+    drawSettings.period = period;
+    drawSettings.showSilhouettes = showSilhouettes.checked;
+    drawSettings.timeLabels = timeLabels.checked && !timeLabels.disabled;
+}
+
+// ---------------------------------------------------------------- messages
+
+const messageBox = document.getElementById('tracksMessage');
+let resultMessage = '';   // what the last Refresh found, or why it failed
+let resultKind = 'info';
+let periodNote = '';      // silhouette cap, about the drawing on the map
+
+function renderMessage() {
+    const text = [resultMessage, periodNote].filter(Boolean).join('\n');
+    messageBox.textContent = text;
+    messageBox.classList.toggle('d-none', text === '');
+    for (const kind of ['info', 'warning', 'danger']) messageBox.classList.toggle('alert-' + kind, kind === resultKind);
+}
+
+function setResultMessage(text, kind = 'info') {
+    resultMessage = text;
+    resultKind = kind;
+    renderMessage();
+}
+
+function setShipNotes(missingIds) {
+    document.querySelectorAll('[data-ship-note]').forEach((note) => {
+        note.textContent = missingIds.has(Number(note.dataset.shipNote)) ? 'no data' : '';
+    });
+}
+
+// "No ... for this range" texts from the server's coverage
+function emptyMessage(coverage, from, to) {
+    if (coverage.logsFound) {
+        const withDate = dayKey(from) !== dayKey(to);
+        const text = (date) => formatWall(pickerWallMs(date), withDate);
+        return `No positions for the selected ships between ${text(from)} and ${text(to)}. Logs for this period exist.`;
+    }
+    if (!coverage.historyFrom) return 'No logs have been recorded yet.';
+    const day = (iso) => iso.split('-').reverse().join('/');
+    return `No logs for this period. Recorded history: ${day(coverage.historyFrom)} – ${day(coverage.historyTo)}.`;
+}
+
+// "Data found ..." when the points cover only part of the range (more than a gap short at either end)
+function partialMessage(coverage, from, to) {
+    const first = wallMs(coverage.firstPoint);
+    const last = wallMs(coverage.lastPoint);
+    if (first - pickerWallMs(from) <= drawSettings.gapMs && pickerWallMs(to) - last <= drawSettings.gapMs) return '';
+    const withDate = dayKey(from) !== dayKey(to);
+    return `Data found ${formatWall(first, withDate)} – ${formatWall(last, withDate)}`;
+}
+
+// ---------------------------------------------------------------- drawing
+
+let drawn = false; // at least one point is on the map
+
+function updateButtons() {
+    validateRange();
+    clearBtn.disabled = loading || (!drawn && resultMessage === '');
+    printBtn.disabled = loading || !drawn;
+}
+
+function setLoading(on) {
+    loading = on;
+    refreshBtn.querySelector('.spinner-border').classList.toggle('d-none', !on);
+    updateButtons();
+}
+
+// Raise the slider's minimum when the period would give more than the silhouette cap.
+function applyPeriodLimit() {
+    const {min, fits} = periodLimit();
+    periodSlider.min = min;
+    periodNote = '';
+    if (!fits) {
+        periodSlider.value = MAX_PERIOD_S;
+        periodNote = `Silhouettes shown every ${MAX_PERIOD_S} s: the range is too long for a shorter period`;
+    } else {
+        periodSlider.value = Math.max(chosenPeriod, min);
+        if (chosenPeriod < min) periodNote = `Period raised to ${min} s: too many silhouettes for this range`;
+    }
+    readSettings();
+    renderMessage();
+}
+
+function clearDrawing() {
+    setTracks([], null);
+    applyPeriodLimit();
+    scheduleRedraw(REBUILD_TRACKS);
+    drawn = false;
+    setShipNotes(new Set());
+}
+
+function showResult(result, requestedIds, from, to) {
+    const withPoints = result.ships.filter((ship) => ship.points.length);
+    if (withPoints.length === 0) {
+        clearDrawing();
+        setShipNotes(new Set(requestedIds));
+        setResultMessage(emptyMessage(result.coverage, from, to), 'warning');
+        return;
+    }
+    const colorOf = (id) => shipBoxes.find((box) => Number(box.value) === id).dataset.color;
+    setTracks(withPoints, colorOf);
+    applyPeriodLimit();
+    scheduleRedraw(REBUILD_TRACKS);
+    drawn = true;
+    setShipNotes(new Set(requestedIds.filter((id) => !withPoints.some((ship) => ship.id === id))));
+    setResultMessage(partialMessage(result.coverage, from, to));
+}
+
+async function refresh() {
+    const ids = shipBoxes.filter((box) => box.checked).map((box) => Number(box.value));
+    if (ids.length === 0) {
+        setResultMessage('Choose at least one ship.', 'warning');
+        updateButtons();
+        return;
+    }
+    const from = fromPicker.selectedDates[0];
+    const to = toPicker.selectedDates[0];
+    setLoading(true);
+    try {
+        const response = await fetch(`/tracks/api/points?from=${isoLocal(from)}&to=${isoLocal(to)}&models=${ids.join(',')}`);
+        if (response.ok) {
+            showResult(await response.json(), ids, from, to);
+        } else if (response.status === 503) {
+            setResultMessage('The server is busy with another track query, try again in a moment.', 'danger');
+        } else {
+            const body = await response.json().catch(() => ({}));
+            setResultMessage(body.message || 'The track query failed.', 'danger');
+        }
+    } catch (e) {
+        console.error('Track query failed:', e);
+        setResultMessage('The track query failed.', 'danger');
+    } finally {
+        setLoading(false);
+    }
+}
+
+function clear() {
+    clearDrawing();
+    setResultMessage('');
+    updateButtons();
+}
+
+// Stage 5 hook: render getPrintArea() and post it to /tracks/pdf.
+function printTracks() {
+}
+
+function bindControls() {
+    refreshBtn.addEventListener('click', refresh);
+    clearBtn.addEventListener('click', clear);
+    printBtn.addEventListener('click', printTracks);
+    shipBoxes.forEach((box) => box.addEventListener('change', saveSettings));
+    periodSlider.addEventListener('input', () => {
+        chosenPeriod = Number(periodSlider.value);
+        readSettings();
+        saveSettings();
+        scheduleRedraw(REBUILD_SILHOUETTES);
+    });
+    for (const toggle of [showSilhouettes, timeLabels]) {
+        toggle.addEventListener('change', () => {
+            readSettings();
+            saveSettings();
+            scheduleRedraw(REPAINT);
+        });
+    }
+    // 'change', not 'input': re-segmenting a 24 h track per keystroke would stutter
+    gapInput.addEventListener('change', () => {
+        const gap = Math.min(600, Math.max(1, Math.round(Number(gapInput.value)) || 1));
+        gapInput.value = gap;
+        setGap(gap);
+        applyPeriodLimit();
+        saveSettings();
+        scheduleRedraw(REBUILD_TRACKS);
+    });
+}
+
 // ---------------------------------------------------------------- init
 
 function initStage() {
@@ -258,9 +492,10 @@ function initStage() {
     konvaStage = new Konva.Stage({container: 'konvaContainer', width: container.clientWidth, height: container.clientHeight, draggable: true});
     konvaStage.dragBoundFunc((pos) => clampStagePosition(pos, konvaStage.scaleX()));
 
+    // layers, bottom to top; trackLayer and silhouetteLayer are filled by tracks-draw.js
     const mapLayer = new Konva.Layer({listening: false});
-    const trackLayer = new Konva.Layer({listening: false});
-    const silhouetteLayer = new Konva.Layer({listening: false});
+    trackLayer = new Konva.Layer({listening: false});
+    silhouetteLayer = new Konva.Layer({listening: false});
     printLayer = new Konva.Layer();
     konvaStage.add(mapLayer, trackLayer, silhouetteLayer, printLayer);
 
@@ -287,13 +522,13 @@ function initStage() {
 
 initStage();
 initPickers();
+restoreSettings();
+readSettings();
+setGap(Number(gapInput.value));
+bindControls();
 
 let resizeTimeout = null;
 window.addEventListener('resize', () => {
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(() => fitStageToContainer(false), 100);
-});
-
-document.getElementById('periodSlider').addEventListener('input', (e) => {
-    document.getElementById('periodValue').textContent = e.target.value;
 });
