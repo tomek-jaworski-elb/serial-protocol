@@ -1,15 +1,108 @@
 <!DOCTYPE html>
 <html lang="en">
-<head th:insert="~{fragment::head}"></head>
 <head>
-    <title th:text="${@environment.getProperty('spring.application.name')} + ' : Tracks'">Serial port server</title>
+    <th:block th:replace="~{fragment::headContent}"></th:block>
+    <title th:text="${@environment.getProperty('spring.application.name')} + ' : Tracks'">Tracks</title>
+    <link rel="stylesheet" th:href="@{/flatpickr/flatpickr.min.css}">
+    <link th:href="@{/css/chart.css}" rel="stylesheet"/>
+    <link th:href="@{/css/tracks.css}" rel="stylesheet"/>
+    <link rel="preload" as="image" type="image/avif" th:href="@{/img/MapaSilm_2666x4000.avif}"/>
 </head>
 <body>
 <header th:replace="~{fragment::header}"></header>
-<div class="container text-center py-5">
-    <p class="h4">Tracks</p>
-    <p class="text-muted">The track view is being rebuilt and will be back soon.</p>
+<!-- Filled by tracks-script.js; hidden while empty. -->
+<div class="container-fluid">
+    <div id="tracksMessage" class="alert alert-info py-1 px-2 small my-2 d-none" role="status"></div>
+</div>
+<div class="map-wrapper tracks-wrapper">
+    <!-- controls live outside #konvaContainer: Konva clears the stage container content on init -->
+    <div class="map-pane">
+        <div class="canvas-container" id="konvaContainer"></div>
+        <div class="map-controls btn-group-vertical" role="group" aria-label="Map zoom controls">
+            <button type="button" id="zoomInBtn" class="btn btn-light border" title="Zoom in">+</button>
+            <button type="button" id="zoomOutBtn" class="btn btn-light border" title="Zoom out">&minus;</button>
+            <button type="button" id="zoomResetBtn" class="btn btn-light border" title="Reset view">&#8634;</button>
+        </div>
+        <div class="scale-bar" aria-label="Map scale">
+            <div class="scale-bar-line" id="scaleBarLine"></div>
+            <span id="scaleBarLabel"></span>
+        </div>
+    </div>
+
+    <aside class="tracks-panel" aria-label="Track settings">
+        <!-- A form for layout and grouping only: nothing is submitted, tracks-script.js reads the fields. -->
+        <form id="tracksForm" class="p-3" novalidate
+              th:data-now="${#temporals.format(now, 'yyyy-MM-dd''T''HH:mm:ss')}"
+              onsubmit="return false">
+            <h5 class="tracks-heading">Ships</h5>
+            <ul class="list-unstyled m-0 mb-3">
+                <li th:each="ship : ${ships}">
+                    <label class="ship-row" th:style="'--ship-color: ' + ${ship.color}">
+                        <input class="form-check-input m-0" type="checkbox" name="ship" th:value="${ship.id}"
+                               th:data-ship-id="${ship.id}">
+                        <span class="ship-chip"></span>
+                        <span class="ship-name" th:text="${ship.name}">Ship Name</span>
+                        <!-- "no data" after a draw (stage 4) -->
+                        <small class="ship-note text-muted ms-auto" th:data-ship-note="${ship.id}"></small>
+                    </label>
+                </li>
+            </ul>
+
+            <h5 class="tracks-heading">Time range</h5>
+            <div class="row g-2 mb-1">
+                <div class="col-6">
+                    <label for="fromInput" class="form-label small mb-1">From</label>
+                    <input type="text" id="fromInput" class="form-control form-control-sm" autocomplete="off"
+                           placeholder="dd/MM/yyyy HH:mm:ss">
+                </div>
+                <div class="col-6">
+                    <label for="toInput" class="form-label small mb-1">To</label>
+                    <input type="text" id="toInput" class="form-control form-control-sm" autocomplete="off"
+                           placeholder="dd/MM/yyyy HH:mm:ss">
+                </div>
+            </div>
+            <div id="rangeError" class="text-danger small" role="alert"></div>
+            <div class="text-muted small mb-3">Times in <span th:text="${displayZone}">Europe/Warsaw</span>, at most 24 h.</div>
+
+            <h5 class="tracks-heading">Silhouettes</h5>
+            <!-- Disabled until the drawing is wired in. -->
+            <label for="periodSlider" class="form-label small mb-1">
+                Period: <output id="periodValue" for="periodSlider">10</output> s (0 = every point)
+            </label>
+            <input type="range" class="form-range" id="periodSlider" min="0" max="60" step="1" value="10" disabled>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="showSilhouettes" checked disabled>
+                <label class="form-check-label" for="showSilhouettes">Show silhouettes</label>
+            </div>
+            <div class="form-check form-check-inline mb-3">
+                <input class="form-check-input" type="checkbox" id="timeLabels" disabled>
+                <label class="form-check-label" for="timeLabels">Time labels</label>
+            </div>
+
+            <label for="gapInput" class="form-label small mb-1">Break a line after a gap longer than (s)</label>
+            <input type="number" class="form-control form-control-sm mb-3" id="gapInput" min="1" max="600" step="1"
+                   th:value="${gapSeconds}" disabled>
+
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                <button type="button" id="refreshBtn" class="btn btn-primary btn-sm" disabled>Refresh</button>
+                <button type="button" id="clearBtn" class="btn btn-outline-secondary btn-sm" disabled>Clear</button>
+                <button type="button" id="printBtn" class="btn btn-outline-secondary btn-sm" disabled>Print</button>
+            </div>
+
+            <h5 class="tracks-heading">Print area</h5>
+            <div class="d-flex flex-wrap gap-2">
+                <button type="button" id="printFrameBtn" class="btn btn-outline-primary btn-sm" aria-pressed="false">Print frame</button>
+                <button type="button" id="removeFrameBtn" class="btn btn-outline-secondary btn-sm" disabled>Remove frame</button>
+            </div>
+            <div class="text-muted small mt-1">Without a frame, the current view is printed.</div>
+        </form>
+    </aside>
 </div>
 <footer th:replace="~{fragment::footer}"></footer>
+<script type="text/javascript" th:src="@{/js/konva-10_3_2/konva.min.js}"></script>
+<script type="text/javascript" th:src="@{/flatpickr/flatpickr.min.js}"></script>
+<script type="text/javascript" th:src="@{/js/common/ship-geometry.js}"></script>
+<script type="text/javascript" th:src="@{/js/common/map-image.js}"></script>
+<script type="text/javascript" th:src="@{/js/tracks-script.js}"></script>
 </body>
 </html>

@@ -1,0 +1,84 @@
+/* /tracks: what differs from /chart. The map pane, zoom controls and ship rows come from chart.css. */
+
+/* The map is a fixed A4 portrait, sized by the viewport height like the chart pane. */
+.tracks-wrapper .canvas-container {
+    height: 85vh;
+    height: 85svh;
+    aspect-ratio: 210 / 297;
+    width: auto;
+    background: #ffffff; /* the map is narrower than A4; no page gradient beside it */
+}
+
+/* Below lg the panel stacks under the map, which then takes the full width. */
+@media (max-width: 991.98px) {
+    .tracks-wrapper .canvas-container {
+        height: auto;
+        width: 100%;
+    }
+}
+
+@media (min-width: 992px) {
+    /* the A4 map and the panel are narrower than a wide screen: centre the pair */
+    .tracks-wrapper {
+        justify-content: center;
+    }
+
+    .tracks-wrapper .map-pane {
+        flex: 0 0 auto;
+    }
+}
+
+/* Same card as the chart's ship list on desktop. */
+.tracks-panel {
+    background: var(--fb-surface, #ffffff);
+    border: 1px solid var(--fb-border, #dde1e8);
+    border-radius: 8px;
+    overflow-y: auto;
+}
+
+@media (min-width: 992px) {
+    .tracks-panel {
+        flex: 0 0 400px;
+        max-height: 85svh;
+    }
+}
+
+.tracks-heading {
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem;
+}
+
+/* Rows are labels here, so the whole row ticks the ship. */
+.tracks-panel .ship-row {
+    cursor: pointer;
+    padding: 0.3rem 0.25rem;
+}
+
+/* The validation icon would take the room the seconds need in the date fields. */
+.tracks-panel .form-control.is-invalid {
+    background-image: none;
+    padding-right: 0.5rem;
+}
+
+/* Scale bar, bottom left of the map pane like the chart's follow chip. */
+.scale-bar {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    z-index: 20;
+    padding: 0.2rem 0.5rem;
+    border: 1px solid var(--fb-border, #dde1e8);
+    border-radius: 6px;
+    background: var(--fb-surface, #ffffff);
+    box-shadow: 0 1px 4px rgb(0 0 0 / 15%);
+    font-size: 0.75rem;
+    pointer-events: none;
+}
+
+/* Its width is the round length on screen, set by tracks-script.js. */
+.scale-bar-line {
+    height: 6px;
+    border: 2px solid var(--fb-ink, #151a22);
+    border-top: 0;
+}

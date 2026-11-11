@@ -12,14 +12,6 @@ const container = document.querySelector('.canvas-container');
 
 // --- Konva stage: map as bottom layer + zoom/pan/pinch ---
 const konvaContainerId = 'konvaContainer';
-const MAP_WIDTH = 2666;
-const MAP_HEIGHT = 4000;
-// modern formats first, JPG as last-resort fallback
-const MAP_IMAGE_SOURCES = [
-    '/img/MapaSilm_2666x4000.avif',
-    '/img/MapaSilm_2666x4000.webp',
-    '/img/MapaSilm_2666x4000.jpg'
-];
 const SCALE_BY = 1.1;
 // Upper zoom limit. Follow mode needs far more than the flat 3 this used to be: at
 // "ship length = 25% of viewport height" the shortest ship on a tall screen asks for
@@ -32,23 +24,6 @@ let konvaStage = null;
 let konvaMapLayer = null;
 let konvaTrackLayer = null;
 let konvaShipLayer = null;
-
-// try each source in order, resolve with the first that loads
-function loadMapImage(sources) {
-    return new Promise((resolve, reject) => {
-        const tryNext = (index) => {
-            if (index >= sources.length) {
-                reject(new Error('Unable to load map image: ' + sources.join(', ')));
-                return;
-            }
-            const img = new Image();
-            img.onload = () => resolve(img);
-            img.onerror = () => tryNext(index + 1);
-            img.src = sources[index];
-        };
-        tryNext(0);
-    });
-}
 
 function clampScale(scale) {
     // While following, the floor is the zoom at which the LOD crossfade is fully on the

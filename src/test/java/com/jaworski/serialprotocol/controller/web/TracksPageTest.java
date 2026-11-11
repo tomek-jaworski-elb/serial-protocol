@@ -6,6 +6,8 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.jaworski.serialprotocol.dto.Models;
+
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -64,5 +66,37 @@ class TracksPageTest {
                     .as("%s is referenced by /tracks but is not in static/", asset)
                     .isTrue();
         }
+    }
+
+    /** One checkbox row per ship, from Models: id, name and colour, none ticked. */
+    @Test
+    void everyShipIsRenderedFromModelsWithItsColour() throws Exception {
+        String html = tracksHtml();
+        for (Models ship : Models.values()) {
+            assertThat(html).contains("name=\"ship\" value=\"" + ship.getId() + "\"")
+                    .contains("--ship-color: " + ship.getColor())
+                    .contains(">" + ship.getName() + "<")
+                    .contains("data-ship-note=\"" + ship.getId() + "\"");
+        }
+        assertThat(html).doesNotContain("checked=\"checked\" name=\"ship\"");
+    }
+
+    @Test
+    void theFormControlsArePresent() throws Exception {
+        String html = tracksHtml();
+        assertThat(html).contains("id=\"fromInput\"", "id=\"toInput\"", "id=\"rangeError\"", "id=\"tracksMessage\"",
+                "id=\"refreshBtn\"", "id=\"clearBtn\"", "id=\"printBtn\"",
+                "id=\"periodSlider\"", "id=\"showSilhouettes\"", "id=\"timeLabels\"", "id=\"gapInput\"",
+                "id=\"printFrameBtn\"", "id=\"removeFrameBtn\"", "id=\"konvaContainer\"",
+                "id=\"zoomInBtn\"", "id=\"zoomOutBtn\"", "id=\"zoomResetBtn\"", "id=\"scaleBarLine\"");
+    }
+
+    /** The page needs the zone, the gap and the server's clock at render time. */
+    @Test
+    void theModelAttributesAreRendered() throws Exception {
+        String html = tracksHtml();
+        assertThat(html).contains("Times in <span>Europe/Warsaw</span>");
+        assertThat(html).containsPattern("data-now=\"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\"");
+        assertThat(html).containsPattern("id=\"gapInput\"[^>]*value=\"10\"");
     }
 }

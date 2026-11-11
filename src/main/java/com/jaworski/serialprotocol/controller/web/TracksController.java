@@ -1,6 +1,7 @@
 package com.jaworski.serialprotocol.controller.web;
 
 import com.jaworski.serialprotocol.configuration.TracksProperties;
+import com.jaworski.serialprotocol.dto.Models;
 import com.jaworski.serialprotocol.dto.tracks.TrackQueryResult;
 import com.jaworski.serialprotocol.service.WebSocketPublisher;
 import com.jaworski.serialprotocol.service.tracks.InvalidTrackQueryException;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.Set;
 
@@ -39,6 +41,11 @@ public class TracksController {
     public String tracks(Model model) {
         model.addAttribute(MapController.ATTRIBUTE_NAME, "track");
         model.addAttribute("sessions", webSocketPublisher.openPageCount());
+        model.addAttribute("ships", Models.values());
+        model.addAttribute("displayZone", properties.displayZone().getId());
+        model.addAttribute("gapSeconds", properties.gapSeconds());
+        // The default range is built from the server's clock in the display zone, never the browser's.
+        model.addAttribute("now", LocalDateTime.now(properties.displayZone()).truncatedTo(ChronoUnit.SECONDS));
         return "tracks";
     }
 
