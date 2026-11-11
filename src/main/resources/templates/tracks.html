@@ -34,6 +34,8 @@
         <form id="tracksForm" class="p-3" novalidate
               th:data-now="${#temporals.format(now, 'yyyy-MM-dd''T''HH:mm:ss')}"
               th:data-zone="${displayZone}"
+              th:data-box-width-mm="${pdfBoxWidthMm}"
+              th:data-box-height-mm="${pdfBoxHeightMm}"
               onsubmit="return false">
             <h5 class="tracks-heading">Ships</h5>
             <ul class="list-unstyled m-0 mb-3">
@@ -98,6 +100,16 @@
                 <button type="button" id="removeFrameBtn" class="btn btn-outline-secondary btn-sm" disabled>Remove frame</button>
             </div>
             <div class="text-muted small mt-1">Without a frame, the current view is printed.</div>
+        </form>
+
+        <!-- The PDF request: tracks-script.js fills it and submits it into a new tab. -->
+        <form id="pdfForm" method="post" enctype="multipart/form-data" target="_blank" th:action="@{/tracks/pdf}" hidden>
+            <input type="file" name="image">
+            <input type="hidden" name="from">
+            <input type="hidden" name="to">
+            <input type="hidden" name="silhouettes">
+            <input type="hidden" name="ships">
+            <input type="hidden" name="widthMeters">
         </form>
     </aside>
 </div>

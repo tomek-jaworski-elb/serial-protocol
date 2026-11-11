@@ -9,12 +9,18 @@ import com.jaworski.serialprotocol.service.tracks.TrackLogSource;
 import com.jaworski.serialprotocol.service.tracks.TrackQueryBusyException;
 import com.jaworski.serialprotocol.service.tracks.TrackQueryService;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockMultipartHttpServletRequestBuilder;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,7 +28,11 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -102,5 +112,46 @@ class TracksControllerTest {
         mockMvc.perform(get("/tracks/api/points").param("from", FROM).param("to", TO).param("models", "1"))
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.message").value("The server is busy with another track query, try again in a moment."));
+    }
+
+    // ---------------------------------------------------------------- POST /tracks/pdf
+
+    private static MockMultipartFile jpeg() throws IOException {
+        var out = new ByteArrayOutputStream();
+        ImageIO.write(new BufferedImage(300, 420, BufferedImage.TYPE_INT_RGB), "jpg", out);
+        return new MockMultipartFile("image", "tracks.jpg", "image/jpeg", out.toByteArray());
+    }
+
+    private static MockMultipartHttpServletRequestBuilder pdfRequest(MockMultipartFile image) {
+        return multipart("/tracks/pdf").file(image)
+                .param("from", FROM).param("to", TO).param("silhouettes", "20").param("ships", "1,2").param("widthMeters", "500");
+    }
+
+    @Test
+    void thePdfIsServedInlineUnderANameFromTheRange() throws Exception {
+        mockMvc.perform(pdfRequest(jpeg()).with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/pdf"))
+                .andExpect(header().string("Content-Disposition", "inline; filename=\"tracks_2026-01-15_1400-1500.pdf\""));
+    }
+
+    @Test
+    void aBadPdfRequestIs400WithPlainText() throws Exception {
+        mockMvc.perform(pdfRequest(new MockMultipartFile("image", "tracks.png", "image/png", new byte[]{1, 2, 3})).with(csrf()))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith("text/plain"))
+                .andExpect(content().string("The map image is not a valid image."));
+        mockMvc.perform(multipart("/tracks/pdf").param("from", FROM).param("to", TO).param("silhouettes", "20")
+                        .param("ships", "1").param("widthMeters", "500").with(csrf()))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("The map image is missing."));
+        mockMvc.perform(pdfRequest(jpeg()).param("ships", "99").with(csrf()))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void thePdfNeedsTheCsrfToken() throws Exception {
+        mockMvc.perform(pdfRequest(jpeg()))
+                .andExpect(status().isForbidden());
     }
 }

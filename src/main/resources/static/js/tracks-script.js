@@ -413,6 +413,8 @@ function showResult(result, requestedIds, from, to) {
     applyPeriodLimit();
     scheduleRedraw(REBUILD_TRACKS);
     drawn = true;
+    drawnFrom = from;
+    drawnTo = to;
     setShipNotes(new Set(requestedIds.filter((id) => !withPoints.some((ship) => ship.id === id))));
     setResultMessage(partialMessage(result.coverage, from, to));
 }
@@ -451,8 +453,63 @@ function clear() {
     updateButtons();
 }
 
-// Stage 5 hook: render getPrintArea() and post it to /tracks/pdf.
-function printTracks() {
+// ---------------------------------------------------------------- print
+
+const PRINT_DPI = 300;
+const JPEG_QUALITY = 0.92; // keeps a full A4 image at 2-3 MB, under the 10 MB upload limit
+// On paper, in millimetres
+const PRINT_MM = {line: 0.3, dotRadius: 0.4, outline: 0.3, labelFont: 2, labelGap: 0.75};
+let drawnFrom = null; // the range of the drawing on the map, which is what gets printed
+let drawnTo = null;
+
+// Renders the print area at PRINT_DPI into a new canvas, fitted into the PDF's image box (the server
+// owns that size, the page gets it from the form). The stage is drawn once at scale 1 and the canvas
+// scaled by pixelRatio, so the map units are the units of the sizes; the stage is put back before
+// anything can repaint, and the layers on the page are not touched.
+function renderPrintArea(area) {
+    const boxWidthMm = Number(form.dataset.boxWidthMm);
+    const boxHeightMm = Number(form.dataset.boxHeightMm);
+    const mmPerUnit = Math.min(boxWidthMm / area.width, boxHeightMm / area.height);
+    const mapUnits = Object.fromEntries(Object.entries(PRINT_MM).map(([name, mm]) => [name, mm / mmPerUnit]));
+    const scale = konvaStage.scale();
+    const position = konvaStage.position();
+    printLayer.visible(false);
+    konvaStage.scale({x: 1, y: 1});
+    konvaStage.position({x: 0, y: 0});
+    try {
+        const canvas = drawWithSizes(mapUnits, () => konvaStage.toCanvas({...area, pixelRatio: mmPerUnit * PRINT_DPI / 25.4}));
+        // JPEG has no transparency: where the area reaches past the map it would turn black
+        const context = canvas.getContext('2d');
+        context.setTransform(1, 0, 0, 1, 0, 0); // Konva leaves its export offset on the context
+        context.globalCompositeOperation = 'destination-over';
+        context.fillStyle = '#fff';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        return canvas;
+    } finally {
+        konvaStage.scale(scale);
+        konvaStage.position(position);
+        printLayer.visible(true);
+    }
+}
+
+async function printTracks() {
+    const area = getPrintArea();
+    printBtn.disabled = true;
+    try {
+        const blob = await new Promise((resolve) => renderPrintArea(area).toBlob(resolve, 'image/jpeg', JPEG_QUALITY));
+        const pdfForm = document.getElementById('pdfForm');
+        const file = new DataTransfer();
+        file.items.add(new File([blob], 'tracks.jpg', {type: 'image/jpeg'}));
+        pdfForm.elements.image.files = file.files;
+        pdfForm.elements.from.value = isoLocal(drawnFrom);
+        pdfForm.elements.to.value = isoLocal(drawnTo);
+        pdfForm.elements.silhouettes.value = drawSettings.showSilhouettes ? drawSettings.period : -1;
+        pdfForm.elements.ships.value = tracks.map((track) => track.id).join(',');
+        pdfForm.elements.widthMeters.value = area.width / mapa_x;
+        pdfForm.submit();
+    } finally {
+        updateButtons();
+    }
 }
 
 function bindControls() {

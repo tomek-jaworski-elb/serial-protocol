@@ -4,12 +4,12 @@
 // sceneFunc, because thousands of nodes (or a Konva.Line of 86 400 points) would be too slow.
 // Hulls are sized in map units, never from the live zoom.
 
-const LINE_WIDTH_PX = 1.5;          // lines, dots and outlines keep these sizes on screen at any zoom
-const DOT_RADIUS_PX = 2;
-const OUTLINE_WIDTH_PX = 1.2;
+// Lines, dots, outlines and labels keep one size on screen at any zoom. A print export swaps in
+// paper-based sizes (see printTracks), in the units of the stage it renders.
+const SCREEN_SIZES = {line: 1.5, dotRadius: 2, outline: 1.2, labelFont: 11, labelGap: 3};
+let sizes = SCREEN_SIZES;
 const MIN_VERTEX_SPACING_PX = 1;    // a line vertex closer than this to the last drawn one is skipped
 const MIN_DOT_SPACING_PX = 2;       // dots (4 px across) still overlap, so thinning does not show
-const LABEL_FONT = '11px sans-serif';
 const LABEL_COLOR = '#151a22';
 const SILHOUETTE_FILL_ALPHA = 0.25;
 const SILHOUETTE_CAP = 5000;
@@ -176,9 +176,11 @@ function visibleRect(ctx, margin) {
 function trackSceneFunc(track) {
     return (ctx, shape) => {
         const scale = shape.getAbsoluteScale().x;
-        const vertexSpacing = MIN_VERTEX_SPACING_PX / scale;
-        const dotSpacing = MIN_DOT_SPACING_PX / scale;
-        const radius = DOT_RADIUS_PX / scale;
+        // export draws at stage scale 1 with a pixelRatio, so spacing must come from the real transform
+        const pixelScale = ctx._context.getTransform().a;
+        const vertexSpacing = MIN_VERTEX_SPACING_PX / pixelScale;
+        const dotSpacing = MIN_DOT_SPACING_PX / pixelScale;
+        const radius = sizes.dotRadius / scale;
         const xy = track.xy;
         ctx.beginPath();
         track.starts.forEach((first, s) => {
@@ -228,11 +230,11 @@ function silhouettesSceneFunc(track, indices, outline, halfLength) {
         native.fillStyle = fill;
         native.fill(outline);
         native.strokeStyle = track.color;
-        native.lineWidth = OUTLINE_WIDTH_PX / scale;
+        native.lineWidth = sizes.outline / scale;
         native.stroke(outline);
         if (!drawSettings.timeLabels) return;
         const view = visibleRect(ctx, halfLength);
-        native.font = LABEL_FONT;
+        native.font = `${sizes.labelFont}px sans-serif`;
         native.fillStyle = LABEL_COLOR;
         native.textBaseline = 'middle';
         for (const i of indices) {
@@ -242,7 +244,7 @@ function silhouettesSceneFunc(track, indices, outline, halfLength) {
             native.save();
             native.translate(x, y);
             native.scale(1 / scale, 1 / scale); // text keeps its size on screen
-            native.fillText(formatWall(wallMs(track.t[i])), halfLength * scale + 3, 0);
+            native.fillText(formatWall(wallMs(track.t[i])), halfLength * scale + sizes.labelGap, 0);
             native.restore();
         }
     };
@@ -270,9 +272,26 @@ function rebuildTracks() {
     trackLayer.destroyChildren();
     for (const track of tracks) {
         trackLayer.add(new Konva.Shape({
-            sceneFunc: trackSceneFunc(track), fill: track.color, stroke: track.color, strokeWidth: LINE_WIDTH_PX,
+            sceneFunc: trackSceneFunc(track), fill: track.color, stroke: track.color, strokeWidth: sizes.line,
             strokeScaleEnabled: false, listening: false, perfectDrawEnabled: false
         }));
+    }
+}
+
+// ---------------------------------------------------------------- print export
+
+// Draws the stage with the given sizes (sizes' units are those of the stage being rendered) and puts the
+// screen sizes back, so the layers on the page never keep the export's.
+function drawWithSizes(printSizes, render) {
+    const apply = (next) => {
+        sizes = next;
+        trackLayer.getChildren().forEach((shape) => shape.strokeWidth(next.line));
+    };
+    apply(printSizes);
+    try {
+        return render();
+    } finally {
+        apply(SCREEN_SIZES);
     }
 }
 
