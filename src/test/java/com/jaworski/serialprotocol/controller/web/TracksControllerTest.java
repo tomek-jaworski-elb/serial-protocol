@@ -150,6 +150,22 @@ class TracksControllerTest {
     }
 
     @Test
+    void polishCaptainsArePrinted() throws Exception {
+        mockMvc.perform(pdfRequest(jpeg()).param("captains", "{\"1\":\"Zażółć Gęślą\",\"2\":\" \"}").with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/pdf"));
+    }
+
+    @Test
+    void badCaptainsAre400WithPlainText() throws Exception {
+        for (String captains : new String[]{"{not json", "[\"Jan\"]", "{\"1\":\"" + "x".repeat(121) + "\"}", "{\"5\":\"Jan\"}"}) {
+            mockMvc.perform(pdfRequest(jpeg()).param("captains", captains).with(csrf()))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(content().contentTypeCompatibleWith("text/plain"));
+        }
+    }
+
+    @Test
     void thePdfNeedsTheCsrfToken() throws Exception {
         mockMvc.perform(pdfRequest(jpeg()))
                 .andExpect(status().isForbidden());

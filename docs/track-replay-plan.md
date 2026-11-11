@@ -1,6 +1,6 @@
 # Track replay (`/tracks`) — implementation plan
 
-> Status: stages 1–7 implemented (stage 7, desktop browsers, 2026-11-11: popup-safe Print, automated rollover test; Safari and Edge await the owner's checklist). Reference: [`track-replay.md`](track-replay.md).
+> Status: stages 1–7 implemented; stage 8 (captain names, 2026-11-11) implemented; (stage 7, desktop browsers, 2026-11-11: popup-safe Print, automated rollover test; Safari and Edge await the owner's checklist). Reference: [`track-replay.md`](track-replay.md).
 > The existing `/tracks` implementation may be replaced entirely.
 
 ## 1. Requirements (owner)
@@ -170,3 +170,25 @@ Verification data: logs produced by the simulator until the owner supplies real 
   traffic the size cap is the one that bites.
 - Drawing speed depends on the viewer's machine: with 24 h × 6 ships and the whole map in view,
   panning ran at ~10 fps in software-rendered headless Chrome; a GPU browser does better.
+
+## 6. Stage 8 — captain names (added 2026-11-11)
+
+Owner's request: next to a ticked ship a text field takes the first name and surname of the captain
+whose track was recorded; the name is printed together with the ship's name.
+
+Research (GOV.UK Design System checkboxes and names patterns, W3C "Personal names around the
+world", WAI-ARIA APG, MDN, GDPR Art. 5/25) led to the simplest option: one plain field per ship,
+no suggestions. Rejected: suggestions from the participants/trainers tables (the page is public, so
+an endpoint would expose names to anonymous users, Art. 25(2), and captains are not modelled),
+storing names with tracks on the server (there is no track table; retention and erasure duties for
+something only the printout needs), and a `<datalist>` of earlier names (six fixed ships do not
+need it; weak accessibility).
+
+| Topic | Decision |
+|---|---|
+| Field | One text input per ship, a sibling of its row inside the `<li>` (not inside the label), shown only while the ship is ticked (`hidden` toggled; the checkbox carries `aria-controls`/`aria-expanded`). Focus is not moved. `maxlength="120"`, `autocomplete="off"`, `spellcheck="false"`, `aria-label="Captain of <ship>"`, placeholder "Captain (first and last name)". Several people may share the field ("Jan Kowalski, Anna Nowak"). |
+| Lifetime | Never stored: not in localStorage, not on the server, not logged. A page reload clears the names; Refresh, Clear, unticking and re-ticking keep what was typed. |
+| Validation | No character restrictions (Unicode letters, hyphens, apostrophes, diacritics). Server normalises: NFC, control characters removed, whitespace collapsed, trimmed; blank = no captain. Over 120 characters after normalising, or a captain for a ship that is not printed, -> 400 like the other print errors. |
+| Transport | `printTracks` reads the fields at Print time for the ships it prints (those with points) and posts one extra form field `captains`, a JSON object `{"1":"Jan Kowalski"}` (a comma list would split names). |
+| Printout | Legend entry "Warta — Jan Kowalski" (em dash), colour swatch unchanged. Never truncated: an entry too wide for half the row takes the full row and wraps onto further lines. The server lays the legend out first and fits the map image into the space left, keeping the A4 ratio, so the page stays one A4 sheet (worst case, measured: six 120-character names make the legend ~6 cm deep, so the map prints ~18 cm tall at ~230 dpi instead of ~23.5 cm at ~300). The browser export is unchanged. A ticked ship without points is not in the legend, so neither is its captain. |
+| Tests | TracksPageTest (field per ship, attributes, `captains` in the print form); TracksControllerTest (Polish names -> 200, malformed JSON -> 400, unknown ship -> 400); TrackPdfServiceTest (legend text with diacritics, wrapping of a 120-character name, six long names still one A4 page, normalisation, refusals). Reveal and print checked in Chrome and Firefox. |

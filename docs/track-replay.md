@@ -11,6 +11,8 @@ them to an A4 PDF. Design decisions and stages: [`track-replay-plan.md`](track-r
   the gap threshold. Hull silhouettes are drawn at a chosen period.
 - **Clear** empties the drawing, **Print** makes the PDF (page area: the print frame, or the current
   view when there is none).
+- A ticked ship shows a **Captain** field (max 120 characters). It is never stored: not in `localStorage`,
+  not on the server, not logged. A reload clears it; Refresh, Clear and unticking keep it.
 - Nothing here writes to the logs or touches ingest.
 
 ## Architecture
@@ -72,6 +74,10 @@ A point is `[epoch millis, x, y, heading]`, x/y in map pixels. An empty result i
 - Remembered in `localStorage`: ships, period, toggles, gap. Range, frame, zoom and position start fresh.
 - Print: ~300 dpi JPEG of the area, line about 0.3 mm, dot about 0.8 mm, label about 2 mm; header with
   range and zone, colour legend and scale bar. Opens in a new tab.
+- Captains go in the form field `captains` (JSON `{"1":"Jan Kowalski"}`, printed ships only). The server
+  normalises them (NFC, control characters removed, whitespace collapsed) and refuses over 120 characters
+  or an unprinted ship. The legend reads "Ship — Captain"; an entry wider than half the row takes a row
+  and wraps, never truncated. The legend is laid out first and the image is fitted into the height left.
 
 ## Known limits
 

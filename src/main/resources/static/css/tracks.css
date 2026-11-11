@@ -55,6 +55,12 @@
     padding: 0.3rem 0.25rem;
 }
 
+/* Under the ship's name: 4px border + 0.25rem padding + checkbox 1rem + chip 10px + two 0.6rem gaps. */
+.tracks-panel .captain-input {
+    width: calc(100% - 3.3rem);
+    margin: 0 0 0.3rem 3.3rem;
+}
+
 /* The validation icon would take the room the seconds need in the date fields. */
 .tracks-panel .form-control.is-invalid {
     background-image: none;

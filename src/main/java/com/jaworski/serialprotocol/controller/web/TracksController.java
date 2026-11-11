@@ -19,6 +19,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.beans.TypeMismatchException;
 import org.springframework.stereotype.Controller;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.ServletRequestBindingException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -47,6 +50,7 @@ public class TracksController {
     private final TrackPdfService pdfService;
     private final TracksProperties properties;
     private final WebSocketPublisher webSocketPublisher;
+    private final JsonMapper jsonMapper;
 
     @GetMapping("/tracks")
     public String tracks(Model model) {
@@ -86,9 +90,11 @@ public class TracksController {
                                       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
                                       @RequestParam int silhouettes,
                                       @RequestParam List<Integer> ships,
-                                      @RequestParam double widthMeters) throws IOException {
-        var request = new TrackPdfRequest(image == null ? null : image.getBytes(), from, to, silhouettes, ships, widthMeters);
+                                      @RequestParam double widthMeters,
+                                      @RequestParam(required = false) String captains) throws IOException {
         try {
+            var request = new TrackPdfRequest(image == null ? null : image.getBytes(), from, to, silhouettes, ships, widthMeters,
+                    parseCaptains(captains));
             return ResponseEntity.ok()
                     .contentType(MediaType.APPLICATION_PDF)
                     .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.inline().filename(TrackPdfService.fileName(request)).build().toString())
@@ -97,6 +103,15 @@ public class TracksController {
             return ResponseEntity.badRequest()
                     .contentType(new MediaType(MediaType.TEXT_PLAIN, StandardCharsets.UTF_8))
                     .body(e.getMessage().getBytes(StandardCharsets.UTF_8));
+        }
+    }
+
+    /** The names are personal data: neither they nor the parser's message, which quotes them, are logged or echoed. */
+    private Map<Integer, String> parseCaptains(String json) {
+        try {
+            return json == null ? null : jsonMapper.readValue(json, new TypeReference<>() { });
+        } catch (JacksonException e) {
+            throw new InvalidTrackQueryException("The captains are not valid.");
         }
     }
 

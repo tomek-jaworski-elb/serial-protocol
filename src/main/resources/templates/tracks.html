@@ -42,12 +42,17 @@
                 <li th:each="ship : ${ships}">
                     <label class="ship-row" th:style="'--ship-color: ' + ${ship.color}">
                         <input class="form-check-input m-0" type="checkbox" name="ship" th:value="${ship.id}"
-                               th:data-ship-id="${ship.id}" th:data-color="${ship.color}">
+                               th:data-ship-id="${ship.id}" th:data-color="${ship.color}"
+                               th:aria-controls="'captain-' + ${ship.id}" aria-expanded="false">
                         <span class="ship-chip"></span>
                         <span class="ship-name" th:text="${ship.name}">Ship Name</span>
                         <!-- "no data" after a draw -->
                         <small class="ship-note text-muted ms-auto" th:data-ship-note="${ship.id}"></small>
                     </label>
+                    <!-- Shown while the ship is ticked; never submitted, stored or logged: Print posts it once. -->
+                    <input type="text" class="form-control form-control-sm captain-input" hidden
+                           th:id="'captain-' + ${ship.id}" th:aria-label="'Captain of ' + ${ship.name}"
+                           maxlength="120" autocomplete="off" spellcheck="false" placeholder="Captain (first and last name)">
                 </li>
             </ul>
 
@@ -109,6 +114,7 @@
             <input type="hidden" name="to">
             <input type="hidden" name="silhouettes">
             <input type="hidden" name="ships">
+            <input type="hidden" name="captains">
             <input type="hidden" name="widthMeters">
         </form>
     </aside>

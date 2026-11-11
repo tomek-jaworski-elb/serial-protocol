@@ -18,7 +18,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.text.Normalizer;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -44,6 +47,10 @@ public class TrackPdfService {
     private static final float SCALE_BAR_MAX_MM = 40;
     private static final int MAX_IMAGE_SIDE_PX = 5000;          // a 300 dpi A4 is 3508
     private static final int MAX_SILHOUETTE_PERIOD_S = 60;
+    private static final int MAX_CAPTAIN_LENGTH = 120;
+    private static final float LEGEND_LINE = 5 * MM;
+    private static final float LEGEND_SWATCH = 3 * MM;
+    private static final float LEGEND_INDENT = LEGEND_SWATCH + 2;   // text starts right of the swatch
     private static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
     private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm:ss");
     private static final DateTimeFormatter FILE_DAY = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -83,6 +90,7 @@ public class TrackPdfService {
         Image image = readImage(request.image());
         validate(request);
         List<Models> ships = request.ships().stream().distinct().map(Models::fromId).toList();
+        Legend legend = layoutLegend(ships, captains(request, ships));
 
         Document document = new Document(PageSize.A4);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -91,10 +99,12 @@ public class TrackPdfService {
             document.open();
             PdfContentByte canvas = writer.getDirectContent();
             drawHeader(canvas, request);
-            float imageBottom = drawImage(canvas, image);
-            float printedWidthMm = scaledWidth(image) / MM;
-            float legendBottom = drawLegend(canvas, ships, imageBottom - 6 * MM);
-            drawScaleBar(canvas, request.widthMeters(), printedWidthMm, legendBottom - 6 * MM);
+            // The legend is laid out first; the image takes the height left above it and the scale bar.
+            float boxHeight = Math.min(IMAGE_BOX_HEIGHT_MM * MM, PAGE_HEIGHT - IMAGE_TOP - MARGIN - 12 * MM - legend.depth());
+            float width = Math.min(IMAGE_BOX_WIDTH_MM * MM, boxHeight * image.getWidth() / image.getHeight());
+            float imageBottom = drawImage(canvas, image, width);
+            drawLegend(canvas, legend, imageBottom - 6 * MM);
+            drawScaleBar(canvas, request.widthMeters(), width / MM, imageBottom - 12 * MM - legend.depth());
             document.close();
         } catch (org.openpdf.text.DocumentException e) {
             throw new IllegalStateException("The track PDF cannot be written", e);
@@ -137,6 +147,27 @@ public class TrackPdfService {
         }
     }
 
+    /** Printed ships only; NFC, one-line, trimmed, blank dropped. Names are personal data: they never reach a message. */
+    private static Map<Integer, String> captains(TrackPdfRequest request, List<Models> ships) {
+        Map<Integer, String> captains = new HashMap<>();
+        if (request.captains() != null) {
+            request.captains().forEach((id, name) -> {
+                String clean = name == null ? "" : Normalizer.normalize(name, Normalizer.Form.NFC)
+                        .replaceAll("[\\p{Cc}&&[^\\s]]", "").replaceAll("[\\p{Z}\\s]+", " ").strip();
+                if (clean.length() > MAX_CAPTAIN_LENGTH) {
+                    throw new InvalidTrackQueryException("A captain's name is longer than " + MAX_CAPTAIN_LENGTH + " characters.");
+                }
+                if (ships.stream().noneMatch(ship -> ship.getId() == id)) {
+                    throw new InvalidTrackQueryException("A captain is given for a ship that is not printed.");
+                }
+                if (!clean.isEmpty()) {
+                    captains.put(id, clean);
+                }
+            });
+        }
+        return captains;
+    }
+
     // ---------------------------------------------------------------- layout
 
     private void drawHeader(PdfContentByte canvas, TrackPdfRequest request) {
@@ -162,8 +193,7 @@ public class TrackPdfService {
     }
 
     /** Fits the image into the box, keeping its ratio; returns the y of its bottom edge. */
-    private float drawImage(PdfContentByte canvas, Image image) throws org.openpdf.text.DocumentException {
-        float width = scaledWidth(image);
+    private float drawImage(PdfContentByte canvas, Image image, float width) throws org.openpdf.text.DocumentException {
         float height = width * image.getHeight() / image.getWidth();
         float x = (PageSize.A4.getWidth() - width) / 2;
         float y = PAGE_HEIGHT - IMAGE_TOP - height;
@@ -175,30 +205,84 @@ public class TrackPdfService {
         return y;
     }
 
-    private static float scaledWidth(Image image) {
-        float boxWidth = IMAGE_BOX_WIDTH_MM * MM;
-        float boxHeight = IMAGE_BOX_HEIGHT_MM * MM;
-        return Math.min(boxWidth, boxHeight * image.getWidth() / image.getHeight());
+    /** One legend entry: where it starts and its lines of text, below the first row's baseline. */
+    private record LegendEntry(Color color, float x, float down, List<String> lines) {
     }
 
-    /** Swatch and name per drawn ship, wrapped to the page width; returns the y of the last row. */
-    private float drawLegend(PdfContentByte canvas, List<Models> ships, float y) {
-        float x = MARGIN;
+    /** {@code depth} is the distance from the first baseline to the last. */
+    private record Legend(List<LegendEntry> entries, float depth) {
+    }
+
+    /**
+     * "Ship" or "Ship — Captain" per ship, filled row by row. An entry wider than half the row takes a
+     * row of its own and wraps; nothing is ever cut off.
+     */
+    private Legend layoutLegend(List<Models> ships, Map<Integer, String> captains) {
         float right = PageSize.A4.getWidth() - MARGIN;
-        float swatch = 3 * MM;
+        float rowWidth = right - MARGIN;
+        List<LegendEntry> entries = new ArrayList<>();
+        float x = MARGIN;
+        float row = 0;       // baseline of the current row, below the first one
+        float depth = 0;     // baseline of the last line so far
         for (Models ship : ships) {
-            float width = swatch + 2 + regular.getWidthPoint(ship.getName(), 9) + 5 * MM;
-            if (x + width > right) {
+            String text = captains.containsKey(ship.getId()) ? ship.getName() + " — " + captains.get(ship.getId()) : ship.getName();
+            float width = LEGEND_INDENT + regular.getWidthPoint(text, 9) + 5 * MM;
+            boolean wrapped = width > rowWidth / 2;
+            if (!entries.isEmpty() && (wrapped || x + width > right)) {
+                row = depth + LEGEND_LINE;
                 x = MARGIN;
-                y -= 5 * MM;
             }
-            canvas.setColorFill(CSS_COLORS.get(ship.getColor()));
-            canvas.rectangle(x, y - 1, swatch, swatch);
-            canvas.fillStroke();
-            text(canvas, regular, 9, x + swatch + 2, y, ship.getName());
-            x += width;
+            List<String> lines = wrapped ? wrap(text, rowWidth - LEGEND_INDENT) : List.of(text);
+            entries.add(new LegendEntry(CSS_COLORS.get(ship.getColor()), x, row, lines));
+            depth = row + (lines.size() - 1) * LEGEND_LINE;
+            x = wrapped ? right : x + width;   // a wrapped entry owns its row
         }
-        return y;
+        return new Legend(entries, depth);
+    }
+
+    /** Greedy word wrap; a word wider than the row is broken inside, between whole characters. */
+    private List<String> wrap(String text, float width) {
+        List<String> lines = new ArrayList<>();
+        String line = "";
+        for (String word : text.split(" ")) {
+            while (regular.getWidthPoint(word, 9) > width) {
+                int cut = word.offsetByCodePoints(0, 1);
+                while (cut < word.length()) {
+                    int next = word.offsetByCodePoints(cut, 1);
+                    if (regular.getWidthPoint(word.substring(0, next), 9) > width) {
+                        break;
+                    }
+                    cut = next;
+                }
+                if (!line.isEmpty()) {
+                    lines.add(line);
+                    line = "";
+                }
+                lines.add(word.substring(0, cut));
+                word = word.substring(cut);
+            }
+            String joined = line.isEmpty() ? word : line + " " + word;
+            if (line.isEmpty() || regular.getWidthPoint(joined, 9) <= width) {
+                line = joined;
+            } else {
+                lines.add(line);
+                line = word;
+            }
+        }
+        lines.add(line);
+        return lines;
+    }
+
+    private void drawLegend(PdfContentByte canvas, Legend legend, float y) {
+        for (LegendEntry entry : legend.entries()) {
+            float top = y - entry.down();
+            canvas.setColorFill(entry.color());
+            canvas.rectangle(entry.x(), top - 1, LEGEND_SWATCH, LEGEND_SWATCH);
+            canvas.fillStroke();
+            for (int i = 0; i < entry.lines().size(); i++) {
+                text(canvas, regular, 9, entry.x() + LEGEND_INDENT, top - i * LEGEND_LINE, entry.lines().get(i));
+            }
+        }
     }
 
     private void drawScaleBar(PdfContentByte canvas, double widthMeters, float printedWidthMm, float y) {

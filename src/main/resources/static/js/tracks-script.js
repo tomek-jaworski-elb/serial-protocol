@@ -302,6 +302,14 @@ function restoreSettings() {
     if (Number.isInteger(+saved.gap) && saved.gap >= 1 && saved.gap <= 600) gapInput.value = saved.gap;
 }
 
+// A ticked ship shows its captain field; the field keeps what was typed while hidden.
+function showCaptainFields() {
+    for (const box of shipBoxes) {
+        document.getElementById('captain-' + box.value).hidden = !box.checked;
+        box.setAttribute('aria-expanded', box.checked);
+    }
+}
+
 // the controls are the source of truth; drawSettings is what tracks-draw.js reads
 function readSettings() {
     const period = Number(periodSlider.value);
@@ -511,6 +519,13 @@ async function printTracks() {
         pdfForm.elements.to.value = isoLocal(drawnTo);
         pdfForm.elements.silhouettes.value = drawSettings.showSilhouettes ? drawSettings.period : -1;
         pdfForm.elements.ships.value = tracks.map((track) => track.id).join(',');
+        // Posted only here, never saved: a reload clears the names.
+        const captains = {};
+        for (const track of tracks) {
+            const name = document.getElementById('captain-' + track.id).value.trim();
+            if (name) captains[track.id] = name;
+        }
+        pdfForm.elements.captains.value = JSON.stringify(captains);
         pdfForm.elements.widthMeters.value = area.width / mapa_x;
         pdfForm.submit();
     } catch (e) {
@@ -525,7 +540,10 @@ function bindControls() {
     refreshBtn.addEventListener('click', refresh);
     clearBtn.addEventListener('click', clear);
     printBtn.addEventListener('click', printTracks);
-    shipBoxes.forEach((box) => box.addEventListener('change', saveSettings));
+    shipBoxes.forEach((box) => box.addEventListener('change', () => {
+        showCaptainFields();
+        saveSettings();
+    }));
     periodSlider.addEventListener('input', () => {
         chosenPeriod = Number(periodSlider.value);
         readSettings();
@@ -589,6 +607,7 @@ function initStage() {
 initStage();
 initPickers();
 restoreSettings();
+showCaptainFields();
 readSettings();
 setGap(Number(gapInput.value));
 bindControls();

@@ -16,7 +16,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -36,7 +39,7 @@ class TrackPdfServiceTest {
     }
 
     private static TrackPdfRequest request(byte[] image, int silhouettes, List<Integer> ships) {
-        return new TrackPdfRequest(image, FROM, TO, silhouettes, ships, 500);
+        return new TrackPdfRequest(image, FROM, TO, silhouettes, ships, 500, null);
     }
 
     @Test
@@ -78,7 +81,7 @@ class TrackPdfServiceTest {
 
     @Test
     void aRangeAcrossMidnightNamesBothDates() {
-        var request = new TrackPdfRequest(null, FROM, LocalDateTime.of(2026, 11, 12, 1, 0, 0), 0, List.of(1), 500);
+        var request = new TrackPdfRequest(null, FROM, LocalDateTime.of(2026, 11, 12, 1, 0, 0), 0, List.of(1), 500, null);
 
         assertThat(service.rangeText(request)).isEqualTo("11/11/2026 14:00:00 – 12/11/2026 01:00:00 (Europe/Warsaw)");
     }
@@ -99,11 +102,74 @@ class TrackPdfServiceTest {
         assertRefused(request(image("png", 10, 10), 20, List.of(1)), "must be a JPEG");
         assertRefused(request(new byte[]{1, 2, 3}, 20, List.of(1)), "not a valid image");
         assertRefused(request(image("jpg", 5001, 10), 20, List.of(1)), "larger than");
-        assertRefused(new TrackPdfRequest(jpeg, TO, FROM, 20, List.of(1), 500), "earlier");
+        assertRefused(new TrackPdfRequest(jpeg, TO, FROM, 20, List.of(1), 500, null), "earlier");
         assertRefused(request(jpeg, 20, List.of(1, 99)), "ship");
         assertRefused(request(jpeg, 20, List.of()), "ship");
         assertRefused(request(jpeg, 61, List.of(1)), "silhouette");
-        assertRefused(new TrackPdfRequest(jpeg, FROM, TO, 20, List.of(1), 0), "width");
+        assertRefused(new TrackPdfRequest(jpeg, FROM, TO, 20, List.of(1), 0, null), "width");
+    }
+
+    private static final String LONG_NAME = "Zażółć gęślą jaźń ".repeat(7).substring(0, 120);
+
+    private String text(byte[] pdf) throws IOException {
+        try (PDDocument document = Loader.loadPDF(pdf)) {
+            assertThat(document.getNumberOfPages()).as("one A4 page").isEqualTo(1);
+            return new PDFTextStripper().getText(document).replaceAll("\\s+", " ");
+        }
+    }
+
+    private TrackPdfRequest withCaptains(Map<Integer, String> captains, List<Integer> ships) throws IOException {
+        return new TrackPdfRequest(image("jpg", 600, 850), FROM, TO, 20, ships, 500, captains);
+    }
+
+    @Test
+    void theLegendPrintsShipAndCaptainWithPolishLetters() throws IOException {
+        String text = text(service.create(withCaptains(Map.of(1, "Zażółć Gęślą-Jaźń"), List.of(1, 5))));
+
+        assertThat(text).contains("Warta — Zażółć Gęślą-Jaźń", "Kołobrzeg");
+        assertThat(text).doesNotContain("Kołobrzeg —");
+    }
+
+    @Test
+    void sixLongCaptainsWrapAndStillMakeOneA4PageWithEveryNameInFull() throws IOException {
+        Map<Integer, String> captains = new HashMap<>();
+        for (Models ship : Models.values()) {
+            captains.put(ship.getId(), LONG_NAME);
+        }
+        String text = text(service.create(withCaptains(captains, List.of(1, 2, 3, 4, 5, 6))));
+
+        assertThat(LONG_NAME).hasSize(120);
+        assertThat(text).contains(LONG_NAME);
+        assertThat(text.split(Pattern.quote(LONG_NAME), -1)).as("one per ship").hasSize(7);
+        assertThat(text).contains("100 m");
+    }
+
+    @Test
+    void aWordWiderThanTheRowIsBrokenNotCut() throws IOException {
+        String word = "Ż".repeat(120);
+
+        assertThat(text(service.create(withCaptains(Map.of(1, word), List.of(1)))).replace(" ", "")).contains(word);
+    }
+
+    @Test
+    void captainsAreNormalised() throws IOException {
+        // "e" + combining acute becomes the single é; the tab and newline separate words; NUL and the bell vanish
+        String text = text(service.create(withCaptains(Map.of(1, "  Jose\u0301\t\n  Ko\u0000wal\u0007ski  ", 2, " \t "), List.of(1, 2))));
+
+        assertThat(text).contains("Warta — José Kowalski").doesNotContain("Blue Lady —");
+    }
+
+    @Test
+    void theLengthLimitCountsTheNormalisedName() throws IOException {
+        String name = "Jan ".repeat(29) + "Jank";   // 120 characters
+        String padded = "  " + name.replace(" ", " \u0000 ") + " ";
+        assertThat(text(service.create(withCaptains(Map.of(1, padded), List.of(1))))).contains(name);
+    }
+
+    @Test
+    void captainsAreRefused() throws IOException {
+        assertRefused(withCaptains(Map.of(1, "x".repeat(121)), List.of(1)), "longer than 120");
+        assertRefused(withCaptains(Map.of(2, "Jan"), List.of(1)), "not printed");
     }
 
     private void assertRefused(TrackPdfRequest request, String message) {

@@ -91,6 +91,20 @@ class TracksPageTest {
         assertThat(html).doesNotContain("checked=\"checked\" name=\"ship\"");
     }
 
+    /** A hidden, unnamed field per ship (it is never submitted), tied to the ship's checkbox. */
+    @Test
+    void everyShipHasAHiddenCaptainFieldAndThePrintFormCarriesTheCaptains() throws Exception {
+        String html = tracksHtml();
+        for (Models ship : Models.values()) {
+            assertThat(html).containsPattern("aria-controls=\"captain-" + ship.getId() + "\"[^>]*aria-expanded=\"false\"")
+                    .containsPattern("<input[^>]*id=\"captain-" + ship.getId() + "\"[^>]*aria-label=\"Captain of "
+                            + Pattern.quote(ship.getName()) + "\"[^>]*maxlength=\"120\"");
+        }
+        assertThat(html).doesNotContainPattern("<input[^>]*id=\"captain-[^>]*name=")
+                .containsPattern("<input[^>]*\\shidden[^>]*id=\"captain-1\"")
+                .contains("<input type=\"hidden\" name=\"captains\">");
+    }
+
     @Test
     void theFormControlsArePresent() throws Exception {
         String html = tracksHtml();
