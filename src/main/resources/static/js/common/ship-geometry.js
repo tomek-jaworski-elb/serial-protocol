@@ -3,6 +3,10 @@
 
 const mapa_x = 2.407; /// było 2.4   = kalibracja mapy
 
+// The chart is a 1:24 model chart: its own "Nm" bar is a full-scale nautical mile (1852 m / 24 = 77.17 m on the lake = 185.7 px).
+const MODEL_SCALE = 24;
+const NM_METRES = 1852;
+
 // Hull dimensions per ship id (same ids as Models and MessageTranslator.MODEL_MAP).
 // shipParams = [length, width, pp] for computeShipVerticesForKonva.
 const SHIP_HULLS = Object.freeze({

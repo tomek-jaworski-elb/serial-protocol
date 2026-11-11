@@ -17,6 +17,7 @@ import java.awt.Color;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.time.LocalDateTime;
 import java.text.Normalizer;
 import java.time.format.DateTimeFormatter;
@@ -104,7 +105,7 @@ public class TrackPdfService {
             float width = Math.min(IMAGE_BOX_WIDTH_MM * MM, boxHeight * image.getWidth() / image.getHeight());
             float imageBottom = drawImage(canvas, image, width);
             drawLegend(canvas, legend, imageBottom - 6 * MM);
-            drawScaleBar(canvas, request.widthMeters(), width / MM, imageBottom - 12 * MM - legend.depth());
+            drawScaleBar(canvas, request.widthNm(), width / MM, imageBottom - 12 * MM - legend.depth());
             document.close();
         } catch (org.openpdf.text.DocumentException e) {
             throw new IllegalStateException("The track PDF cannot be written", e);
@@ -142,7 +143,7 @@ public class TrackPdfService {
         if (request.silhouettes() < -1 || request.silhouettes() > MAX_SILHOUETTE_PERIOD_S) {
             throw new InvalidTrackQueryException("The silhouette period is out of range.");
         }
-        if (!Double.isFinite(request.widthMeters()) || request.widthMeters() <= 0) { // NaN and Infinity too
+        if (!Double.isFinite(request.widthNm()) || request.widthNm() <= 0) { // NaN and Infinity too
             throw new InvalidTrackQueryException("The map width must be positive.");
         }
     }
@@ -285,9 +286,9 @@ public class TrackPdfService {
         }
     }
 
-    private void drawScaleBar(PdfContentByte canvas, double widthMeters, float printedWidthMm, float y) {
-        double metres = scaleBarMeters(widthMeters, printedWidthMm);
-        float length = (float) (metres / widthMeters * printedWidthMm * MM);
+    private void drawScaleBar(PdfContentByte canvas, double widthNm, float printedWidthMm, float y) {
+        double nm = scaleBarNm(widthNm, printedWidthMm);
+        float length = (float) (nm / widthNm * printedWidthMm * MM);
         canvas.setColorStroke(Color.BLACK);
         canvas.setLineWidth(0.75f);
         canvas.moveTo(MARGIN, y + 3);
@@ -295,12 +296,12 @@ public class TrackPdfService {
         canvas.lineTo(MARGIN + length, y);
         canvas.lineTo(MARGIN + length, y + 3);
         canvas.stroke();
-        text(canvas, regular, 9, MARGIN + length + 4, y, metres >= 1000 ? plain(metres / 1000) + " km" : plain(metres) + " m");
+        text(canvas, regular, 9, MARGIN + length + 4, y, plain(nm) + " Nm");
     }
 
-    /** The longest 1, 2 or 5 x 10^n metres that is drawn no wider than {@link #SCALE_BAR_MAX_MM}. */
-    static double scaleBarMeters(double widthMeters, double printedWidthMm) {
-        double limit = SCALE_BAR_MAX_MM * widthMeters / printedWidthMm;
+    /** The longest 1, 2 or 5 x 10^n nautical miles that is drawn no wider than {@link #SCALE_BAR_MAX_MM}. */
+    static double scaleBarNm(double widthNm, double printedWidthMm) {
+        double limit = SCALE_BAR_MAX_MM * widthNm / printedWidthMm;
         double decade = Math.pow(10, Math.floor(Math.log10(limit)));
         for (double step : new double[]{5, 2, 1}) {
             if (step * decade <= limit) {
@@ -311,7 +312,7 @@ public class TrackPdfService {
     }
 
     private static String plain(double value) {
-        return BigDecimal.valueOf(value).stripTrailingZeros().toPlainString();
+        return BigDecimal.valueOf(value).round(new MathContext(1)).stripTrailingZeros().toPlainString();
     }
 
     private static void text(PdfContentByte canvas, BaseFont font, float size, float x, float y, String text) {

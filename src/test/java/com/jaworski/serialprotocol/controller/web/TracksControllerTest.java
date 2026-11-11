@@ -124,7 +124,7 @@ class TracksControllerTest {
 
     private static MockMultipartHttpServletRequestBuilder pdfRequest(MockMultipartFile image) {
         return multipart("/tracks/pdf").file(image)
-                .param("from", FROM).param("to", TO).param("silhouettes", "20").param("ships", "1,2").param("widthMeters", "500");
+                .param("from", FROM).param("to", TO).param("silhouettes", "20").param("ships", "1,2").param("widthNm", "5");
     }
 
     @Test
@@ -142,7 +142,7 @@ class TracksControllerTest {
                 .andExpect(content().contentTypeCompatibleWith("text/plain"))
                 .andExpect(content().string("The map image is not a valid image."));
         mockMvc.perform(multipart("/tracks/pdf").param("from", FROM).param("to", TO).param("silhouettes", "20")
-                        .param("ships", "1").param("widthMeters", "500").with(csrf()))
+                        .param("ships", "1").param("widthNm", "5").with(csrf()))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("The map image is missing."));
         mockMvc.perform(pdfRequest(jpeg()).param("ships", "99").with(csrf()))

@@ -111,14 +111,14 @@ function clampStagePosition(pos, scale) {
     return {x, y};
 }
 
-// metric scale bar: a round length (1/2/5 x 10^n m) at most SCALE_BAR_MAX_PX wide
+// scale bar in full-scale nautical miles (as the chart's own bar): a round length (1/2/5 x 10^n Nm) at most SCALE_BAR_MAX_PX wide
 function updateScaleBar() {
-    const metresPerPixel = 1 / (mapa_x * konvaStage.scaleX());
-    const limit = SCALE_BAR_MAX_PX * metresPerPixel;
+    const nmPerPixel = MODEL_SCALE / (mapa_x * konvaStage.scaleX() * NM_METRES);
+    const limit = SCALE_BAR_MAX_PX * nmPerPixel;
     const decade = Math.pow(10, Math.floor(Math.log10(limit)));
-    const metres = decade * SCALE_BAR_STEPS.findLast((step) => step * decade <= limit);
-    document.getElementById('scaleBarLine').style.width = (metres / metresPerPixel) + 'px';
-    document.getElementById('scaleBarLabel').textContent = metres >= 1000 ? (metres / 1000) + ' km' : metres + ' m';
+    const nm = Number((decade * SCALE_BAR_STEPS.findLast((step) => step * decade <= limit)).toPrecision(1));
+    document.getElementById('scaleBarLine').style.width = (nm / nmPerPixel) + 'px';
+    document.getElementById('scaleBarLabel').textContent = nm + ' Nm';
 }
 
 function setView(scale, pos) {
@@ -526,7 +526,7 @@ async function printTracks() {
             if (name) captains[track.id] = name;
         }
         pdfForm.elements.captains.value = JSON.stringify(captains);
-        pdfForm.elements.widthMeters.value = area.width / mapa_x;
+        pdfForm.elements.widthNm.value = area.width / mapa_x * MODEL_SCALE / NM_METRES;
         pdfForm.submit();
     } catch (e) {
         pdfWindow.close();

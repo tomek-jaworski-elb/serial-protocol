@@ -71,7 +71,7 @@ Drawing tracks must not delay, block or lose a single frame of live ingest or it
 | Silhouette toggles | "Show silhouettes" (default on) hides the layer. "Time labels" (default off, disabled for a period below 10 s) puts `HH:mm:ss` next to each silhouette. Slider and toggles redraw at once, no refetch. |
 | Silhouette look | Outline in the ship colour, fill in the ship colour at ~25 % opacity. Size in map units from the shared hull geometry, never from the live zoom. |
 | Dots, lines, labels | Constant on-screen size (lines and dots like the track on `/chart`). Dots of one ship are one `Konva.Shape` with a custom `sceneFunc`. No hover tooltip. |
-| Map | Konva 10, container fixed to **A4 portrait** (`aspect-ratio: 210 / 297`), wheel and button zoom, drag pan, metric scale bar bottom-left updated on zoom (position calibration 2.407 px/m). No on-map legend; the checkboxes are the legend. |
+| Map | Konva 10, container fixed to **A4 portrait** (`aspect-ratio: 210 / 297`), wheel and button zoom, drag pan, full-scale nautical-mile scale bar bottom-left updated on zoom (position calibration 2.407 px/m). No on-map legend; the checkboxes are the legend. |
 | Print frame | Toggle button "Print frame": dragging draws an A4-portrait frame, then the mode switches off. One frame, movable and resizable by handles (Konva `Transformer`, ratio locked); drawing again replaces it; "Remove frame" deletes it. |
 | Refresh | Fetches again with the current form and redraws everything; also does the first draw. While loading: spinner on Refresh, Refresh/Clear/Print disabled, the previous drawing stays until new data arrives. Manual only, no auto-refresh. |
 | Clear | Clears the drawing only; form, frame, zoom and position stay. Print is disabled until the next draw. |
@@ -87,7 +87,7 @@ Drawing tracks must not delay, block or lose a single frame of live ingest or it
 | Quality | Fixed ~300 dpi regardless of the screen zoom; the frame may lie partly off screen. Map raster is 2666 × 4000, so the background softens on a small frame; vector content stays sharp. |
 | Sizes on paper | Line ~0.3 mm, dot ~0.8 mm diameter, time label ~2 mm high. |
 | Pipeline | The browser renders the area with `stage.toDataURL({mimeType: 'image/jpeg', quality: 0.92, pixelRatio})` (~2–3 MB for 2480 × 3508 px; a PNG would approach the global 10 MB multipart limit, which stays as it is) and posts it with the metadata; `TrackPdfService` (OpenPDF, DejaVu fonts) builds one A4 portrait page. |
-| Content | Header: range with zone (e.g. `11/11/2026 14:00:00 – 15:00:00 (Europe/Warsaw)`) and silhouette period; the image; colour legend; metric scale bar. |
+| Content | Header: range with zone (e.g. `11/11/2026 14:00:00 – 15:00:00 (Europe/Warsaw)`) and silhouette period; the image; colour legend; full-scale nautical-mile scale bar. |
 | Delivery | Opens in a new tab, file name `tracks_<yyyy-MM-dd>_<HHmm>-<HHmm>.pdf`. |
 
 ### Shared geometry
@@ -160,7 +160,7 @@ Verification data: logs produced by the simulator until the owner supplies real 
 ## 5. Known limits
 
 - Silhouettes are drawn at 2 px/m while positions use 2.407 px/m, so hulls are about 17 % small
-  (`docs/chart-map-view.md`). Kept as on `/chart`; the scale bar follows the position calibration.
+  (`docs/chart-map-view.md`). Kept as on `/chart`; the scale bar is in full-scale nautical miles, see §7.
 - Docker logs written before `TRACKS_LOG_ZONE` is set are interpreted with that same setting; a
   host that changed its zone mid-history will show those days shifted.
 - One source at a time is assumed. Serial and UDP both log through `FrameIngress` and the line
@@ -192,3 +192,15 @@ need it; weak accessibility).
 | Transport | `printTracks` reads the fields at Print time for the ships it prints (those with points) and posts one extra form field `captains`, a JSON object `{"1":"Jan Kowalski"}` (a comma list would split names). |
 | Printout | Legend entry "Warta — Jan Kowalski" (em dash), colour swatch unchanged. Never truncated: an entry too wide for half the row takes the full row and wraps onto further lines. The server lays the legend out first and fits the map image into the space left, keeping the A4 ratio, so the page stays one A4 sheet (worst case, measured: six 120-character names make the legend ~6 cm deep, so the map prints ~18 cm tall at ~230 dpi instead of ~23.5 cm at ~300). The browser export is unchanged. A ticked ship without points is not in the legend, so neither is its captain. |
 | Tests | TracksPageTest (field per ship, attributes, `captains` in the print form); TracksControllerTest (Polish names -> 200, malformed JSON -> 400, unknown ship -> 400); TrackPdfServiceTest (legend text with diacritics, wrapping of a 120-character name, six long names still one A4 page, normalisation, refusals). Reveal and print checked in Chrome and Firefox. |
+
+## 7. Stage 9 — scale bar (2026-11-11)
+
+The first scale bar labelled real lake metres (1/2/5 x 10^n m) and was wrong. The chart is a 1:24 model chart:
+its own bar "0 Nm ... Nm 1" (top-left, 185 px between ticks in the 2666 x 4000 raster) is a **full-scale**
+nautical mile, 1852 / 24 = 77.17 lake metres = 185.7 px at `mapa_x = 2.407` (measured on the raster, and
+consistent with the Ilawa centre's 1:24 models and the app's reference points). `mapa_x` is correct and unchanged.
+
+Decision: the bar (screen and PDF) is in full-scale nautical miles only, steps 1/2/5 x 10^n Nm ("0.05 Nm", "1 Nm"),
+no metre bracket; the screen bar has a tooltip. `MODEL_SCALE = 24` and `NM_METRES = 1852` live in
+`static/js/common/ship-geometry.js`; the page posts `widthNm` (area width / `mapa_x` x 24 / 1852) so Java holds
+no calibration.

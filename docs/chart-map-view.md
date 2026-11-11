@@ -112,7 +112,8 @@ Ship positions arrive over WebSocket (`/json`) in model coordinates and are
 converted to map pixels by `getScaledPoints()` (`static/js/common/ship-geometry.js`) using the calibration constants
 (`mapa_x = 2.407`, static shifts). **Do not change these constants** unless
 the map raster itself changes — they map real-world positions to pixels on
-the 2666 × 4000 chart.
+the 2666 × 4000 chart. Positions are real lake metres; the chart's own "Nm" bar
+is a 1:24 prototype mile (1852 / 24 = 77.17 m = 185.7 px), not a real one.
 
 Silhouettes are drawn with a constant scale (`SHIP_HULLS[id].scale`, shared geometry file) in map
 coordinates, so a ship keeps the same size relative to the chart at every zoom

@@ -90,10 +90,10 @@ public class TracksController {
                                       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
                                       @RequestParam int silhouettes,
                                       @RequestParam List<Integer> ships,
-                                      @RequestParam double widthMeters,
+                                      @RequestParam double widthNm,
                                       @RequestParam(required = false) String captains) throws IOException {
         try {
-            var request = new TrackPdfRequest(image == null ? null : image.getBytes(), from, to, silhouettes, ships, widthMeters,
+            var request = new TrackPdfRequest(image == null ? null : image.getBytes(), from, to, silhouettes, ships, widthNm,
                     parseCaptains(captains));
             return ResponseEntity.ok()
                     .contentType(MediaType.APPLICATION_PDF)

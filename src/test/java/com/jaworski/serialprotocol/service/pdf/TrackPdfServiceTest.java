@@ -39,7 +39,7 @@ class TrackPdfServiceTest {
     }
 
     private static TrackPdfRequest request(byte[] image, int silhouettes, List<Integer> ships) {
-        return new TrackPdfRequest(image, FROM, TO, silhouettes, ships, 500, null);
+        return new TrackPdfRequest(image, FROM, TO, silhouettes, ships, 5, null);
     }
 
     @Test
@@ -67,7 +67,7 @@ class TrackPdfServiceTest {
 
             String text = new PDFTextStripper().getText(document);
             assertThat(text).contains("Ship tracks", "11/11/2026 14:00:00 – 15:00:00 (Europe/Warsaw)",
-                    "Silhouettes every 20 s", "Warta", "Kołobrzeg", "100 m");
+                    "Silhouettes every 20 s", "Warta", "Kołobrzeg", "1 Nm");
             assertThat(text).doesNotContain("Blue Lady");
         }
     }
@@ -81,18 +81,18 @@ class TrackPdfServiceTest {
 
     @Test
     void aRangeAcrossMidnightNamesBothDates() {
-        var request = new TrackPdfRequest(null, FROM, LocalDateTime.of(2026, 11, 12, 1, 0, 0), 0, List.of(1), 500, null);
+        var request = new TrackPdfRequest(null, FROM, LocalDateTime.of(2026, 11, 12, 1, 0, 0), 0, List.of(1), 5, null);
 
         assertThat(service.rangeText(request)).isEqualTo("11/11/2026 14:00:00 – 12/11/2026 01:00:00 (Europe/Warsaw)");
     }
 
     @Test
-    void theScaleBarIsARoundLengthNoWiderThanFortyMillimetres() {
-        assertThat(TrackPdfService.scaleBarMeters(1000, 100)).isEqualTo(200);   // 400 m fit in 40 mm
-        assertThat(TrackPdfService.scaleBarMeters(500, 190)).isEqualTo(100);    // 105 m
-        assertThat(TrackPdfService.scaleBarMeters(2375, 190)).isEqualTo(500);   // exactly 500 m
-        assertThat(TrackPdfService.scaleBarMeters(19, 190)).isEqualTo(2);       // 4 m
-        assertThat(TrackPdfService.scaleBarMeters(5, 190)).isEqualTo(1);        // 1.05 m
+    void theScaleBarIsARoundNauticalMileLengthNoWiderThanFortyMillimetres() {
+        assertThat(TrackPdfService.scaleBarNm(10, 100)).isEqualTo(2);       // 4 Nm fit in 40 mm
+        assertThat(TrackPdfService.scaleBarNm(5, 190)).isEqualTo(1);        // 1.05 Nm
+        assertThat(TrackPdfService.scaleBarNm(0.5, 100)).isEqualTo(0.2);    // 0.2 Nm
+        assertThat(TrackPdfService.scaleBarNm(0.25, 190)).isEqualTo(0.05);  // 0.0526 Nm
+        assertThat(TrackPdfService.scaleBarNm(0.125, 190)).isEqualTo(0.02); // 0.0263 Nm
     }
 
     @Test
@@ -102,7 +102,7 @@ class TrackPdfServiceTest {
         assertRefused(request(image("png", 10, 10), 20, List.of(1)), "must be a JPEG");
         assertRefused(request(new byte[]{1, 2, 3}, 20, List.of(1)), "not a valid image");
         assertRefused(request(image("jpg", 5001, 10), 20, List.of(1)), "larger than");
-        assertRefused(new TrackPdfRequest(jpeg, TO, FROM, 20, List.of(1), 500, null), "earlier");
+        assertRefused(new TrackPdfRequest(jpeg, TO, FROM, 20, List.of(1), 5, null), "earlier");
         assertRefused(request(jpeg, 20, List.of(1, 99)), "ship");
         assertRefused(request(jpeg, 20, List.of()), "ship");
         assertRefused(request(jpeg, 61, List.of(1)), "silhouette");
@@ -119,7 +119,7 @@ class TrackPdfServiceTest {
     }
 
     private TrackPdfRequest withCaptains(Map<Integer, String> captains, List<Integer> ships) throws IOException {
-        return new TrackPdfRequest(image("jpg", 600, 850), FROM, TO, 20, ships, 500, captains);
+        return new TrackPdfRequest(image("jpg", 600, 850), FROM, TO, 20, ships, 5, captains);
     }
 
     @Test
@@ -141,7 +141,7 @@ class TrackPdfServiceTest {
         assertThat(LONG_NAME).hasSize(120);
         assertThat(text).contains(LONG_NAME);
         assertThat(text.split(Pattern.quote(LONG_NAME), -1)).as("one per ship").hasSize(7);
-        assertThat(text).contains("100 m");
+        assertThat(text).contains("1 Nm");
     }
 
     @Test

@@ -51,7 +51,7 @@ A point is `[epoch millis, x, y, heading]`, x/y in map pixels. An empty result i
 `coverage` tells why. Errors: `400` invalid range or parameters (`{"message": ...}`), `503` when
 `tracks.max-concurrent-queries` scans already run.
 
-`POST /tracks/pdf` (multipart: `image`, `from`, `to`, `silhouettes`, `ships`, `widthMeters`) returns
+`POST /tracks/pdf` (multipart: `image`, `from`, `to`, `silhouettes`, `ships`, `widthNm`) returns
 `application/pdf`; `400` is plain text.
 
 ## Configuration
@@ -73,7 +73,7 @@ A point is `[epoch millis, x, y, heading]`, x/y in map pixels. An empty result i
   part of the range; `503` and other errors keep the previous drawing.
 - Remembered in `localStorage`: ships, period, toggles, gap. Range, frame, zoom and position start fresh.
 - Print: ~300 dpi JPEG of the area, line about 0.3 mm, dot about 0.8 mm, label about 2 mm; header with
-  range and zone, colour legend and scale bar. Opens in a new tab.
+  range and zone, colour legend and scale bar in full-scale nautical miles (`widthNm`: the area width in Nm of the 1:24 chart). Opens in a new tab.
 - Captains go in the form field `captains` (JSON `{"1":"Jan Kowalski"}`, printed ships only). The server
   normalises them (NFC, control characters removed, whitespace collapsed) and refuses over 120 characters
   or an unprinted ship. The legend reads "Ship — Captain"; an entry wider than half the row takes a row
