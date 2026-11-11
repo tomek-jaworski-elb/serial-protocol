@@ -17,7 +17,8 @@ Loaded when you touch the MVC controllers, Thymeleaf templates or the static JS/
 ## Web surface
 Two MVC controller families under `controller/web`:
 
-- `MapController` — serial/realtime pages: `/` (`index`), `/terminal`, `/chart`, `/tracks`, `/about`, `/greeting`, plus `/login`, `/logout`, `/name-service`, `/instructor-service`.
+- `MapController` — serial/realtime pages: `/` (`index`), `/terminal`, `/chart`, `/about`, `/greeting`, plus `/login`, `/logout`, `/name-service`, `/instructor-service`.
+- `TracksController` — `/tracks` and its API, see "Track replay page" below.
 - `CustomDBController` — all custom-domain CRUD; `ImageController` and `PdfReportController` round it out. `MyErrorController` + `WebExceptionHandler` handle errors.
 
 `templates/fragment.html` is the shared layout — `head`, `header`, `footer`, `pagination(...)`, `toastNotifications`, `imageEditor(...)` fragments. Every page pulls in the footer, which is what makes the open-page count work. Menu entries behind `web.ui.extended=true` are gated in the template by comparing the property **as a string** (`@environment.getProperty(...) == 'true'`). `static/bootstrap-5-3-8` is the version actually referenced; `bootstrap-5-3-7` is a leftover.
@@ -38,3 +39,6 @@ Full reference: [`docs/follow-mode-spec.md`](docs/follow-mode-spec.md). Toggling
 - **COG is only trusted above `chart.ship.cog-min-speed-kn`** (default 1.0); below it the camera falls back to HDG.
 - While following, `clampStagePosition()` does not apply (the chart is rotated) and the anchor limit replaces it. `maxScale` is computed (`updateMaxScale()`), not a flat 3, and the north-up view inherits that ceiling.
 - The two settings reach the browser as the `shipPositionSmoothingMs` and `cogMinSpeedKn` model attributes, read once at page render by `MapController` through `Resources`. They have env overrides `SHIP_POSITION_SMOOTHING_MS` and `COG_MIN_SPEED_KN`, and **changing them needs a restart**.
+
+## Track replay page (`/tracks`)
+`templates/tracks.html`, `static/js/tracks-script.js` (page, fetch, print) and `tracks-draw.js` (drawing), `static/css/tracks.css`. An A4-portrait Konva stage on the same map as `/chart`, using the shared `common/ship-geometry.js` and `common/map-image.js`; the hull invariant applies (hull size from the chart, never the zoom). Lines, dots and time labels keep a constant on-screen size, and take print sizes (mm at ~300 dpi) while exporting. The PDF is built by `TrackPdfService` from the exported image; Print opens the named window `tracksPdf` synchronously in the click (the form targets it), never after the async export, or Safari blocks it. Details: [`docs/track-replay.md`](docs/track-replay.md).

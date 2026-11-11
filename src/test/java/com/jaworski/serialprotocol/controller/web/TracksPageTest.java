@@ -68,6 +68,16 @@ class TracksPageTest {
         }
     }
 
+    /** The desktop bar and the mobile bar each list Tracks right after Chart; on /tracks it is the active one. */
+    @Test
+    void theMenuLinksToTracksRightAfterChartInBothVariants() throws Exception {
+        Pattern pair = Pattern.compile("href=\"/chart\"[^>]*>Chart</a>\\s*<a[^>]*href=\"/tracks\"[^>]*>Tracks</a>");
+        String home = mockMvc.perform(get("/")).andReturn().getResponse().getContentAsString();
+        assertThat(pair.matcher(home).results().count()).as("desktop and mobile variants").isEqualTo(2);
+        assertThat(Pattern.compile("class=\"fb-link active\"[^>]*href=\"/tracks\"").matcher(tracksHtml()).results().count())
+                .as("Tracks is active on its own page, in both variants").isEqualTo(2);
+    }
+
     /** One checkbox row per ship, from Models: id, name and colour, none ticked. */
     @Test
     void everyShipIsRenderedFromModelsWithItsColour() throws Exception {

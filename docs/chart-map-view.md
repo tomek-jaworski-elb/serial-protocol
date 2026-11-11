@@ -9,6 +9,7 @@ Files involved:
 |---|---|
 | `src/main/resources/templates/chart.html` | View template, Konva container, zoom control buttons |
 | `src/main/resources/static/js/chart-script.js` | Konva stage, layers, WebSocket handling, zoom/pan/pinch |
+| `src/main/resources/static/js/common/map-image.js` | `MAP_WIDTH` / `MAP_HEIGHT`, `loadMapImage()` (shared with `/tracks`) |
 | `src/main/resources/static/css/chart.css` | Container sizing, zoom controls overlay |
 | `src/main/resources/static/img/MapaSilm_2666x4000.{avif,webp,jpg}` | Lake chart raster in three formats |
 
@@ -24,7 +25,7 @@ layer. Layer order (bottom to top):
 4. `tooltipLayer` — ship info tooltip
 
 Ships, tracks, and calibration triangles live in **map coordinates**
-(2666 × 4000 px, constants `MAP_WIDTH` / `MAP_HEIGHT`). Zooming and panning
+(2666 × 4000 px, constants `MAP_WIDTH` / `MAP_HEIGHT` in `common/map-image.js`). Zooming and panning
 transform the whole stage, so ship positions and proportions relative to the
 map never change.
 
@@ -34,7 +35,7 @@ inside `.map-wrapper`, not children of it.
 
 ## Map image formats
 
-The map is loaded by `loadMapImage()` with a fallback chain:
+The map is loaded by `loadMapImage()` (`common/map-image.js`) with a fallback chain:
 
 1. `MapaSilm_2666x4000.avif` (~109 KB) — all modern browsers (Safari ≥ 16.4)
 2. `MapaSilm_2666x4000.webp` (~143 KB) — Safari ≥ 14, legacy Android

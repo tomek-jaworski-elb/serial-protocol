@@ -8,7 +8,6 @@ const SCALE_BY = 1.1;      // wheel step, as on /chart
 const BUTTON_ZOOM = 1.3;   // +/- button step, as on /chart
 const MAX_SCALE = 4;
 const A4_RATIO = 297 / 210; // height / width of the portrait page
-const MAX_RANGE_MS = 24 * 3600 * 1000;
 const SCALE_BAR_MAX_PX = 120;
 
 // ---------------------------------------------------------------- time range
@@ -53,7 +52,7 @@ function rangeProblem() {
     const to = toPicker.selectedDates[0];
     if (!from || !to) return 'Choose both From and To.';
     if (from >= to) return 'From must be earlier than To.';
-    if (to - from > MAX_RANGE_MS) return 'The range cannot be longer than 24 hours.';
+    if (to - from > DAY_MS) return 'The range cannot be longer than 24 hours.';
     if (from > wallClockNow()) return 'The range lies entirely in the future.';
     return '';
 }
@@ -493,6 +492,13 @@ function renderPrintArea(area) {
 }
 
 async function printTracks() {
+    // Opened in the click itself: the JPEG below is made asynchronously, and Safari and Firefox
+    // treat a window opened after that as an unrequested popup.
+    const pdfWindow = window.open('', document.getElementById('pdfForm').target);
+    if (!pdfWindow) {
+        setResultMessage('The browser blocked the PDF window. Allow pop-ups for this site and press Print again.', 'warning');
+        return;
+    }
     const area = getPrintArea();
     printBtn.disabled = true;
     try {
@@ -507,6 +513,9 @@ async function printTracks() {
         pdfForm.elements.ships.value = tracks.map((track) => track.id).join(',');
         pdfForm.elements.widthMeters.value = area.width / mapa_x;
         pdfForm.submit();
+    } catch (e) {
+        pdfWindow.close();
+        throw e;
     } finally {
         updateButtons();
     }

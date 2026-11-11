@@ -103,7 +103,7 @@
         </form>
 
         <!-- The PDF request: tracks-script.js fills it and submits it into a new tab. -->
-        <form id="pdfForm" method="post" enctype="multipart/form-data" target="_blank" th:action="@{/tracks/pdf}" hidden>
+        <form id="pdfForm" method="post" enctype="multipart/form-data" target="tracksPdf" th:action="@{/tracks/pdf}" hidden>
             <input type="file" name="image">
             <input type="hidden" name="from">
             <input type="hidden" name="to">

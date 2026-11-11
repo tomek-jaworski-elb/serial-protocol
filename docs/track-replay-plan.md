@@ -1,6 +1,6 @@
 # Track replay (`/tracks`) — implementation plan
 
-> Status: agreed 2026-11-11 (design closed after a Q1–Q31 review), not started.
+> Status: stages 1–7 implemented (stage 7, desktop browsers, 2026-11-11: popup-safe Print, automated rollover test; Safari and Edge await the owner's checklist). Reference: [`track-replay.md`](track-replay.md).
 > The existing `/tracks` implementation may be replaced entirely.
 
 ## 1. Requirements (owner)
@@ -37,10 +37,10 @@ Drawing tracks must not delay, block or lose a single frame of live ingest or it
 
 - **Read-only, no changes on the write side.** `MessageTranslator` and the ingest pipeline are
   not touched; `logback-spring.xml` changes only the retention cap above.
-- **No file locks.** Files are opened only through NIO (`Files.newInputStream` / `Files.lines`),
-  which on Windows shares read, write *and delete*. `FileInputStream` and `RandomAccessFile` are
-  forbidden here: without delete-sharing, logback's midnight/size rollover cannot rename
-  `tracking.log` while a query holds it, and logging keeps going into the wrong file.
+- **No file locks.** The server runs on Linux, where an open reader never blocks a rename. Files
+  are still opened only through NIO (`Files.newInputStream` / `Files.lines`), which on Windows
+  shares read, write *and delete*, so a developer running the app or the tests on Windows gets
+  the same behaviour; `FileInputStream` and `RandomAccessFile` would block logback's rollover there.
 - **Each stream is closed by try-with-resources** and lives only for one query; nothing is held
   open between requests.
 - **Rollover races are tolerated, not prevented.** A file that disappears between listing and
@@ -50,15 +50,17 @@ Drawing tracks must not delay, block or lose a single frame of live ingest or it
   (`tracks.max-concurrent-queries`, default 2) caps parallel log scans; a request beyond it gets
   `503` at once instead of queuing. Lines are filtered while streaming, never loaded whole.
 - **Tests:** an integration test drives frames through `FrameIngress` while a replay query streams
-  the same tracking file and asserts every frame still reaches `/json` and the log. Rollover
-  under a reader on Windows is checked by hand (stage 6).
+  the same tracking file and asserts every frame still reaches `/json` and the log, across a real
+  logback size rollover with the reader open (automated, so it also guards a Windows dev machine).
+  The same was checked by hand on Linux against the running app (stage 6).
 
 ### Page
 
 | Topic | Decision |
 |---|---|
 | Language | English throughout (page and PDF), like the rest of the app. Dates `dd/MM/yyyy`. |
-| Devices | Desktop only (mouse, wheel). On a phone the page renders and pans, nothing more is promised. |
+| Server | Linux only: Docker (JVM in UTC) or a plain JAR (host zone). |
+| Clients | Desktop only (mouse, wheel), current Chrome, Edge, Firefox and Safari on Windows, macOS and Linux. Viewers sit in any zone; every time on the page and in the PDF is in the display zone, never the browser's. Tablets and phones: the page renders and pans, nothing more is promised. |
 | Menu | `Tracks` in the main bar right after `Chart`, desktop and mobile variants of `fragment.html`. |
 | Ships | Checkboxes for all 6 models with colour swatch and name, built from `Models`. None selected by default. After a draw, a ship with no points gets a "no data" note. |
 | Defaults | Range = last hour up to now (display zone). Nothing is drawn until Refresh. |
@@ -102,14 +104,17 @@ service/tracks/
   TrackLogLineParser    one log line -> Optional<TrackPoint>, both formats
   TrackLogSource        available days, line stream for a log-zone day (.log + .gz)
   TrackQueryService     range + ship ids -> tracks + coverage; stateless, semaphore-bounded
-  TrackPdfService       PNG + metadata -> A4 PDF
+  InvalidTrackQueryException, TrackQueryBusyException
 dto/tracks/
-  TrackPoint(time, x, y, heading), ShipTrack(modelId, points), TrackCoverage, TrackPdfRequest
+  TrackPoint(time, x, y, heading), ShipTrack(modelId, points), TrackCoverage, TrackQueryResult, TrackPdfRequest
+service/pdf/
+  TrackPdfService       JPEG + metadata -> A4 PDF
 controller/web/
   TracksController      GET /tracks, GET /tracks/api/days, GET /tracks/api/points, POST /tracks/pdf
 static/js/
-  common/ship-geometry.js
-  tracks-script.js
+  common/ship-geometry.js, common/map-image.js
+  tracks-script.js, tracks-draw.js
+  css/tracks.css
 templates/tracks.html
 ```
 
@@ -140,10 +145,15 @@ at the end.
    page with an embedded image.
 6. **Release.** Menu entry after `Chart`; a new `TracksPageTest` (keeps the "every asset exists"
    check); update `.claude/rules/ingest-pipeline.md` § Track replay and `web-chart.md`; write
-   `docs/track-replay.md` including the **manual Windows rollover test** (run the JAR, feed it
-   with `run-sim.bat replay ... --loop`, temporarily lower `maxFileSize`, query tracks during
-   rollovers, check that `.gz` archives appear and `tracking.log` keeps growing). The owner runs
-   it; stage 6 is not closed without the result.
+   `docs/track-replay.md`; rollover under a reader checked on Linux against the running app
+   (`maxFileSize` lowered through `--logging.config`, simulator feeding, queries every second).
+   The Windows test first planned here was dropped on 2026-11-11: the server runs on Linux only.
+7. **Desktop browsers.** Chrome, Edge, Firefox and Safari:
+   - Print opens the PDF window synchronously in the click (named window, the form posts into it),
+     because the JPEG is made asynchronously first and Safari/Firefox block a later `target=_blank`.
+   - The ingest-under-query test covers a real size rollover with the reader open.
+   - Verified in Chrome and Firefox here (headless); Safari and Edge by the owner from a short
+     checklist in `docs/track-replay.md`.
 
 Verification data: logs produced by the simulator until the owner supplies real tracking logs.
 
@@ -158,3 +168,5 @@ Verification data: logs produced by the simulator until the owner supplies real 
   into a zigzag. No de-duplication is done; telling them apart would need a log-format change.
 - History length is bounded by `TRACKING_LOG_TOTAL_CAP` as well as `maxHistory=365`; at full
   traffic the size cap is the one that bites.
+- Drawing speed depends on the viewer's machine: with 24 h × 6 ships and the whole map in view,
+  panning ran at ~10 fps in software-rendered headless Chrome; a GPU browser does better.
