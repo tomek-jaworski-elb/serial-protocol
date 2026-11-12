@@ -26,7 +26,7 @@ services:
             - /dev/ttyS0:/dev/ttyS0
             - /dev/ttyS2:/dev/ttyS2
             - /dev/ttyS1:/dev/ttyS1
-            - /dev/ttyACM0:/dev/ttyACM0
+            # - /dev/ttyACM0:/dev/ttyACM0   # USB CDC device, not the RS-232 port (rs.comports opens ttyS0); breaks container creation when absent
             - /dev:/dev
         privileged: true
         logging:
