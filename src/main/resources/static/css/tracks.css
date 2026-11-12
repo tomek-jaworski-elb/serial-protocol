@@ -1,0 +1,166 @@
+/* /tracks: what differs from /chart. The map pane, zoom controls and ship rows come from chart.css. */
+
+.tracks-wrapper {
+    --replay-bar-h: 5rem; /* the bar's two rows and padding: map + bar fill what the map alone did */
+}
+
+/* The map is a fixed A4 portrait, sized by the viewport height like the chart pane. */
+.tracks-wrapper .canvas-container {
+    height: calc(85vh - var(--replay-bar-h));
+    height: calc(85svh - var(--replay-bar-h));
+    aspect-ratio: 210 / 297;
+    width: auto;
+    background: #ffffff; /* the map is narrower than A4; no page gradient beside it */
+}
+
+/* Below lg the panel stacks under the map, which then takes the full width. */
+@media (max-width: 991.98px) {
+    .tracks-wrapper .canvas-container {
+        height: auto;
+        width: 100%;
+    }
+}
+
+@media (min-width: 992px) {
+    /* the A4 map and the panel are narrower than a wide screen: centre the pair */
+    .tracks-wrapper {
+        justify-content: center;
+    }
+
+    .tracks-wrapper .map-pane {
+        flex: 0 0 auto;
+    }
+}
+
+/* Video-player bar under the map: buttons and the scrubber on the first row, clock and speed on the second. */
+.replay-bar {
+    width: 0; /* with min-width the bar follows the map's width instead of widening the pane */
+    min-width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0;
+}
+
+.replay-bar .form-range {
+    width: auto;
+    min-width: 0; /* a range input's intrinsic width would otherwise force a wrap */
+}
+
+/* Fills the first row after the three buttons, which pushes the clock and speed onto the second. */
+.replay-scrubber {
+    flex: 1 1 calc(100% - 8rem);
+}
+
+.replay-speed {
+    flex: 1 1 6rem;
+}
+
+/* Same card as the chart's ship list on desktop. */
+.tracks-panel {
+    background: var(--fb-surface, #ffffff);
+    border: 1px solid var(--fb-border, #dde1e8);
+    border-radius: 8px;
+    overflow-y: auto;
+}
+
+@media (min-width: 992px) {
+    .tracks-panel {
+        flex: 0 0 400px;
+        max-height: 85svh;
+    }
+}
+
+.tracks-heading {
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem;
+}
+
+/* Rows are labels here, so the whole row ticks the ship. */
+.tracks-panel .ship-row {
+    cursor: pointer;
+    padding: 0.3rem 0.25rem;
+}
+
+/* Under the ship's name: 4px border + 0.25rem padding + checkbox 1rem + chip 10px + two 0.6rem gaps. */
+.tracks-panel .captain-input {
+    width: calc(100% - 3.3rem);
+    margin: 0 0 0.3rem 3.3rem;
+}
+
+/* The validation icon would take the room the seconds need in the date fields. */
+.tracks-panel .form-control.is-invalid {
+    background-image: none;
+    padding-right: 0.5rem;
+}
+
+/* Scale bar, bottom left of the map pane like the chart's follow chip. */
+.scale-bar {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    z-index: 20;
+    padding: 0.2rem 0.5rem;
+    border: 1px solid var(--fb-border, #dde1e8);
+    border-radius: 6px;
+    background: var(--fb-surface, #ffffff);
+    box-shadow: 0 1px 4px rgb(0 0 0 / 15%);
+    font-size: 0.75rem;
+    pointer-events: none;
+}
+
+/* Its width is the round length on screen, set by tracks-script.js. */
+.scale-bar-line {
+    height: 6px;
+    border: 2px solid var(--fb-ink, #151a22);
+    border-top: 0;
+}
+
+/* The message can hold several lines (result and silhouette period). */
+#tracksMessage {
+    white-space: pre-line;
+}
+
+/* Icons from the sprite in tracks.html. */
+.bi {
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.125em;
+    fill: currentColor;
+}
+
+/* Bootstrap's 0.65 is hard to read; a dashed outline marks the state without relying on colour alone. */
+.tracks-panel .btn {
+    --bs-btn-disabled-opacity: 0.8;
+}
+
+.tracks-panel .btn-outline-primary:disabled,
+.tracks-panel .btn-outline-secondary:disabled,
+.tracks-panel .btn-outline-danger:disabled {
+    border-style: dashed;
+}
+
+.shortcuts-dialog {
+    max-width: 26rem;
+    color: inherit;
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: .5rem;
+}
+
+/* Data and Print actions pinned to the bottom of the scrolling panel (the settings scroll above them). */
+.tracks-actions {
+    position: sticky;
+    bottom: 0;
+    margin: 0 -1rem -1rem; /* reach the panel edges over the form padding */
+    padding: 0.75rem 1rem 1rem;
+    background: var(--fb-surface, #ffffff);
+    border-top: 1px solid var(--fb-border, #dde1e8);
+}
+
+/* Slightly narrower buttons so the three Print actions share one row in the 400 px panel. */
+.tracks-actions .btn {
+    --bs-btn-padding-x: 0.5rem;
+}

@@ -5,6 +5,8 @@ paths:
   - "src/main/java/**/thread/**"
   - "src/main/java/**/service/ingest/**"
   - "src/main/java/**/service/tracks/**"
+  - "src/main/java/**/configuration/TracksProperties.java"
+  - "docs/track-replay.md"
   - "src/main/java/**/service/utils/**"
   - "src/main/java/**/service/StartUp.java"
   - "src/main/java/**/dto/Models.java"
@@ -38,10 +40,15 @@ UdpServer -> UdpDispatcher -> UdpPacketHandlerImpl (one datagram = one frame) --
                                 -> MessageTranslator -> ModelTrackDTO -> isCRCValid gate -> WebSocketPublisher -> /json
 ```
 
-The two transports are adapters: they log what arrived and call `FrameIngress.ingest(frame, origin)`, nothing else. Tests and the simulator (`docs/e2e-simulator-plan.md`) inject frames at `FrameIngress`, above the port. `MessageTranslator` dispatches by message length: `27` (common models via `MessageCommon`) or `29` (Lady Marie via `MessageLadyMarie`). The log line `"Translated message: ModelTrackDTO(...)"` is parsed by `TrackService` — changing this log text breaks track replay. Frame format and port discovery notes: [`docs/Opis RS232.txt`](docs/Opis%20RS232.txt).
+The two transports are adapters: they log what arrived and call `FrameIngress.ingest(frame, origin)`, nothing else. Tests and the simulator (`docs/e2e-simulator-plan.md`) inject frames at `FrameIngress`, above the port. `MessageTranslator` dispatches by message length: `27` (common models via `MessageCommon`) or `29` (Lady Marie via `MessageLadyMarie`). The log line `"Translated message: ModelTrackDTO(...)"` is parsed by `TrackLogLineParser` — changing this log text breaks track replay. Frame format and port discovery notes: [`docs/Opis RS232.txt`](docs/Opis%20RS232.txt).
 
 ## Track replay (`/tracks`)
-There is no track table. `logback-spring.xml` writes every translated frame to `logs/${logging.tracking.file.name}.log` (`SAVE-TRANSMISSION-FILE`, rolled daily into `logs/yyyy/MM/`). `ReadLogsFileService` reads those files back, `LogPatternMatcher` holds the regexes, `TrackService` rebuilds tracks. The log format *is* the storage format — treat those log strings as an API. The page receives the ship palette as the `shipColors` model attribute (`Models.colorsById()`) and reads it in `tracks.html`.
+There is no track table. `logback-spring.xml` writes every translated frame to `logs/${logging.tracking.file.name}.log` (`SAVE-TRANSMISSION-FILE`, rolled daily and by size into `logs/yyyy/MM/tracking_dd-MM-yyyy.N.log.gz`). The log format *is* the storage format: treat those log strings as an API. Reading is strictly read-only and must never delay ingest. Long form: [`docs/track-replay.md`](docs/track-replay.md).
+- `TrackLogSource` lists days and streams the active file plus the `.gz` archives through **NIO only** (never `FileInputStream`/`RandomAccessFile`: they block logback's rename on Windows). A file that vanishes, a half-written line or a `.gz` still being compressed is skipped with a warning.
+- `TrackLogLineParser` reads both line formats (pre-CRC and `isCRCValid=true`) and skips `isCRCValid=false`. The date comes from the line, never the file name.
+- `TrackQueryService` converts the display zone (`tracks.display-zone`) to the log zone (`tracks.log-zone`, `TRACKS_LOG_ZONE=UTC` in Docker), allows at most 24 h, and takes a semaphore (`tracks.max-concurrent-queries`); a request beyond it gets `503` at once.
+- `TracksController`: `GET /tracks`, `/tracks/api/days`, `/tracks/api/points`, `POST /tracks/pdf` (`TrackPdfService`). Config: `TracksProperties`.
+- `TRACKING_LOG_TOTAL_CAP` (`logging.tracking.total-size-cap`, default 1GB) caps all archives.
 
 ## Ship model registry
 Defined in the `Models` enum (id, display name, colour) and, for serial prefixes, in `MessageTranslator.MODEL_MAP`:
@@ -54,7 +61,7 @@ Defined in the `Models` enum (id, display name, colour) and, for serial prefixes
 | `k5` | KOLOBRZEG | 5 |
 | `l6` | LADY_MARIE | 6 |
 
-The enum declares `CHERRY_LADY` before `DORCHERTER_LADY`; order is irrelevant, lookup is by id. `Models.colorsById()` is the palette source for `/tracks`. `/chart` still reads its own copy, `ModelsOfShips` in `static/js/chart-script.js` (the key for ship 2 is spelled `BLEUE_LADY` there) — keep it in sync with the enum.
+The enum declares `CHERRY_LADY` before `DORCHERTER_LADY`; order is irrelevant, lookup is by id. `/tracks` gets its colours from `Models.getColor()` through the template (`data-color`). `/chart` still reads its own copy, `ModelsOfShips` in `static/js/chart-script.js` (the key for ship 2 is spelled `BLEUE_LADY` there) — keep it in sync with the enum. The hull dimensions per id live in `SHIP_HULLS` in `static/js/common/ship-geometry.js`, shared by `/chart` and `/tracks`.
 
 ## UDP server
 Optional UDP listener: `udp.server.enabled=${UDP_SERVER_ENABLED:true}`, port `udp.server.port=${UDP_SERVER_PORT:2222}`, buffer `udp.server.buffer-size`. When disabled, `UdpServer`, `UdpDispatcher` and `UdpPacketHandlerImpl` are not created at all (`@ConditionalOnBooleanProperty`). `UdpServer` → `UdpDispatcher` → `UdpPacketHandlerImpl` → `FrameIngress`; properties bound by `UdpProperties`. A datagram is treated exactly like a serial frame — logged as `"From UDP <sender> Received delimited message: [...]"` (the phrase the simulator's replay parses, so a UDP-fed session can be replayed from `log.log`), published raw on `/rs`, translated, dropped unless the checksum verifies, then published on `/json` — so UDP is the transport for simulated traffic. It used to skip `/rs` and the checksum gate; that is why the pipeline was pulled out of the adapters. The port has no authentication: stray datagrams are logged at WARN (no stack trace) and, like serial noise, shown raw on `/terminal`; the lab compose does not publish the port.

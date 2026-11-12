@@ -1,18 +1,15 @@
 package com.jaworski.serialprotocol.controller.web;
 
-import com.jaworski.serialprotocol.dto.Models;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
+import com.jaworski.serialprotocol.dto.Models;
+
 import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,13 +17,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * The tracks page, guarded against the three faults that between them stopped it drawing anything.
- *
- * <p>All three were invisible from the server's side — the page returned 200 and looked complete —
- * and invisible from the code's side too, because each failure was in a different layer: a script
- * tag pointing at a file nobody had shipped, a JavaScript object defined only in a script this page
- * does not load, and two form values the server could not parse. Only the browser saw any of it,
- * and only in its console.</p>
+ * The tracks page: a missing script or stylesheet is a 404 the server never sees, so the test
+ * checks every asset the rendered page asks for.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
@@ -56,13 +48,8 @@ class TracksPageTest {
     }
 
     /**
-     * The test that would have caught it: every asset the page references has to exist.
-     *
-     * <p>This page asked for {@code /js/common/enums.js} and {@code /js/nouislider/nouislider.min.js}
-     * and neither had ever been in the repository — the second one is real, but it lives under
-     * {@code /nouislider/} and only the stylesheet was ever committed. A missing script is a 404 the
-     * server never sees and a {@code ReferenceError} the moment anything touches what it should have
-     * defined, which is how one absent file silently took the entire inline script with it.</p>
+     * Every asset the page references has to exist: this page once asked for two scripts that had
+     * never been committed, and the inline script died on the first thing it touched from them.
      */
     @Test
     void everyAssetThePageAsksForExists() throws Exception {
@@ -81,58 +68,69 @@ class TracksPageTest {
         }
     }
 
-    /**
-     * The time range the form submits must be parseable as {@code HH:mm}.
-     *
-     * <p>{@code TrackService} parses these with that pattern and, when the parse fails, its filter
-     * rejects every log item — so the values 20 and 80 the page used to submit emptied the result
-     * set on the server before the browser was ever involved. The page then reported "No data for
-     * selected models", which reads like an answer rather than a defect.</p>
-     */
+    /** The desktop bar and the mobile bar each list Tracks right after Chart; on /tracks it is the active one. */
     @Test
-    void theSubmittedTimeRangeIsParseable() throws Exception {
-        String html = tracksHtml();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
-
-        for (String field : new String[]{"minValue", "maxValue"}) {
-            Matcher matcher = Pattern.compile("name=\"" + field + "\"[^>]*value=\"([^\"]*)\"").matcher(html);
-            assertThat(matcher.find()).as("%s input", field).isTrue();
-            String value = matcher.group(1);
-
-            // 24:00 is not a LocalTime; TrackService turns it into 23:59 before parsing, so accept
-            // exactly that sentinel and nothing else loose.
-            if ("24:00".equals(value)) {
-                continue;
-            }
-            try {
-                LocalTime.parse(value, formatter);
-            } catch (DateTimeParseException e) {
-                throw new AssertionError(field + " must be HH:mm or the sentinel 24:00, but was: " + value, e);
-            }
-        }
+    void theMenuLinksToTracksRightAfterChartInBothVariants() throws Exception {
+        Pattern pair = Pattern.compile("href=\"/chart\"[^>]*>Chart</a>\\s*<a[^>]*href=\"/tracks\"[^>]*>Tracks</a>");
+        String home = mockMvc.perform(get("/")).andReturn().getResponse().getContentAsString();
+        assertThat(pair.matcher(home).results().count()).as("desktop and mobile variants").isEqualTo(2);
+        assertThat(Pattern.compile("class=\"fb-link active\"[^>]*href=\"/tracks\"").matcher(tracksHtml()).results().count())
+                .as("Tracks is active on its own page, in both variants").isEqualTo(2);
     }
 
-    /**
-     * The ship palette reaches the page from the enum that owns it.
-     *
-     * <p>The drawing loop used to call {@code ModelsOfShips.getColorFromId()}, an object defined
-     * only inside {@code chart-script.js} — which this page does not load. Inlining the map from
-     * {@link Models} keeps one definition of the palette instead of a second copy that could drift
-     * away from the first without anything noticing.</p>
-     */
+    /** One checkbox row per ship, from Models: id, name and colour, none ticked. */
     @Test
-    void theShipPaletteIsInlinedForEveryModel() throws Exception {
+    void everyShipIsRenderedFromModelsWithItsColour() throws Exception {
         String html = tracksHtml();
-        // The CALL, not the bare name: the script keeps a comment explaining what it used to reach
-        // for and why that failed, and that explanation is worth more than a stricter assertion.
-        assertThat(html)
-                .as("the page must not call into the chart page's script objects")
-                .doesNotContain("ModelsOfShips.");
-
         for (Models ship : Models.values()) {
-            assertThat(html)
-                    .as("%s colour, inlined from the Models enum", ship.getName())
-                    .contains("\"" + ship.getId() + "\":\"" + ship.getColor() + "\"");
+            assertThat(html).contains("name=\"ship\" value=\"" + ship.getId() + "\"")
+                    .contains("--ship-color: " + ship.getColor())
+                    .contains(">" + ship.getName() + "<")
+                    .contains("data-ship-note=\"" + ship.getId() + "\"");
         }
+        assertThat(html).doesNotContain("checked=\"checked\" name=\"ship\"");
+    }
+
+    /** The help dialog, its opener and the driven buttons' keys (the script turns them into aria-keyshortcuts). */
+    @Test
+    void theKeyboardShortcutsDialogAndTheKeysOfTheDrivenButtonsArePresent() throws Exception {
+        String html = tracksHtml();
+        assertThat(html).contains("id=\"shortcutsDialog\"", "id=\"shortcutsBtn\"", "id=\"shortcutsOn\"");
+        assertThat(html).containsPattern("id=\"playBtn\"[^>]*data-keys=\"Space K\"")
+                .containsPattern("id=\"printFrameBtn\"[^>]*data-keys=\"F\"");
+    }
+
+    /** A hidden, unnamed field per ship (it is never submitted), tied to the ship's checkbox. */
+    @Test
+    void everyShipHasAHiddenCaptainFieldAndThePrintFormCarriesTheCaptains() throws Exception {
+        String html = tracksHtml();
+        for (Models ship : Models.values()) {
+            assertThat(html).containsPattern("aria-controls=\"captain-" + ship.getId() + "\"[^>]*aria-expanded=\"false\"")
+                    .containsPattern("<input[^>]*id=\"captain-" + ship.getId() + "\"[^>]*aria-label=\"Captain of "
+                            + Pattern.quote(ship.getName()) + "\"[^>]*maxlength=\"120\"");
+        }
+        assertThat(html).doesNotContainPattern("<input[^>]*id=\"captain-[^>]*name=")
+                .containsPattern("<input[^>]*\\shidden[^>]*id=\"captain-1\"")
+                .contains("<input type=\"hidden\" name=\"captains\">");
+    }
+
+    @Test
+    void theFormControlsArePresent() throws Exception {
+        String html = tracksHtml();
+        assertThat(html).contains("id=\"fromInput\"", "id=\"toInput\"", "id=\"rangeError\"", "id=\"tracksMessage\"",
+                "id=\"refreshBtn\"", "id=\"clearBtn\"", "id=\"printBtn\"",
+                "id=\"periodSlider\"", "id=\"showSilhouettes\"", "id=\"timeLabels\"", "id=\"gapInput\"",
+                "id=\"printFrameBtn\"", "id=\"removeFrameBtn\"", "id=\"konvaContainer\"",
+                "id=\"zoomInBtn\"", "id=\"drawHint\"", "id=\"i-printer\"", "aria-label=\"Zoom in\"", "id=\"zoomOutBtn\"", "id=\"zoomResetBtn\"", "id=\"scaleBarLine\"",
+                "id=\"playBtn\"", "id=\"stopBtn\"", "id=\"resetBtn\"", "id=\"speedSlider\"", "id=\"replayScrubber\"");
+    }
+
+    /** The page needs the zone, the gap and the server's clock at render time. */
+    @Test
+    void theModelAttributesAreRendered() throws Exception {
+        String html = tracksHtml();
+        assertThat(html).contains("Times in <span>Europe/Warsaw</span>");
+        assertThat(html).containsPattern("data-now=\"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\"");
+        assertThat(html).containsPattern("id=\"gapInput\"[^>]*value=\"10\"");
     }
 }

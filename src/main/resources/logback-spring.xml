@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration info="false">
     <springProperty name="tracking" defaultValue="tracking" source="logging.tracking.file.name"/>
+    <springProperty name="TRACKING_TOTAL_CAP" defaultValue="1GB" source="logging.tracking.total-size-cap"/>
     <springProperty name="LOG_PATH" defaultValue="logs" source="logging.file.path"/>
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
@@ -42,7 +43,7 @@
             </fileNamePattern>
             <maxFileSize>100MB</maxFileSize>
             <maxHistory>365</maxHistory>
-            <totalSizeCap>500MB</totalSizeCap>
+            <totalSizeCap>${TRACKING_TOTAL_CAP}</totalSizeCap>
         </rollingPolicy>
     </appender>
 

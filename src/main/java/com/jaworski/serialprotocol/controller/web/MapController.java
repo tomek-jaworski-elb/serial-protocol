@@ -1,8 +1,6 @@
 package com.jaworski.serialprotocol.controller.web;
 
-import com.jaworski.serialprotocol.dto.CheckBoxOption;
 import com.jaworski.serialprotocol.dto.InstructorDto;
-import com.jaworski.serialprotocol.dto.LogItem;
 import com.jaworski.serialprotocol.dto.Models;
 import com.jaworski.serialprotocol.dto.StudentDTO;
 import com.jaworski.serialprotocol.mappers.InstructorMapper;
@@ -10,39 +8,27 @@ import com.jaworski.serialprotocol.resources.Resources;
 import com.jaworski.serialprotocol.service.WebSocketPublisher;
 import com.jaworski.serialprotocol.service.db.InstructorService;
 import com.jaworski.serialprotocol.service.db.StudentService;
-import com.jaworski.serialprotocol.service.tracks.TrackService;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 @RequiredArgsConstructor
 @Controller
 public class MapController {
 
-    private static final Logger LOG = LoggerFactory.getLogger(MapController.class);
-    public static final String ATTRIBUTE_TRACK_MAP = "trackMap";
     public static final String ATTRIBUTE_NAME = "name";
-    /** Model attribute carrying the ship palette to the tracks page. */
-    private static final String SHIP_COLORS = "shipColors";
     /** The two chart settings the browser needs, read once at render. */
     private static final String SHIP_SMOOTHING_MS = "shipPositionSmoothingMs";
     private static final String COG_MIN_SPEED_KN = "cogMinSpeedKn";
     private static final String PASS_SERVICE = "pass-service";
     private static final String ACTIVE_SESSION = "sessions";
-    private final TrackService trackService;
     private final StudentService studentService;
     private final InstructorService instructorService;
     private final WebSocketPublisher webSockerService;
@@ -87,34 +73,6 @@ public class MapController {
         return "chart";
     }
 
-    @GetMapping("/tracks")
-    public String tracks(Model model) {
-        model.addAttribute(ATTRIBUTE_NAME, "track");
-        model.addAttribute(ATTRIBUTE_TRACK_MAP, Collections.emptyMap());
-        model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
-        model.addAttribute(SHIP_COLORS, Models.colorsById());
-        return "tracks";
-    }
-
-    @PostMapping("/tracks")
-    public String submitForm(@ModelAttribute CheckBoxOption checkBoxOption, Model model) {
-        LOG.info("{}", checkBoxOption);
-        model.addAttribute(ATTRIBUTE_TRACK_MAP, Collections.emptyMap());
-        if (!checkBoxOption.getModels().isEmpty()) {
-            Map<Integer, List<LogItem>> trackMap = trackService.getModels(checkBoxOption);
-
-            LOG.info("Result LogItems size {}", trackMap.size());
-            trackMap.keySet()
-                    .forEach(integer -> LOG.info("Key {} size: {}", integer, trackMap.get(integer).size()));
-            model.addAttribute(ATTRIBUTE_TRACK_MAP, trackMap);
-            model.addAttribute("noData", trackMap.isEmpty() ? "No data for selected models" : "");
-        }
-        model.addAttribute(ATTRIBUTE_NAME, "track");
-        model.addAttribute("checkboxForm", checkBoxOption);
-        model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
-        model.addAttribute(SHIP_COLORS, Models.colorsById());
-        return "tracks";
-    }
     @PreAuthorize("hasRole(T(com.jaworski.serialprotocol.authorization.SecurityRoles).ROLE_USER.getRole()) or " +
             "hasRole(T(com.jaworski.serialprotocol.authorization.SecurityRoles).ROLE_USER.getName() + '_T')")
     @GetMapping("/name-service")

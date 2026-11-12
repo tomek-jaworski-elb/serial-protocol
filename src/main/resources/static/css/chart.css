@@ -191,7 +191,8 @@
     color: var(--fb-muted, #5b6270);
 }
 
-.form-control {
+/* Only the diagnostics text; /tracks also loads this file and its inputs keep Bootstrap's font. */
+#textField {
     font-family: "Courier New", Times, Monospace, serif;
     font-size: 12px;
     text-align: left;

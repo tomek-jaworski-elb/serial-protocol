@@ -410,9 +410,11 @@ class ChartShipListTest {
                 .as("the hull geometry function should still be called; has it been renamed?")
                 .isGreaterThanOrEqualTo(2);
 
-        int bodyStart = script.indexOf("function computeShipVerticesForKonva");
+        // The function lives in the file shared with /tracks, not in the chart script.
+        String geometry = geometrySource();
+        int bodyStart = geometry.indexOf("function computeShipVerticesForKonva");
         assertThat(bodyStart).as("hull geometry function").isNotNegative();
-        String body = script.substring(bodyStart, script.indexOf("\n}", bodyStart));
+        String body = geometry.substring(bodyStart, geometry.indexOf("\n}", bodyStart));
         assertThat(body)
                 .as("the hull geometry function itself must know nothing about the stage")
                 .doesNotContain("konvaStage");
@@ -458,6 +460,11 @@ class ChartShipListTest {
                 .getContentAsString(StandardCharsets.UTF_8);
     }
 
+
+    private static String geometrySource() throws Exception {
+        return new ClassPathResource("static/js/common/ship-geometry.js")
+                .getContentAsString(StandardCharsets.UTF_8);
+    }
 
     private String chartHtml() throws Exception {
         if (renderedChart == null) {
