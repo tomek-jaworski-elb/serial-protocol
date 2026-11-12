@@ -38,6 +38,12 @@ The script asks for the server, ssh port, user and folder, unless given as optio
      a migration has already run (see below).
    - It keeps the 3 newest images plus the previous one.
 
+> **Warning: do not run `start_docker.sh` (or `docker compose up --build`) in `DIR`.** The folder holds no
+> `Dockerfile` and no jar, so a rebuild cannot work. The old `start_docker.sh` stopped the stack *before* building
+> and left the server without the app; the current one refuses to run in a deploy-managed folder. On the server use
+> `docker compose up -d` in `DIR` (the override pins the deployed image), `deploy.sh --status` or `--rollback`.
+> `stop_docker.sh` / `docker compose down` are safe: they never remove the `db-data` volume. Never add `-v`.
+
 Server layout (`DIR`): `docker-compose.yml`, `docker-compose.override.yml` (pins the image tag, so a plain
 `docker compose up -d` after a reboot runs the same version), `cert/`, `current-tag`, `previous-tag`, `.project`,
 `deploy-remote.sh`, `deploy-logs/`, `backups/`. Volumes `db-data` and `server-logs` are never touched.

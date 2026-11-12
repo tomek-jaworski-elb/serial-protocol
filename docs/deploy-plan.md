@@ -11,7 +11,7 @@ Usage: [`deploy/README.md`](../deploy/README.md).
 - Volumes and the network carry an explicit `name:`, so they are global per Docker host and do not depend on the compose project name. Containers keep the project label, which is taken from the folder name because the compose file sets no `name:`.
 - `Dockerfile` does not build the app. It `COPY`s a prebuilt `target/serial-protocol-3.0.jar` and `cert/server.p12`. **`cert/` is gitignored**, so the server can never build from a git checkout alone.
 - The build context is `.`, and there is no `.dockerignore`.
-- `start_docker.sh` runs `up --build --force-recreate --always-recreate-deps`. That recreates MariaDB too, so a deploy must not use it.
+- `start_docker.sh` (on master) runs `up --build --force-recreate --always-recreate-deps`. That recreates MariaDB too, so a deploy must not use it. It also stopped the stack before building, so a failed build left no app. Since this branch it builds first, never recreates MariaDB and refuses a deploy-managed folder.
 - Ports the app listens on: 443 (HTTPS), 80 and 8080 (redirect, not published), UDP 2222 (**not published**). Serial ports are opened in the container.
 - State to keep: volume `db-data` (all business data, photos) and volume `server-logs` (`tracking.log` is the only source for `/tracks` replay).
 - Schema: Flyway V1..V9 run at start-up with `ddl-auto=validate`. Migrations are one-way, so an old jar does not start on a migrated schema.
@@ -41,7 +41,7 @@ The best result without changing the app: **everything slow happens while the ol
 | `.gitignore` | `+ /deploy/deploy.conf`, `/deploy/.known_hosts` |
 
 The clients stay thin: prompt, build, pack, **one** `ssh` call. Both systems have only OpenSSH (`ssh.exe`) and `tar` (`tar.exe`, bsdtar) by default, which is why there are two clients and no Python or extra library.
-`Dockerfile`, `docker-compose.yml` and `start_docker.sh` stay as they are.
+`Dockerfile` and `docker-compose.yml` stay as they are. `start_docker.sh` was fixed later (see §1).
 
 ## 4. Credentials
 

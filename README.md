@@ -18,6 +18,10 @@ Aplikacja Spring Boot (Java 25) do odbioru i wizualizacji danych AIS z portów s
 ./stop_docker.sh         # zatrzymanie
 ```
 
+`start_docker.sh` wymaga zbudowanego `target/serial-protocol-<wersja>.jar` i `cert/server.p12`. Najpierw buduje obraz, a stack zatrzymuje dopiero po udanym buildzie. Kontenera MariaDB nie odtwarza.
+
+> **Uwaga:** nie uruchamiaj `start_docker.sh` na serwerze wdrażanym przez `deploy/deploy.sh`, bo w tamtym folderze nie ma `Dockerfile` ani JAR-a. Skrypt odmówi działania. Szczegóły w [`deploy/README.md`](deploy/README.md).
+
 Docker Compose podnosi dwa kontenery:
 - **serial-ports-server** – aplikacja (port `8081` → `443` wewnątrz kontenera)
 - **mariadb** – baza danych MariaDB 11.7
