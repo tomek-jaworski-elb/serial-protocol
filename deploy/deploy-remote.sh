@@ -93,11 +93,12 @@ wait_app() {
 
 # Replace the app container with image $1; only this is downtime.
 swap() {
-    write_override "$1"
     if exists "$APP"; then
         docker stop -t 30 "$APP" >/dev/null || return 1
         docker rm "$APP" >/dev/null || return 1
     fi
+    # Pin the image only once the old container is gone: a failed stop leaves the override as it was.
+    write_override "$1"
     dc up -d --no-deps --no-build server
 }
 
@@ -142,6 +143,7 @@ prechecks() {
         free=$(df -Pk "$d" | awk 'NR==2 {print $4}')
         [ "${free:-0}" -ge 2097152 ] || die "less than 2 GB free on $d"
     done
+    # Keep this sed in sync with start_docker.sh.
     for dev in $(sed -n "s/^[[:space:]]*-[[:space:]]*[\"']\{0,1\}\(\/dev[^:\"'[:space:]]*\):.*/\1/p" "$1"); do
         [ -e "$dev" ] || die "device $dev from docker-compose.yml does not exist on this host"
     done

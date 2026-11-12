@@ -26,7 +26,7 @@ Java 25, Spring Boot 4.1.1 (`jakarta.*`), Maven wrapper, MariaDB 11.7 / H2 (test
 .\mvnw.cmd spring-boot:run                                     # run from Maven
 java -jar .\target\serial-protocol-3.0.jar                     # run packaged JAR (3.0 = <version> in pom.xml)
 docker compose up --build                                      # app + MariaDB
-./start_docker.sh -d    |    ./stop_docker.sh                  # rebuild and start detached / stop (bash)
+./start_docker.sh -d    |    ./stop_docker.sh                  # build, then start detached / stop (bash; local, not on a deploy server)
 .\mvnw.cmd -f simulator/pom.xml verify                        # build + test the data simulator (simulator/target/ship-sim.jar)
 run-sim.bat replay --from docs\LogTerminal.txt --loop          # feed the running app over UDP (localhost:2222) from the recording
 deploy/deploy.sh   |   deploy\deploy.ps1                     # deploy to the Linux server over ssh (--help; deploy/README.md)
@@ -77,4 +77,4 @@ Architecture notes are path-scoped rules in `.claude/rules/`. Claude Code loads 
 | `web-chart.md` | MVC controllers, shared layout, chart map, follow mode | `controller/web/`, `resources/`, `templates/`, `static/js`, `static/css` |
 | `domain-persistence.md` | MariaDB/H2 profiles, Flyway, legacy and custom domain, images and avatars, REST API, security, PDF reports | `entity/`, `repository/`, `dto/`, `mappers/`, `rest/`, `authorization/`, `service/db`, `service/pdf`, `db/migration`, `templates/custom`, `application*.properties` |
 
-Long-form references stay in `docs/`: [`chart-map-view.md`](docs/chart-map-view.md), [`follow-mode-spec.md`](docs/follow-mode-spec.md), [`custom-domain-analysis.md`](docs/custom-domain-analysis.md), [`pdf-report-plan.md`](docs/pdf-report-plan.md), [`e2e-simulator-plan.md`](docs/e2e-simulator-plan.md), [`Opis RS232.txt`](docs/Opis%20RS232.txt).
+Long-form references stay in `docs/`: [`chart-map-view.md`](docs/chart-map-view.md), [`follow-mode-spec.md`](docs/follow-mode-spec.md), [`custom-domain-analysis.md`](docs/custom-domain-analysis.md), [`pdf-report-plan.md`](docs/pdf-report-plan.md), [`e2e-simulator-plan.md`](docs/e2e-simulator-plan.md), [`deploy-plan.md`](docs/deploy-plan.md) (remote deploy; usage in [`deploy/README.md`](deploy/README.md)), [`Opis RS232.txt`](docs/Opis%20RS232.txt).

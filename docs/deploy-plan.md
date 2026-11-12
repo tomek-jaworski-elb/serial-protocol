@@ -91,9 +91,9 @@ DEPLOY_DIR=/opt/serial-protocol
        "sh -c 'I=DIR/.incoming-TAG; mkdir -p \"\$I\" && tar xzf - -C \"\$I\" && sh \"\$I/deploy-remote.sh\" start DIR \"\$I\"'" < tmp.tgz
    ```
    - `DIR` and `TAG` are validated literals, which is why the quoting is simple.
-   - On Windows the redirection goes through `cmd /s /c "ssh ... < "tmp.tgz""`, because a PS 5.1 pipe corrupts binary data. Stage 0 confirms this.
+   - On Windows a PS 5.1 pipe would corrupt the binary archive, so `deploy.ps1` starts `ssh.exe` through `System.Diagnostics.ProcessStartInfo` with stdin redirected and copies the file into it byte for byte. That ssh still prompts on the console with stdin redirected is the open stage 0 check.
    - Each deploy unpacks into its own `.incoming-TAG`, so two simultaneous deploys do not overwrite each other's files.
-5. `deploy-remote.sh start` launches the real deploy **detached from the SSH session** (`setsid nohup … > DIR/deploy-logs/deploy-TAG.log`). It then follows that log (`tail -f --pid`) and returns its exit code. A dropped connection does not interrupt the swap and rollback. `deploy --attach` shows the log again (new password prompt).
+5. `deploy-remote.sh start` launches the real deploy **detached from the SSH session** (`setsid nohup … > DIR/deploy-logs/deploy-TAG.log`). It then follows that log (`follow()`: `tail -f` until the run writes its `.rc` file, or its `.pid` is gone) and returns its exit code. A dropped connection does not interrupt the swap and rollback. `deploy --attach` shows the log again (new password prompt).
 6. Delete the temp archive.
 
 Extra commands:
@@ -128,14 +128,14 @@ Extra commands:
    - `M0` is the number of rows in `flyway_schema_history`, failed ones included (0 if the table is missing).
    - `PENDING` is `MIGRATIONS` minus the versions applied successfully; a history that cannot be read counts as pending.
 8. **DB backup, before the stop** (only when `PENDING` is non-empty, or with `--backup`).
-   - Command: `docker exec mariadb sh -c 'MYSQL_PWD="$MARIADB_ROOT_PASSWORD" mariadb-dump -uroot --single-transaction certificates'`, written with `umask 077` to a temp file outside the image context.
+   - Command: `docker exec mariadb sh -c 'MYSQL_PWD="$MARIADB_ROOT_PASSWORD" exec mariadb-dump -uroot --single-transaction --routines --triggers "$MARIADB_DATABASE"'`, written with `umask 077` to a temp file outside the image context.
    - The dump must exit with status 0 and the file must end with `-- Dump completed`; then it is compressed into `DIR/backups/`. Keep 5.
    - The password is read inside the container, so it never appears in argv on the host.
 9. **Swap (the only downtime).**
    - If `serial-ports-server` exists: `docker stop -t 30` and `docker rm` (by name, because the old container may belong to a hand-started project).
    - Then `up -d --no-deps --no-build server`. Record the timestamps.
 10. **Health.**
-    - Poll every 2 s for up to 120 s (start-up includes Flyway and `ThumbnailBackfill`).
+    - Poll every 2 s for up to 180 s (start-up includes Flyway and `ThumbnailBackfill`).
     - Success: `Health=healthy`.
     - Fast fail: the container is not running, or `State.Restarting` is set, or `RestartCount>0`. `restart: unless-stopped` makes a crashing container loop instead of stopping. A single `unhealthy` is not final.
 11. **Failure.**

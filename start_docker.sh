@@ -18,6 +18,7 @@ version=$(sed -n 's/^ARG VERSION=//p' Dockerfile 2>/dev/null)
 [ -n "$version" ] || die "no Dockerfile with 'ARG VERSION=' in $(pwd)"
 [ -f "target/serial-protocol-$version.jar" ] || die "target/serial-protocol-$version.jar is missing; build it first: ./mvnw clean package -Dmaven.test.skip=true"
 [ -f cert/server.p12 ] || die "cert/server.p12 is missing"
+# Keep this sed in sync with deploy/deploy-remote.sh.
 for dev in $(sed -n "s/^[[:space:]]*-[[:space:]]*[\"']\{0,1\}\(\/dev[^:\"'[:space:]]*\):.*/\1/p" docker-compose.yml); do
     [ -e "$dev" ] || die "device $dev from docker-compose.yml does not exist on this host"
 done

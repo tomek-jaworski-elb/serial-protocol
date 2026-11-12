@@ -48,6 +48,17 @@ Server layout (`DIR`): `docker-compose.yml`, `docker-compose.override.yml` (pins
 `docker compose up -d` after a reboot runs the same version), `cert/`, `current-tag`, `previous-tag`, `.project`,
 `deploy-remote.sh`, `deploy-logs/`, `backups/`. Volumes `db-data` and `server-logs` are never touched.
 
+## First deploy to a server that already runs the stack
+
+Choose a **new, empty folder**, e.g. `/opt/serial-protocol`. The deploy refuses a non-empty folder that no deploy
+created, so the folder the stack was started from by hand (with its own `Dockerfile`, jar and `start_docker.sh`) is
+not accepted. That folder stays untouched as a fallback.
+
+The deploy adopts the running stack: its compose project, the `mariadb` container and the `db-data`/`server-logs`
+volumes. Only the app container is replaced. The old folder's `docker-compose.yml` is not compared with the
+uploaded one, so check that the repo's compose file carries this server's settings before the first run
+(`rs.comports`, `ip.db-client`, the `/dev` devices).
+
 ## Server prerequisites
 
 - Linux with Docker Engine and the Compose v2 plugin, and internet access to Docker Hub and the Ubuntu mirrors
