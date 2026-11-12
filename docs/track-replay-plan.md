@@ -225,10 +225,10 @@ vessel, clock readout and a scrubber.
 | Replay range | The data of the last Refresh (first to last point of the drawn tracks); editing From/To without Refresh does not affect it. |
 | Speed | `x1` = real time (1 s of track per second); slider 1–10 step 0.2, shown as "x2.4" with the total replay duration ("x2.4 · 25 min"); remembered with the other settings. |
 | Play/Pause | One toggle (`aria-pressed`, icon swap). First press starts at the range start; later presses pause and resume; after the end, Play starts again from the start. |
-| Stop | Halts and rewinds to the start: faded tracks, hulls at their start positions, clock at the start. |
+| Stop | Halts and rewinds to the start: hulls at their start positions, clock at the start. |
 | Reset | Ends the replay, removes its overlay (trail, moving hulls, clock state) and restores the static view; data stays. Named "Reset" so it is not confused with the panel's Clear. |
 | Scrubber | A range input over the replay range, step 1 s, moved by the clock while playing; dragging it seeks (also while playing). Keyboard per APG: arrows ±1 s, Page Up/Down ±1 min, Home/End. Clock readout `dd/MM/yyyy HH:mm:ss` in the display zone. |
-| While replaying | Full tracks faded, the played part in full colour, one hull per ship at the clock time (position interpolated within a segment, heading turned the short way), hidden before its first point, after its last and inside a gap longer than the gap field. Static silhouettes and their time labels are hidden and return on Reset. Zoom, pan and the print frame keep working. Hull size from the chart, never from the zoom. |
+| While replaying | Only the hulls show (tracks hidden, owner's decision 2026-11-12, replacing the faded track with the played part in full colour): one hull per ship at the clock time (position interpolated within a segment, heading turned the short way), hidden before its first point, after its last and inside a gap longer than the gap field. Tracks, static silhouettes and their time labels are hidden and return on Reset. Zoom, pan and the print frame keep working. Hull size from the chart, never from the zoom. |
 | End | Stops on the last frame. |
 | Background tab | The browser pauses animation frames; each frame step is capped at 250 ms, so returning does not jump. |
 | Refresh / Clear | End the replay (as Reset) before replacing or clearing data. |

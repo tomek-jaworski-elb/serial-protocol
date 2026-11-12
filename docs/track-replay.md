@@ -110,10 +110,10 @@ selects, the Flatpickr calendar and the dialog are ignored. Single-character key
 
 - The range is the first to last point of the last Refresh. One clock (`playT` in `tracks-draw.js`, epoch ms,
   `Infinity` = off) drives all ships; x1 is real time, speed 1-10 in steps of 0.2 (remembered), each frame step capped at 250 ms.
-- While it is on: the full tracks are faded (layer opacity), `replayLayer` repeats the played part in full colour (no
-  dots, which would not fit a frame at low zoom) and draws one hull per ship at the clock time: position interpolated
+- While it is on, only the hulls show: `replayLayer` draws one hull per ship at the clock time (position interpolated
   inside a segment, heading turned the short way, hidden before the first point, after the last and inside a gap
-  longer than the gap field. Static silhouettes are hidden. Only `replayLayer` is repainted per frame.
+  longer than the gap field); the tracks and the static silhouettes are hidden (owner's decision, 2026-11-12).
+  Only `replayLayer` is repainted per frame.
 - Play/Pause toggles, Stop rewinds (overlay stays), Reset removes the overlay, the scrubber seeks (also while playing).
   Refresh and Clear reset the replay; Print always renders the static view (replay off during the export).
 - Measured (headless Chrome, 24 h x 6 ships at 1 Hz): 60 fps at fit zoom up to mid-range and at maximum zoom;

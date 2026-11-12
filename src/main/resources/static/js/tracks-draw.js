@@ -3,8 +3,8 @@
 // when the gap or the period change. Each ship's track and silhouettes are one Konva.Shape with a
 // sceneFunc, because thousands of nodes (or a Konva.Line of 86 400 points) would be too slow.
 // Hulls are sized in map units, never from the live zoom.
-// Replay: while playT is a time, the full tracks are faded, replayLayer repeats the part up to playT in full
-// colour and adds one moving hull per ship; the static silhouettes are hidden.
+// Replay: while playT is a time, only replayLayer shows, with one moving hull per ship; the tracks and the
+// static silhouettes are hidden.
 
 // Lines, dots, outlines and labels keep one size on screen at any zoom. A print export swaps in
 // paper-based sizes (see printTracks), in the units of the stage it renders.
@@ -19,7 +19,6 @@ const MAX_PERIOD_S = 60;
 const MAX_TOLERANCE_MS = 2000;
 const DAY_MS = 24 * 3600 * 1000;
 const ZONE_BUCKET_MS = 15 * 60 * 1000; // UTC offsets only change on a quarter-hour boundary
-const FADED_ALPHA = 0.3;            // the full tracks while a replay runs
 
 // Set by the page; the layers are the Konva layers to fill.
 const drawSettings = {gapMs: 10000, period: 10, showSilhouettes: true, timeLabels: false};
@@ -219,9 +218,8 @@ function visibleRect(ctx, margin) {
 // A ship's lines and dots in one shape. Both are thinned in screen space (a vertex or dot within
 // the minimum spacing of the last drawn one is skipped), which is invisible but keeps 24 h of 1 Hz data
 // cheap at low zoom; the data is untouched and at full zoom every point is drawn.
-function trackSceneFunc(track, played) {
+function trackSceneFunc(track) {
     return (ctx, shape) => {
-        const end = played ? upperBound(track.t, playT) : track.n; // a trail stops at the clock
         const scale = shape.getAbsoluteScale().x;
         // export draws at stage scale 1 with a pixelRatio, so spacing must come from the real transform
         const pixelScale = ctx._context.getTransform().a;
@@ -231,7 +229,7 @@ function trackSceneFunc(track, played) {
         const xy = track.xy;
         ctx.beginPath();
         track.starts.forEach((first, s) => {
-            const last = Math.min(segmentEnd(track, s), end) - 1;
+            const last = segmentEnd(track, s) - 1;
             if (last <= first) return;
             let lastX = xy[2 * first];
             let lastY = xy[2 * first + 1];
@@ -247,7 +245,6 @@ function trackSceneFunc(track, played) {
             ctx.lineTo(xy[2 * last], xy[2 * last + 1]); // the end stays exact
         });
         ctx.strokeShape(shape);
-        if (played) return; // dots on the trail would cost a frame's budget at low zoom, and the faded dots show through
 
         const view = visibleRect(ctx, radius);
         let lastX = -1e9;
@@ -346,12 +343,10 @@ function rebuildTracks() {
     trackLayer.destroyChildren();
     replayLayer.destroyChildren();
     for (const track of tracks) {
-        for (const [layer, played] of [[trackLayer, false], [replayLayer, true]]) {
-            layer.add(new Konva.Shape({
-                sceneFunc: trackSceneFunc(track, played), fill: track.color, stroke: track.color, strokeWidth: sizes.line,
-                strokeScaleEnabled: false, listening: false, perfectDrawEnabled: false
-            }));
-        }
+        trackLayer.add(new Konva.Shape({
+            sceneFunc: trackSceneFunc(track), fill: track.color, stroke: track.color, strokeWidth: sizes.line,
+            strokeScaleEnabled: false, listening: false, perfectDrawEnabled: false
+        }));
     }
     replayLayer.add(new Konva.Shape({sceneFunc: hullsSceneFunc, listening: false}));
 }
@@ -379,7 +374,7 @@ function drawWithSizes(printSizes, render) {
 function setPlayT(time) {
     playT = time;
     const on = time !== Infinity;
-    trackLayer.opacity(on ? FADED_ALPHA : 1);
+    trackLayer.visible(!on);
     replayLayer.visible(on);
     silhouetteLayer.visible(drawSettings.showSilhouettes && !on);
     if (on) replayLayer.draw();
