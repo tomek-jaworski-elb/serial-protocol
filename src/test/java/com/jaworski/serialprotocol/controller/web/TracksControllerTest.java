@@ -68,7 +68,7 @@ class TracksControllerTest {
     void pointsAreCompactArraysWithCoverage() throws Exception {
         var result = new TrackQueryResult(
                 List.of(new ShipTrack(1, List.of(new TrackPoint(1768482000000L, 71.14f, -59.78f, 232.5))), new ShipTrack(2, List.of())),
-                new TrackCoverage(true, LocalDate.of(2026, 1, 13), LocalDate.of(2026, 1, 15), 1768482000000L, 1768482000000L));
+                new TrackCoverage(true, LocalDate.of(2026, 1, 13), LocalDate.of(2026, 1, 15), 1768482000000L, 1768482000000L, 0));
         when(queryService.query(LocalDateTime.parse(FROM), LocalDateTime.parse(TO), Set.of(1, 2))).thenReturn(result);
 
         mockMvc.perform(get("/tracks/api/points").param("from", FROM).param("to", TO).param("models", "1,2"))

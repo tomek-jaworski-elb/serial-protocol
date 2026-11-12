@@ -128,13 +128,13 @@ public class TrackQueryService {
                 last = last == null ? track.getLast().time() : Math.max(last, track.getLast().time());
             }
         }
-        return new TrackQueryResult(ships, coverage(!files.isEmpty(), first, last));
+        return new TrackQueryResult(ships, coverage(!files.isEmpty(), first, last, unreadable[0]));
     }
 
-    private TrackCoverage coverage(boolean logsFound, Long firstPoint, Long lastPoint) {
+    private TrackCoverage coverage(boolean logsFound, Long firstPoint, Long lastPoint, int unreadableLines) {
         SortedSet<LocalDate> days = source.availableDays();
         return new TrackCoverage(logsFound,
                 days.isEmpty() ? null : days.first(), days.isEmpty() ? null : days.last(),
-                firstPoint, lastPoint);
+                firstPoint, lastPoint, unreadableLines);
     }
 }

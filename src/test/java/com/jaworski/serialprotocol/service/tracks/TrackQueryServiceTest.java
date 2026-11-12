@@ -97,6 +97,7 @@ class TrackQueryServiceTest {
         assertThat(result.ships().get(0).points()).hasSize(2)
                 .last().isEqualTo(new TrackPoint(utc("2026-01-15T13:10:03").toEpochMilli(), -5.5f, 6.5f, 90.0));
         assertThat(result.ships().get(1).points()).isEmpty();
+        assertThat(result.coverage().unreadableLines()).isEqualTo(1);
     }
 
     @Test

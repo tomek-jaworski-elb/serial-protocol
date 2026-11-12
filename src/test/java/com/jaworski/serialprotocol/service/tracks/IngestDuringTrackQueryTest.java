@@ -30,6 +30,10 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import javax.xml.parsers.DocumentBuilderFactory;
+import org.springframework.core.io.ClassPathResource;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 import java.util.List;
 import java.util.stream.Stream;
 import java.util.Set;
@@ -83,20 +87,39 @@ class IngestDuringTrackQueryTest {
         source = new TrackLogSource(resources, properties);
     }
 
-    private void attachTrackingFile(String maxFileSize) {
+    /**
+     * A setting of the production {@code SAVE-TRANSMISSION-FILE} appender, read from logback-spring.xml, so a
+     * change of the line pattern or of the file naming there turns this test red instead of silently hiding
+     * every new line (or every archive) from the replay.
+     */
+    private String productionSetting(String tag) throws Exception {
+        var doc = DocumentBuilderFactory.newInstance().newDocumentBuilder()
+                .parse(new ClassPathResource("logback-spring.xml").getInputStream());
+        NodeList appenders = doc.getElementsByTagName("appender");
+        for (int i = 0; i < appenders.getLength(); i++) {
+            Element appender = (Element) appenders.item(i);
+            if ("SAVE-TRANSMISSION-FILE".equals(appender.getAttribute("name"))) {
+                return appender.getElementsByTagName(tag).item(0).getTextContent().strip()
+                        .replace("${LOG_PATH}", logs.toString()).replace("${tracking}", "tracking");
+            }
+        }
+        throw new AssertionError("logback-spring.xml has no SAVE-TRANSMISSION-FILE appender");
+    }
+
+    private void attachTrackingFile(String maxFileSize) throws Exception {
         LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
         PatternLayoutEncoder encoder = new PatternLayoutEncoder();
         encoder.setContext(context);
-        encoder.setPattern("%d{dd-MM-yyyy HH:mm:ss.SSS} - %msg%n");
+        encoder.setPattern(productionSetting("Pattern"));
         encoder.start();
         appender = new RollingFileAppender<>();
         appender.setContext(context);
-        appender.setFile(logs.resolve("tracking.log").toString());
+        appender.setFile(productionSetting("file"));
         appender.setEncoder(encoder);
         var policy = new SizeAndTimeBasedRollingPolicy<ILoggingEvent>();
         policy.setContext(context);
         policy.setParent(appender);
-        policy.setFileNamePattern(logs + "/%d{yyyy/MM,aux}/tracking_%d{dd-MM-yyyy}.%i.log.gz");
+        policy.setFileNamePattern(productionSetting("fileNamePattern"));
         policy.setMaxFileSize(FileSize.valueOf(maxFileSize));
         policy.start();
         appender.setRollingPolicy(policy);
@@ -135,7 +158,7 @@ class IngestDuringTrackQueryTest {
     }
 
     @Test
-    void everyFrameIsPublishedAndLoggedWhileTheLogIsBeingRead() throws IOException {
+    void everyFrameIsPublishedAndLoggedWhileTheLogIsBeingRead() throws Exception {
         attachTrackingFile("100MB");
 
         ingestWhileReading();
@@ -147,7 +170,7 @@ class IngestDuringTrackQueryTest {
     }
 
     @Test
-    void noFrameIsLostWhenTheLogRollsOverUnderTheReader() throws IOException {
+    void noFrameIsLostWhenTheLogRollsOverUnderTheReader() throws Exception {
         attachTrackingFile("4KB");
 
         ingestWhileReading();

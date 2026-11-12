@@ -91,6 +91,15 @@ class TracksPageTest {
         assertThat(html).doesNotContain("checked=\"checked\" name=\"ship\"");
     }
 
+    /** The help dialog, its opener and the driven buttons' keys (the script turns them into aria-keyshortcuts). */
+    @Test
+    void theKeyboardShortcutsDialogAndTheKeysOfTheDrivenButtonsArePresent() throws Exception {
+        String html = tracksHtml();
+        assertThat(html).contains("id=\"shortcutsDialog\"", "id=\"shortcutsBtn\"", "id=\"shortcutsOn\"");
+        assertThat(html).containsPattern("id=\"playBtn\"[^>]*data-keys=\"Space K\"")
+                .containsPattern("id=\"printFrameBtn\"[^>]*data-keys=\"F\"");
+    }
+
     /** A hidden, unnamed field per ship (it is never submitted), tied to the ship's checkbox. */
     @Test
     void everyShipHasAHiddenCaptainFieldAndThePrintFormCarriesTheCaptains() throws Exception {
@@ -112,7 +121,8 @@ class TracksPageTest {
                 "id=\"refreshBtn\"", "id=\"clearBtn\"", "id=\"printBtn\"",
                 "id=\"periodSlider\"", "id=\"showSilhouettes\"", "id=\"timeLabels\"", "id=\"gapInput\"",
                 "id=\"printFrameBtn\"", "id=\"removeFrameBtn\"", "id=\"konvaContainer\"",
-                "id=\"zoomInBtn\"", "id=\"zoomOutBtn\"", "id=\"zoomResetBtn\"", "id=\"scaleBarLine\"");
+                "id=\"zoomInBtn\"", "id=\"drawHint\"", "id=\"i-printer\"", "aria-label=\"Zoom in\"", "id=\"zoomOutBtn\"", "id=\"zoomResetBtn\"", "id=\"scaleBarLine\"",
+                "id=\"playBtn\"", "id=\"stopBtn\"", "id=\"resetBtn\"", "id=\"speedSlider\"", "id=\"replayScrubber\"");
     }
 
     /** The page needs the zone, the gap and the server's clock at render time. */

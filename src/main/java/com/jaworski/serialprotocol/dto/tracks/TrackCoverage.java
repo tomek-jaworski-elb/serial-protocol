@@ -10,7 +10,8 @@ import java.time.LocalDate;
  * @param historyTo   latest recorded day, likewise
  * @param firstPoint  epoch millis of the earliest point found for any ship, null when none
  * @param lastPoint   epoch millis of the latest one
+ * @param unreadableLines track lines in the range that did not parse — non-zero means the log format changed
  */
 public record TrackCoverage(boolean logsFound, LocalDate historyFrom, LocalDate historyTo,
-                            Long firstPoint, Long lastPoint) {
+                            Long firstPoint, Long lastPoint, int unreadableLines) {
 }

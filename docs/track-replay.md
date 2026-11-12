@@ -44,11 +44,12 @@ The log format is the storage format: rewording `MessageTranslator`'s log line b
 ```json
 {"ships": [{"id": 1, "points": [[1762866000123, 1304.5, 2210.0, 87.5]]}],
  "coverage": {"logsFound": true, "historyFrom": "2026-11-10", "historyTo": "2026-11-11",
-              "firstPoint": 1762866000123, "lastPoint": 1762869599876}}
+              "firstPoint": 1762866000123, "lastPoint": 1762869599876, "unreadableLines": 0}}
 ```
 
-A point is `[epoch millis, x, y, heading]`, x/y in map pixels. An empty result is still `200`;
-`coverage` tells why. Errors: `400` invalid range or parameters (`{"message": ...}`), `503` when
+A point is `[epoch millis, x, y, heading]`, x/y in lake metres as the frames carry them (the page maps them
+with `getScaledPoints`). An empty result is still `200`; `coverage` tells why, and `unreadableLines` counts
+track lines in the range that did not parse — non-zero means the log format changed, and the page says so. Errors: `400` invalid range or parameters (`{"message": ...}`), `503` when
 `tracks.max-concurrent-queries` scans already run.
 
 `POST /tracks/pdf` (multipart: `image`, `from`, `to`, `silhouettes`, `ships`, `widthNm`) returns
@@ -71,13 +72,52 @@ A point is `[epoch millis, x, y, heading]`, x/y in map pixels. An empty result i
   At most 5000 per drawing: above that the minimum period is raised and a message says so.
 - Messages say why a result is empty (no logs, no positions, future range) and when data covers only
   part of the range; `503` and other errors keep the previous drawing.
-- Remembered in `localStorage`: ships, period, toggles, gap. Range, frame, zoom and position start fresh.
+- Remembered in `localStorage`: ships, period, toggles, gap, replay speed. Range, frame, zoom and position start fresh.
 - Print: ~300 dpi JPEG of the area, line about 0.3 mm, dot about 0.8 mm, label about 2 mm; header with
   range and zone, colour legend and scale bar in full-scale nautical miles (`widthNm`: the area width in Nm of the 1:24 chart). Opens in a new tab.
 - Captains go in the form field `captains` (JSON `{"1":"Jan Kowalski"}`, printed ships only). The server
   normalises them (NFC, control characters removed, whitespace collapsed) and refuses over 120 characters
   or an unprinted ship. The legend reads "Ship — Captain"; an entry wider than half the row takes a row
   and wraps, never truncated. The legend is laid out first and the image is fitted into the height left.
+
+## Buttons
+
+Panel sections *Data* (Refresh primary, Clear outline-danger), *Replay* and *Print*, default-size Bootstrap
+buttons with Bootstrap Icons (MIT) from an inline SVG sprite in `tracks.html`. Disabled buttons are half-opaque with
+a dashed outline, and a hint says what to do while nothing is drawn. `#pdfForm` sits right after the header: its
+CSRF token creates the session, which fails once the response buffer (8 KB) is committed, so nothing large may come before it.
+
+## Keyboard shortcuts
+
+One `keydown` listener in `tracks-script.js` reads the `SHORTCUTS` table, which also fills the help dialog (`?` or the
+panel's *Keyboard shortcuts* button). Keys are matched on `event.key`; Ctrl/Alt/Meta, IME composition, text fields,
+selects, the Flatpickr calendar and the dialog are ignored. Single-character keys can be switched off in the dialog
+(localStorage `tracks.shortcuts`, default on; WCAG 2.1.4). Esc, Home and End stay active.
+
+| Key | Action |
+|---|---|
+| Space, K | Play / pause (Space is left to a focused button or checkbox) |
+| S | Stop |
+| J / L | Back / forward 10 s |
+| Home / End | Start / end of the replay |
+| < / > | Speed -0.2 / +0.2 |
+| + (or =) / - / 0 | Zoom in / out / whole map |
+| F | Print-frame mode |
+| Esc | Leave frame mode, otherwise Reset |
+| ? | Help dialog |
+
+## Replay
+
+- The range is the first to last point of the last Refresh. One clock (`playT` in `tracks-draw.js`, epoch ms,
+  `Infinity` = off) drives all ships; x1 is real time, speed 1-10 in steps of 0.2 (remembered), each frame step capped at 250 ms.
+- While it is on: the full tracks are faded (layer opacity), `replayLayer` repeats the played part in full colour (no
+  dots, which would not fit a frame at low zoom) and draws one hull per ship at the clock time: position interpolated
+  inside a segment, heading turned the short way, hidden before the first point, after the last and inside a gap
+  longer than the gap field. Static silhouettes are hidden. Only `replayLayer` is repainted per frame.
+- Play/Pause toggles, Stop rewinds (overlay stays), Reset removes the overlay, the scrubber seeks (also while playing).
+  Refresh and Clear reset the replay; Print always renders the static view (replay off during the export).
+- Measured (headless Chrome, 24 h x 6 ships at 1 Hz): 60 fps at fit zoom up to mid-range and at maximum zoom;
+  about 43 fps at fit zoom with 90 % of the points played.
 
 ## Known limits
 

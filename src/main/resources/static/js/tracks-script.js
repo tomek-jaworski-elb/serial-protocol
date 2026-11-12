@@ -268,6 +268,8 @@ const timeLabels = document.getElementById('timeLabels');
 const gapInput = document.getElementById('gapInput');
 const clearBtn = document.getElementById('clearBtn');
 const printBtn = document.getElementById('printBtn');
+const drawHint = document.getElementById('drawHint');
+const speedSlider = document.getElementById('speedSlider');
 const shipBoxes = [...form.querySelectorAll('input[name="ship"]')];
 const SETTINGS_KEY = 'tracks.settings';
 const MIN_TIME_LABEL_PERIOD = 10; // below this the labels would overlap
@@ -285,7 +287,8 @@ function saveSettings() {
     try {
         localStorage.setItem(SETTINGS_KEY, JSON.stringify({
             ships: shipBoxes.filter((box) => box.checked).map((box) => Number(box.value)),
-            period: chosenPeriod, showSilhouettes: showSilhouettes.checked, timeLabels: timeLabels.checked, gap: gapInput.value
+            period: chosenPeriod, showSilhouettes: showSilhouettes.checked, timeLabels: timeLabels.checked, gap: gapInput.value,
+            speed: Number(speedSlider.value)
         }));
     } catch (e) {
         // storage blocked: the page works with its defaults
@@ -300,6 +303,7 @@ function restoreSettings() {
     if (typeof saved.showSilhouettes === 'boolean') showSilhouettes.checked = saved.showSilhouettes;
     if (typeof saved.timeLabels === 'boolean') timeLabels.checked = saved.timeLabels;
     if (Number.isInteger(+saved.gap) && saved.gap >= 1 && saved.gap <= 600) gapInput.value = saved.gap;
+    if (saved.speed >= 1 && saved.speed <= 10) speedSlider.value = saved.speed;
 }
 
 // A ticked ship shows its captain field; the field keeps what was typed while hidden.
@@ -367,6 +371,14 @@ function partialMessage(coverage, from, to) {
     return `Data found ${formatWall(first, withDate)} – ${formatWall(last, withDate)}`;
 }
 
+// Track lines the server could not parse: without this note a changed log format just looks like missing data.
+function unreadableNote(coverage) {
+    const n = coverage.unreadableLines;
+    return n ? `${n.toLocaleString('en')} log line${n === 1 ? '' : 's'} in this range could not be read — the log format may have changed.` : '';
+}
+
+const lines = (...texts) => texts.filter(Boolean).join('\n');
+
 // ---------------------------------------------------------------- drawing
 
 let drawn = false; // at least one point is on the map
@@ -375,6 +387,8 @@ function updateButtons() {
     validateRange();
     clearBtn.disabled = loading || (!drawn && resultMessage === '');
     printBtn.disabled = loading || !drawn;
+    drawHint.hidden = drawn;
+    for (const control of [playBtn, stopBtn, resetBtn, scrubber]) control.disabled = !drawn;
 }
 
 function setLoading(on) {
@@ -404,6 +418,7 @@ function clearDrawing() {
     applyPeriodLimit();
     scheduleRedraw(REBUILD_TRACKS);
     drawn = false;
+    resetReplay();
     setShipNotes(new Set());
 }
 
@@ -412,7 +427,7 @@ function showResult(result, requestedIds, from, to) {
     if (withPoints.length === 0) {
         clearDrawing();
         setShipNotes(new Set(requestedIds));
-        setResultMessage(emptyMessage(result.coverage, from, to), 'warning');
+        setResultMessage(lines(emptyMessage(result.coverage, from, to), unreadableNote(result.coverage)), 'warning');
         return;
     }
     const colorOf = (id) => shipBoxes.find((box) => Number(box.value) === id).dataset.color;
@@ -422,8 +437,11 @@ function showResult(result, requestedIds, from, to) {
     drawn = true;
     drawnFrom = from;
     drawnTo = to;
+    [replayStart, replayEnd] = trackSpan();
+    resetReplay();
     setShipNotes(new Set(requestedIds.filter((id) => !withPoints.some((ship) => ship.id === id))));
-    setResultMessage(partialMessage(result.coverage, from, to));
+    const note = unreadableNote(result.coverage);
+    setResultMessage(lines(partialMessage(result.coverage, from, to), note), note ? 'warning' : 'info');
 }
 
 async function refresh() {
@@ -460,6 +478,98 @@ function clear() {
     updateButtons();
 }
 
+// ---------------------------------------------------------------- replay
+
+const MAX_STEP_MS = 250; // a frame step is capped, so a tab coming back from the background does not jump
+const playBtn = document.getElementById('playBtn');
+const stopBtn = document.getElementById('stopBtn');
+const resetBtn = document.getElementById('resetBtn');
+const scrubber = document.getElementById('replayScrubber');
+let replayStart = 0; // epoch ms: first and last point of the drawn tracks
+let replayEnd = 0;
+let clockT = 0;      // the replay clock (epoch ms), also while no replay is shown
+let playing = false;
+let lastFrameAt = 0;
+let animation = 0;
+
+function formatDuration(ms) {
+    const seconds = Math.round(ms / 1000);
+    if (seconds < 60) return seconds + ' s';
+    const minutes = Math.round(seconds / 60);
+    return minutes < 60 ? minutes + ' min' : Math.floor(minutes / 60) + ' h ' + minutes % 60 + ' min';
+}
+
+// the clock, scrubber, speed readout and Play/Pause look
+function showReplayState() {
+    const speed = Number(speedSlider.value);
+    document.getElementById('speedValue').textContent = 'x' + speed + (drawn ? ' · ' + formatDuration((replayEnd - replayStart) / speed) : '');
+    const clock = drawn ? formatWall(wallMs(clockT), true) : '';
+    document.getElementById('replayClock').textContent = clock;
+    scrubber.value = Math.round((clockT - replayStart) / 1000);
+    scrubber.setAttribute('aria-valuetext', clock);
+    playBtn.setAttribute('aria-pressed', playing);
+    playBtn.querySelector('use').setAttribute('href', playing ? '#i-pause-fill' : '#i-play-fill');
+}
+
+function seek(time) {
+    clockT = time;
+    setPlayT(time);
+    showReplayState();
+}
+
+function pause() {
+    playing = false;
+    cancelAnimationFrame(animation);
+    showReplayState();
+}
+
+function tick() {
+    const now = performance.now();
+    // speed is read every frame, so changing it while playing does not jump
+    seek(Math.min(clockT + Math.min(now - lastFrameAt, MAX_STEP_MS) * Number(speedSlider.value), replayEnd));
+    lastFrameAt = now;
+    if (clockT >= replayEnd) pause(); else animation = requestAnimationFrame(tick);
+}
+
+function play() {
+    playing = true;
+    lastFrameAt = performance.now();
+    seek(clockT >= replayEnd ? replayStart : clockT);
+    animation = requestAnimationFrame(tick);
+}
+
+function stop() {
+    pause();
+    seek(replayStart);
+}
+
+// ends the replay and shows the static view again
+function resetReplay() {
+    pause();
+    clockT = replayStart;
+    scrubber.max = Math.ceil((replayEnd - replayStart) / 1000);
+    setPlayT(Infinity);
+    showReplayState();
+}
+
+function bindReplay() {
+    playBtn.addEventListener('click', () => playing ? pause() : play());
+    stopBtn.addEventListener('click', stop);
+    resetBtn.addEventListener('click', resetReplay);
+    scrubber.addEventListener('input', () => seek(Math.min(replayStart + Number(scrubber.value) * 1000, replayEnd)));
+    // APG slider: Page Up/Down move a minute
+    scrubber.addEventListener('keydown', (e) => {
+        if (e.key !== 'PageUp' && e.key !== 'PageDown') return;
+        e.preventDefault();
+        scrubber.value = Number(scrubber.value) + (e.key === 'PageUp' ? 60 : -60);
+        scrubber.dispatchEvent(new Event('input'));
+    });
+    speedSlider.addEventListener('input', () => {
+        saveSettings();
+        showReplayState();
+    });
+}
+
 // ---------------------------------------------------------------- print
 
 const PRINT_DPI = 300;
@@ -480,6 +590,8 @@ function renderPrintArea(area) {
     const mapUnits = Object.fromEntries(Object.entries(PRINT_MM).map(([name, mm]) => [name, mm / mmPerUnit]));
     const scale = konvaStage.scale();
     const position = konvaStage.position();
+    const replayTime = playT; // the print is always the static view
+    setPlayT(Infinity);
     printLayer.visible(false);
     konvaStage.scale({x: 1, y: 1});
     konvaStage.position({x: 0, y: 0});
@@ -496,6 +608,7 @@ function renderPrintArea(area) {
         konvaStage.scale(scale);
         konvaStage.position(position);
         printLayer.visible(true);
+        if (replayTime !== Infinity) setPlayT(replayTime);
     }
 }
 
@@ -568,6 +681,77 @@ function bindControls() {
     });
 }
 
+// ---------------------------------------------------------------- keyboard shortcuts
+
+const SHORTCUTS_KEY = 'tracks.shortcuts';
+const shortcutsDialog = document.getElementById('shortcutsDialog');
+const shortcutsOn = document.getElementById('shortcutsOn');
+let shortcutsEnabled = true;
+
+const press = (btn) => !btn.disabled && (btn.click(), true);
+const goTo = (time) => !scrubber.disabled && (seek(Math.min(Math.max(time, replayStart), replayEnd)), true);
+const nudgeSpeed = (step) => (speedSlider[step](), speedSlider.dispatchEvent(new Event('input')), true);
+
+// The one table behind both the key handler and the help dialog. char: a single-character key, which the user can switch off (WCAG 2.1.4).
+const SHORTCUTS = [
+    {keys: [' ', 'k', 'K'], label: 'Space, K', what: 'Play / pause', char: true, run: () => press(playBtn)},
+    {keys: ['s', 'S'], label: 'S', what: 'Stop', char: true, run: () => press(stopBtn)},
+    {keys: ['j', 'J'], label: 'J', what: 'Back 10 s', char: true, repeat: true, run: () => goTo(clockT - 10000)},
+    {keys: ['l', 'L'], label: 'L', what: 'Forward 10 s', char: true, repeat: true, run: () => goTo(clockT + 10000)},
+    {keys: ['Home'], label: 'Home', what: 'Start', run: () => goTo(replayStart)},
+    {keys: ['End'], label: 'End', what: 'End', run: () => goTo(replayEnd)},
+    {label: 'Arrows, PgUp, PgDn', what: 'On the focused time slider: 1 s, 1 min'},
+    {keys: ['<'], label: '<', what: 'Slower', char: true, repeat: true, run: () => nudgeSpeed('stepDown')},
+    {keys: ['>'], label: '>', what: 'Faster', char: true, repeat: true, run: () => nudgeSpeed('stepUp')},
+    {keys: ['+', '='], label: '+', what: 'Zoom in', char: true, repeat: true, run: () => press(document.getElementById('zoomInBtn'))},
+    {keys: ['-'], label: '-', what: 'Zoom out', char: true, repeat: true, run: () => press(document.getElementById('zoomOutBtn'))},
+    {keys: ['0'], label: '0', what: 'Whole map', char: true, run: () => press(document.getElementById('zoomResetBtn'))},
+    {keys: ['f', 'F'], label: 'F', what: 'Print frame', char: true, run: () => press(printFrameBtn)},
+    {keys: ['Escape'], label: 'Esc', what: 'Leave frame mode, otherwise Reset', run: () => frameMode ? (setFrameMode(false), true) : press(resetBtn)},
+    {keys: ['?'], label: '?', what: 'This help', char: true, run: () => (shortcutsDialog.showModal(), true)}
+];
+
+function onKeydown(e) {
+    if (e.defaultPrevented || e.isComposing || e.keyCode === 229 || e.ctrlKey || e.altKey || e.metaKey) return; // AltGr is Ctrl+Alt
+    const target = e.target;
+    if (target.closest('input:not([type=checkbox], [type=range]), textarea, select, [contenteditable]:not([contenteditable=false]), .flatpickr-calendar, dialog')) return;
+    const shortcut = SHORTCUTS.find((s) => s.keys?.includes(e.key));
+    if (!shortcut || (shortcut.char && !shortcutsEnabled) || (e.repeat && !shortcut.repeat)) return;
+    if (e.key === ' ' && target.closest('button, a[href], input[type=checkbox]')) return;
+    if ((e.key === 'Home' || e.key === 'End') && target.matches('input[type=range]')) return; // a slider keeps Home/End
+    if (shortcut.run()) e.preventDefault();
+}
+
+function setShortcutsEnabled(on) {
+    shortcutsEnabled = on;
+    shortcutsOn.checked = on;
+    for (const btn of document.querySelectorAll('[data-keys]')) {
+        if (on) btn.setAttribute('aria-keyshortcuts', btn.dataset.keys); else btn.removeAttribute('aria-keyshortcuts');
+    }
+}
+
+function bindShortcuts() {
+    const list = document.getElementById('shortcutsList');
+    for (const s of SHORTCUTS) {
+        const row = list.insertRow();
+        row.insertCell().appendChild(document.createElement('kbd')).textContent = s.label;
+        row.insertCell().textContent = s.what;
+    }
+    try {
+        setShortcutsEnabled(localStorage.getItem(SHORTCUTS_KEY) !== '0');
+    } catch (ignored) {
+        setShortcutsEnabled(true);
+    }
+    shortcutsOn.addEventListener('change', () => {
+        setShortcutsEnabled(shortcutsOn.checked);
+        try {
+            localStorage.setItem(SHORTCUTS_KEY, shortcutsOn.checked ? '1' : '0');
+        } catch (ignored) { /* private mode: the choice lasts for this page only */ }
+    });
+    document.getElementById('shortcutsBtn').addEventListener('click', () => shortcutsDialog.showModal());
+    document.addEventListener('keydown', onKeydown);
+}
+
 // ---------------------------------------------------------------- init
 
 function initStage() {
@@ -576,12 +760,13 @@ function initStage() {
     konvaStage = new Konva.Stage({container: 'konvaContainer', width: container.clientWidth, height: container.clientHeight, draggable: true});
     konvaStage.dragBoundFunc((pos) => clampStagePosition(pos, konvaStage.scaleX()));
 
-    // layers, bottom to top; trackLayer and silhouetteLayer are filled by tracks-draw.js
+    // layers, bottom to top; all but the map and print layers are filled by tracks-draw.js
     const mapLayer = new Konva.Layer({listening: false});
     trackLayer = new Konva.Layer({listening: false});
     silhouetteLayer = new Konva.Layer({listening: false});
+    replayLayer = new Konva.Layer({listening: false, visible: false});
     printLayer = new Konva.Layer();
-    konvaStage.add(mapLayer, trackLayer, silhouetteLayer, printLayer);
+    konvaStage.add(mapLayer, trackLayer, silhouetteLayer, replayLayer, printLayer);
 
     frameTransformer = new Konva.Transformer({
         keepRatio: true,
@@ -611,6 +796,9 @@ showCaptainFields();
 readSettings();
 setGap(Number(gapInput.value));
 bindControls();
+bindReplay();
+bindShortcuts();
+showReplayState();
 
 let resizeTimeout = null;
 window.addEventListener('resize', () => {

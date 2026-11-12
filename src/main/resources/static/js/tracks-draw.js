@@ -3,6 +3,8 @@
 // when the gap or the period change. Each ship's track and silhouettes are one Konva.Shape with a
 // sceneFunc, because thousands of nodes (or a Konva.Line of 86 400 points) would be too slow.
 // Hulls are sized in map units, never from the live zoom.
+// Replay: while playT is a time, the full tracks are faded, replayLayer repeats the part up to playT in full
+// colour and adds one moving hull per ship; the static silhouettes are hidden.
 
 // Lines, dots, outlines and labels keep one size on screen at any zoom. A print export swaps in
 // paper-based sizes (see printTracks), in the units of the stage it renders.
@@ -17,11 +19,14 @@ const MAX_PERIOD_S = 60;
 const MAX_TOLERANCE_MS = 2000;
 const DAY_MS = 24 * 3600 * 1000;
 const ZONE_BUCKET_MS = 15 * 60 * 1000; // UTC offsets only change on a quarter-hour boundary
+const FADED_ALPHA = 0.3;            // the full tracks while a replay runs
 
 // Set by the page; the layers are the Konva layers to fill.
 const drawSettings = {gapMs: 10000, period: 10, showSilhouettes: true, timeLabels: false};
 let trackLayer = null;
 let silhouetteLayer = null;
+let replayLayer = null;
+let playT = Infinity; // replay clock (epoch ms); Infinity = no replay
 // Per ship: {id, color, n, t (epoch ms), xy (map x,y interleaved), heading, starts (first index of each segment)}
 let tracks = [];
 
@@ -97,6 +102,47 @@ function setGap(seconds) {
     segment();
 }
 
+// first and last time of the drawn tracks
+function trackSpan() {
+    return [Math.min(...tracks.map((track) => track.t[0])), Math.max(...tracks.map((track) => track.t[track.n - 1]))];
+}
+
+// ---------------------------------------------------------------- replay position
+
+// Number of samples with t <= time (t ascending).
+function upperBound(t, time) {
+    let lo = 0;
+    let hi = t.length;
+    while (lo < hi) {
+        const mid = (lo + hi) >> 1;
+        if (t[mid] <= time) lo = mid + 1; else hi = mid;
+    }
+    return lo;
+}
+
+// Heading h0 -> h1 (degrees) by fraction f, turning the short way round.
+function turnShort(h0, h1, f) {
+    return h0 + ((h1 - h0 + 540) % 360 - 180) * f;
+}
+
+// {x, y, heading} of a ship at the replay time, or null before its first point, after its last and inside a
+// gap (recomputed on every call: the gap setting can change).
+function poseAt(track, time) {
+    const i = upperBound(track.t, time) - 1;
+    if (i < 0) return null;
+    const {t, xy, heading} = track;
+    let f = 0;
+    if (time > t[i]) {
+        if (i === track.n - 1 || t[i + 1] - t[i] > drawSettings.gapMs) return null;
+        f = (time - t[i]) / (t[i + 1] - t[i]);
+    }
+    const j = f ? i + 1 : i;
+    return {
+        x: xy[2 * i] + (xy[2 * j] - xy[2 * i]) * f, y: xy[2 * i + 1] + (xy[2 * j + 1] - xy[2 * i + 1]) * f,
+        heading: turnShort(heading[i], heading[j], f)
+    };
+}
+
 // ---------------------------------------------------------------- silhouette instants
 
 // Smallest wall-clock instant >= wall that is a multiple of stepMs since the local midnight.
@@ -107,8 +153,8 @@ function nextAligned(wall, stepMs) {
 
 // Indices of the points that get a silhouette in one ship; null as soon as there would be more than budget.
 // Period 0: every point. Otherwise the nearest point to each clock-aligned instant (if close enough), plus
-// the first and last point of every segment. Indices ascend, so a point is never taken twice.
-function pickSilhouettes(track, periodS, budget) {
+// (withEnds) the first and last point of every segment. Indices ascend, so a point is never taken twice.
+function pickSilhouettes(track, periodS, budget, withEnds = true) {
     const picked = [];
     const stepMs = periodS * 1000;
     const tolerance = Math.min(stepMs / 2, MAX_TOLERANCE_MS);
@@ -120,7 +166,7 @@ function pickSilhouettes(track, periodS, budget) {
             for (let i = first; i <= last; i++) picked.push(i);
             continue;
         }
-        picked.push(first);
+        if (withEnds) picked.push(first);
         let instant = track.t[first];
         let wall = nextAligned(wallMs(instant), stepMs);
         let near = first; // moves forward only
@@ -129,21 +175,21 @@ function pickSilhouettes(track, periodS, budget) {
             if (instant > track.t[last]) break;
             while (near < last && track.t[near + 1] <= instant) near++;
             const nearest = near < last && track.t[near + 1] - instant < instant - track.t[near] ? near + 1 : near;
-            if (Math.abs(track.t[nearest] - instant) <= tolerance && nearest > picked[picked.length - 1]) picked.push(nearest);
+            if (Math.abs(track.t[nearest] - instant) <= tolerance && (picked.length === 0 || nearest > picked.at(-1))) picked.push(nearest);
             if (picked.length > budget) return null;
             wall = nextAligned(wallMs(instant) + 1, stepMs);
         }
-        if (picked[picked.length - 1] < last) picked.push(last);
+        if (withEnds && last > picked.at(-1)) picked.push(last);
         if (picked.length > budget) return null;
     }
     return picked;
 }
 
 // One index list per ship, or null when the whole drawing would exceed the budget.
-function pickAll(periodS, budget) {
+function pickAll(periodS, budget, withEnds = true) {
     const all = [];
     for (const track of tracks) {
-        const picked = pickSilhouettes(track, periodS, budget);
+        const picked = pickSilhouettes(track, periodS, budget, withEnds);
         if (!picked) return null;
         budget -= picked.length;
         all.push(picked);
@@ -173,8 +219,9 @@ function visibleRect(ctx, margin) {
 // A ship's lines and dots in one shape. Both are thinned in screen space (a vertex or dot within
 // the minimum spacing of the last drawn one is skipped), which is invisible but keeps 24 h of 1 Hz data
 // cheap at low zoom; the data is untouched and at full zoom every point is drawn.
-function trackSceneFunc(track) {
+function trackSceneFunc(track, played) {
     return (ctx, shape) => {
+        const end = played ? upperBound(track.t, playT) : track.n; // a trail stops at the clock
         const scale = shape.getAbsoluteScale().x;
         // export draws at stage scale 1 with a pixelRatio, so spacing must come from the real transform
         const pixelScale = ctx._context.getTransform().a;
@@ -184,8 +231,8 @@ function trackSceneFunc(track) {
         const xy = track.xy;
         ctx.beginPath();
         track.starts.forEach((first, s) => {
-            const last = segmentEnd(track, s) - 1;
-            if (last === first) return;
+            const last = Math.min(segmentEnd(track, s), end) - 1;
+            if (last <= first) return;
             let lastX = xy[2 * first];
             let lastY = xy[2 * first + 1];
             ctx.moveTo(lastX, lastY);
@@ -200,6 +247,7 @@ function trackSceneFunc(track) {
             ctx.lineTo(xy[2 * last], xy[2 * last + 1]); // the end stays exact
         });
         ctx.strokeShape(shape);
+        if (played) return; // dots on the trail would cost a frame's budget at low zoom, and the faded dots show through
 
         const view = visibleRect(ctx, radius);
         let lastX = -1e9;
@@ -219,11 +267,15 @@ function trackSceneFunc(track) {
     };
 }
 
+function hullFill(track) {
+    const {r, g, b} = Konva.Util.getRGB(track.color);
+    return `rgba(${r}, ${g}, ${b}, ${SILHOUETTE_FILL_ALPHA})`;
+}
+
 // The hulls of one ship, built once as a Path2D in map units: a path of thousands of subpaths is far
 // cheaper to replay than to rebuild at every pan and zoom step. Outline width and labels are counter-scaled.
 function silhouettesSceneFunc(track, indices, outline, halfLength) {
-    const {r, g, b} = Konva.Util.getRGB(track.color);
-    const fill = `rgba(${r}, ${g}, ${b}, ${SILHOUETTE_FILL_ALPHA})`;
+    const fill = hullFill(track);
     return (ctx, shape) => {
         const native = ctx._context;
         const scale = shape.getAbsoluteScale().x;
@@ -252,7 +304,9 @@ function silhouettesSceneFunc(track, indices, outline, halfLength) {
 
 function rebuildSilhouettes() {
     silhouetteLayer.destroyChildren();
-    const picked = pickAll(drawSettings.period, Infinity);
+    // Over the cap even at 60 s (e.g. a tiny gap makes every point a segment end): drop the segment-end extras,
+    // which leaves at most one silhouette per ship per 60 s.
+    const picked = pickAll(drawSettings.period, SILHOUETTE_CAP) ?? pickAll(drawSettings.period, Infinity, false);
     tracks.forEach((track, k) => {
         const hull = SHIP_HULLS[track.id];
         const outline = new Path2D();
@@ -268,14 +322,38 @@ function rebuildSilhouettes() {
     });
 }
 
+// One moving hull per ship at the replay clock, drawn like a static silhouette.
+function hullsSceneFunc(ctx, shape) {
+    const native = ctx._context;
+    native.lineWidth = sizes.outline / shape.getAbsoluteScale().x;
+    for (const track of tracks) {
+        const pose = poseAt(track, playT);
+        if (!pose) continue;
+        const hull = SHIP_HULLS[track.id];
+        const points = computeShipVerticesForKonva(pose.x, pose.y, hull.scale, pose.heading, ...hull.shipParams);
+        native.beginPath();
+        native.moveTo(points[0], points[1]);
+        for (let j = 2; j < points.length; j += 2) native.lineTo(points[j], points[j + 1]);
+        native.closePath();
+        native.fillStyle = hullFill(track);
+        native.fill();
+        native.strokeStyle = track.color;
+        native.stroke();
+    }
+}
+
 function rebuildTracks() {
     trackLayer.destroyChildren();
+    replayLayer.destroyChildren();
     for (const track of tracks) {
-        trackLayer.add(new Konva.Shape({
-            sceneFunc: trackSceneFunc(track), fill: track.color, stroke: track.color, strokeWidth: sizes.line,
-            strokeScaleEnabled: false, listening: false, perfectDrawEnabled: false
-        }));
+        for (const [layer, played] of [[trackLayer, false], [replayLayer, true]]) {
+            layer.add(new Konva.Shape({
+                sceneFunc: trackSceneFunc(track, played), fill: track.color, stroke: track.color, strokeWidth: sizes.line,
+                strokeScaleEnabled: false, listening: false, perfectDrawEnabled: false
+            }));
+        }
     }
+    replayLayer.add(new Konva.Shape({sceneFunc: hullsSceneFunc, listening: false}));
 }
 
 // ---------------------------------------------------------------- print export
@@ -293,6 +371,18 @@ function drawWithSizes(printSizes, render) {
     } finally {
         apply(SCREEN_SIZES);
     }
+}
+
+// ---------------------------------------------------------------- replay
+
+// Moves the replay clock (Infinity ends the replay) and repaints only the layers it changes.
+function setPlayT(time) {
+    playT = time;
+    const on = time !== Infinity;
+    trackLayer.opacity(on ? FADED_ALPHA : 1);
+    replayLayer.visible(on);
+    silhouetteLayer.visible(drawSettings.showSilhouettes && !on);
+    if (on) replayLayer.draw();
 }
 
 // ---------------------------------------------------------------- redraw
@@ -314,8 +404,11 @@ function scheduleRedraw(level) {
 function redraw() {
     if (pendingLevel === REBUILD_TRACKS) rebuildTracks();
     if (pendingLevel >= REBUILD_SILHOUETTES) rebuildSilhouettes();
-    if (pendingLevel === REBUILD_TRACKS) trackLayer.draw();
-    silhouetteLayer.visible(drawSettings.showSilhouettes);
+    if (pendingLevel === REBUILD_TRACKS) {
+        trackLayer.draw();
+        replayLayer.draw(); // the gap setting decides where a hull is hidden
+    }
+    silhouetteLayer.visible(drawSettings.showSilhouettes && playT === Infinity);
     silhouetteLayer.draw();
     pendingLevel = -1;
     frame = 0;

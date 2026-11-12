@@ -1,6 +1,6 @@
 # Track replay (`/tracks`) — implementation plan
 
-> Status: stages 1–7 implemented; stage 8 (captain names, 2026-11-11) implemented; (stage 7, desktop browsers, 2026-11-11: popup-safe Print, automated rollover test; Safari and Edge await the owner's checklist). Reference: [`track-replay.md`](track-replay.md).
+> Status: stages 1–7 implemented; stage 8 (captain names, 2026-11-11) implemented; stage 10 (readable buttons and replay, keyboard shortcuts, 2026-11-12) implemented; (stage 7, desktop browsers, 2026-11-11: popup-safe Print, automated rollover test; Safari and Edge await the owner's checklist). Reference: [`track-replay.md`](track-replay.md).
 > The existing `/tracks` implementation may be replaced entirely.
 
 ## 1. Requirements (owner)
@@ -204,3 +204,45 @@ Decision: the bar (screen and PDF) is in full-scale nautical miles only, steps 1
 no metre bracket; the screen bar has a tooltip. `MODEL_SCALE = 24` and `NM_METRES = 1852` live in
 `static/js/common/ship-geometry.js`; the page posts `widthNm` (area width / `mapa_x` x 24 / 1852) so Java holds
 no calibration.
+
+## 8. Stage 10 — readable buttons and replay (2026-11-12)
+
+Owner's request: make the panel buttons more readable, following current practice, and add a replay of the ships'
+runs over the drawn range: play, stop, clean, and a speed slider x1–x10 in steps of 0.2.
+
+Research (WCAG 2.2 1.4.11/2.5.8, Material 3 and Bootstrap 5.3 button hierarchy, WAI-ARIA APG slider and toggle
+button; replay in MarineTraffic, ship-handling simulator debriefs, deck.gl TripsLayer, kepler.gl, Cesium, Strava)
+found: one primary action per group, destructive actions marked, icons with labels in panels, readable disabled
+states; replay = all vessels on one shared clock, full track faded, played part in full colour, one moving hull per
+vessel, clock readout and a scrubber.
+
+| Topic | Decision |
+|---|---|
+| Groups | Headings like the other panel sections: *Data* [Refresh][Clear], *Replay* [Play/Pause][Stop][Reset] + speed + scrubber + clock, *Print* [Print][Print frame][Remove frame]. |
+| Hierarchy | Refresh `btn-primary` (only filled one in Data); Clear `btn-outline-danger`; Play `btn-success`; Stop, Reset, Print, Remove frame `btn-outline-secondary`; Print frame `btn-outline-primary`, filled while on (`aria-pressed`). Default size (no `btn-sm`). |
+| Icons | About ten Bootstrap Icons paths (MIT) as an inline SVG sprite in `tracks.html` (`<symbol>` + `<use>`, `currentColor`, `aria-hidden`), licence noted in a comment; no font, no new vendored folder. Icon + label for Refresh, Clear, Print, Print frame, Remove frame; icon only with `aria-label` and `title` for Play/Pause, Stop, Reset. Map zoom buttons keep the `/chart` look and gain `aria-label`s. |
+| Disabled | Higher contrast than Bootstrap's 0.65 opacity and a dashed outline, plus one muted hint "Pick ships and a range, then Refresh" while nothing is drawn. |
+| Replay range | The data of the last Refresh (first to last point of the drawn tracks); editing From/To without Refresh does not affect it. |
+| Speed | `x1` = real time (1 s of track per second); slider 1–10 step 0.2, shown as "x2.4" with the total replay duration ("x2.4 · 25 min"); remembered with the other settings. |
+| Play/Pause | One toggle (`aria-pressed`, icon swap). First press starts at the range start; later presses pause and resume; after the end, Play starts again from the start. |
+| Stop | Halts and rewinds to the start: faded tracks, hulls at their start positions, clock at the start. |
+| Reset | Ends the replay, removes its overlay (trail, moving hulls, clock state) and restores the static view; data stays. Named "Reset" so it is not confused with the panel's Clear. |
+| Scrubber | A range input over the replay range, step 1 s, moved by the clock while playing; dragging it seeks (also while playing). Keyboard per APG: arrows ±1 s, Page Up/Down ±1 min, Home/End. Clock readout `dd/MM/yyyy HH:mm:ss` in the display zone. |
+| While replaying | Full tracks faded, the played part in full colour, one hull per ship at the clock time (position interpolated within a segment, heading turned the short way), hidden before its first point, after its last and inside a gap longer than the gap field. Static silhouettes and their time labels are hidden and return on Reset. Zoom, pan and the print frame keep working. Hull size from the chart, never from the zoom. |
+| End | Stops on the last frame. |
+| Background tab | The browser pauses animation frames; each frame step is capped at 250 ms, so returning does not jump. |
+| Refresh / Clear | End the replay (as Reset) before replacing or clearing data. |
+| Print | Always the full static view, whatever the replay state. |
+| Server | No change. |
+
+### Stage 10 follow-ups (2026-11-12)
+
+| Topic | Decision |
+|---|---|
+| Replay bar | The replay controls leave the panel: a bar directly under the map, video-player style — [Play/Pause][Stop][Reset] · scrubber · clock · speed (with the duration). The map keeps its A4 ratio and shrinks by the bar's height so map + bar fit the viewport like the map alone did; the panel keeps Ships, Time range, Silhouettes, Data and Print. Nothing overlaps the map. |
+| Keyboard shortcuts | Media-player and map conventions: Space or K play/pause; S stop; J / L −10 s / +10 s; Home / End start / end; on the focused scrubber ←/→ ±1 s and PgUp/PgDn ±1 min; `<` / `>` speed −0.2 / +0.2; `+` (or `=`) / `-` zoom; `0` whole map; F print-frame mode; Esc leaves frame mode, otherwise Reset; `?` opens a "Keyboard shortcuts" dialog. Matched on `event.key` (works on the Polish layout); ignored with Ctrl/Alt/Meta (AltGr included), during IME composition, in text/number inputs, selects, the open Flatpickr calendar and the dialog; Space is left to focused buttons and checkboxes, arrows/Home/End to focused range inputs; toggles ignore key repeat. Actions click the existing buttons, so disabled states hold. Keys appear in button titles and `aria-keyshortcuts`. No Refresh/Print keys (Ctrl+P stays the browser's), no map panning by arrows. |
+| WCAG 2.1.4 | Single-character shortcuts can be switched off: a checkbox in the shortcuts dialog, remembered in localStorage (try/catch), default on; non-character keys (Esc, arrows, Home/End, PgUp/PgDn) stay active. Every action keeps an on-screen button. |
+| Static resources | Spring resource chain with content versioning (`spring.web.resources.chain.strategy.content.enabled=true`, `paths=/**`) so every `@{...}` asset URL carries a content hash and a browser never mixes new HTML with week-old cached CSS/JS. App-wide; all pages checked. Inline SVG icons also carry `width`/`height` so they never blow up without CSS. |
+| Replay bar layout | Two rows so the scrubber gets the map's width: [Play/Pause][Stop][Reset] + scrubber, then clock + speed with its duration. The bar's buttons are `btn-sm` (exception to "default size": a compact player bar); the panel buttons stay default size. |
+| Silhouette cap | Holds in every case: when even 60 s exceeds 5 000 (e.g. a gap threshold below the sampling interval makes every point a segment end), the segment-end extras are dropped, leaving at most one silhouette per ship per 60 s. |
+| Log format guard | `IngestDuringTrackQueryTest` builds its tracking appender from the production `logback-spring.xml` (line pattern, file, archive naming), so changing any of them turns it red. The API's coverage carries `unreadableLines` (track lines in the range that did not parse) and the page warns "N log lines in this range could not be read — the log format may have changed." instead of only reporting missing data. |
