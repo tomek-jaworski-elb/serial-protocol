@@ -95,10 +95,10 @@ sh DIR/deploy-remote.sh rollback DIR
 - The device precheck reads `- /dev/x:...` list entries, quoted or not. The long `devices:` syntax is not checked.
 - Folder names allow only letters, digits and `. _ -`. Jar versions allow the same, so `3.1-SNAPSHOT` is fine.
 - Password login only. The host key is trusted on first use: check the fingerprint ssh shows on the first connection.
-- Windows: the client has not been run on a real Windows 11 machine yet. It must be checked there once:
-  - the password prompt works while the archive goes through stdin;
-  - the jar's sha256 matches on the server;
-  - a checkout path with a space works.
+- Windows: checked on Windows 11 with Windows PowerShell 5.1 against an Ubuntu server, from a checkout path
+  with a space: the password prompt works while the archive goes through stdin, and deploy, update,
+  `-Status` and `-Rollback` ran end to end. The archive (jar hash compared) was also checked with an ssh stub
+  under PS 5.1 at code pages 65001 and 852 and under PowerShell 7. `-Attach` was not run on Windows.
 - The deploy user is in the `docker` group, which is root-equivalent on the server.
 
 ## Troubleshooting
