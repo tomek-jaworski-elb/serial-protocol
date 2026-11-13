@@ -112,7 +112,11 @@ function Invoke-Ssh([string]$remote, [string]$stdinFile) {
     $psi.Arguments = (($sshArgs + $remote) | ForEach-Object { Quote $_ }) -join ' '
     $psi.UseShellExecute = $false
     $psi.RedirectStandardInput = [bool]$stdinFile
-    $proc = [System.Diagnostics.Process]::Start($psi)
+    # PS 5.1 writes the console encoding's preamble into the redirected stdin at Start;
+    # under code page 65001 that is a UTF-8 BOM in front of the gzip stream.
+    $enc = [Console]::InputEncoding
+    if ($stdinFile) { [Console]::InputEncoding = New-Object System.Text.UTF8Encoding $false }
+    try { $proc = [System.Diagnostics.Process]::Start($psi) } finally { [Console]::InputEncoding = $enc }
     if ($stdinFile) {
         $fs = [System.IO.File]::OpenRead($stdinFile)
         try { $fs.CopyTo($proc.StandardInput.BaseStream) } catch { } finally { $fs.Close() }
