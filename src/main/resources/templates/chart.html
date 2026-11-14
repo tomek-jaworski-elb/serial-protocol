@@ -211,7 +211,13 @@
     </aside>
 </div>
 <!-- Raw per-message debug line (last ship only) — off by default, not part of the Fleet Board UI -->
-<div class="container-fluid mt-3 d-flex justify-content-end">
+<div class="container-fluid mt-3 d-flex justify-content-end align-items-center gap-3">
+    <!-- Starts from chart.ship.position-smoothing-ms on every load; the choice is this page's only and is not stored -->
+    <div class="form-check m-0 small text-muted">
+        <input class="form-check-input" type="checkbox" id="smoothingToggle" autocomplete="off"
+               th:checked="${shipPositionSmoothingMs > 0}">
+        <label class="form-check-label" for="smoothingToggle">Smooth movement</label>
+    </div>
     <button type="button" class="btn btn-link btn-sm text-muted p-0" id="diagnosticsToggleBtn">Diagnostics</button>
 </div>
 <div class="container-fluid mt-1 d-none" id="textFieldWrapper">
