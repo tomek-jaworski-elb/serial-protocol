@@ -18,9 +18,10 @@ Edit `CLAUDE.md` first and copy the block here in the same change. Do not add ot
 .\mvnw.cmd spring-boot:run                                     # run from Maven
 java -jar .\target\serial-protocol-3.0.jar                     # run packaged JAR (3.0 = <version> in pom.xml)
 docker compose up --build                                      # app + MariaDB
-./start_docker.sh -d    |    ./stop_docker.sh                  # rebuild and start detached / stop (bash)
+./start_docker.sh -d    |    ./stop_docker.sh                  # build, then start detached / stop (bash; local, not on a deploy server)
 .\mvnw.cmd -f simulator/pom.xml verify                        # build + test the data simulator (simulator/target/ship-sim.jar)
 run-sim.bat replay --from docs\LogTerminal.txt --loop          # feed the running app over UDP (localhost:2222) from the recording
+deploy/deploy.sh   |   deploy\deploy.ps1                     # deploy to the Linux server over ssh (--help; deploy/README.md)
 ```
 
 No lint plugin (Checkstyle/PMD/SpotBugs) is configured in `pom.xml` — do not invent a lint command. A local run listens on 443 (`https://localhost/`); Docker maps host 8081 to container 443 (`https://localhost:8081/`).

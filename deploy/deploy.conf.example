@@ -1,0 +1,6 @@
+# Defaults for deploy/deploy.sh and deploy/deploy.ps1. Copy to deploy/deploy.conf (gitignored)
+# and edit. KEY=VALUE, one per line. There is no password key: ssh always asks for it.
+DEPLOY_HOST=192.168.2.4
+DEPLOY_PORT=22
+DEPLOY_USER=
+DEPLOY_DIR=/opt/serial-protocol

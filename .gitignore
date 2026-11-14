@@ -41,3 +41,7 @@ build/
 /logs/
 /logs /
 /cert/
+
+### deploy ###
+/deploy/deploy.conf
+/deploy/.known_hosts
