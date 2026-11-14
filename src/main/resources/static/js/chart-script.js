@@ -105,8 +105,8 @@ const FOLLOW_ANGLE_SETTLED = 0.05;
 // and bearings between ships truthful, where easing one ship alone would misplace it
 // against the others by up to a full message of travel.
 //
-// Time to cover ~95% of the distance. 0 disables smoothing entirely and restores the
-// original teleporting behaviour — set from chart.ship.position-smoothing-ms.
+// Time to cover ~95% of the distance and of the turn. 0 disables smoothing entirely and
+// restores the original teleporting behaviour — set from chart.ship.position-smoothing-ms.
 const SHIP_POSITION_EASE_MS = typeof SHIP_POSITION_SMOOTHING_MS_VAR === 'number'
     ? SHIP_POSITION_SMOOTHING_MS_VAR
     : 300;
@@ -114,6 +114,8 @@ const SHIP_POSITION_EASE_MS = typeof SHIP_POSITION_SMOOTHING_MS_VAR === 'number'
 // Below this much remaining travel (in map units, so ~0.4 m) the rest is not worth a
 // frame: snap and let the loop sleep.
 const SHIP_POSITION_SETTLED = 1;
+// The same for the remaining turn, in degrees (under 0.1 map units at the bow of the longest hull).
+const SHIP_ANGLE_SETTLED = 0.5;
 
 let animationRafId = null;
 let animationLastFrameTime = 0;
@@ -484,8 +486,10 @@ function easeFraction(dtMs, easeMs) {
     return 1 - Math.pow(0.05, dtMs / easeMs);
 }
 
-// Slides every reported hull towards its latest position. Returns whether anything is
-// still on its way, which is what keeps the frame loop alive.
+// Slides every reported hull towards its latest position and turns it towards its latest
+// heading by the same fraction, so the pose on the way is a blend of the two reported poses
+// and never the new heading at the old place. Returns whether anything is still on its way,
+// which is what keeps the frame loop alive.
 function advanceShipPositions(dt) {
     if (SHIP_POSITION_EASE_MS <= 0) return false;
     const k = easeFraction(dt, SHIP_POSITION_EASE_MS);
@@ -496,15 +500,18 @@ function advanceShipPositions(dt) {
         if (obj.lastUpdateTime === null) continue;
         const dx = obj.reportedPos.x - obj.drawnPos.x;
         const dy = obj.reportedPos.y - obj.drawnPos.y;
-        if (Math.abs(dx) + Math.abs(dy) <= SHIP_POSITION_SETTLED) {
-            if (dx !== 0 || dy !== 0) {
+        const turn = shortestAngleDelta(obj.drawnAngle, obj.lastAngle);
+        if (Math.abs(dx) + Math.abs(dy) <= SHIP_POSITION_SETTLED && Math.abs(turn) <= SHIP_ANGLE_SETTLED) {
+            if (dx !== 0 || dy !== 0 || turn !== 0) {
                 obj.drawnPos = {x: obj.reportedPos.x, y: obj.reportedPos.y};
+                obj.drawnAngle = obj.lastAngle;
                 renderShipAt(id);
                 updateKonvaTrack(id);
             }
             continue;
         }
         obj.drawnPos = {x: obj.drawnPos.x + dx * k, y: obj.drawnPos.y + dy * k};
+        obj.drawnAngle += turn * k;
         renderShipAt(id);
         updateKonvaTrack(id);
         moving = true;
@@ -1002,15 +1009,14 @@ function updateShipHitAreas() {
 
 // LOD crossfade: hull silhouette at high zoom, direction arrow at low zoom, so
 // ships stay legible however far out the map is zoomed. Called on every zoom
-// change (fitStageToContainer, zoomStageAtPoint) — also the only place that
-// recomputes the arrow's points on a zoom-only change (no position update), so
+// change (fitStageToContainer, zoomStageAtPoint), where it resizes the arrow so that
 // it keeps its constant on-screen size (SHIP_ARROW_SCREEN_PX) instead of
-// shrinking/growing with the map like the hull does.
+// shrinking/growing with the map like the hull does. A position change moves the
+// arrow in renderShipAt(), together with the hull.
 function updateShipRenderMode() {
     if (!konvaStage) return;
     const scale = konvaStage.scaleX();
     const t = Math.max(0, Math.min(1, (scale - LOD_ARROW_SCALE) / (LOD_HULL_SCALE - LOD_ARROW_SCALE)));
-    const arrowSize = SHIP_ARROW_SCREEN_PX / scale;
     for (const id of Object.keys(KonvaObjects)) {
         const obj = KonvaObjects[id];
         if (obj.lastUpdateTime === null) {
@@ -1035,7 +1041,7 @@ function updateShipRenderMode() {
         obj.shipShape.listening(true);
         obj.shipShape.opacity(t);
         obj.arrowShape.opacity(1 - t);
-        obj.arrowShape.points(computeShipArrowVerticesForKonva(obj.drawnPos.x, obj.drawnPos.y, obj.lastAngle, arrowSize));
+        obj.arrowShape.points(shipArrowPoints(obj.drawnPos.x, obj.drawnPos.y, obj.drawnAngle));
     }
 }
 
@@ -1380,6 +1386,11 @@ function computeShipArrowVerticesForKonva(x, y, angle, size) {
     return rotateTranslateFlatten(vertices, angle, x, y);
 }
 
+// The LOD arrow at a map position, at its constant on-screen size for the current zoom.
+function shipArrowPoints(x, y, angle) {
+    return computeShipArrowVerticesForKonva(x, y, angle, SHIP_ARROW_SCREEN_PX / konvaStage.scaleX());
+}
+
 // Tworzymy obiekty Konva dla wszystkich modeli (linie tras + kształty statków)
 function createKonvaObjectsForModels() {
     if (!konvaStage || !konvaTrackLayer || !konvaShipLayer) {
@@ -1462,7 +1473,7 @@ function createKonvaObjectsForModels() {
         // opacity between the two). Not clickable — shipShape keeps that job even
         // while faded out, so tap targets don't change as the user zooms.
         const arrowShape = new Konva.Line({
-            points: computeShipArrowVerticesForKonva(0, 0, 0, SHIP_ARROW_SCREEN_PX / konvaStage.scaleX()),
+            points: shipArrowPoints(0, 0, 0),
             fill: ModelsOfShips.getColorFromId(id),
             closed: true,
             listening: false,
@@ -1483,7 +1494,10 @@ function createKonvaObjectsForModels() {
             // Counts reports rather than inferring "first one" from a timestamp the caller
             // has already written by then. See updateKonvaShip().
             reportCount: 0,
+            // lastAngle is the heading last reported (tooltip, camera target); drawnAngle is
+            // the one the hull and the arrow are drawn with while the two converge.
             lastAngle: 0,
+            drawnAngle: 0,
             lastSpeed: 0,
             lastHeading: 0,
             lastUpdateTime: null
@@ -1497,16 +1511,19 @@ function createKonvaObjectsForModels() {
     updateShipRenderMode();
 }
 
-// Redraws one hull wherever drawnPos currently says it is. Called both when a message
-// lands and on every frame of the easing, so it must stay cheap: it only recomputes the
-// two point arrays, it does not draw.
+// Redraws one ship (hull and LOD arrow) wherever drawnPos currently says it is. Called both
+// when a message lands and on every frame of the easing, so it must stay cheap: it only
+// recomputes the two point arrays, it does not draw.
 // cfg.scale is constant: silhouette size reflects the real ship size relative to the map at any zoom
 function renderShipAt(id) {
     const obj = KonvaObjects[id];
     const cfg = modelsConfig[id];
     if (!obj || !cfg) return;
     obj.shipShape.points(
-        computeShipVerticesForKonva(obj.drawnPos.x, obj.drawnPos.y, cfg.scale, obj.lastAngle, ...cfg.shipParams));
+        computeShipVerticesForKonva(obj.drawnPos.x, obj.drawnPos.y, cfg.scale, obj.drawnAngle, ...cfg.shipParams));
+    // The low-zoom arrow stands where the hull is drawn, on every eased frame; left to
+    // updateShipRenderMode() alone it stayed one report behind the hull and the track.
+    obj.arrowShape.points(shipArrowPoints(obj.drawnPos.x, obj.drawnPos.y, obj.drawnAngle));
 }
 
 // Updates one ship's Konva shape (position and rotation).
@@ -1534,18 +1551,18 @@ function updateKonvaShip(id, x, y, angle) {
     obj.reportedPos = { x, y };
     obj.lastAngle = angle;
     // With smoothing off, or on the very first report (there is nothing to slide from),
-    // the drawn position is the reported one and nothing has to be animated.
+    // the drawn pose is the reported one and nothing has to be animated.
     if (SHIP_POSITION_EASE_MS <= 0 || firstReport) {
         obj.drawnPos = { x, y };
+        obj.drawnAngle = angle;
     }
     obj.reportCount++;
     renderShipAt(id);
 
-    // Recomputes this ship's arrow points (needs the fresh drawnPos/lastAngle set
-    // just above) and its hull/arrow opacity for the current zoom — a position
-    // update is also how a previously-offline ship (opacity forced to 0 in
-    // updateShipRenderMode) becomes visible for the first time, so this can't
-    // be skipped even though zoom changes already call it separately.
+    // Sets the hull/arrow opacity for the current zoom — a position update is also
+    // how a previously-offline ship (opacity forced to 0 in updateShipRenderMode)
+    // becomes visible for the first time, so this can't be skipped even though zoom
+    // changes already call it separately. The points were set by renderShipAt() above.
     updateShipRenderMode();
     konvaShipLayer.batchDraw();
 

@@ -420,6 +420,34 @@ class ChartShipListTest {
                 .doesNotContain("konvaStage");
     }
 
+    /**
+     * The LOD arrow must move with the hull, and the heading with the position. Poses are eased frame by frame through
+     * {@code renderShipAt}; when only the hull was moved there, the arrow stayed one report behind
+     * the hull and the end of the track at every zoom below the hull threshold. A proxy on the
+     * shape of the code, like the test above.
+     */
+    @Test
+    void theArrowIsMovedTogetherWithTheHull() throws Exception {
+        String script = scriptSource();
+        int bodyStart = script.indexOf("function renderShipAt");
+        assertThat(bodyStart).as("renderShipAt").isNotNegative();
+        String body = script.substring(bodyStart, script.indexOf("\n}", bodyStart));
+
+        assertThat(body).as("the hull is placed in renderShipAt").contains("obj.shipShape.points(");
+        assertThat(body).as("the arrow is placed in renderShipAt, from the same drawn position")
+                .contains("obj.arrowShape.points(shipArrowPoints(obj.drawnPos.x, obj.drawnPos.y, obj.drawnAngle))");
+        assertThat(body).as("the hull is drawn with the eased heading, like its position")
+                .contains("cfg.scale, obj.drawnAngle,");
+
+        // The heading is eased in the same step as the position, or the hull would show the new
+        // heading at the old place for the length of the slide.
+        int easeStart = script.indexOf("function advanceShipPositions");
+        assertThat(easeStart).as("advanceShipPositions").isNotNegative();
+        assertThat(script.substring(easeStart, script.indexOf("\n}", easeStart)))
+                .as("position and heading advance by the same fraction")
+                .contains("dx * k").contains("turn * k");
+    }
+
     @Test
     void everyRowHasALedDot() throws Exception {
         for (Models ship : Models.values()) {

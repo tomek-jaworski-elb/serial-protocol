@@ -70,9 +70,10 @@ Three things in this document change while that mode is on, so read them togethe
   the raster is visibly soft; that is accepted, not a defect.
 - **`clampStagePosition()` does not apply while following.** Its "the chart must cover the viewport"
   rule describes an axis-aligned chart, and the chart is rotated. The anchor limit takes its place.
-- **Hull positions are eased, not applied straight.** Messages arrive about once a second, so every
-  silhouette slides to its newest reported position over `chart.ship.position-smoothing-ms`
-  (default 300, `0` restores the original teleporting behaviour). Every ship is eased, never just
+- **Hull positions and headings are eased, not applied straight.** Messages arrive about once a
+  second, so every silhouette slides to its newest reported position and turns to its newest
+  heading by the same fraction, over `chart.ship.position-smoothing-ms` (default 300, `0` restores
+  the original teleporting behaviour). The LOD arrow is placed from the same eased pose. Every ship is eased, never just
   the followed one, so the distances between them stay truthful.
 
 ## Zoom, pan, and touch support
