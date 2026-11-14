@@ -30,6 +30,10 @@ services:
             - /dev/ttyACM0:/dev/ttyACM0
             - /dev:/dev
         privileged: true
+        # The image's non-root aisuser cannot open the host's serial devices (root:dialout 660).
+        # Root works on any host. To go back to aisuser: replace this with group_add of the
+        # host's dialout GID and chown the server-logs volume back to aisuser.
+        user: root
         logging:
           driver: "json-file"
           options:
