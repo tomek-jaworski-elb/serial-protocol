@@ -448,6 +448,31 @@ class ChartShipListTest {
                 .contains("dx * k").contains("turn * k");
     }
 
+    /**
+     * The "Smooth movement" checkbox starts from {@code chart.ship.position-smoothing-ms} (300 in
+     * the tests, so checked) and is this page's own switch: the script must start from the system
+     * value on every load and put the ships at their reported pose when it is switched off.
+     */
+    @Test
+    void theSmoothingCheckboxStartsFromTheSystemSetting() throws Exception {
+        assertThat(chartHtml())
+                .as("rendered checked while the property is above zero")
+                .containsPattern("<input[^>]*id=\"smoothingToggle\"[^>]*checked");
+        assertThat(new ClassPathResource("templates/chart.html").getContentAsString(StandardCharsets.UTF_8))
+                .as("the checked state comes from the property, zero renders it unchecked")
+                .contains("th:checked=\"${shipPositionSmoothingMs > 0}\"");
+
+        String script = scriptSource();
+        int start = script.indexOf("function bindSmoothingToggle");
+        assertThat(start).as("bindSmoothingToggle").isNotNegative();
+        assertThat(script.substring(start, script.indexOf("\n}", start)))
+                .as("starts from the system setting, never from a stored choice")
+                .contains("box.checked = SHIP_POSITION_SYSTEM_EASE_MS > 0")
+                .doesNotContain("localStorage")
+                .as("switching off settles the ships at once")
+                .contains("if (!box.checked) settleShipsNow();");
+    }
+
     @Test
     void everyRowHasALedDot() throws Exception {
         for (Models ship : Models.values()) {

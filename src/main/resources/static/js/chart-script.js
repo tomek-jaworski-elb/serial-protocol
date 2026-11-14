@@ -106,10 +106,13 @@ const FOLLOW_ANGLE_SETTLED = 0.05;
 // against the others by up to a full message of travel.
 //
 // Time to cover ~95% of the distance and of the turn. 0 disables smoothing entirely and
-// restores the original teleporting behaviour — set from chart.ship.position-smoothing-ms.
-const SHIP_POSITION_EASE_MS = typeof SHIP_POSITION_SMOOTHING_MS_VAR === 'number'
+// restores the original teleporting behaviour. It starts from chart.ship.position-smoothing-ms
+// and the "Smooth movement" checkbox switches it for this page (bindSmoothingToggle).
+const SHIP_POSITION_DEFAULT_EASE_MS = 300;
+const SHIP_POSITION_SYSTEM_EASE_MS = typeof SHIP_POSITION_SMOOTHING_MS_VAR === 'number'
     ? SHIP_POSITION_SMOOTHING_MS_VAR
-    : 300;
+    : SHIP_POSITION_DEFAULT_EASE_MS;
+let shipPositionEaseMs = SHIP_POSITION_SYSTEM_EASE_MS;
 
 // Below this much remaining travel (in map units, so ~0.4 m) the rest is not worth a
 // frame: snap and let the loop sleep.
@@ -491,8 +494,8 @@ function easeFraction(dtMs, easeMs) {
 // and never the new heading at the old place. Returns whether anything is still on its way,
 // which is what keeps the frame loop alive.
 function advanceShipPositions(dt) {
-    if (SHIP_POSITION_EASE_MS <= 0) return false;
-    const k = easeFraction(dt, SHIP_POSITION_EASE_MS);
+    if (shipPositionEaseMs <= 0) return false;
+    const k = easeFraction(dt, shipPositionEaseMs);
     let moving = false;
     for (const idString of Object.keys(KonvaObjects)) {
         const id = Number(idString);
@@ -1302,6 +1305,37 @@ function bindDiagnosticsToggle() {
 }
 bindDiagnosticsToggle();
 
+// Puts every ship at its reported pose at once, so switching the smoothing off does not leave
+// a hull half way: with no easing time the frame loop moves nothing.
+function settleShipsNow() {
+    for (const idString of Object.keys(KonvaObjects)) {
+        const id = Number(idString);
+        const obj = KonvaObjects[id];
+        if (obj.lastUpdateTime === null) continue;
+        obj.drawnPos = {x: obj.reportedPos.x, y: obj.reportedPos.y};
+        obj.drawnAngle = obj.lastAngle;
+        renderShipAt(id);
+        updateKonvaTrack(id);
+    }
+    if (followedShipId !== null) applyFollowCamera();
+    if (konvaShipLayer) konvaShipLayer.batchDraw();
+}
+
+// "Smooth movement": checked eases position and heading, unchecked jumps to each report.
+// The box starts from the system setting on every load and the choice is not stored; it is
+// set here as well as in the template because browsers restore form state on reload.
+// With smoothing off system-wide, checking it uses the default time.
+function bindSmoothingToggle() {
+    const box = document.getElementById('smoothingToggle');
+    if (!box) return;
+    box.checked = SHIP_POSITION_SYSTEM_EASE_MS > 0;
+    box.addEventListener('change', () => {
+        shipPositionEaseMs = box.checked ? (SHIP_POSITION_SYSTEM_EASE_MS || SHIP_POSITION_DEFAULT_EASE_MS) : 0;
+        if (!box.checked) settleShipsNow();
+    });
+}
+bindSmoothingToggle();
+
 const path = '/json';
 // Set up the text field
 const textField = document.getElementById("textField");
@@ -1552,7 +1586,7 @@ function updateKonvaShip(id, x, y, angle) {
     obj.lastAngle = angle;
     // With smoothing off, or on the very first report (there is nothing to slide from),
     // the drawn pose is the reported one and nothing has to be animated.
-    if (SHIP_POSITION_EASE_MS <= 0 || firstReport) {
+    if (shipPositionEaseMs <= 0 || firstReport) {
         obj.drawnPos = { x, y };
         obj.drawnAngle = angle;
     }

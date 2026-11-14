@@ -73,7 +73,9 @@ Three things in this document change while that mode is on, so read them togethe
 - **Hull positions and headings are eased, not applied straight.** Messages arrive about once a
   second, so every silhouette slides to its newest reported position and turns to its newest
   heading by the same fraction, over `chart.ship.position-smoothing-ms` (default 300, `0` restores
-  the original teleporting behaviour). The LOD arrow is placed from the same eased pose. Every ship is eased, never just
+  the original teleporting behaviour). The LOD arrow is placed from the same eased pose. The
+  "Smooth movement" checkbox under the chart switches the easing for the open page only: it starts
+  from the property on every load, is not stored, and uses 300 ms when the property is `0`. Every ship is eased, never just
   the followed one, so the distances between them stay truthful.
 
 ## Zoom, pan, and touch support
