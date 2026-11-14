@@ -1,175 +1,187 @@
 <!DOCTYPE html>
 <html lang="en">
-<head th:insert="~{fragment::head}"></head>
 <head>
-    <title th:text="${@environment.getProperty('spring.application.name')} + ' : Tracks'">Serial port server</title>
-    <style>
-        .canvas-container {
-            position: relative;
-            width: 2666px;
-            height: 4000px;
-            border: 1px solid #555151;
-            padding-left: 0;
-            padding-right: 0;
-            margin-left: auto;
-            margin-right: auto;
-            display: block;
-        }
-
-        canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
-
-        #backgroundCanvas {
-            z-index: 0;
-        }
-
-        #myCanvas {
-            z-index: 1;
-            pointer-events: none; /* To make sure the background canvas can still receive events */
-        }
-    </style>
+    <th:block th:replace="~{fragment::headContent}"></th:block>
+    <title th:text="${@environment.getProperty('spring.application.name')} + ' : Tracks'">Tracks</title>
+    <link rel="stylesheet" th:href="@{/flatpickr/flatpickr.min.css}">
+    <link th:href="@{/css/chart.css}" rel="stylesheet"/>
+    <link th:href="@{/css/tracks.css}" rel="stylesheet"/>
+    <link rel="preload" as="image" type="image/avif" th:href="@{/img/MapaSilm_2666x4000.avif}"/>
 </head>
 <body>
 <header th:replace="~{fragment::header}"></header>
-<div>
-    <form method="post" action="#" th:action="@{/tracks}" th:object="${checkBoxOption}" id="trackForm">
-        <div class="container text-center p-2 justify-content-center mx-auto mb-3 mt-2">
-            <div class="form-check form-check-inline mx-3">
-                <input class="form-check-input" field="*{warta}" type="checkbox" name="warta" id="warta"
-                       th:checked="${checkBoxOption?.warta == true}"/>
-                <label class="form-check-label" for="warta">Warta</label>
-            </div>
-            <div class="form-check form-check-inline mx-3">
-                <input class="form-check-input" field="*{bluelady}" type="checkbox" name="bluelady" id="bluelady"
-                       th:checked="${checkBoxOption?.bluelady == true}"/>
-                <label class="form-check-label" for="bluelady">Blue Lady</label>
-            </div>
-            <div class="form-check form-check-inline mx-3">
-                <input class="form-check-input" field="*{cherrylady}" type="checkbox" name="cherrylady" id="cherrylady"
-                       th:checked="${checkBoxOption?.cherrylady == true}"/>
-                <label class="form-check-label" for="cherrylady">Cherry Lady</label>
-            </div>
-            <div class="form-check form-check-inline mx-3">
-                <input class="form-check-input" field="*{kolobrzeg}" type="checkbox" name="kolobrzeg" id="kolobrzeg"
-                       th:checked="${checkBoxOption?.kolobrzeg == true}"/>
-                <label class="form-check-label" for="kolobrzeg">Kołobrzeg</label>
-            </div>
-            <div class="form-check form-check-inline mx-3">
-                <input class="form-check-input" field="*{dorchesterlady}" type="checkbox" name="dorchesterlady"
-                       id="dorchesterlady" th:checked="${checkBoxOption?.dorchesterlady == true}"/>
-                <label class="form-check-label" for="dorchesterlady">Dorchester Lady</label>
-            </div>
-            <div class="form-check form-check-inline mx-3">
-                <input class="form-check-input" field="*{ladymarie}" type="checkbox" name="ladymarie" id="ladymarie"
-                       th:checked="${checkBoxOption?.ladymarie == true}"/>
-                <label class="form-check-label" for="ladymarie">Lady Marie</label>
-            </div>
+<!-- The PDF request: tracks-script.js fills it and submits it into a new tab. Kept near the top: its CSRF token creates the
+     session, which must happen before the response buffer fills and commits. -->
+<form id="pdfForm" method="post" enctype="multipart/form-data" target="tracksPdf" th:action="@{/tracks/pdf}" hidden>
+    <input type="file" name="image">
+    <input type="hidden" name="from">
+    <input type="hidden" name="to">
+    <input type="hidden" name="silhouettes">
+    <input type="hidden" name="ships">
+    <input type="hidden" name="captains">
+    <input type="hidden" name="widthNm">
+</form>
+<!-- Filled by tracks-script.js; hidden while empty. -->
+<div class="container-fluid">
+    <div id="tracksMessage" class="alert alert-info py-1 px-2 small my-2 d-none" role="status"></div>
+</div>
+<div class="map-wrapper tracks-wrapper">
+    <!-- controls live outside #konvaContainer: Konva clears the stage container content on init -->
+    <div class="map-pane">
+        <div class="position-relative">
+        <div class="canvas-container" id="konvaContainer"></div>
+        <div class="map-controls btn-group-vertical" role="group" aria-label="Map zoom controls">
+            <button type="button" id="zoomInBtn" class="btn btn-light border" title="Zoom in (+)" data-keys="+ =" aria-label="Zoom in">+</button>
+            <button type="button" id="zoomOutBtn" class="btn btn-light border" title="Zoom out (-)" data-keys="-" aria-label="Zoom out">&minus;</button>
+            <button type="button" id="zoomResetBtn" class="btn btn-light border" title="Whole map (0)" data-keys="0" aria-label="Reset view">&#8634;</button>
         </div>
-        <!--/*
-          The whole day, as HH:mm. TrackService parses these with that pattern and drops every log
-          item when the parse fails, so the previous values of 20 and 80 filtered out the entire
-          track set before it ever reached the browser - the page could not have drawn anything
-          even with its scripts intact. "24:00" is the sentinel the service turns into 23:59.
-
-          They are hidden because the time-range slider that used to write them was hidden too, and
-          its library was never actually shipped. Restoring that filter means vendoring noUiSlider
-          and unhiding both; until then these carry the full day.
-        */-->
-        <input type="hidden" id="minValueInput" name="minValue" value="00:00">
-        <input type="hidden" id="maxValueInput" name="maxValue" value="24:00">
-        <div class="container justify-content-center text-center py-2 my-2">
-            <button type="submit" class="btn btn-primary mx-3">Submit</button>
-            <button type="reset" class="btn btn-secondary mx-3" id="resetButton">Reset</button>
+        <div class="scale-bar" aria-label="Map scale" title="Full-scale nautical miles of the 1:24 chart (1 Nm = 77 m on the lake)">
+            <div class="scale-bar-line" id="scaleBarLine"></div>
+            <span id="scaleBarLabel"></span>
         </div>
-        <div class="container justify-content-center text-center py-2 my-2">
-            <p th:if="${noData != null and #strings.length(noData) > 0}" class="text-danger" th:text="${noData}">No data</p>
         </div>
-    </form>
-    <div class="canvas-container">
-        <div>
-            <canvas id="myCanvas" width="2666" height="4000" style="border:1px solid #000000;"></canvas>
-            <img id="backgroundCanvas" th:src="@{/img/MapaSilm_2666x4000.jpg}" src="/static/img/MapaSilm_2666x4000.jpg"
-                 width="2666" height="4000" alt="Silm Lake Chart should be here">
+        <div class="replay-bar" role="group" aria-label="Replay">
+            <button type="button" id="playBtn" class="btn btn-sm btn-success" aria-pressed="false" aria-label="Play" title="Play / Pause (Space)" data-keys="Space K" disabled>
+                <svg class="bi" width="16" height="16" aria-hidden="true"><use href="#i-play-fill"/></svg>
+            </button>
+            <button type="button" id="stopBtn" class="btn btn-sm btn-outline-secondary" aria-label="Stop" title="Stop (S)" data-keys="S" disabled>
+                <svg class="bi" width="16" height="16" aria-hidden="true"><use href="#i-stop-fill"/></svg>
+            </button>
+            <button type="button" id="resetBtn" class="btn btn-sm btn-outline-secondary" aria-label="Reset" title="Reset: back to the static view (Esc)" disabled>
+                <svg class="bi" width="16" height="16" aria-hidden="true"><use href="#i-arrow-counterclockwise"/></svg>
+            </button>
+            <input type="range" class="form-range replay-scrubber" id="replayScrubber" aria-label="Time" min="0" max="0" step="1" value="0" disabled>
+            <output id="replayClock" class="small" for="replayScrubber" aria-live="off"></output>
+            <input type="range" class="form-range replay-speed" id="speedSlider" aria-label="Speed" title="Speed" min="1" max="10" step="0.2" value="1">
+            <output id="speedValue" for="speedSlider" class="small">x1</output>
         </div>
     </div>
+
+    <aside class="tracks-panel" aria-label="Track settings">
+        <!-- A form for layout and grouping only: nothing is submitted, tracks-script.js reads the fields. -->
+        <form id="tracksForm" class="p-3" novalidate
+              th:data-now="${#temporals.format(now, 'yyyy-MM-dd''T''HH:mm:ss')}"
+              th:data-zone="${displayZone}"
+              th:data-box-width-mm="${pdfBoxWidthMm}"
+              th:data-box-height-mm="${pdfBoxHeightMm}"
+              onsubmit="return false">
+            <h5 class="tracks-heading">Ships</h5>
+            <ul class="list-unstyled m-0 mb-3">
+                <li th:each="ship : ${ships}">
+                    <label class="ship-row" th:style="'--ship-color: ' + ${ship.color}">
+                        <input class="form-check-input m-0" type="checkbox" name="ship" th:value="${ship.id}"
+                               th:data-ship-id="${ship.id}" th:data-color="${ship.color}"
+                               th:aria-controls="'captain-' + ${ship.id}" aria-expanded="false">
+                        <span class="ship-chip"></span>
+                        <span class="ship-name" th:text="${ship.name}">Ship Name</span>
+                        <!-- "no data" after a draw -->
+                        <small class="ship-note text-muted ms-auto" th:data-ship-note="${ship.id}"></small>
+                    </label>
+                    <!-- Shown while the ship is ticked; never submitted, stored or logged: Print posts it once. -->
+                    <input type="text" class="form-control form-control-sm captain-input" hidden
+                           th:id="'captain-' + ${ship.id}" th:aria-label="'Captain of ' + ${ship.name}"
+                           maxlength="120" autocomplete="off" spellcheck="false" placeholder="Captain (first and last name)">
+                </li>
+            </ul>
+
+            <h5 class="tracks-heading">Time range</h5>
+            <div class="row g-2 mb-1">
+                <div class="col-6">
+                    <label for="fromInput" class="form-label small mb-1">From</label>
+                    <input type="text" id="fromInput" class="form-control form-control-sm" autocomplete="off"
+                           placeholder="dd/MM/yyyy HH:mm:ss">
+                </div>
+                <div class="col-6">
+                    <label for="toInput" class="form-label small mb-1">To</label>
+                    <input type="text" id="toInput" class="form-control form-control-sm" autocomplete="off"
+                           placeholder="dd/MM/yyyy HH:mm:ss">
+                </div>
+            </div>
+            <div id="rangeError" class="text-danger small" role="alert"></div>
+            <div class="text-muted small mb-3">Times in <span th:text="${displayZone}">Europe/Warsaw</span>, at most 24 h.</div>
+
+            <h5 class="tracks-heading">Silhouettes</h5>
+            <label for="periodSlider" class="form-label small mb-1">
+                Period: <output id="periodValue" for="periodSlider">10</output> s (0 = every point)
+            </label>
+            <input type="range" class="form-range" id="periodSlider" min="0" max="60" step="1" value="10">
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="showSilhouettes" checked>
+                <label class="form-check-label" for="showSilhouettes">Show silhouettes</label>
+            </div>
+            <div class="form-check form-check-inline mb-3">
+                <input class="form-check-input" type="checkbox" id="timeLabels">
+                <label class="form-check-label" for="timeLabels">Time labels</label>
+            </div>
+
+            <label for="gapInput" class="form-label small mb-1">Break a line after a gap longer than (s)</label>
+            <input type="number" class="form-control form-control-sm mb-3" id="gapInput" min="1" max="600" step="1"
+                   th:value="${gapSeconds}">
+
+            <!-- Pinned to the bottom of the panel: the actions stay in reach however many ships are open above. -->
+            <div class="tracks-actions">
+                <div class="d-flex justify-content-between align-items-baseline">
+                    <h5 class="tracks-heading">Data</h5>
+                    <button type="button" id="shortcutsBtn" class="btn btn-link btn-sm p-0">Keyboard shortcuts</button>
+                </div>
+                <div class="mb-2">
+                    <div class="d-flex flex-wrap gap-2 mb-1">
+                        <button type="button" id="refreshBtn" class="btn btn-primary" disabled>
+                            <span class="spinner-border spinner-border-sm d-none" aria-hidden="true"></span>
+                            <svg class="bi" width="16" height="16" aria-hidden="true"><use href="#i-arrow-clockwise"/></svg> Refresh
+                        </button>
+                        <button type="button" id="clearBtn" class="btn btn-outline-danger" disabled>
+                            <svg class="bi" width="16" height="16" aria-hidden="true"><use href="#i-trash"/></svg> Clear
+                        </button>
+                    </div>
+                    <div id="drawHint" class="text-muted small">Pick ships and a range, then Refresh.</div>
+                </div>
+
+                <h5 class="tracks-heading">Print</h5>
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" id="printBtn" class="btn btn-outline-secondary" disabled>
+                        <svg class="bi" width="16" height="16" aria-hidden="true"><use href="#i-printer"/></svg> Print
+                    </button>
+                    <button type="button" id="printFrameBtn" class="btn btn-outline-primary" aria-pressed="false" title="Print frame (F)" data-keys="F">
+                        <svg class="bi" width="16" height="16" aria-hidden="true"><use href="#i-bounding-box"/></svg> Print frame
+                    </button>
+                    <button type="button" id="removeFrameBtn" class="btn btn-outline-secondary" aria-label="Remove frame" title="Remove frame" disabled>
+                        <svg class="bi" width="16" height="16" aria-hidden="true"><use href="#i-x-square"/></svg> Remove
+                    </button>
+                </div>
+                <div class="text-muted small mt-1">Without a frame, the current view is printed.</div>
+            </div>
+        </form>
+
+    </aside>
 </div>
+<!-- Icons: Bootstrap Icons 1.11 (MIT, https://github.com/twbs/icons), 16x16 paths. -->
+<svg hidden xmlns="http://www.w3.org/2000/svg">
+    <symbol id="i-arrow-clockwise" viewBox="0 0 16 16"><path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/><path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/></symbol>
+    <symbol id="i-arrow-counterclockwise" viewBox="0 0 16 16"><path d="M8 3a5 5 0 1 1-4.546 2.914.5.5 0 0 0-.908-.417A6 6 0 1 0 8 2z"/><path d="M8 4.466V.534a.25.25 0 0 0-.41-.192L5.23 2.308a.25.25 0 0 0 0 .384l2.36 1.966A.25.25 0 0 0 8 4.466"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/><path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/></symbol>
+    <symbol id="i-printer" viewBox="0 0 16 16"><path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1"/><path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2zM4 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2H4zm1 5a2 2 0 0 0-2 2v1H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v-1a2 2 0 0 0-2-2zm7 2v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1"/></symbol>
+    <symbol id="i-bounding-box" viewBox="0 0 16 16"><path d="M5 2V0H0v5h2v6H0v5h5v-2h6v2h5v-5h-2V5h2V0h-5v2zm6 1v2h2v6h-2v2H5v-2H3V5h2V3zm1-2h3v3h-3zm3 11v3h-3v-3zM4 15H1v-3h3zM1 4V1h3v3z"/></symbol>
+    <symbol id="i-x-square" viewBox="0 0 16 16"><path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"/><path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/></symbol>
+    <symbol id="i-play-fill" viewBox="0 0 16 16"><path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393"/></symbol>
+    <symbol id="i-pause-fill" viewBox="0 0 16 16"><path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5m5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5"/></symbol>
+    <symbol id="i-stop-fill" viewBox="0 0 16 16"><path d="M5 3.5h6A1.5 1.5 0 0 1 12.5 5v6a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 11V5A1.5 1.5 0 0 1 5 3.5"/></symbol>
+</svg>
+<dialog id="shortcutsDialog" class="shortcuts-dialog" aria-labelledby="shortcutsTitle">
+    <h5 id="shortcutsTitle">Keyboard shortcuts</h5>
+    <table class="table table-sm"><tbody id="shortcutsList"></tbody></table>
+    <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" id="shortcutsOn" checked>
+        <label class="form-check-label" for="shortcutsOn">Single-key shortcuts on</label>
+    </div>
+    <form method="dialog"><button class="btn btn-primary btn-sm">Close</button></form>
+</dialog>
 <footer th:replace="~{fragment::footer}"></footer>
-<script type="text/javascript" th:src="@{/js/common-draw-ship.js}"></script>
-<script th:inline="javascript">
-
-    // Ship palette, handed down from the Models enum rather than read out of a ModelsOfShips
-    // object that only exists in chart-script.js - a file this page does not load. Reaching for it
-    // threw, which killed the drawing loop below on its first coloured track.
-    const SHIP_COLORS = /*[[${shipColors}]]*/ {};
-
-    document.getElementById("resetButton").addEventListener("click", function () {
-        console.log("Click!");
-        const form = document.getElementById('trackForm');
-        // Clear text inputs, checkboxes, and radios
-        form.querySelectorAll('input').forEach(input => {
-            if (input.type === 'text' || input.type === 'radio' || input.type === 'checkbox') {
-                input.value = '';
-                input.checked = false;
-            }
-        });
-
-        // Submit the form
-        form.submit();
-    });
-
-    let mapItems = /*[[${trackMap}]]*/ null;
-    if (mapItems === null) {
-        mapItems = {};
-    }
-
-    // Loop through the map and log both keys and values
-    for (let key in mapItems) {
-        if (mapItems.hasOwnProperty(key)) {
-            let values = mapItems[key]; // Access the values (arrays in this case)
-            let points = [];
-            let scaledPoints = [];
-
-            for (let i = 0; i < values.length; i++) {
-                let item = values[i];
-                const point = {x: item.modelTrack.positionX, y: item.modelTrack.positionY};
-                points.push(point);
-            }
-            // Get the canvas element and its context
-            const canvas = document.getElementById('myCanvas');
-            const ctx = canvas.getContext('2d');
-            console.log("Points:");
-            console.log(points);
-            for (let i = 0; i < points.length; i++) {
-                scaledPoints[i] = getScaledPointsNew(points[i].x, points[i].y)
-            }
-            console.log("Scaled points:");
-            console.log(scaledPoints);
-
-            ctx.beginPath();
-            if (scaledPoints.length > 1) {
-                // Move to the first point
-                ctx.moveTo(scaledPoints[0].x, scaledPoints[0].y);
-
-                // Draw lines between the points
-                for (let i = 1; i < points.length; i++) {
-                    if (scaledPoints[i - 1].x !== scaledPoints[i].x && scaledPoints[i - 1].y !== scaledPoints[i].y) {
-                        ctx.lineTo(scaledPoints[i].x, scaledPoints[i].y);
-                    }
-                }
-
-                // Set stroke style and draw the line
-                const colorFromId = SHIP_COLORS[key];
-                ctx.strokeStyle = colorFromId == null ? 'black' : colorFromId;
-                ctx.lineWidth = 2;
-                ctx.stroke();
-            }
-        }
-    }
-</script>
+<script type="text/javascript" th:src="@{/js/konva-10_3_2/konva.min.js}"></script>
+<script type="text/javascript" th:src="@{/flatpickr/flatpickr.min.js}"></script>
+<script type="text/javascript" th:src="@{/js/common/ship-geometry.js}"></script>
+<script type="text/javascript" th:src="@{/js/common/map-image.js}"></script>
+<script type="text/javascript" th:src="@{/js/tracks-draw.js}"></script>
+<script type="text/javascript" th:src="@{/js/tracks-script.js}"></script>
 </body>
 </html>

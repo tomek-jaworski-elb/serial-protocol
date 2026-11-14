@@ -1,5 +1,6 @@
 package com.jaworski.serialprotocol;
 
+import com.jaworski.serialprotocol.configuration.TracksProperties;
 import com.jaworski.serialprotocol.service.StartUp;
 import com.jaworski.serialprotocol.udp.server.UdpProperties;
 import org.springframework.boot.SpringApplication;
@@ -10,7 +11,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @EnableScheduling
 @SpringBootApplication
-@EnableConfigurationProperties(UdpProperties.class)
+@EnableConfigurationProperties({UdpProperties.class, TracksProperties.class})
 public class SerialProtocolApplication {
 
     public static void main(String[] args) {

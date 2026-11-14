@@ -9,6 +9,7 @@ Files involved:
 |---|---|
 | `src/main/resources/templates/chart.html` | View template, Konva container, zoom control buttons |
 | `src/main/resources/static/js/chart-script.js` | Konva stage, layers, WebSocket handling, zoom/pan/pinch |
+| `src/main/resources/static/js/common/map-image.js` | `MAP_WIDTH` / `MAP_HEIGHT`, `loadMapImage()` (shared with `/tracks`) |
 | `src/main/resources/static/css/chart.css` | Container sizing, zoom controls overlay |
 | `src/main/resources/static/img/MapaSilm_2666x4000.{avif,webp,jpg}` | Lake chart raster in three formats |
 
@@ -24,7 +25,7 @@ layer. Layer order (bottom to top):
 4. `tooltipLayer` — ship info tooltip
 
 Ships, tracks, and calibration triangles live in **map coordinates**
-(2666 × 4000 px, constants `MAP_WIDTH` / `MAP_HEIGHT`). Zooming and panning
+(2666 × 4000 px, constants `MAP_WIDTH` / `MAP_HEIGHT` in `common/map-image.js`). Zooming and panning
 transform the whole stage, so ship positions and proportions relative to the
 map never change.
 
@@ -34,7 +35,7 @@ inside `.map-wrapper`, not children of it.
 
 ## Map image formats
 
-The map is loaded by `loadMapImage()` with a fallback chain:
+The map is loaded by `loadMapImage()` (`common/map-image.js`) with a fallback chain:
 
 1. `MapaSilm_2666x4000.avif` (~109 KB) — all modern browsers (Safari ≥ 16.4)
 2. `MapaSilm_2666x4000.webp` (~143 KB) — Safari ≥ 14, legacy Android
@@ -108,18 +109,19 @@ Rules enforced by `clampScale()` and `clampStagePosition()`:
 ## Ship silhouettes and calibration
 
 Ship positions arrive over WebSocket (`/json`) in model coordinates and are
-converted to map pixels by `getScaledPoints()` using the calibration constants
+converted to map pixels by `getScaledPoints()` (`static/js/common/ship-geometry.js`) using the calibration constants
 (`mapa_x = 2.407`, static shifts). **Do not change these constants** unless
 the map raster itself changes — they map real-world positions to pixels on
-the 2666 × 4000 chart.
+the 2666 × 4000 chart. Positions are real lake metres; the chart's own "Nm" bar
+is a 1:24 prototype mile (1852 / 24 = 77.17 m = 185.7 px), not a real one.
 
-Silhouettes are drawn with a constant scale (`modelsConfig[id].scale`) in map
+Silhouettes are drawn with a constant scale (`SHIP_HULLS[id].scale`, shared geometry file) in map
 coordinates, so a ship keeps the same size relative to the chart at every zoom
 level. **Do not add any zoom-dependent scaling here** — a ship that grows and
 shrinks against the chart it sits on is the thing this rule exists to prevent,
 and it is a functional requirement. `ChartShipListTest`
 (`theHullIsSizedFromTheChartAndNotFromTheZoom`) parses this rule out of
-`chart-script.js` and fails if hull geometry is ever built from the live stage
+`chart-script.js` and `ship-geometry.js` and fails if hull geometry is ever built from the live stage
 scale — the temptation is real, because the LOD arrow four lines away is
 deliberately given a constant on-screen size.
 

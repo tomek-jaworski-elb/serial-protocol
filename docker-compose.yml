@@ -10,6 +10,7 @@ services:
             - rs.message_delimiter=13,10  # 10 = \n, 13 = \r
             - ws.heartbeat.interval=2000  # value in ms > 1
             - ip.db-client=192.168.2.4:8085
+            - TRACKS_LOG_ZONE=UTC
         ports:
             - "8081:443"
         networks:
@@ -29,6 +30,8 @@ services:
             # - /dev/ttyACM0:/dev/ttyACM0   # USB CDC device, not the RS-232 port (rs.comports opens ttyS0); breaks container creation when absent
             - /dev:/dev
         privileged: true
+        # No `user:` here: the image's entrypoint starts as root, joins the group that owns the
+        # serial devices and then runs the app as aisuser.
         logging:
           driver: "json-file"
           options:

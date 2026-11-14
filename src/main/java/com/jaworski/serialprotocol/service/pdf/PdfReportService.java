@@ -878,8 +878,8 @@ public class PdfReportService {
      * @throws IOException       if the file is absent from the classpath
      * @throws DocumentException if OpenPDF cannot parse the font data
      */
-    private BaseFont loadBaseFont(String fileName) throws IOException, DocumentException {
-        try (InputStream is = getClass().getResourceAsStream("/fonts/" + fileName)) {
+    static BaseFont loadBaseFont(String fileName) throws IOException, DocumentException {
+        try (InputStream is = PdfReportService.class.getResourceAsStream("/fonts/" + fileName)) {
             if (is == null) {
                 throw new IOException("Font file not found on classpath: /fonts/" + fileName);
             }
