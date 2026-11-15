@@ -48,13 +48,12 @@
 }
 
 /*
- * JS resizing note (chart-script.js): fitStageToContainer() reacts to
- * window 'resize', which covers width changes (including the mobile/desktop
- * nav breakpoint) because those change the viewport width. It would NOT
- * catch container.clientWidth changing while the window stays the same width
- * (e.g. a future collapsible desktop sidebar) — that needs a ResizeObserver
- * on .canvas-container instead. Not needed today: the ship list sidebar is
- * always visible at a fixed width once introduced.
+ * JS resizing note (chart-script.js): fitStageToContainer() runs from a
+ * ResizeObserver on .canvas-container, not from window 'resize', so any change
+ * of this box refits the stage: a rotation (where iOS Safari may report a stale
+ * window size), the mobile/desktop breakpoint, or a container change while the
+ * window keeps its size. Keep the box sized by CSS alone, never by its content,
+ * or the observer would feed back into itself.
  */
 
 .map-controls {

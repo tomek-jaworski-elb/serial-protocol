@@ -473,6 +473,53 @@ class ChartShipListTest {
                 .contains("if (!box.checked) settleShipsNow();");
     }
 
+    /**
+     * Rotating an iPad left the stage at its pre-rotation size: iOS Safari may report a stale
+     * window size, or none, so a refit driven by window {@code resize} measured too early. The
+     * stage must follow its container's own box. A tripwire on the source, not a behaviour test.
+     */
+    @Test
+    void theChartIsResizedFromItsContainerNotTheWindow() throws Exception {
+        assertThat(scriptSource())
+                .as("the container's box drives the refit")
+                .contains("new ResizeObserver(throttledResizeKonvaOverlay).observe(container)")
+                .as("no second, window-driven refit path")
+                .doesNotContain("addEventListener('resize'");
+    }
+
+    /**
+     * The sheet's {@code .open} class survives a switch to the sidebar layout, so an iPad rotated
+     * to landscape and back reopened the sheet, backdrop and all, over the map. Crossing the
+     * breakpoint must close it.
+     */
+    @Test
+    void crossingTheLargeBreakpointClosesTheShipList() throws Exception {
+        assertThat(scriptSource())
+                .as("the same lg breakpoint as chart.css and d-lg-none")
+                .contains("const lgLayout = window.matchMedia('(min-width: 992px)');")
+                .contains("const closeShipList = () => setShipListOpen(false);")
+                .as("registered on that query, with the pre-Safari-14 fallback")
+                .contains("lgLayout.addEventListener('change', closeShipList)")
+                .contains("lgLayout.addListener(closeShipList)");
+    }
+
+    /**
+     * A pinch interrupted by a rotation could leave a stale finger distance, which made the next
+     * pinch jump the zoom. Every two-finger touch must start the pinch afresh, without relying on
+     * which event (touchend or touchcancel) iOS sends when it cancels the gesture.
+     */
+    @Test
+    void aNewPinchStartsFromAFreshDistance() throws Exception {
+        String script = scriptSource();
+        int start = script.indexOf("function bindStagePinch");
+        assertThat(start).as("bindStagePinch").isNotNegative();
+        String body = script.substring(start, script.indexOf("\n}", start));
+        int touchStart = body.indexOf("addEventListener('touchstart'");
+        assertThat(touchStart).as("the pinch's touchstart handler").isNotNegative();
+        assertThat(body.substring(touchStart, body.indexOf("});", touchStart)))
+                .contains("if (e.touches.length >= 2) lastPinchDist = 0;");
+    }
+
     @Test
     void everyRowHasALedDot() throws Exception {
         for (Models ship : Models.values()) {

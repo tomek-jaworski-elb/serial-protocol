@@ -1146,6 +1146,9 @@ function bindStagePinch() {
     // on the Konva event bus here silently drops every pinch gesture that starts as (or
     // overlaps with) a single-finger drag — the normal way real pinch gestures begin.
     container.addEventListener('touchstart', (e) => {
+        // A new two-finger touch always starts the pinch from a fresh distance, whatever an
+        // interrupted gesture (a rotation with a finger down) left behind.
+        if (e.touches.length >= 2) lastPinchDist = 0;
         if (e.touches.length >= 2 && konvaStage.isDragging()) {
             konvaStage.stopDrag();
         }
@@ -1255,7 +1258,7 @@ function bindMapControls() {
     }
 }
 
-// Throttling dla resize okna
+// Debounced refit: during a rotation or a window drag the container changes every frame.
 let resizeKonvaTimeout = null;
 function throttledResizeKonvaOverlay() {
     if (resizeKonvaTimeout) clearTimeout(resizeKonvaTimeout);
@@ -1264,7 +1267,11 @@ function throttledResizeKonvaOverlay() {
         resizeKonvaTimeout = null;
     }, 100);
 }
-window.addEventListener('resize', throttledResizeKonvaOverlay);
+// The container's own box, not window 'resize': iOS Safari may report a stale size, or none,
+// on rotation, which left the stage at the old size (a dead strip or a clipped chart). The
+// observer fires after layout whenever the box really changes, whatever changed it. No loop:
+// the box size comes from CSS, never from the canvas inside it.
+new ResizeObserver(throttledResizeKonvaOverlay).observe(container);
 
 // Ship list bottom sheet (mobile) / sidebar (desktop) toggle. Deliberately not
 // Bootstrap's offcanvas component: that would need its own copy of the list
@@ -1293,6 +1300,14 @@ function bindShipListToggle() {
     backdrop?.addEventListener('click', () => setShipListOpen(false));
 }
 bindShipListToggle();
+
+// The sheet's .open class outlives a switch to the sidebar layout, so rotating an iPad to
+// landscape and back reopened the sheet with its backdrop over the map. 992px is Bootstrap's
+// lg breakpoint, the one chart.css and d-lg-none use.
+const lgLayout = window.matchMedia('(min-width: 992px)');
+const closeShipList = () => setShipListOpen(false);
+// addListener: Safari before 14 has no MediaQueryList.addEventListener.
+if (lgLayout.addEventListener) lgLayout.addEventListener('change', closeShipList); else lgLayout.addListener(closeShipList);
 
 // Raw diagnostics line (#textField) — hidden by default (Faza 5), shown on demand.
 // Its content is still updated regardless of visibility (see ws.onmessage), this
