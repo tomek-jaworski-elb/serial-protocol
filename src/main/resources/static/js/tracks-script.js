@@ -9,6 +9,7 @@ const BUTTON_ZOOM = 1.3;   // +/- button step, as on /chart
 const MAX_SCALE = 4;
 const A4_RATIO = 297 / 210; // height / width of the portrait page
 const SCALE_BAR_MAX_PX = 120;
+const wideLayout = window.matchMedia('(min-width: 992px) and (orientation: landscape), (min-width: 992px) and (pointer: fine)'); // tracks.css: the panel beside the map, not under it
 
 // ---------------------------------------------------------------- time range
 
@@ -129,10 +130,28 @@ function setView(scale, pos) {
 
 // resize to the container; resetView fits the whole map
 function fitStageToContainer(resetView) {
-    konvaStage.width(container.clientWidth);
-    konvaStage.height(container.clientHeight);
+    const w = container.clientWidth;
+    const h = container.clientHeight;
+    if (!w || !h) return; // hidden or collapsed: keep the last good size
+    konvaStage.width(w);
+    konvaStage.height(h);
     minScale = Math.min(konvaStage.width() / MAP_WIDTH, konvaStage.height() / MAP_HEIGHT);
     setView(resetView ? minScale : clampScale(konvaStage.scaleX()), konvaStage.position());
+}
+
+// container resized: keep the whole map whole, otherwise keep the map point under the viewport centre
+function refitOnResize() {
+    const w = container.clientWidth;
+    const h = container.clientHeight;
+    if (!w || !h || (w === konvaStage.width() && h === konvaStage.height())) return;
+    const scale = konvaStage.scaleX();
+    const wasWhole = Math.abs(scale - minScale) < 1e-6;
+    const centre = {x: (konvaStage.width() / 2 - konvaStage.x()) / scale, y: (konvaStage.height() / 2 - konvaStage.y()) / scale};
+    konvaStage.stopDrag(); // a drag in flight would keep the old bounds
+    fitStageToContainer(wasWhole);
+    if (wasWhole) return;
+    const s = clampScale(scale);
+    setView(s, {x: w / 2 - centre.x * s, y: h / 2 - centre.y * s});
 }
 
 // zoom keeping the given viewport point fixed
@@ -388,7 +407,7 @@ function updateButtons() {
     clearBtn.disabled = loading || (!drawn && resultMessage === '');
     printBtn.disabled = loading || !drawn;
     drawHint.hidden = drawn;
-    for (const control of [playBtn, stopBtn, resetBtn, scrubber]) control.disabled = !drawn;
+    for (const control of [playBtn, stopBtn, resetBtn, backBtn, forwardBtn, scrubber]) control.disabled = !drawn;
 }
 
 function setLoading(on) {
@@ -444,10 +463,19 @@ function showResult(result, requestedIds, from, to) {
     setResultMessage(lines(partialMessage(result.coverage, from, to), note), note ? 'warning' : 'info');
 }
 
+// Below the side layout the panel sits under the map: after a plain result bring the replay bar up to just
+// above the bottom nav (scroll-margin-bottom in tracks.css), otherwise the message that says what went wrong.
+function revealResult() {
+    if (wideLayout.matches) return;
+    if (drawn && resultKind === 'info') document.querySelector('.replay-bar').scrollIntoView({block: 'end'});
+    else messageBox.parentElement.scrollIntoView();
+}
+
 async function refresh() {
     const ids = shipBoxes.filter((box) => box.checked).map((box) => Number(box.value));
     if (ids.length === 0) {
         setResultMessage('Choose at least one ship.', 'warning');
+        revealResult();
         updateButtons();
         return;
     }
@@ -469,6 +497,7 @@ async function refresh() {
         setResultMessage('The track query failed.', 'danger');
     } finally {
         setLoading(false);
+        revealResult();
     }
 }
 
@@ -480,15 +509,19 @@ function clear() {
 
 // ---------------------------------------------------------------- replay
 
+const SKIP_MS = 10000; // the -10 s / +10 s buttons and the J / L keys
 const MAX_STEP_MS = 250; // a frame step is capped, so a tab coming back from the background does not jump
 const playBtn = document.getElementById('playBtn');
 const stopBtn = document.getElementById('stopBtn');
 const resetBtn = document.getElementById('resetBtn');
+const backBtn = document.getElementById('backBtn');
+const forwardBtn = document.getElementById('forwardBtn');
 const scrubber = document.getElementById('replayScrubber');
 let replayStart = 0; // epoch ms: first and last point of the drawn tracks
 let replayEnd = 0;
 let clockT = 0;      // the replay clock (epoch ms), also while no replay is shown
 let playing = false;
+let wasPlaying = false; // playing when a scrubber drag began: resumed when the pointer is released
 let lastFrameAt = 0;
 let animation = 0;
 
@@ -519,6 +552,7 @@ function seek(time) {
 
 function pause() {
     playing = false;
+    wasPlaying = false; // Stop/Reset/end of replay during a drag must not resume afterwards
     cancelAnimationFrame(animation);
     showReplayState();
 }
@@ -556,6 +590,24 @@ function bindReplay() {
     playBtn.addEventListener('click', () => playing ? pause() : play());
     stopBtn.addEventListener('click', stop);
     resetBtn.addEventListener('click', resetReplay);
+    backBtn.addEventListener('click', () => goTo(clockT - SKIP_MS));
+    forwardBtn.addEventListener('click', () => goTo(clockT + SKIP_MS));
+    let scrubPointer = null; // only the finger that grabbed the scrubber ends the drag, not a second one lifting
+    scrubber.addEventListener('pointerdown', (e) => {
+        if (scrubPointer !== null) return; // a second finger must not take over the drag or drop the pending resume
+        const was = playing;
+        pause();
+        wasPlaying = was;
+        scrubPointer = e.pointerId;
+    });
+    const endScrub = (e) => {
+        if (e.pointerId !== scrubPointer) return;
+        scrubPointer = null;
+        if (wasPlaying && clockT < replayEnd) play(); // released at the end: stay there, play() would restart from the start
+        wasPlaying = false;
+    };
+    window.addEventListener('pointerup', endScrub, true);
+    window.addEventListener('pointercancel', endScrub, true);
     scrubber.addEventListener('input', () => seek(Math.min(replayStart + Number(scrubber.value) * 1000, replayEnd)));
     // APG slider: Page Up/Down move a minute
     scrubber.addEventListener('keydown', (e) => {
@@ -688,7 +740,7 @@ const shortcutsDialog = document.getElementById('shortcutsDialog');
 const shortcutsOn = document.getElementById('shortcutsOn');
 let shortcutsEnabled = true;
 
-const press = (btn) => !btn.disabled && (btn.click(), true);
+const press = (btn) => !btn.disabled && btn.getClientRects().length > 0 && (btn.click(), true); // a hidden button (Print frame on touch) must not act
 const goTo = (time) => !scrubber.disabled && (seek(Math.min(Math.max(time, replayStart), replayEnd)), true);
 const nudgeSpeed = (step) => (speedSlider[step](), speedSlider.dispatchEvent(new Event('input')), true);
 
@@ -696,8 +748,8 @@ const nudgeSpeed = (step) => (speedSlider[step](), speedSlider.dispatchEvent(new
 const SHORTCUTS = [
     {keys: [' ', 'k', 'K'], label: 'Space, K', what: 'Play / pause', char: true, run: () => press(playBtn)},
     {keys: ['s', 'S'], label: 'S', what: 'Stop', char: true, run: () => press(stopBtn)},
-    {keys: ['j', 'J'], label: 'J', what: 'Back 10 s', char: true, repeat: true, run: () => goTo(clockT - 10000)},
-    {keys: ['l', 'L'], label: 'L', what: 'Forward 10 s', char: true, repeat: true, run: () => goTo(clockT + 10000)},
+    {keys: ['j', 'J'], label: 'J', what: 'Back 10 s', char: true, repeat: true, run: () => goTo(clockT - SKIP_MS)},
+    {keys: ['l', 'L'], label: 'L', what: 'Forward 10 s', char: true, repeat: true, run: () => goTo(clockT + SKIP_MS)},
     {keys: ['Home'], label: 'Home', what: 'Start', run: () => goTo(replayStart)},
     {keys: ['End'], label: 'End', what: 'End', run: () => goTo(replayEnd)},
     {label: 'Arrows, PgUp, PgDn', what: 'On the focused time slider: 1 s, 1 min'},
@@ -786,6 +838,7 @@ function initStage() {
 
     fitStageToContainer(true);
     bindMapControls();
+    bindStagePinch(konvaStage, container, zoomAt);
     bindPrintFrame();
 }
 
@@ -800,8 +853,10 @@ bindReplay();
 bindShortcuts();
 showReplayState();
 
+// The container's own box, not window 'resize', as on /chart: iOS Safari may report a stale size,
+// or none, on rotation. No loop: the box size comes from CSS, never from the canvas inside it.
 let resizeTimeout = null;
-window.addEventListener('resize', () => {
+new ResizeObserver(() => {
     clearTimeout(resizeTimeout);
-    resizeTimeout = setTimeout(() => fitStageToContainer(false), 100);
-});
+    resizeTimeout = setTimeout(refitOnResize, 100);
+}).observe(container);

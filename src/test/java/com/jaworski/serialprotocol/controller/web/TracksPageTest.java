@@ -10,6 +10,7 @@ import com.jaworski.serialprotocol.dto.Models;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -132,5 +133,78 @@ class TracksPageTest {
         assertThat(html).contains("Times in <span>Europe/Warsaw</span>");
         assertThat(html).containsPattern("data-now=\"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\"");
         assertThat(html).containsPattern("id=\"gapInput\"[^>]*value=\"10\"");
+    }
+
+    /** Guard: the shared pinch has to be defined before the page script that calls it, on both pages. */
+    @Test
+    void theSharedPinchScriptLoadsBeforeThePageScript() throws Exception {
+        String chart = mockMvc.perform(get("/chart")).andReturn().getResponse().getContentAsString();
+        assertThat(tracksHtml().indexOf("/js/common/stage-pinch.js")).as("/tracks").isPositive()
+                .isLessThan(tracksHtml().indexOf("/js/tracks-script.js"));
+        assertThat(chart.indexOf("/js/common/stage-pinch.js")).as("/chart").isPositive()
+                .isLessThan(chart.indexOf("/js/chart-script.js"));
+        assertThat(MarkupSupport.staticSource("js/tracks-script.js")).as("/tracks binds the pinch")
+                .containsPattern("bindStagePinch\\(\\s*konvaStage\\s*,");
+    }
+
+    /** Guard: the stage follows its box through a ResizeObserver, not the window, or a rotation leaves it stale. */
+    @Test
+    void theStageFollowsItsBoxNotTheWindow() throws Exception {
+        String script = MarkupSupport.staticSource("js/tracks-script.js");
+        assertThat(script).doesNotContainPattern("window\\s*\\.addEventListener\\(\\s*'resize'")
+                .containsPattern("new\\s+ResizeObserver\\([\\s\\S]*?\\)\\s*\\.observe\\(\\s*container\\s*\\)");
+    }
+
+    /**
+     * Guard: a hidden button (Print frame on touch) must not be pressed by its key; Refresh scrolls its result into
+     * view, the replay bar stopping above the bottom nav; a scrub ends only for the finger that started it, a second
+     * finger cannot take it over, and a scrub released at the end does not restart the replay.
+     */
+    @Test
+    void aHiddenButtonIsNotPressedAndTheResultIsRevealed() throws Exception {
+        String script = MarkupSupport.staticSource("js/tracks-script.js");
+        assertThat(script).containsPattern("const\\s+press\\s*=[^\\n]*getClientRects\\(\\)");
+        int start = script.indexOf("async function refresh");
+        assertThat(start).as("refresh").isNotNegative();
+        assertThat(script.substring(start, script.indexOf("\n}", start))).contains("revealResult()");
+        assertThat(MarkupSupport.staticSource("css/tracks.css")).containsPattern("scroll-margin-bottom:\\s*var\\(--stack-chrome\\)");
+        assertThat(script).containsPattern("e\\.pointerId\\s*!==\\s*scrubPointer")
+                .containsPattern("if\\s*\\(\\s*scrubPointer\\s*!==\\s*null\\s*\\)\\s*return")
+                .containsPattern("wasPlaying\\s*&&\\s*clockT\\s*<\\s*replayEnd");
+    }
+
+    @Test
+    void theSkipButtonsAreRendered() throws Exception {
+        assertThat(tracksHtml()).containsPattern("id=\"backBtn\"[^>]*>\\s*-10 s\\s*<")
+                .containsPattern("id=\"forwardBtn\"[^>]*>\\s*\\+10 s\\s*<");
+    }
+
+    /** Guard: the script and the stylesheet must agree on when the panel sits beside the map. */
+    @Test
+    void theSideLayoutMediaQueryIsTheSameInScriptAndStylesheet() throws Exception {
+        Matcher js = Pattern.compile("matchMedia\\('([^']+)'\\)")
+                .matcher(MarkupSupport.staticSource("js/tracks-script.js"));
+        assertThat(js.find()).as("matchMedia literal in tracks-script.js").isTrue();
+        Matcher css = Pattern.compile("@media\\s+([^{]+?)\\s*\\{")
+                .matcher(MarkupSupport.staticSource("css/tracks.css"));
+        assertThat(css.find()).as("first @media in tracks.css").isTrue();
+        assertThat(css.group(1)).isEqualTo(js.group(1));
+    }
+
+    /** Guard (hull geometry): hulls are sized by hull.scale, never a stage scale; the fixed-size marker is replay-only. */
+    @Test
+    void hullsUseTheirOwnScaleAndOnlyTheReplayDrawsTheMarker() throws Exception {
+        String draw = MarkupSupport.staticSource("js/tracks-draw.js");
+        int hulls = draw.indexOf("function hullsSceneFunc");
+        int silhouettes = draw.indexOf("function silhouettesSceneFunc");
+        assertThat(hulls).isNotNegative();
+        assertThat(silhouettes).isNotNegative();
+        String hullsBody = draw.substring(hulls, draw.indexOf("\n}", hulls));
+        String silhouettesBody = draw.substring(silhouettes, draw.indexOf("\n}", silhouettes));
+        assertThat(hullsBody).containsPattern("computeShipVerticesForKonva\\([^)]*\\bhull\\.scale\\b")
+                .as("the live zoom (absScale) must not reach the hull geometry")
+                .doesNotContainPattern("computeShipVerticesForKonva\\([^;]*absScale")
+                .contains("markerRadius");
+        assertThat(silhouettesBody).doesNotContain("markerRadius");
     }
 }
