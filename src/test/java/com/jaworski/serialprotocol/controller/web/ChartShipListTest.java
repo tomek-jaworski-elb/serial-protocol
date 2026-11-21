@@ -510,14 +510,19 @@ class ChartShipListTest {
      */
     @Test
     void aNewPinchStartsFromAFreshDistance() throws Exception {
-        String script = scriptSource();
-        int start = script.indexOf("function bindStagePinch");
+        String pinch = MarkupSupport.staticSource("js/common/stage-pinch.js");
+        int start = pinch.indexOf("function bindStagePinch");
         assertThat(start).as("bindStagePinch").isNotNegative();
-        String body = script.substring(start, script.indexOf("\n}", start));
+        String body = pinch.substring(start, pinch.indexOf("\n}", start));
         int touchStart = body.indexOf("addEventListener('touchstart'");
         assertThat(touchStart).as("the pinch's touchstart handler").isNotNegative();
         assertThat(body.substring(touchStart, body.indexOf("});", touchStart)))
                 .contains("if (e.touches.length >= 2) lastPinchDist = 0;");
+
+        // The chart only calls the shared pinch; a private copy would drift from /tracks.
+        assertThat(scriptSource()).contains("bindStagePinch(konvaStage, container, zoomStageAtPoint)")
+                .doesNotContain("function bindStagePinch")
+                .doesNotContain("lastPinchDist");
     }
 
     @Test

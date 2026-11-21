@@ -8,7 +8,8 @@ Files involved:
 | File | Role |
 |---|---|
 | `src/main/resources/templates/chart.html` | View template, Konva container, zoom control buttons |
-| `src/main/resources/static/js/chart-script.js` | Konva stage, layers, WebSocket handling, zoom/pan/pinch |
+| `src/main/resources/static/js/chart-script.js` | Konva stage, layers, WebSocket handling, zoom/pan, calls `bindStagePinch()` |
+| `src/main/resources/static/js/common/stage-pinch.js` | `bindStagePinch()`, two-finger pinch (shared with `/tracks`) |
 | `src/main/resources/static/js/common/map-image.js` | `MAP_WIDTH` / `MAP_HEIGHT`, `loadMapImage()` (shared with `/tracks`) |
 | `src/main/resources/static/css/chart.css` | Container sizing, zoom controls overlay |
 | `src/main/resources/static/img/MapaSilm_2666x4000.{avif,webp,jpg}` | Lake chart raster in three formats |
@@ -84,7 +85,7 @@ Three things in this document change while that mode is on, so read them togethe
 |---|---|
 | Mouse wheel | `bindStageZoom()` — zoom towards the cursor position |
 | Drag | stage `draggable: true` with `dragBoundFunc` clamping |
-| Pinch (mobile) | `bindStagePinch()` — two-finger `touchmove` handling; every two-finger `touchstart` starts the pinch from a fresh distance, so a gesture interrupted by a rotation cannot jump the next one |
+| Pinch (mobile) | `bindStagePinch()` in `common/stage-pinch.js` (shared with `/tracks`) — two-finger `touchmove` handling; every two-finger `touchstart` starts the pinch from a fresh distance, so a gesture interrupted by a rotation cannot jump the next one |
 | Container resize / device rotation | a `ResizeObserver` on `.canvas-container` (debounced 100 ms) refits the stage to the container's own box, not `window` `resize`. With the window listener, a container that changed size without a window `resize` kept the stage at its old size (a dead strip or a clipped chart; reproduced in Chrome). That iOS Safari produces this on rotation, by reporting a stale size or none, is the suspected cause of the iPad report and is not yet confirmed on a device. Crossing the 992 px breakpoint also closes the ship list sheet, which otherwise reopened over the map after an iPad was rotated to landscape and back |
 | Buttons `+` / `−` / reset | `bindMapControls()` — zoom to viewport center. Reset restores the initial view, except while following, where it restores the camera instead (optimal zoom, ship re-centred) |
 | Double click / double tap | resets the view to the initial one; while following it leaves the mode first, then fits |

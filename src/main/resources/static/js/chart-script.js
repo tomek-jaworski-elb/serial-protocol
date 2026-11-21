@@ -1137,50 +1137,6 @@ function bindStageZoom() {
     });
 }
 
-// two-finger pinch zoom (mobile)
-let lastPinchDist = 0;
-
-function bindStagePinch() {
-    // Native DOM listeners on `container`, not konvaStage.on(): Konva does not reliably
-    // dispatch its own 'touchstart'/'touchmove' bus events while a drag is active, so relying
-    // on the Konva event bus here silently drops every pinch gesture that starts as (or
-    // overlaps with) a single-finger drag — the normal way real pinch gestures begin.
-    container.addEventListener('touchstart', (e) => {
-        // A new two-finger touch always starts the pinch from a fresh distance, whatever an
-        // interrupted gesture (a rotation with a finger down) left behind.
-        if (e.touches.length >= 2) lastPinchDist = 0;
-        if (e.touches.length >= 2 && konvaStage.isDragging()) {
-            konvaStage.stopDrag();
-        }
-    }, {passive: true});
-
-    container.addEventListener('touchmove', (e) => {
-        const touch1 = e.touches[0];
-        const touch2 = e.touches[1];
-        if (!touch1 || !touch2) return;
-        e.preventDefault();
-        if (konvaStage.isDragging()) {
-            konvaStage.stopDrag();
-        }
-        const dist = Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
-        if (!lastPinchDist) {
-            lastPinchDist = dist;
-            return;
-        }
-        const rect = container.getBoundingClientRect();
-        const pointer = {
-            x: (touch1.clientX + touch2.clientX) / 2 - rect.left,
-            y: (touch1.clientY + touch2.clientY) / 2 - rect.top
-        };
-        zoomStageAtPoint(pointer, konvaStage.scaleX() * (dist / lastPinchDist));
-        lastPinchDist = dist;
-    }, {passive: false});
-
-    container.addEventListener('touchend', () => {
-        lastPinchDist = 0;
-    }, {passive: true});
-}
-
 // init Konva stage with map image as bottom layer
 function initKonvaStage() {
     // small mouse jitter on click must not start a stage drag (it would swallow ship clicks)
@@ -1223,7 +1179,7 @@ function initKonvaStage() {
 
     fitStageToContainer(true);
     bindStageZoom();
-    bindStagePinch();
+    bindStagePinch(konvaStage, container, zoomStageAtPoint);
     bindMapControls();
 
     // double click / double tap resets the view to the whole map
