@@ -2,6 +2,8 @@ package com.jaworski.serialprotocol.controller.web;
 
 import org.springframework.core.io.ClassPathResource;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -48,5 +50,10 @@ final class MarkupSupport {
     static boolean staticAssetExists(String absolutePath) {
         String path = absolutePath.startsWith("/") ? absolutePath.substring(1) : absolutePath;
         return new ClassPathResource("static/" + path).exists();
+    }
+
+    /** The source of a file under {@code static/}, e.g. {@code js/tracks-script.js}. */
+    static String staticSource(String path) throws IOException {
+        return new ClassPathResource("static/" + path).getContentAsString(StandardCharsets.UTF_8);
     }
 }

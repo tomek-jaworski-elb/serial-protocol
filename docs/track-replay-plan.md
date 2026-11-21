@@ -1,6 +1,6 @@
 # Track replay (`/tracks`) — implementation plan
 
-> Status: stages 1–7 implemented; stage 8 (captain names, 2026-11-11) implemented; stage 10 (readable buttons and replay, keyboard shortcuts, 2026-11-12) implemented; (stage 7, desktop browsers, 2026-11-11: popup-safe Print, automated rollover test; Safari and Edge await the owner's checklist). Reference: [`track-replay.md`](track-replay.md).
+> Status: stages 1–7 implemented; stage 8 (captain names, 2026-11-11) implemented; stage 10 (readable buttons and replay, keyboard shortcuts, 2026-11-12) implemented; (stage 7, desktop browsers, 2026-11-11: popup-safe Print, automated rollover test; Safari and Edge await the owner's checklist); phones and tablets (2026-11-16) implemented, verified in Chromium emulation only, real devices await the owner's checklist in `track-replay.md`. Reference: [`track-replay.md`](track-replay.md).
 > The existing `/tracks` implementation may be replaced entirely.
 
 ## 1. Requirements (owner)
@@ -60,7 +60,7 @@ Drawing tracks must not delay, block or lose a single frame of live ingest or it
 |---|---|
 | Language | English throughout (page and PDF), like the rest of the app. Dates `dd/MM/yyyy`. |
 | Server | Linux only: Docker (JVM in UTC) or a plain JAR (host zone). |
-| Clients | Desktop only (mouse, wheel), current Chrome, Edge, Firefox and Safari on Windows, macOS and Linux. Viewers sit in any zone; every time on the page and in the PDF is in the display zone, never the browser's. Tablets and phones: the page renders and pans, nothing more is promised. |
+| Clients | Current Chrome, Edge, Firefox and Safari on Windows, macOS and Linux (mouse, wheel). Viewers sit in any zone; every time on the page and in the PDF is in the display zone, never the browser's. Phones and tablets too (touch: drag, pinch, buttons; panel beside the map on wide landscape or fine pointer, otherwise stacked; Print desktop only). |
 | Menu | `Tracks` in the main bar right after `Chart`, desktop and mobile variants of `fragment.html`. |
 | Ships | Checkboxes for all 6 models with colour swatch and name, built from `Models`. None selected by default. After a draw, a ship with no points gets a "no data" note. |
 | Defaults | Range = last hour up to now (display zone). Nothing is drawn until Refresh. |

@@ -26,7 +26,7 @@ them to an A4 PDF. Design decisions and stages: [`track-replay-plan.md`](track-r
 | `service/pdf/TrackPdfService` | The posted image plus metadata to one A4 portrait page (OpenPDF). |
 | `configuration/TracksProperties` | The `tracks.*` settings. |
 | `templates/tracks.html`, `static/js/tracks-script.js`, `tracks-draw.js`, `static/css/tracks.css` | Page, Konva stage, drawing, export. |
-| `static/js/common/ship-geometry.js`, `map-image.js` | Hull geometry and map loading, shared with `/chart`. |
+| `static/js/common/ship-geometry.js`, `map-image.js`, `stage-pinch.js` | Hull geometry, map loading and two-finger pinch, shared with `/chart`. |
 
 The log format is the storage format: rewording `MessageTranslator`'s log line breaks replay.
 
@@ -72,6 +72,12 @@ track lines in the range that did not parse — non-zero means the log format ch
   At most 5000 per drawing: above that the minimum period is raised and a message says so.
 - Messages say why a result is empty (no logs, no positions, future range) and when data covers only
   part of the range; `503` and other errors keep the previous drawing.
+- The stage follows `.canvas-container` through a `ResizeObserver`, not `window` `resize`. After a resize or rotation
+  the whole-map view stays the whole map; a zoomed view keeps its centre (clamped to the new minimum zoom, so a
+  rotation to a smaller map can end as the whole map).
+- On the stacked layout the panel is below the map, so Refresh scrolls its result into view (`revealResult()`): after
+  a plain result the replay bar, stopped just above the bottom nav (`scroll-margin-bottom`); after a warning or error
+  the message above the map.
 - Remembered in `localStorage`: ships, period, toggles, gap, replay speed. Range, frame, zoom and position start fresh.
 - Print: ~300 dpi JPEG of the area, line about 0.3 mm, dot about 0.8 mm, label about 2 mm; header with
   range and zone, colour legend and scale bar in full-scale nautical miles (`widthNm`: the area width in Nm of the 1:24 chart). Opens in a new tab.
@@ -115,7 +121,13 @@ selects, the Flatpickr calendar and the dialog are ignored. Single-character key
   longer than the gap field); the tracks and the static silhouettes are hidden (owner's decision, 2026-11-12).
   Only `replayLayer` is repainted per frame.
 - Play/Pause toggles, Stop rewinds (overlay stays), Reset removes the overlay, the scrubber seeks (also while playing).
-  Refresh and Clear reset the replay; Print always renders the static view (replay off during the export).
+  On touch devices the bar adds **-10 s** / **+10 s** buttons (the J / L keys do the same on a keyboard), and the replay
+  pauses while the scrubber is held and resumes on release if it was playing; only the finger that grabbed the
+  scrubber ends the drag, so a second finger lifting elsewhere does not resume it, and a second finger on the scrubber
+  does not take the drag over. Released at the very end, the replay stays there instead of restarting.
+- Refresh and Clear reset the replay; Print always renders the static view (replay off during the export).
+- A hull too small to see at the current zoom (shorter than twice the marker radius on screen) gets a dot of fixed
+  screen size on top, on every pointer, desktop included. Replay only: Print never replays, so it never prints it.
 - Measured (headless Chrome, 24 h x 6 ships at 1 Hz): 60 fps at fit zoom up to mid-range and at maximum zoom;
   about 43 fps at fit zoom with 90 % of the points played.
 
@@ -129,14 +141,32 @@ selects, the Flatpickr calendar and the dialog are ignored. Single-character key
 - History is bounded by `TRACKING_LOG_TOTAL_CAP` as well as `maxHistory`.
 - 24 h of six ships is about 500 k points; panning that in software rendering is about 10 fps.
 - Time labels overlap when zoomed out.
+- Landscape phone: the map is small (the stacked canvas has a 10 rem floor) and map plus bar fill the whole screen
+  above the bottom nav, so the message above the map is scrolled off after Refresh.
+- Notch / safe area in landscape: [niezweryfikowane].
+- Performance of a 24 h range (about 500 k points) on phones is not measured.
+- A portrait window of 992 px or more with a mouse keeps the side panel (the rule is `pointer: fine`), while `/chart`
+  has no orientation rule.
+- System text scaling (large fonts) is not accounted for in the bar's fixed 44 px rows.
 - The map raster is 2666 x 4000, so the background softens on a small print frame.
 
 ## Supported viewers
 
-Desktop Chrome, Edge, Firefox and Safari (current versions) on Windows, macOS and Linux. The server
-runs on Linux only (Docker or the JAR). Viewers may sit in any time zone: every time on the page
-and in the PDF is in the display zone (`tracks.display-zone`, Europe/Warsaw by default). Tablets
-and phones are not supported.
+Desktop Chrome, Edge, Firefox and Safari (current versions) on Windows, macOS and Linux, and phones and tablets
+(iOS Safari, Android Chrome). The server runs on Linux only (Docker or the JAR). Viewers may sit in any time zone:
+every time on the page and in the PDF is in the display zone (`tracks.display-zone`, Europe/Warsaw by default).
+
+- **Gestures:** one finger drags, two fingers pinch (`bindStagePinch()` in `static/js/common/stage-pinch.js`, shared
+  with `/chart`), and the zoom buttons work as on desktop.
+- **Layout rule (S):** the panel sits beside the map when `(min-width: 992px) and (orientation: landscape)` or
+  `(min-width: 992px) and (pointer: fine)` matches (`wideLayout` in `tracks-script.js`, literally the same query as
+  in `tracks.css`); otherwise it is stacked under the map, which takes the full width, with the bar and the page strip
+  below it left free for scrolling.
+- **Touch controls:** replay buttons and the scrubber are 44 px high, form fields are 16 px (iOS does not zoom into
+  them) and From / To stack because a 16 px date with seconds does not fit half the panel, the Keyboard shortcuts
+  button stays visible everywhere.
+- **Print** (and the Print frame) is hidden on touch-only devices (`pointer: coarse`); it is offered wherever a fine
+  pointer exists.
 
 Print opens its PDF window synchronously in the click (named `tracksPdf`) and the form posts into
 it once the image is ready, so Safari and Firefox do not take it for a pop-up. If the browser blocks
@@ -203,3 +233,43 @@ Chrome and Firefox were exercised headless during development. In Safari and in 
    pop-up warning.
 5. Check that the times on the page and in the PDF are Europe/Warsaw, also with the computer set to
    another time zone.
+
+## Phones and tablets: verification
+
+Verified in Chromium emulation (headless Chrome 157, synthetic data: two ships, 1801 points; 360x640, 390x844,
+844x390, 667x375, 820x1180, 1180x820, 1024x1366, 1366x1024 touch, 1000x1100 and 1440x900 fine pointer):
+
+- Tracks draw after Refresh; the only console message is the unrelated `/favicon.ico` 404.
+- No horizontal page overflow; the replay bar is inside the viewport; the panel is beside the map exactly when
+  `wideLayout` matches. At 1000x1100 with a mouse the panel shrinks (`flex: 0 1 400px`) instead of pushing the map
+  off the left edge.
+- Touch: 44 px replay buttons, 16 px fields, Print hidden; on a mouse 14 px fields, Print visible, -10 s / +10 s hidden.
+- Pinch out and back in returns to the same scale; scrubbing pauses the replay, moves the scrubber without changing
+  the URL and resumes on release.
+- Rotation: the whole map stays the whole map; a zoomed view keeps its scale and centre (0 px shift); 844x390 to
+  390x844 below the new minimum zoom becomes the whole map (expected clamp).
+- After Refresh the whole replay bar sits above the bottom nav (`revealResult()` + `scroll-margin-bottom`), landscape
+  phones included (844x390, 667x375: map 160 px, bar ending at the nav's top edge).
+- A `pointerup` from another pointer during a scrub keeps the replay paused; the scrubbing finger's release resumes it.
+  A second `pointerdown` on the scrubber does not take the drag over; a scrub released at the end stays there, paused.
+- From / To show the whole `dd/MM/yyyy HH:mm:ss` on touch at 320-412 px and on landscape tablets (stacked, 16 px);
+  side by side at 14 px with a mouse (1280x800, 1000x1100).
+
+[niezweryfikowane] on real devices: iOS `ResizeObserver` on rotation; pointer events on `input[type=range]` in Safari;
+`svh` with the collapsing Safari bar; iOS focus zoom with 16 px fields, including Flatpickr; iPad Split View / Slide
+Over; the Android keyboard; 44 px targets and the scrub feel.
+
+### Owner checklist: phone and tablet
+
+1. iPhone Safari, portrait: open `/tracks`, draw the last hour. Pass: the map fills the width, the replay bar is fully
+   visible above the bottom nav, no sideways scroll.
+2. Rotate to landscape and back with the whole map and then zoomed. Pass: no dead strip, no clipped map, the view
+   keeps its centre (or the whole map).
+3. Drag with one finger and pinch with two on the map, then scroll the page from the strip below it. Pass: no jump
+   at the start of a pinch, the page scrolls.
+4. Hold and drag the scrubber while playing. Pass: the replay pauses, follows the finger, resumes on release.
+5. Tap each date field and the Flatpickr calendar time inputs. Pass: Safari does not zoom the page.
+6. iPad: portrait stacked, landscape side-by-side; try Split View. Pass: the layout follows rule S, no overlap.
+7. Android Chrome: open the keyboard in a field. Pass: the field stays visible and the layout recovers on close.
+8. Check Print and Print frame are not shown, `-10 s` / `+10 s` work, targets are easy to hit.
+
