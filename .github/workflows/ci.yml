@@ -68,6 +68,20 @@ jobs:
             mvn -B -DskipTests package
           fi
 
+  deploy-scripts:
+    name: Deploy scripts syntax
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Parse the shell and PowerShell scripts
+        run: |
+          bash -n deploy/deploy.sh
+          sh -n deploy/deploy-remote.sh
+          pwsh -NoProfile -Command '$e = $null; [System.Management.Automation.Language.Parser]::ParseFile("deploy/deploy.ps1", [ref]$null, [ref]$e) | Out-Null; if ($e) { $e; exit 1 }'
+
   docker-smoke-test:
     name: Docker smoke test (app startup)
     runs-on: ubuntu-latest
