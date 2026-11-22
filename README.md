@@ -102,7 +102,7 @@ Katalog `simulator/` zawiera osobną aplikację `ship-sim`, która karmi serwer 
 Aplikacja umożliwia generowanie raportów PDF z danych kursów (`PdfReportController` → `PdfReportService`). Konfiguracja czcionek i limitów w `application.properties` (prefiks `pdf.report.*`).
 
 ### Bezpieczeństwo
-Uwierzytelnianie in-memory z konfiguracją przez właściwości (`custom.server.credentials.*`). Chronione ścieżki: `/name-service`, `/instructor-service`, `/api/**`, `/admin/**`, `/pdf/**`, `/tracks/**`, oraz wszystkie endpointy CRUD domeny custom (`/trainer-service/**`, `/lecturer-service/**`, `/technician-service/**`, `/participant-service/**`, `/courses-service/**`, `/course-type-service/**`, `/course-counter-service/**`).
+Użytkownicy są w tabeli `app_user` (hasła jako hashe `{bcrypt}`). Przy pierwszym starcie, gdy tabela nigdy nie miała wierszy, aplikacja zakłada konta `user` i `admin` z właściwości `custom.server.credentials.*` (zmienne `SERVER_USER`, `SERVER_PASSWORD`, `SERVER_ADMIN_USER`, `SERVER_ADMIN_PASSWORD`); później te zmienne niczego już nie zmieniają. Chronione ścieżki: `/name-service`, `/instructor-service`, `/api/**`, `/admin/**`, `/pdf/**`, `/tracks/**`, oraz wszystkie endpointy CRUD domeny custom (`/trainer-service/**`, `/lecturer-service/**`, `/technician-service/**`, `/participant-service/**`, `/courses-service/**`, `/course-type-service/**`, `/course-counter-service/**`).
 
 ## Dokumentacja szczegółowa
 
