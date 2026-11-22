@@ -51,7 +51,7 @@ public class UserAccount extends Auditable {
   @Column(name = "app_user_enabled", nullable = false)
   private boolean enabled = true;
 
-  /** Set for the seeded accounts; not enforced until the user administration exists. */
+  /** Set for the seeded accounts and after an admin reset; {@code MustChangePasswordFilter} enforces it. */
   @Column(name = "app_user_must_change_password", nullable = false)
   private boolean mustChangePassword;
 

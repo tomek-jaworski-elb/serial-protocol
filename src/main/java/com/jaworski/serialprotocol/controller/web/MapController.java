@@ -97,10 +97,14 @@ public class MapController {
     }
 
     @GetMapping("/login")
-    public String login(Model model, @RequestParam(name = "error", required = false) String error) {
+    public String login(Model model,
+                        @RequestParam(name = "error", required = false) String error,
+                        @RequestParam(name = "expired", required = false) String expired) {
         model.addAttribute(ATTRIBUTE_NAME, "login");
         if (error != null) {
             model.addAttribute("error", "Invalid username or password");
+        } else if (expired != null) {
+            model.addAttribute("error", "Your session has ended. Please sign in again.");
         }
         model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
         return "login";

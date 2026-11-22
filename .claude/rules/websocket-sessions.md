@@ -48,3 +48,5 @@ A page also sends a keep-alive on that connection every 30s (`js/ws-session-coun
 - **`lastHeardFrom`** is written only when the *page* sends something. `closeSilentPages()` compares it with `ws.session.silence-limit`. Server writes cannot touch it.
 
 A window killed by a crash never sends a close frame, so silence on the second clock is the only thing that gives it away; without it the dead page would stay counted for as long as anybody else used the site and the count would only ever climb. Keep the open/close broadcast, and do not add a server-side keep-alive.
+
+A fifth, unrelated meaning is the HTTP-session `SessionRegistry` of Spring Security (`SecurityConfig`), which tracks logins so admin changes can expire them; it has nothing to do with `WSSessionManager` or `openPageCount()`.

@@ -104,6 +104,8 @@ Aplikacja umożliwia generowanie raportów PDF z danych kursów (`PdfReportContr
 ### Bezpieczeństwo
 Użytkownicy są w tabeli `app_user` (hasła jako hashe `{bcrypt}`). Przy pierwszym starcie, gdy tabela nigdy nie miała wierszy, aplikacja zakłada konta `user` i `admin` z właściwości `custom.server.credentials.*` (zmienne `SERVER_USER`, `SERVER_PASSWORD`, `SERVER_ADMIN_USER`, `SERVER_ADMIN_PASSWORD`); później te zmienne niczego już nie zmieniają. Chronione ścieżki: `/name-service`, `/instructor-service`, `/api/**`, `/admin/**`, `/pdf/**`, `/tracks/**`, oraz wszystkie endpointy CRUD domeny custom (`/trainer-service/**`, `/lecturer-service/**`, `/technician-service/**`, `/participant-service/**`, `/courses-service/**`, `/course-type-service/**`, `/course-counter-service/**`).
 
+Konta założone przy pierwszym starcie (`user`, `admin`) mają ustawioną flagę wymuszenia zmiany hasła: po pierwszym logowaniu użytkownik jest kierowany na `/account/password` i do czasu zmiany hasła nie wejdzie nigdzie indziej (dotyczy też klientów API z Basic auth, którzy dostają 403, a po zmianie muszą używać nowego hasła). Administrator zarządza użytkownikami pod `/admin/users` (dodawanie, nadawanie i odbieranie roli administratora, wyłączanie, reset hasła; wyłączenie, zmiana roli i reset kończą sesje danego użytkownika), a każdy użytkownik zmienia własne hasło pod `/account/password` (min. 12 znaków, maks. 72 bajty UTF-8). Dla automatyzacji utwórz osobnego użytkownika, zmień jego hasło tymczasowe i dopiero potem skonfiguruj klienta.
+
 ## Dokumentacja szczegółowa
 
 Katalog [`docs/`](docs/) zawiera dodatkowe materiały opisujące implementację i środowisko:
