@@ -57,7 +57,7 @@ class UserAccountServiceTest {
 
   @Test
   void createStoresAHashedFlaggedLowerCaseAccount() {
-    service.create("admin", "Bob", PASSWORD, false);
+    service.create("admin", "Bob", PASSWORD, "USER");
 
     UserAccount bob = repository.findByUsername("bob").orElseThrow();
     assertThat(bob.getPassword()).startsWith("{bcrypt}");
@@ -67,59 +67,59 @@ class UserAccountServiceTest {
   }
 
   @Test
-  void anAdministratorIsStoredWithTheUserRole() {
-    service.create("admin", "boss", PASSWORD, true);
-    assertThat(repository.findByUsername("boss").orElseThrow().getRoles()).isEqualTo("ADMIN,USER");
+  void anAdministratorIsStoredAsAdminAlone() {
+    service.create("admin", "boss", PASSWORD, "ADMIN");
+    assertThat(repository.findByUsername("boss").orElseThrow().getRoles()).isEqualTo("ADMIN");
 
     UserAccount bob = createBob();
-    service.setAdmin("admin", bob.getUuid(), null, true);
-    assertThat(repository.findById(bob.getUuid()).orElseThrow().getRoles()).isEqualTo("ADMIN,USER");
-    service.setAdmin("admin", bob.getUuid(), null, false);
+    service.setRole("admin", bob.getUuid(), null, "ADMIN");
+    assertThat(repository.findById(bob.getUuid()).orElseThrow().getRoles()).isEqualTo("ADMIN");
+    service.setRole("admin", bob.getUuid(), null, "USER");
     assertThat(repository.findById(bob.getUuid()).orElseThrow().getRoles()).isEqualTo("USER");
   }
 
   @Test
   void aDuplicateIsRejectedEvenInOtherCaseOrAsATombstone() {
-    service.create("admin", "bob", PASSWORD, false);
+    service.create("admin", "bob", PASSWORD, "USER");
 
-    assertThatThrownBy(() -> service.create("admin", "BOB", PASSWORD, false))
+    assertThatThrownBy(() -> service.create("admin", "BOB", PASSWORD, "USER"))
         .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("already exists");
 
     repository.delete(repository.findByUsername("bob").orElseThrow());
     entityManager.flush();
-    assertThatThrownBy(() -> service.create("admin", "bob", PASSWORD, false))
+    assertThatThrownBy(() -> service.create("admin", "bob", PASSWORD, "USER"))
         .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("already exists");
   }
 
   @Test
   void badUsernamesAreRejected() {
     for (String bad : new String[]{"", "   ", "a".repeat(65), "bo\nb", "bo\u0000b"}) {
-      assertThatThrownBy(() -> service.create("admin", bad, PASSWORD, false))
+      assertThatThrownBy(() -> service.create("admin", bad, PASSWORD, "USER"))
           .isInstanceOf(IllegalArgumentException.class);
     }
-    assertThatCode(() -> service.create("admin", "a@b.c", PASSWORD, false)).doesNotThrowAnyException();
+    assertThatCode(() -> service.create("admin", "a@b.c", PASSWORD, "USER")).doesNotThrowAnyException();
   }
 
   @Test
   void thePasswordPolicyCountsCodePointsAndBytes() {
-    assertThatThrownBy(() -> service.create("admin", "p1", "a".repeat(11), false))
+    assertThatThrownBy(() -> service.create("admin", "p1", "a".repeat(11), "USER"))
         .isInstanceOf(IllegalArgumentException.class);
-    assertThatCode(() -> service.create("admin", "p2", "a".repeat(12), false)).doesNotThrowAnyException();
+    assertThatCode(() -> service.create("admin", "p2", "a".repeat(12), "USER")).doesNotThrowAnyException();
     String emoji = "😀";
-    assertThatCode(() -> service.create("admin", "p3", emoji.repeat(12), false)).doesNotThrowAnyException();
-    assertThatThrownBy(() -> service.create("admin", "p4", emoji.repeat(19), false))
+    assertThatCode(() -> service.create("admin", "p3", emoji.repeat(12), "USER")).doesNotThrowAnyException();
+    assertThatThrownBy(() -> service.create("admin", "p4", emoji.repeat(19), "USER"))
         .isInstanceOf(IllegalArgumentException.class);
-    assertThatCode(() -> service.create("admin", "p5", "a".repeat(72), false)).doesNotThrowAnyException();
-    assertThatThrownBy(() -> service.create("admin", "p6", "a".repeat(73), false))
+    assertThatCode(() -> service.create("admin", "p5", "a".repeat(72), "USER")).doesNotThrowAnyException();
+    assertThatThrownBy(() -> service.create("admin", "p6", "a".repeat(73), "USER"))
         .isInstanceOf(IllegalArgumentException.class);
-    assertThatThrownBy(() -> service.create("admin", "p7", null, false))
+    assertThatThrownBy(() -> service.create("admin", "p7", null, "USER"))
         .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
   void thePasswordIsNotTrimmed() {
     String padded = "  " + PASSWORD + "  ";
-    service.create("admin", "bob", padded, false);
+    service.create("admin", "bob", padded, "USER");
 
     String hash = repository.findByUsername("bob").orElseThrow().getPassword();
     assertThat(passwordEncoder.matches(padded, hash)).isTrue();
@@ -132,7 +132,7 @@ class UserAccountServiceTest {
 
     assertThatThrownBy(() -> service.setEnabled("admin", admin, null, false))
         .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("own account");
-    assertThatThrownBy(() -> service.setAdmin("admin", admin, null, false))
+    assertThatThrownBy(() -> service.setRole("admin", admin, null, "USER"))
         .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("own account");
   }
 
@@ -150,7 +150,7 @@ class UserAccountServiceTest {
   void theLastEnabledAdministratorStays() {
     UUID admin = repository.findByUsername("admin").orElseThrow().getUuid();
 
-    assertThatThrownBy(() -> service.setAdmin("someone", admin, null, false))
+    assertThatThrownBy(() -> service.setRole("someone", admin, null, "USER"))
         .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("At least one enabled administrator");
     assertThatThrownBy(() -> service.setEnabled("someone", admin, null, false))
         .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("At least one enabled administrator");
@@ -158,7 +158,7 @@ class UserAccountServiceTest {
 
   @Test
   void withASecondAdministratorTheFirstCanGo() {
-    service.create("admin", "boss", PASSWORD, true);
+    service.create("admin", "boss", PASSWORD, "ADMIN");
     entityManager.flush();
     UUID admin = repository.findByUsername("admin").orElseThrow().getUuid();
 
@@ -169,7 +169,7 @@ class UserAccountServiceTest {
   @Test
   void aUsernameWithLeadingOrTrailingWhitespaceIsRejected() {
     for (String bad : new String[]{" bob", "bob ", "\tbob"}) {
-      assertThatThrownBy(() -> service.create("admin", bad, PASSWORD, false))
+      assertThatThrownBy(() -> service.create("admin", bad, PASSWORD, "USER"))
           .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("start or end with a space");
     }
   }
@@ -180,7 +180,7 @@ class UserAccountServiceTest {
     UUID admin = repository.findByUsername("admin").orElseThrow().getUuid();
     service.setEnabled("admin", boss.getUuid(), null, false);
 
-    assertThatThrownBy(() -> service.setAdmin("someone", admin, null, false))
+    assertThatThrownBy(() -> service.setRole("someone", admin, null, "USER"))
         .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("At least one enabled administrator");
     assertThatThrownBy(() -> service.setEnabled("someone", admin, null, false))
         .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("At least one enabled administrator");
@@ -205,7 +205,7 @@ class UserAccountServiceTest {
   void aNoOpChangeReportsNothingChanged() {
     UserAccount bob = createBob();
 
-    assertThat(service.setAdmin("admin", bob.getUuid(), null, false)).isNull();
+    assertThat(service.setRole("admin", bob.getUuid(), null, "USER")).isNull();
     assertThat(service.setEnabled("admin", bob.getUuid(), null, true)).isNull();
   }
 
@@ -253,14 +253,49 @@ class UserAccountServiceTest {
         .doesNotContain(hash).doesNotContain("{bcrypt}");
   }
 
+  @Test
+  void onlyTheThreeExactRoleNamesAreAccepted() {
+    UserAccount bob = createBob();
+    for (String bad : new String[] {null, "", "admin", " ADMIN", "ADMIN,USER", "ROLE_USER", "ROOT"}) {
+      assertThatThrownBy(() -> service.create("admin", "x" + System.nanoTime(), PASSWORD, bad))
+          .isInstanceOf(IllegalArgumentException.class).hasMessage("Unknown role");
+      assertThatThrownBy(() -> service.setRole("admin", bob.getUuid(), null, bad))
+          .isInstanceOf(IllegalArgumentException.class).hasMessage("Unknown role");
+    }
+    assertThat(repository.findById(bob.getUuid()).orElseThrow().getRoles()).isEqualTo("USER");
+  }
+
+  @Test
+  void theLastAdministratorCannotBeLoweredToOperatorAndASameRoleSaveIsANoOp() {
+    UserAccount bob = createBob();
+    UUID admin = repository.findByUsername("admin").orElseThrow().getUuid();
+
+    assertThatThrownBy(() -> service.setRole("someone", admin, null, "OPERATOR"))
+        .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("At least one enabled administrator");
+    assertThat(service.setRole("admin", bob.getUuid(), null, "USER")).isNull();
+    assertThat(service.setRole("admin", bob.getUuid(), null, "OPERATOR")).isEqualTo("bob");
+    assertThat(service.list()).filteredOn(r -> r.username().equals("bob")).extracting(UserAccountService.UserRow::role)
+        .containsExactly("OPERATOR");
+  }
+
+  @Test
+  void aLegacyAdminUserListIsShownAsAdmin() {
+    UserAccount bob = createBob();
+    bob.setRoles("ADMIN,USER");
+    entityManager.flush();
+
+    assertThat(service.list()).filteredOn(r -> r.username().equals("bob")).extracting(UserAccountService.UserRow::role)
+        .containsExactly("ADMIN");
+  }
+
   private UserAccount createAdminBoss() {
-    service.create("admin", "boss", PASSWORD, true);
+    service.create("admin", "boss", PASSWORD, "ADMIN");
     entityManager.flush();
     return repository.findByUsername("boss").orElseThrow();
   }
 
   private UserAccount createBob() {
-    service.create("admin", "bob", PASSWORD, false);
+    service.create("admin", "bob", PASSWORD, "USER");
     entityManager.flush();
     return repository.findByUsername("bob").orElseThrow();
   }

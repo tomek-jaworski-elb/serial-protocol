@@ -54,18 +54,18 @@ class UserAdminControllerTest {
   @Test
   void addCreatesTheUser() throws Exception {
     mockMvc.perform(admin(post("/admin/users/add")).param("username", "Bob").param("password", PASSWORD)
-            .param("admin", "true"))
+            .param("role", "ADMIN"))
         .andExpect(redirectedUrl("/admin/users")).andExpect(flash().attributeExists("successMessage"));
 
     UserAccount bob = repository.findByUsername("bob").orElseThrow();
-    assertThat(bob.getRoles()).isEqualTo("ADMIN,USER");
+    assertThat(bob.getRoles()).isEqualTo("ADMIN");
     assertThat(bob.isMustChangePassword()).isTrue();
   }
 
   @Test
   void aWeakPasswordIsAToastThatDoesNotContainIt() throws Exception {
     var result = mockMvc.perform(admin(post("/admin/users/add")).param("username", "bob")
-            .param("password", "weakpass"))
+            .param("password", "weakpass").param("role", "USER"))
         .andExpect(redirectedUrl("/admin/users")).andExpect(flash().attributeExists("errorMessage"))
         .andReturn();
 
@@ -80,7 +80,7 @@ class UserAdminControllerTest {
     String version = String.valueOf(bob.getVersion());
 
     mockMvc.perform(admin(post("/admin/users/roles")).param("id", id).param("version", version)
-            .param("admin", "true"))
+            .param("role", "ADMIN"))
         .andExpect(redirectedUrl("/admin/users")).andExpect(flash().attributeExists("successMessage"));
     entityManager.flush();
     String next = String.valueOf(repository.findById(bob.getUuid()).orElseThrow().getVersion());
@@ -96,7 +96,7 @@ class UserAdminControllerTest {
         .andExpect(redirectedUrl("/admin/users")).andExpect(flash().attributeExists("successMessage"));
 
     UserAccount stored = repository.findById(bob.getUuid()).orElseThrow();
-    assertThat(stored.getRoles()).isEqualTo("ADMIN,USER");
+    assertThat(stored.getRoles()).isEqualTo("ADMIN");
     assertThat(stored.isEnabled()).isFalse();
   }
 

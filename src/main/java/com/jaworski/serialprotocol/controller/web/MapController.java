@@ -10,7 +10,6 @@ import com.jaworski.serialprotocol.service.db.InstructorService;
 import com.jaworski.serialprotocol.service.db.StudentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -73,8 +72,6 @@ public class MapController {
         return "chart";
     }
 
-    @PreAuthorize("hasRole(T(com.jaworski.serialprotocol.authorization.SecurityRoles).ROLE_USER.getRole()) or " +
-            "hasRole(T(com.jaworski.serialprotocol.authorization.SecurityRoles).ROLE_USER.getName() + '_T')")
     @GetMapping("/name-service")
     public String passService(Model model,
                               @RequestParam(name = "page", defaultValue = "0") int page,
@@ -117,8 +114,6 @@ public class MapController {
         return "redirect:/";
     }
 
-    @PreAuthorize("hasRole(T(com.jaworski.serialprotocol.authorization.SecurityRoles).ROLE_USER.getRole()) or " +
-            "hasRole(T(com.jaworski.serialprotocol.authorization.SecurityRoles).ROLE_USER.getName() + '_T')")
     @GetMapping("/instructor-service")
     public String instructorService(Model model,
                                     @RequestParam(name = "page", defaultValue = "0") int page,

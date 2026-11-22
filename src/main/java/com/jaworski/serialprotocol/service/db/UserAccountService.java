@@ -49,7 +49,8 @@ public class UserAccountService {
   private final PasswordEncoder passwordEncoder;
   private final SessionRegistry sessionRegistry;
 
-  public record UserRow(UUID id, String username, boolean admin, boolean enabled, boolean mustChangePassword,
+  /** {@code role} is the single highest stored role: OPERATOR, USER or ADMIN. */
+  public record UserRow(UUID id, String username, String role, boolean enabled, boolean mustChangePassword,
                         long version) {
   }
 
@@ -57,13 +58,13 @@ public class UserAccountService {
   public List<UserRow> list() {
     return repository.findAll().stream()
         .sorted(Comparator.comparing(UserAccount::getUsername))
-        .map(u -> new UserRow(u.getUuid(), u.getUsername(), isAdmin(u), u.isEnabled(), u.isMustChangePassword(),
+        .map(u -> new UserRow(u.getUuid(), u.getUsername(), highestRole(u).getName(), u.isEnabled(), u.isMustChangePassword(),
             u.getVersion()))
         .toList();
   }
 
   @Transactional
-  public void create(String actor, String username, String password, boolean admin) {
+  public void create(String actor, String username, String password, String role) {
     String name = UserAccount.normalize(username);
     if (name == null || name.isBlank()) {
       throw new IllegalArgumentException("Username must not be blank");
@@ -78,6 +79,7 @@ public class UserAccountService {
     if (name.codePoints().anyMatch(Character::isISOControl)) {
       throw new IllegalArgumentException("Username must not contain control characters");
     }
+    SecurityRoles newRole = parseRole(role);
     checkPassword(password);
     String taken = "User '" + name + "' already exists.";
     if (repository.countWithUsername(name) > 0) {
@@ -86,31 +88,32 @@ public class UserAccountService {
     UserAccount account = new UserAccount();
     account.setUsername(name);
     account.setPassword(passwordEncoder.encode(password));
-    account.setRoles(canonicalRoles(admin));
+    account.setRoles(newRole.getName());
     account.setMustChangePassword(true);
     try {
       repository.saveAndFlush(account);
     } catch (DataIntegrityViolationException e) {
       throw new IllegalArgumentException(taken, e);
     }
-    LOG.info("Admin '{}' created user '{}' (admin={})", actor, name, admin);
+    LOG.info("Admin '{}' created user '{}' (role={})", actor, name, newRole.getName());
   }
 
   /** @return the target's username when its sessions must end (the role changed), else null */
   @Transactional
-  public String setAdmin(String actor, UUID id, Long version, boolean admin) {
+  public String setRole(String actor, UUID id, Long version, String role) {
+    SecurityRoles newRole = parseRole(role);
     List<UserAccount> admins = lockedAdmins();
     UserAccount target = load(id);
     OptimisticLock.check(version, target.getVersion(), ENTITY);
-    if (isAdmin(target) == admin) {
+    if (highestRole(target) == newRole) {
       return null;
     }
-    if (!admin) {
+    if (newRole != SecurityRoles.ROLE_ADMIN && isAdmin(target)) {
       guardRemoval(actor, target, admins);
     }
-    target.setRoles(canonicalRoles(admin));
+    target.setRoles(newRole.getName());
     repository.saveAndFlush(target);
-    LOG.info("Admin '{}' set admin={} for '{}'", actor, admin, target.getUsername());
+    LOG.info("Admin '{}' set role {} for '{}'", actor, newRole.getName(), target.getUsername());
     return target.getUsername();
   }
 
@@ -202,14 +205,25 @@ public class UserAccountService {
   }
 
   private static boolean isAdmin(UserAccount account) {
-    return Arrays.asList(StringUtils.tokenizeToStringArray(account.getRoles(), ","))
-        .contains(SecurityRoles.ROLE_ADMIN.getName());
+    return highestRole(account) == SecurityRoles.ROLE_ADMIN;
   }
 
-  /** ADMIN is always stored with USER: there is no role hierarchy. */
-  private static String canonicalRoles(boolean admin) {
-    String user = SecurityRoles.ROLE_USER.getName();
-    return admin ? SecurityRoles.ROLE_ADMIN.getName() + "," + user : user;
+  /** Exact enum name only: no trimming, case folding or several tokens. */
+  private static SecurityRoles parseRole(String role) {
+    return Arrays.stream(SecurityRoles.values()).filter(r -> r.getName().equals(role)).findFirst()
+        .orElseThrow(() -> new IllegalArgumentException("Unknown role"));
+  }
+
+  /** Highest of the stored tokens (a legacy "ADMIN,USER" is ADMIN); unknown content counts as the lowest role. */
+  private static SecurityRoles highestRole(UserAccount account) {
+    List<String> tokens = Arrays.asList(StringUtils.tokenizeToStringArray(account.getRoles(), ","));
+    SecurityRoles[] ranked = SecurityRoles.values();
+    for (int i = ranked.length - 1; i > 0; i--) {
+      if (tokens.contains(ranked[i].getName())) {
+        return ranked[i];
+      }
+    }
+    return ranked[0];
   }
 
   // Not trimmed or normalised: the login form does not do it either, so the two must agree.

@@ -43,11 +43,13 @@
                         </div>
                         <div id="addUserPasswordHelp" class="form-text">At least 12 characters, at most 72 bytes. The user must change it at first sign-in.</div>
                     </div>
-                    <div class="col-md-3 d-flex align-items-end">
-                        <div class="form-check mb-2">
-                            <input id="addUserAdmin" name="admin" value="true" type="checkbox" class="form-check-input">
-                            <label for="addUserAdmin" class="form-check-label">Administrator</label>
-                        </div>
+                    <div class="col-md-3">
+                        <label for="addUserRole" class="form-label">Role <span class="text-danger">*</span></label>
+                        <select id="addUserRole" name="role" class="form-select" required>
+                            <option th:each="r : ${roles}" th:value="${r.name}"
+                                    th:text="${#strings.capitalize(#strings.toLowerCase(r.name))}"
+                                    th:selected="${r == defaultRole}">User</option>
+                        </select>
                     </div>
                 </div>
                 <div class="d-flex gap-2 mt-3">
@@ -101,7 +103,7 @@
             <tr th:each="u, uStat : ${users}">
                 <th scope="row" class="col-num" th:text="${uStat.index + 1}">1</th>
                 <td th:text="${u.username()}">admin</td>
-                <td th:text="${u.admin() ? 'Admin' : 'User'}">User</td>
+                <td th:text="${#strings.capitalize(#strings.toLowerCase(u.role()))}">User</td>
                 <td>
                     <span class="badge text-bg-success" th:if="${u.enabled()}">Active</span>
                     <span class="badge text-bg-secondary" th:unless="${u.enabled()}">Disabled</span>
@@ -122,15 +124,14 @@
                                 &#8942;
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
-                                <li>
+                                <li th:each="r : ${roles}" th:unless="${r.name == u.role()}">
                                     <form method="post" class="m-0" th:action="@{/admin/users/roles}">
                                         <input type="hidden" name="id" th:value="${u.id()}">
                                         <input type="hidden" name="version" th:value="${u.version()}">
-                                        <input type="hidden" name="admin" th:value="${!u.admin()}">
-                                        <button type="submit" class="dropdown-item" th:if="${u.admin()}"
-                                                onclick="return confirm('Remove administrator rights? Their sessions will end.');">Remove administrator</button>
-                                        <button type="submit" class="dropdown-item" th:unless="${u.admin()}"
-                                                onclick="return confirm('Make this user an administrator? Their sessions will end.');">Make administrator</button>
+                                        <input type="hidden" name="role" th:value="${r.name}">
+                                        <button type="submit" class="dropdown-item"
+                                                th:text="${'Set role: ' + #strings.capitalize(#strings.toLowerCase(r.name))}"
+                                                onclick="return confirm('Change the role of this user? Their sessions will end.');">Set role</button>
                                     </form>
                                 </li>
                                 <li>

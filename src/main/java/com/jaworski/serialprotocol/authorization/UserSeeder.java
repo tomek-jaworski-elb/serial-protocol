@@ -47,7 +47,7 @@ public class UserSeeder {
     String adminName = resources.getServerAdminUser();
     repository.saveAll(List.of(
         account(userName, resources.getServerPassword(), userRole),
-        account(adminName, resources.getServerAdminPassword(), adminRole + "," + userRole)));
+        account(adminName, resources.getServerAdminPassword(), adminRole)));
     LOG.warn("Created the initial accounts '{}' and '{}'; change their passwords", userName, adminName);
   }
 

@@ -199,13 +199,14 @@ let frameTransformer = null;
 let drawingFrom = null;      // map point where the current frame drag began
 let frameStarted = false;    // the drag has become a real frame
 let frameMode = false;
+// The Print section is rendered only for USER and up: these three are null for an operator.
 const printFrameBtn = document.getElementById('printFrameBtn');
 const removeFrameBtn = document.getElementById('removeFrameBtn');
 
 function setFrameMode(on) {
     frameMode = on;
-    printFrameBtn.setAttribute('aria-pressed', on);
-    printFrameBtn.classList.toggle('active', on);
+    printFrameBtn?.setAttribute('aria-pressed', on);
+    printFrameBtn?.classList.toggle('active', on);
     konvaStage.draggable(!on);
     // while drawing, an existing frame must not catch the drag
     printLayer.listening(!on);
@@ -216,7 +217,7 @@ function removeFrame() {
     printFrame?.destroy();
     frameTransformer.nodes([]);
     printFrame = null;
-    removeFrameBtn.disabled = true;
+    if (removeFrameBtn) removeFrameBtn.disabled = true;
 }
 
 // A4-portrait rectangle from the drag start to the pointer; the larger of the two drags decides the size.
@@ -266,13 +267,13 @@ function endFrameDrag() {
     drawingFrom = null;
     if (!frameStarted) return; // only a click: keep waiting for a drag
     frameTransformer.nodes([printFrame]);
-    removeFrameBtn.disabled = false;
+    if (removeFrameBtn) removeFrameBtn.disabled = false;
     setFrameMode(false);
 }
 
 function bindPrintFrame() {
-    printFrameBtn.addEventListener('click', () => setFrameMode(!frameMode));
-    removeFrameBtn.addEventListener('click', removeFrame);
+    printFrameBtn?.addEventListener('click', () => setFrameMode(!frameMode));
+    removeFrameBtn?.addEventListener('click', removeFrame);
     konvaStage.on('mousedown touchstart', startFrameDrag);
     konvaStage.on('mousemove touchmove', moveFrameDrag);
     window.addEventListener('mouseup', endFrameDrag);
@@ -416,7 +417,7 @@ let drawn = false; // at least one point is on the map
 function updateButtons() {
     validateRange();
     clearBtn.disabled = loading || (!drawn && resultMessage === '');
-    printBtn.disabled = loading || !drawn;
+    if (printBtn) printBtn.disabled = loading || !drawn;
     drawHint.hidden = drawn;
     for (const control of [playBtn, stopBtn, resetBtn, backBtn, forwardBtn, scrubber]) control.disabled = !drawn;
 }
@@ -717,7 +718,7 @@ async function printTracks() {
 function bindControls() {
     refreshBtn.addEventListener('click', refresh);
     clearBtn.addEventListener('click', clear);
-    printBtn.addEventListener('click', printTracks);
+    printBtn?.addEventListener('click', printTracks);
     shipBoxes.forEach((box) => box.addEventListener('change', () => {
         showCaptainFields();
         saveSettings();
@@ -774,7 +775,7 @@ const SHORTCUTS = [
     {keys: ['f', 'F'], label: 'F', what: 'Print frame', char: true, run: () => press(printFrameBtn)},
     {keys: ['Escape'], label: 'Esc', what: 'Leave frame mode, otherwise Reset', run: () => frameMode ? (setFrameMode(false), true) : press(resetBtn)},
     {keys: ['?'], label: '?', what: 'This help', char: true, run: () => (shortcutsDialog.showModal(), true)}
-];
+].filter((s) => printFrameBtn || s.label !== 'F'); // no Print frame shortcut without the button
 
 function onKeydown(e) {
     if (e.defaultPrevented || e.isComposing || e.keyCode === 229 || e.ctrlKey || e.altKey || e.metaKey) return; // AltGr is Ctrl+Alt

@@ -51,7 +51,7 @@ class UserAccountsTest {
     UserAccount admin = repository.findByUsername("admin").orElseThrow();
 
     assertThat(user.getRoles()).isEqualTo("USER");
-    assertThat(admin.getRoles()).isEqualTo("ADMIN,USER");
+    assertThat(admin.getRoles()).isEqualTo("ADMIN");
     assertThat(user.getPassword()).startsWith("{bcrypt}");
     assertThat(passwordEncoder.matches("user", user.getPassword())).isTrue();
     assertThat(passwordEncoder.matches("admin", admin.getPassword())).isTrue();
@@ -91,7 +91,7 @@ class UserAccountsTest {
 
     assertThat(admin.getUsername()).isEqualTo("admin");
     assertThat(admin.getAuthorities()).extracting(GrantedAuthority::getAuthority)
-        .containsExactlyInAnyOrder("ROLE_ADMIN", "ROLE_USER");
+        .containsExactly("ROLE_ADMIN");
     assertThat(admin.getPassword()).isEqualTo(repository.findByUsername("admin").orElseThrow().getPassword());
   }
 

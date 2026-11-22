@@ -1,5 +1,6 @@
 package com.jaworski.serialprotocol.controller.web;
 
+import com.jaworski.serialprotocol.authorization.LandingPage;
 import com.jaworski.serialprotocol.entity.UserAccount;
 import com.jaworski.serialprotocol.repository.UserAccountRepository;
 import com.jaworski.serialprotocol.service.WebSocketPublisher;
@@ -29,6 +30,7 @@ public class AccountController {
   private final UserAccountService service;
   private final UserAccountRepository repository;
   private final WebSocketPublisher webSocketPublisher;
+  private final LandingPage landingPage;
 
   @GetMapping("/account/password")
   public String page(Model model, Authentication auth) {
@@ -70,7 +72,7 @@ public class AccountController {
     // Both ids are kept: the registry may not have re-keyed to the new id yet.
     service.expireSessions(username, oldId, newId);
     redirect.addFlashAttribute("successMessage", "Password changed");
-    return "redirect:/name-service";
+    return "redirect:" + landingPage.urlFor(auth);
   }
 
   @GetMapping("/.well-known/change-password")

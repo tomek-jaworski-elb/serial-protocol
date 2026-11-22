@@ -12,7 +12,7 @@
 <header th:replace="~{fragment::header}"></header>
 <!-- The PDF request: tracks-script.js fills it and submits it into a new tab. Kept near the top: its CSRF token creates the
      session, which must happen before the response buffer fills and commits. -->
-<form id="pdfForm" method="post" enctype="multipart/form-data" target="tracksPdf" th:action="@{/tracks/pdf}" hidden>
+<form sec:authorize="hasRole('USER')" id="pdfForm" method="post" enctype="multipart/form-data" target="tracksPdf" th:action="@{/tracks/pdf}" hidden>
     <input type="file" name="image">
     <input type="hidden" name="from">
     <input type="hidden" name="to">
@@ -139,7 +139,7 @@
                     <div id="drawHint" class="text-muted small">Pick ships and a range, then Refresh.</div>
                 </div>
 
-                <div class="print-section">
+                <div class="print-section" sec:authorize="hasRole('USER')">
                 <h5 class="tracks-heading">Print</h5>
                 <div class="d-flex flex-wrap gap-2">
                     <button type="button" id="printBtn" class="btn btn-outline-secondary" disabled>

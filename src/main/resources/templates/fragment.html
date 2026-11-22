@@ -73,7 +73,8 @@
                         <li>
                             <span class="dropdown-item-text text-muted small">
                                 <span sec:authorize="hasRole('ADMIN')">Role: Admin</span>
-                                <span sec:authorize="!hasRole('ADMIN')">Role: User</span>
+                                <span sec:authorize="hasRole('USER') and !hasRole('ADMIN')">Role: User</span>
+                                <span sec:authorize="!hasRole('USER')">Role: Operator</span>
                             </span>
                         </li>
                         <li><hr class="dropdown-divider"/></li>
@@ -125,7 +126,7 @@
                 <li sec:authorize="isAuthenticated()">
                     <span class="dropdown-item-text text-muted small">
                         <span sec:authentication="name">User</span> —
-                        <span sec:authorize="hasRole('ADMIN')">Admin</span><span sec:authorize="!hasRole('ADMIN')">User</span>
+                        <span sec:authorize="hasRole('ADMIN')">Admin</span><span sec:authorize="hasRole('USER') and !hasRole('ADMIN')">User</span><span sec:authorize="!hasRole('USER')">Operator</span>
                     </span>
                 </li>
                 <li sec:authorize="isAuthenticated()">
@@ -163,32 +164,32 @@
       (or no) condition would hang under Terminal for a logged-out visitor, who sees nothing
       below it, and above a missing DB Utils for a non-admin.
     -->
-    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}"><hr class="dropdown-divider"/></li>
-    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
+    <li sec:authorize="hasRole('USER')" th:if="${@environment.getProperty('web.ui.extended') == 'true'}"><hr class="dropdown-divider"/></li>
+    <li sec:authorize="hasRole('USER')" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
         <a class="dropdown-item" th:classappend="${name == 'courses-service'} ? 'active'" th:href="@{/courses-service}">Certificates</a>
     </li>
-    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
+    <li sec:authorize="hasRole('USER')" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
         <a class="dropdown-item" th:classappend="${name == 'trainer-service'} ? 'active'" th:href="@{/trainer-service}">Trainer</a>
     </li>
-    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
+    <li sec:authorize="hasRole('USER')" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
         <a class="dropdown-item" th:classappend="${name == 'lecturer-service'} ? 'active'" th:href="@{/lecturer-service}">Lecturer</a>
     </li>
-    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
+    <li sec:authorize="hasRole('USER')" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
         <a class="dropdown-item" th:classappend="${name == 'technician-service'} ? 'active'" th:href="@{/technician-service}">Technician</a>
     </li>
-    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
+    <li sec:authorize="hasRole('USER')" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
         <a class="dropdown-item" th:classappend="${name == 'course-type-service'} ? 'active'" th:href="@{/course-type-service}">Course Type</a>
     </li>
-    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
+    <li sec:authorize="hasRole('USER')" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
         <a class="dropdown-item" th:classappend="${name == 'participant-service'} ? 'active'" th:href="@{/participant-service}">Participant</a>
     </li>
-    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
+    <li sec:authorize="hasRole('USER')" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
         <a class="dropdown-item" th:classappend="${name == 'course-counter-service'} ? 'active'" th:href="@{/course-counter-service}">Course Counter</a>
     </li>
-    <li sec:authorize="isAuthenticated()">
+    <li sec:authorize="hasRole('USER')">
         <a class="dropdown-item" th:classappend="${name == 'name-service'} ? 'active'" th:href="@{/name-service}">Names</a>
     </li>
-    <li sec:authorize="isAuthenticated()">
+    <li sec:authorize="hasRole('USER')">
         <a class="dropdown-item" th:classappend="${name == 'instructor-service'} ? 'active'" th:href="@{/instructor-service}">Instructors</a>
     </li>
     <li sec:authorize="hasRole('ADMIN')"><hr class="dropdown-divider"/></li>

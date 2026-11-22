@@ -61,7 +61,17 @@ class SessionExpiryTest {
   void aRoleChangeEndsTheSession() throws Exception {
     MockHttpSession user = login("user", "user");
 
-    adminPost("/admin/users/roles", "admin", "true");
+    adminPost("/admin/users/roles", "role", "ADMIN");
+
+    assertThat(registry.getSessionInformation(user.getId()).isExpired()).isTrue();
+    mockMvc.perform(get("/name-service").session(user)).andExpect(redirectedUrl("/login?expired"));
+  }
+
+  @Test
+  void aDemotionEndsTheSession() throws Exception {
+    MockHttpSession user = login("user", "user");
+
+    adminPost("/admin/users/roles", "role", "OPERATOR");
 
     assertThat(registry.getSessionInformation(user.getId()).isExpired()).isTrue();
     mockMvc.perform(get("/name-service").session(user)).andExpect(redirectedUrl("/login?expired"));
@@ -71,7 +81,7 @@ class SessionExpiryTest {
   void aNoOpRoleSaveLogsNobodyOut() throws Exception {
     MockHttpSession user = login("user", "user");
 
-    adminPost("/admin/users/roles", "admin", "false");
+    adminPost("/admin/users/roles", "role", "USER");
 
     assertThat(registry.getSessionInformation(user.getId()).isExpired()).isFalse();
   }
@@ -102,7 +112,7 @@ class SessionExpiryTest {
   @Test
   void aLoginCarryingTheExpiredCookieStillSucceeds() throws Exception {
     MockHttpSession stale = login("user", "user");
-    adminPost("/admin/users/roles", "admin", "true");
+    adminPost("/admin/users/roles", "role", "ADMIN");
 
     // MockMvc does not bounce this POST to /login?expired (the real container is unverified): the login succeeds.
     mockMvc.perform(loginRequest("user", "user").session(stale)).andExpect(status().isFound())

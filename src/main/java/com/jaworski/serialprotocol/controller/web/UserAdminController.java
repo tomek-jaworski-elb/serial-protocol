@@ -1,5 +1,6 @@
 package com.jaworski.serialprotocol.controller.web;
 
+import com.jaworski.serialprotocol.authorization.SecurityRoles;
 import com.jaworski.serialprotocol.service.WebSocketPublisher;
 import com.jaworski.serialprotocol.service.db.UserAccountService;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -35,6 +37,9 @@ public class UserAdminController {
   public String users(Model model, Authentication auth) {
     model.addAttribute("users", service.list());
     model.addAttribute("me", auth.getName());
+    // Lowest first: the enum's declaration order is its ranking.
+    model.addAttribute("roles", List.of(SecurityRoles.values()));
+    model.addAttribute("defaultRole", SecurityRoles.ROLE_USER);
     model.addAttribute(MapController.ATTRIBUTE_NAME, "admin-users");
     model.addAttribute("sessions", webSocketPublisher.openPageCount());
     return "admin/users";
@@ -42,18 +47,18 @@ public class UserAdminController {
 
   @PostMapping("/admin/users/add")
   public String add(@RequestParam String username, @RequestParam String password,
-                    @RequestParam(defaultValue = "false") boolean admin,
+                    @RequestParam String role,
                     Authentication auth, RedirectAttributes redirect) {
     return run(redirect, "User created", () -> {
-      service.create(auth.getName(), username, password, admin);
+      service.create(auth.getName(), username, password, role);
       return null;
     });
   }
 
   @PostMapping("/admin/users/roles")
   public String roles(@RequestParam UUID id, @RequestParam(required = false) Long version,
-                      @RequestParam boolean admin, Authentication auth, RedirectAttributes redirect) {
-    return run(redirect, "Role saved", () -> service.setAdmin(auth.getName(), id, version, admin));
+                      @RequestParam String role, Authentication auth, RedirectAttributes redirect) {
+    return run(redirect, "Role saved", () -> service.setRole(auth.getName(), id, version, role));
   }
 
   @PostMapping("/admin/users/enabled")
