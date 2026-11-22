@@ -40,7 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/** The tracks page, the JSON it draws from and the PDF it prints to. Public, like {@code /chart}. */
+/** The tracks page, the JSON it draws from and the PDF it prints to. Signed-in users only, see {@code SecurityConfig}. */
 @Controller
 @RequiredArgsConstructor
 public class TracksController {

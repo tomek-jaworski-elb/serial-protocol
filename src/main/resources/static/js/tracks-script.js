@@ -66,10 +66,21 @@ function validateRange() {
     refreshBtn.disabled = loading || problem !== '';
 }
 
+// The header makes Spring answer an expired session with a bare 401 instead of a Basic-auth popup.
+// Reloading /tracks then bounces to the login form, which comes back here after sign-in.
+async function fetchApi(url) {
+    const response = await fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}});
+    if (response.status === 401) {
+        window.location.assign('/tracks');
+        throw new Error('Signed out, reloading the page to sign in again');
+    }
+    return response;
+}
+
 async function initPickers() {
     let days = [];
     try {
-        const response = await fetch('/tracks/api/days');
+        const response = await fetchApi('/tracks/api/days');
         days = (await response.json()).days;
     } catch (e) {
         console.error('Recorded days unavailable:', e);
@@ -483,7 +494,7 @@ async function refresh() {
     const to = toPicker.selectedDates[0];
     setLoading(true);
     try {
-        const response = await fetch(`/tracks/api/points?from=${isoLocal(from)}&to=${isoLocal(to)}&models=${ids.join(',')}`);
+        const response = await fetchApi(`/tracks/api/points?from=${isoLocal(from)}&to=${isoLocal(to)}&models=${ids.join(',')}`);
         if (response.ok) {
             showResult(await response.json(), ids, from, to);
         } else if (response.status === 503) {
@@ -675,6 +686,8 @@ async function printTracks() {
     const area = getPrintArea();
     printBtn.disabled = true;
     try {
+        // An expired session would get a bare 403 in the new tab (stale CSRF token); this sends it through the login instead.
+        await fetchApi('/tracks/api/days');
         const blob = await new Promise((resolve) => renderPrintArea(area).toBlob(resolve, 'image/jpeg', JPEG_QUALITY));
         const pdfForm = document.getElementById('pdfForm');
         const file = new DataTransfer();

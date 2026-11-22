@@ -5,6 +5,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
@@ -13,6 +15,11 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.RequestCache;
+import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
+
+import java.util.Set;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
@@ -67,10 +74,12 @@ public class SecurityConfig {
                                 .requestMatchers("/name-service").hasRole(SecurityRoles.ROLE_USER.getName())
                                 .requestMatchers("/instructor-service").hasRole(SecurityRoles.ROLE_USER.getName())
                                 .requestMatchers("/api/**").hasRole(SecurityRoles.ROLE_USER.getName())
+                                .requestMatchers("/tracks/**").hasRole(SecurityRoles.ROLE_USER.getName())
                                 .requestMatchers("/admin/**").hasRole(SecurityRoles.ROLE_ADMIN.getName())
                                 .anyRequest().permitAll()
                 )
                 .httpBasic(withDefaults())
+                .requestCache(cache -> cache.requestCache(pageNavigationsOnly()))
                 .headers(headers -> {
                     if (sslEnabled) {
                         headers.httpStrictTransportSecurity(hsts ->
@@ -99,5 +108,17 @@ public class SecurityConfig {
                                         .logoutSuccessHandler(customLogoutHandler)
                 );
         return http.build();
+    }
+
+    /**
+     * Remembers only page navigations for {@link CustomLoginHandler} to return to: the default cache
+     * also keeps image loads, so an expired session on a page with thumbnails would send the login to a raw image.
+     */
+    private static RequestCache pageNavigationsOnly() {
+        MediaTypeRequestMatcher html = new MediaTypeRequestMatcher(MediaType.TEXT_HTML);
+        html.setIgnoredMediaTypes(Set.of(MediaType.ALL));
+        HttpSessionRequestCache cache = new HttpSessionRequestCache();
+        cache.setRequestMatcher(request -> HttpMethod.GET.matches(request.getMethod()) && html.matches(request));
+        return cache;
     }
 }
