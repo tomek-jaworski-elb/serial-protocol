@@ -35,7 +35,7 @@
         <nav class="fb-top-nav d-none d-lg-flex" aria-label="Main navigation">
             <a class="fb-link" th:classappend="${name == 'home'} ? 'active'" th:href="@{/}">Home</a>
             <a class="fb-link" th:classappend="${name == 'chart'} ? 'active'" th:href="@{/chart}">Chart</a>
-            <a class="fb-link" th:classappend="${name == 'track'} ? 'active'" th:href="@{/tracks}">Tracks</a>
+            <a sec:authorize="isAuthenticated()" class="fb-link" th:classappend="${name == 'track'} ? 'active'" th:href="@{/tracks}">Tracks</a>
             <a class="fb-link" th:classappend="${name == 'about'} ? 'active'" th:href="@{/about}">About</a>
 
             <div class="dropdown">
@@ -99,7 +99,7 @@
     <nav class="fb-bottom-nav d-lg-none" aria-label="Main navigation">
         <a class="fb-link" th:classappend="${name == 'home'} ? 'active'" th:href="@{/}">Home</a>
         <a class="fb-link" th:classappend="${name == 'chart'} ? 'active'" th:href="@{/chart}">Chart</a>
-        <a class="fb-link" th:classappend="${name == 'track'} ? 'active'" th:href="@{/tracks}">Tracks</a>
+        <a sec:authorize="isAuthenticated()" class="fb-link" th:classappend="${name == 'track'} ? 'active'" th:href="@{/tracks}">Tracks</a>
         <a class="fb-link" th:classappend="${name == 'about'} ? 'active'" th:href="@{/about}">About</a>
         <button class="fb-more-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#fbMoreOffcanvas" aria-controls="fbMoreOffcanvas">
             More

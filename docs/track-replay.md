@@ -22,7 +22,7 @@ them to an A4 PDF. Design decisions and stages: [`track-replay-plan.md`](track-r
 | `service/tracks/TrackLogSource` | Lists recorded days; streams the active `logs/tracking.log` and the archives `logs/yyyy/MM/tracking_dd-MM-yyyy.N.log.gz`. NIO only, so logback can still roll the file. A vanished file, a half-written line or a `.gz` still being compressed is skipped with a warning. |
 | `service/tracks/TrackLogLineParser` | One `Translated message: ModelTrackDTO(...)` line to a point; both formats (before and with `isCRCValid`); `isCRCValid=false` is skipped. The date comes from the line. |
 | `service/tracks/TrackQueryService` | Range and ships to tracks plus coverage; display zone to log zone; at most 24 h; a semaphore bounds parallel scans. |
-| `controller/web/TracksController` | `GET /tracks`, `GET /tracks/api/days`, `GET /tracks/api/points`, `POST /tracks/pdf`. Public, like `/chart`. |
+| `controller/web/TracksController` | `GET /tracks`, `GET /tracks/api/days`, `GET /tracks/api/points`, `POST /tracks/pdf`. Signed-in users only (`/tracks/**` in `SecurityConfig`); the menu hides the link from anonymous visitors. The page sends `X-Requested-With`, so an expired session answers its fetches with a bare `401` (no Basic-auth dialog) and the script reloads `/tracks`, which goes through the login form and comes back. Print makes the same check before it posts, so an expired session goes through the login instead of a `403` (stale CSRF token) in the PDF tab; the drawn tracks and captains are lost on that reload. |
 | `service/pdf/TrackPdfService` | The posted image plus metadata to one A4 portrait page (OpenPDF). |
 | `configuration/TracksProperties` | The `tracks.*` settings. |
 | `templates/tracks.html`, `static/js/tracks-script.js`, `tracks-draw.js`, `static/css/tracks.css` | Page, Konva stage, drawing, export. |
@@ -217,14 +217,14 @@ To repeat it by hand: save as `/tmp/logback-rollover.xml` (the application's
 
 1. From the project folder: `java -jar target/serial-protocol-3.0.jar --logging.config=/tmp/logback-rollover.xml`
 2. Feed it with the simulator: `java -jar simulator/target/ship-sim.jar generate --scenario simulator/scenarios/six-ships.yaml --loop`.
-3. Query every second:
-   `from=$(date -d '-1 hour' +%Y-%m-%dT%H:%M:%S); to=$(date +%Y-%m-%dT%H:%M:%S); for i in $(seq 200); do curl -k -s -o /dev/null -w '%{http_code}\n' "https://localhost/tracks/api/points?from=$from&to=$to&models=1,2,3,4,5,6"; sleep 1; done`
+3. Query every second (`/tracks/**` needs a signed-in user; `user:user` is the default `custom.server.credentials.*` user, use yours):
+   `from=$(date -d '-1 hour' +%Y-%m-%dT%H:%M:%S); to=$(date +%Y-%m-%dT%H:%M:%S); for i in $(seq 200); do curl -k -s -u user:user -o /dev/null -w '%{http_code}\n' "https://localhost/tracks/api/points?from=$from&to=$to&models=1,2,3,4,5,6"; sleep 1; done`
 4. Pass when `.gz` archives appear under `logs/yyyy/MM/`, `logs/tracking.log` restarts after each
    roll, the console shows no `Failed to rename` or `RolloverFailure`, and every response is 200.
 
 ## Owner checklist: Safari and Edge
 
-Chrome and Firefox were exercised headless during development. In Safari and in Edge, open `/tracks` and:
+Chrome and Firefox were exercised headless during development. In Safari and in Edge, sign in, open `/tracks` and:
 
 1. Draw the last hour of all ships.
 2. Zoom with the wheel and the buttons, pan by dragging.
