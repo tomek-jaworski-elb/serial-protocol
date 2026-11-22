@@ -19,6 +19,20 @@ public class CustomEncoder {
      */
     @Bean
     public PasswordEncoder encoder(@Value("${custom.security.bcrypt-strength:10}") int strength) {
-        return new DelegatingPasswordEncoder("bcrypt", Map.of("bcrypt", new BCryptPasswordEncoder(strength)));
+        DelegatingPasswordEncoder delegating =
+            new DelegatingPasswordEncoder("bcrypt", Map.of("bcrypt", new BCryptPasswordEncoder(strength)));
+        // An unknown {id} or a prefix-less hash must fail the login (401), not throw (500).
+        delegating.setDefaultPasswordEncoderForMatches(new PasswordEncoder() {
+            @Override
+            public String encode(CharSequence rawPassword) {
+                throw new UnsupportedOperationException("Not an encoder for new passwords");
+            }
+
+            @Override
+            public boolean matches(CharSequence rawPassword, String encodedPassword) {
+                return false;
+            }
+        });
+        return delegating;
     }
 }

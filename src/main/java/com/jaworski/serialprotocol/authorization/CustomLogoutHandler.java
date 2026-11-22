@@ -18,7 +18,7 @@ public class CustomLogoutHandler implements LogoutSuccessHandler {
 
     @Override
     public void onLogoutSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
-        LOG.info("User {} logged out", authentication.getName());
+        LOG.info("User {} logged out", authentication == null ? "anonymous" : authentication.getName());
         response.sendRedirect("/");
     }
 }

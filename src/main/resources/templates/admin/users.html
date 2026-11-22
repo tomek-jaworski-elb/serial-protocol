@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title th:text="${@environment.getProperty('spring.application.name')} + ' : Users'">Serial port server</title>
+    <th:block th:replace="~{fragment::headContent}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/custom-crud.css}">
+</head>
+<body>
+<header th:replace="~{fragment::header}"></header>
+<div class="container mb-4">
+    <th:block th:replace="~{fragment::toastNotifications}"></th:block>
+
+    <div class="crud-toolbar">
+        <h4 class="mb-0" id="usersTableHeading">Users</h4>
+        <div class="crud-toolbar-actions">
+            <input id="tableFilterInput" type="text" class="form-control form-control-sm crud-filter"
+                   placeholder="Filter on this page" aria-label="Filter rows on this page"
+                   title="Filters only the rows shown on the current page">
+            <span id="crudFilterScope" class="crud-filter-scope" aria-live="polite"></span>
+            <span class="badge bg-secondary" th:text="${#lists.size(users)}" th:if="${!#lists.isEmpty(users)}">0</span>
+            <button id="showAddFormBtn" type="button" class="btn btn-primary btn-sm">Add user</button>
+        </div>
+    </div>
+
+    <div id="addUserFormContainer" class="card mb-3 d-none">
+        <div class="card-body">
+            <h5 class="card-title">Add user</h5>
+            <form method="post" th:action="@{/admin/users/add}">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="addUserUsername" class="form-label">Username <span class="text-danger">*</span></label>
+                        <input id="addUserUsername" name="username" type="text" class="form-control" maxlength="64"
+                               autocomplete="off" required>
+                    </div>
+                    <div class="col-md-5">
+                        <label for="addUserPassword" class="form-label">Temporary password <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input id="addUserPassword" name="password" type="password" class="form-control"
+                                   autocomplete="new-password" aria-describedby="addUserPasswordHelp" required>
+                            <button type="button" class="btn btn-outline-secondary" data-toggle-password="#addUserPassword"
+                                    data-label="temporary password" aria-controls="addUserPassword"
+                                    aria-label="Show temporary password">Show</button>
+                        </div>
+                        <div id="addUserPasswordHelp" class="form-text">At least 12 characters, at most 72 bytes. The user must change it at first sign-in.</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="addUserRole" class="form-label">Role <span class="text-danger">*</span></label>
+                        <select id="addUserRole" name="role" class="form-select" required>
+                            <option th:each="r : ${roles}" th:value="${r.name}"
+                                    th:text="${#strings.capitalize(#strings.toLowerCase(r.name))}"
+                                    th:selected="${r == defaultRole}">User</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-success btn-sm">Save</button>
+                    <button id="hideAddFormBtn" type="button" class="btn btn-outline-secondary btn-sm">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="resetPasswordFormContainer" class="card mb-3 d-none">
+        <div class="card-body">
+            <h5 class="card-title">Reset password for <span id="resetPasswordUsername"></span></h5>
+            <form method="post" th:action="@{/admin/users/password}">
+                <input id="resetPasswordId" name="id" type="hidden" required>
+                <input id="resetPasswordVersion" name="version" type="hidden">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="resetPasswordValue" class="form-label">Temporary password <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input id="resetPasswordValue" name="password" type="password" class="form-control"
+                                   autocomplete="new-password" aria-describedby="resetPasswordHelp" required>
+                            <button type="button" class="btn btn-outline-secondary" data-toggle-password="#resetPasswordValue"
+                                    data-label="temporary password" aria-controls="resetPasswordValue"
+                                    aria-label="Show temporary password">Show</button>
+                        </div>
+                        <div id="resetPasswordHelp" class="form-text">At least 12 characters, at most 72 bytes. The user will be signed out and must change it at next sign-in.</div>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-warning btn-sm">Reset</button>
+                    <button id="hideResetFormBtn" type="button" class="btn btn-outline-secondary btn-sm">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="table-responsive" th:if="${!#lists.isEmpty(users)}"
+         role="region" aria-labelledby="usersTableHeading" tabindex="0">
+        <table class="table table-striped table-hover align-middle filterable-table crud-table">
+            <thead class="table-light">
+            <tr>
+                <th scope="col" class="col-num">#</th>
+                <th scope="col" data-sort="text">Username</th>
+                <th scope="col" data-sort="text">Role</th>
+                <th scope="col">Status</th>
+                <th scope="col">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="u, uStat : ${users}">
+                <th scope="row" class="col-num" th:text="${uStat.index + 1}">1</th>
+                <td th:text="${u.username()}">admin</td>
+                <td th:text="${#strings.capitalize(#strings.toLowerCase(u.role()))}">User</td>
+                <td>
+                    <span class="badge text-bg-success" th:if="${u.enabled()}">Active</span>
+                    <span class="badge text-bg-secondary" th:unless="${u.enabled()}">Disabled</span>
+                    <span class="badge text-bg-warning" th:if="${u.mustChangePassword()}">Must change password</span>
+                </td>
+                <td>
+                    <div class="crud-row-actions">
+                        <button type="button" class="btn btn-outline-warning btn-sm reset-password-btn"
+                                th:unless="${u.username() == me}"
+                                th:attr="data-id=${u.id()},data-version=${u.version()},data-username=${u.username()}">
+                            Reset password
+                        </button>
+                        <!-- Own row: no roles/enabled forms, the server refuses them anyway. -->
+                        <div class="dropdown" th:unless="${u.username() == me}">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="dropdown"
+                                    aria-expanded="false"
+                                    th:attr="aria-label='More actions for ' + ${u.username()}">
+                                &#8942;
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li th:each="r : ${roles}" th:unless="${r.name == u.role()}">
+                                    <form method="post" class="m-0" th:action="@{/admin/users/roles}">
+                                        <input type="hidden" name="id" th:value="${u.id()}">
+                                        <input type="hidden" name="version" th:value="${u.version()}">
+                                        <input type="hidden" name="role" th:value="${r.name}">
+                                        <button type="submit" class="dropdown-item"
+                                                th:text="${'Set role: ' + #strings.capitalize(#strings.toLowerCase(r.name))}"
+                                                onclick="return confirm('Change the role of this user? Their sessions will end.');">Set role</button>
+                                    </form>
+                                </li>
+                                <li>
+                                    <form method="post" class="m-0" th:action="@{/admin/users/enabled}">
+                                        <input type="hidden" name="id" th:value="${u.id()}">
+                                        <input type="hidden" name="version" th:value="${u.version()}">
+                                        <input type="hidden" name="enabled" th:value="${!u.enabled()}">
+                                        <button type="submit" class="dropdown-item text-danger" th:if="${u.enabled()}"
+                                                onclick="return confirm('Disable this user? Their sessions will end.');">Disable</button>
+                                        <button type="submit" class="dropdown-item" th:unless="${u.enabled()}">Enable</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="alert alert-info text-center" th:if="${#lists.isEmpty(users)}">
+        No users found.
+    </div>
+</div>
+<footer th:replace="~{fragment::footer}"></footer>
+<script th:src="@{/js/common/table-filter-sort.js}"></script>
+<script th:src="@{/js/common/crud-table-actions.js}"></script>
+<script th:src="@{/js/common/password-toggle.js}"></script>
+<script>
+    const showAddFormBtn = document.getElementById('showAddFormBtn');
+    const hideAddFormBtn = document.getElementById('hideAddFormBtn');
+    const addUserFormContainer = document.getElementById('addUserFormContainer');
+    const resetPasswordFormContainer = document.getElementById('resetPasswordFormContainer');
+    const hideResetFormBtn = document.getElementById('hideResetFormBtn');
+
+    // Empties the form and puts its password inputs back to hidden.
+    function clearForm(container) {
+        container.querySelector('form').reset();
+        window.hidePasswords(container);
+    }
+
+    if (showAddFormBtn && hideAddFormBtn && addUserFormContainer) {
+        showAddFormBtn.addEventListener('click', () => {
+            clearForm(addUserFormContainer);
+            addUserFormContainer.classList.remove('d-none');
+            if (resetPasswordFormContainer) {
+                resetPasswordFormContainer.classList.add('d-none');
+            }
+            addUserFormContainer.scrollIntoView({behavior: 'smooth', block: 'start'});
+            document.getElementById('addUserUsername').focus({preventScroll: true});
+        });
+
+        hideAddFormBtn.addEventListener('click', () => {
+            clearForm(addUserFormContainer);
+            addUserFormContainer.classList.add('d-none');
+        });
+    }
+
+    if (hideResetFormBtn && resetPasswordFormContainer) {
+        hideResetFormBtn.addEventListener('click', () => {
+            clearForm(resetPasswordFormContainer);
+            resetPasswordFormContainer.classList.add('d-none');
+        });
+    }
+
+    if (resetPasswordFormContainer) {
+        document.querySelectorAll('.reset-password-btn').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                clearForm(resetPasswordFormContainer);
+                document.getElementById('resetPasswordId').value = btn.dataset.id || '';
+                document.getElementById('resetPasswordVersion').value = btn.dataset.version || '';
+                document.getElementById('resetPasswordUsername').textContent = btn.dataset.username || '';
+                resetPasswordFormContainer.classList.remove('d-none');
+                if (addUserFormContainer) {
+                    addUserFormContainer.classList.add('d-none');
+                }
+                resetPasswordFormContainer.scrollIntoView({behavior: 'smooth', block: 'start'});
+                document.getElementById('resetPasswordValue').focus({preventScroll: true});
+            });
+        });
+    }
+</script>
+</body>
+</html>

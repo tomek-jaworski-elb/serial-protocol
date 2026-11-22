@@ -1,5 +1,6 @@
 package com.jaworski.serialprotocol.authorization;
 
+import com.jaworski.serialprotocol.repository.UserAccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -9,10 +10,19 @@ import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
+import org.springframework.security.web.authentication.session.SessionLimit;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
+import org.springframework.security.web.session.SimpleRedirectSessionInformationExpiredStrategy;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import java.util.Set;
 
@@ -25,12 +35,13 @@ public class SecurityConfig {
 
     private final CustomLogoutHandler customLogoutHandler;
     private final CustomLoginHandler customLoginHandler;
+    private final UserAccountRepository userAccountRepository;
 
     @Value("${server.ssl.enabled:false}")
     private boolean sslEnabled;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, SessionRegistry sessionRegistry) throws Exception {
         http
                 .authorizeHttpRequests((authorizeHttpRequests) ->
                         authorizeHttpRequests
@@ -43,13 +54,22 @@ public class SecurityConfig {
                                 .requestMatchers("/course-counter-service/**").hasRole(SecurityRoles.ROLE_USER.getName())
                                 .requestMatchers("/custom/image/**").hasRole(SecurityRoles.ROLE_USER.getName())
                                 .requestMatchers("/pdf/**").hasRole(SecurityRoles.ROLE_USER.getName())
-                                .requestMatchers("/name-service").hasRole(SecurityRoles.ROLE_USER.getName())
-                                .requestMatchers("/instructor-service").hasRole(SecurityRoles.ROLE_USER.getName())
+                                .requestMatchers("/name-service/**").hasRole(SecurityRoles.ROLE_USER.getName())
+                                .requestMatchers("/instructor-service/**").hasRole(SecurityRoles.ROLE_USER.getName())
                                 .requestMatchers("/api/**").hasRole(SecurityRoles.ROLE_USER.getName())
+                                // Replay is open to OPERATOR; this must stay above the USER catch-all (PDF export, HEAD, future paths).
+                                .requestMatchers(HttpMethod.GET, "/tracks", "/tracks/api/**").hasRole(SecurityRoles.ROLE_OPERATOR.getName())
                                 .requestMatchers("/tracks/**").hasRole(SecurityRoles.ROLE_USER.getName())
                                 .requestMatchers("/admin/**").hasRole(SecurityRoles.ROLE_ADMIN.getName())
+                                .requestMatchers("/account/**").authenticated()
                                 .anyRequest().permitAll()
                 )
+                .addFilterBefore(new MustChangePasswordFilter(userAccountRepository), AuthorizationFilter.class)
+                // UNLIMITED caps nothing; it wires ConcurrentSessionFilter, which turns expireNow() into a logout.
+                .sessionManagement(session -> session.sessionConcurrency(concurrency -> concurrency
+                        .maximumSessions(SessionLimit.UNLIMITED)
+                        .sessionRegistry(sessionRegistry)
+                        .expiredSessionStrategy(new SimpleRedirectSessionInformationExpiredStrategy("/login?expired"))))
                 .httpBasic(withDefaults())
                 .requestCache(cache -> cache.requestCache(pageNavigationsOnly()))
                 .headers(headers -> {
@@ -82,15 +102,40 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /** ADMIN includes USER, which includes OPERATOR: one stored role per account is enough. */
+    @Bean
+    static RoleHierarchy roleHierarchy() {
+        return RoleHierarchyImpl.withDefaultRolePrefix()
+                .role(SecurityRoles.ROLE_ADMIN.getName()).implies(SecurityRoles.ROLE_USER.getName())
+                .role(SecurityRoles.ROLE_USER.getName()).implies(SecurityRoles.ROLE_OPERATOR.getName())
+                .build();
+    }
+
+    @Bean
+    public SessionRegistry sessionRegistry() {
+        return new SessionRegistryImpl();
+    }
+
+    /** Tells the registry when a session ends or changes id. */
+    @Bean
+    public HttpSessionEventPublisher httpSessionEventPublisher() {
+        return new HttpSessionEventPublisher();
+    }
+
     /**
      * Remembers only page navigations for {@link CustomLoginHandler} to return to: the default cache
      * also keeps image loads, so an expired session on a page with thumbnails would send the login to a raw image.
      */
     private static RequestCache pageNavigationsOnly() {
+        HttpSessionRequestCache cache = new HttpSessionRequestCache();
+        cache.setRequestMatcher(pageNavigation());
+        return cache;
+    }
+
+    /** A GET that explicitly asks for HTML ({@code *}/{@code *} does not count). */
+    static RequestMatcher pageNavigation() {
         MediaTypeRequestMatcher html = new MediaTypeRequestMatcher(MediaType.TEXT_HTML);
         html.setIgnoredMediaTypes(Set.of(MediaType.ALL));
-        HttpSessionRequestCache cache = new HttpSessionRequestCache();
-        cache.setRequestMatcher(request -> HttpMethod.GET.matches(request.getMethod()) && html.matches(request));
-        return cache;
+        return request -> HttpMethod.GET.matches(request.getMethod()) && html.matches(request);
     }
 }

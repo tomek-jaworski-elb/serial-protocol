@@ -17,7 +17,10 @@ import org.springframework.transaction.annotation.Transactional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -48,13 +51,13 @@ class UserAccountsTest {
     UserAccount admin = repository.findByUsername("admin").orElseThrow();
 
     assertThat(user.getRoles()).isEqualTo("USER");
-    assertThat(admin.getRoles()).isEqualTo("ADMIN,USER");
+    assertThat(admin.getRoles()).isEqualTo("ADMIN");
     assertThat(user.getPassword()).startsWith("{bcrypt}");
     assertThat(passwordEncoder.matches("user", user.getPassword())).isTrue();
     assertThat(passwordEncoder.matches("admin", admin.getPassword())).isTrue();
     assertThat(user.isEnabled()).isTrue();
-    assertThat(user.isMustChangePassword()).isTrue();
-    assertThat(admin.isMustChangePassword()).isTrue();
+    assertThat(user.isMustChangePassword()).isFalse(); // the test property seeds unflagged accounts
+    assertThat(admin.isMustChangePassword()).isFalse();
   }
 
   @Test
@@ -88,7 +91,7 @@ class UserAccountsTest {
 
     assertThat(admin.getUsername()).isEqualTo("admin");
     assertThat(admin.getAuthorities()).extracting(GrantedAuthority::getAuthority)
-        .containsExactlyInAnyOrder("ROLE_ADMIN", "ROLE_USER");
+        .containsExactly("ROLE_ADMIN");
     assertThat(admin.getPassword()).isEqualTo(repository.findByUsername("admin").orElseThrow().getPassword());
   }
 
@@ -120,5 +123,24 @@ class UserAccountsTest {
     entityManager.flush();
 
     mockMvc.perform(get("/name-service").with(httpBasic("user", "user"))).andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  @Transactional
+  void aDisabledAccountCannotUseTheLoginForm() throws Exception {
+    repository.findByUsername("user").orElseThrow().setEnabled(false);
+    entityManager.flush();
+
+    mockMvc.perform(post("/login").with(csrf()).param("username", "user").param("password", "user"))
+        .andExpect(redirectedUrl("/login?error"));
+  }
+
+  @Autowired
+  private org.springframework.context.ApplicationContext context;
+
+  @Test
+  void theSessionEventPublisherIsRegistered() {
+    assertThat(context.getBeanNamesForType(org.springframework.security.web.session.HttpSessionEventPublisher.class))
+        .hasSize(1);
   }
 }

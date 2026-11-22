@@ -44,14 +44,14 @@ public class UserAccount extends Auditable {
   @Column(name = "app_user_password", nullable = false)
   private String password;
 
-  /** Comma-separated {@code SecurityRoles} names without the {@code ROLE_} prefix, e.g. {@code ADMIN,USER}. */
+  /** One {@code SecurityRoles} name without the {@code ROLE_} prefix ({@code OPERATOR}, {@code USER} or {@code ADMIN}); the role hierarchy supplies the lower ones. */
   @Column(name = "app_user_roles", nullable = false, length = 100)
   private String roles;
 
   @Column(name = "app_user_enabled", nullable = false)
   private boolean enabled = true;
 
-  /** Set for the seeded accounts; not enforced until the user administration exists. */
+  /** Set for the seeded accounts and after an admin reset; {@code MustChangePasswordFilter} enforces it. */
   @Column(name = "app_user_must_change_password", nullable = false)
   private boolean mustChangePassword;
 

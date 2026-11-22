@@ -5,16 +5,16 @@ import lombok.Getter;
 @Getter
 public enum SecurityRoles {
 
-    ROLE_USER(1, "ROLE_USER", "USER"),
-    ROLE_ADMIN(2, "ROLE_ADMIN", "ADMIN");
+    // Declared lowest first: the declaration order is the ranking (UserAccountService.highestRole).
+    ROLE_OPERATOR("ROLE_OPERATOR", "OPERATOR"),
+    ROLE_USER("ROLE_USER", "USER"),
+    ROLE_ADMIN("ROLE_ADMIN", "ADMIN");
 
     private final String role;
     private final String name;
-    private final int value;
 
-    SecurityRoles( int value, String role, String name) {
+    SecurityRoles(String role, String name) {
         this.role = role;
         this.name = name;
-        this.value = value;
     }
 }

@@ -18,6 +18,7 @@ Loaded when you touch the MVC controllers, Thymeleaf templates or the static JS/
 Two MVC controller families under `controller/web`:
 
 - `MapController` — serial/realtime pages: `/` (`index`), `/terminal`, `/chart`, `/about`, `/greeting`, plus `/login`, `/logout`, `/name-service`, `/instructor-service`.
+- `UserAdminController` (`/admin/users`) and `AccountController` (`/account/password`) — `templates/admin/` and `templates/account/` follow the CRUD pattern; model `name` is `admin-users` / `account-password`; the Users entry is in `moreMenuItems`, Change password in the user menu.
 - `TracksController` — `/tracks` and its API, see "Track replay page" below.
 - `CustomDBController` — all custom-domain CRUD; `ImageController` and `PdfReportController` round it out. `MyErrorController` + `WebExceptionHandler` handle errors.
 

@@ -6,6 +6,7 @@ import com.jaworski.serialprotocol.resources.Resources;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -28,6 +29,10 @@ public class UserSeeder {
   private final PasswordEncoder passwordEncoder;
   private final Resources resources;
 
+  // Not final: UserSeederTest flips it to prove the production default.
+  @Value("${custom.server.credentials.must-change-password:true}")
+  private boolean mustChangePassword;
+
   // shortcut: two instances starting on an empty table at once both insert, and the loser fails
   // its start on the unique username; restart it. Upgrade if the app ever runs as several instances.
   @EventListener(ApplicationReadyEvent.class)
@@ -42,7 +47,7 @@ public class UserSeeder {
     String adminName = resources.getServerAdminUser();
     repository.saveAll(List.of(
         account(userName, resources.getServerPassword(), userRole),
-        account(adminName, resources.getServerAdminPassword(), adminRole + "," + userRole)));
+        account(adminName, resources.getServerAdminPassword(), adminRole)));
     LOG.warn("Created the initial accounts '{}' and '{}'; change their passwords", userName, adminName);
   }
 
@@ -51,7 +56,7 @@ public class UserSeeder {
     account.setUsername(username);
     account.setPassword(passwordEncoder.encode(rawPassword));
     account.setRoles(roles);
-    account.setMustChangePassword(true);
+    account.setMustChangePassword(mustChangePassword);
     return account;
   }
 }

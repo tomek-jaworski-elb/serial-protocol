@@ -3,12 +3,12 @@ package com.jaworski.serialprotocol.authorization;
 import com.jaworski.serialprotocol.entity.UserAccount;
 import com.jaworski.serialprotocol.repository.UserAccountRepository;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 /**
  * The only {@link UserDetailsService} bean: Spring Security builds its {@code DaoAuthenticationProvider}
@@ -28,7 +28,7 @@ public class DbUserDetailsService implements UserDetailsService {
     return User.withUsername(account.getUsername())
         .password(account.getPassword())
         .disabled(!account.isEnabled())
-        .roles(StringUtils.split(account.getRoles(), ','))
+        .roles(StringUtils.tokenizeToStringArray(account.getRoles(), ","))
         .build();
   }
 }
