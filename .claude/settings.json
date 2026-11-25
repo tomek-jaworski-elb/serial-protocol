@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "ask": [
+      "Edit(/src/main/resources/db/migration/**)",
+      "Edit(/src/test/resources/golden/**)"
+    ]
+  }
+}
