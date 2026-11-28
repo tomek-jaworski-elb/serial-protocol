@@ -1,9 +1,11 @@
 @echo off
 REM Batch Script to Check Java Version and Run the serial-protocol application
 
-SET JAR_FILE_VERSION=3.0
 SET JAVA_TOOL_OPTIONS=-Xms256m -Xmx512m
 SET APP_FILE=serial-protocol
+REM The version comes from the jar name, so a new <version> in pom.xml needs no change here.
+SET JAR_FILE=
+FOR %%F IN (target\%APP_FILE%-*.jar) DO SET JAR_FILE=%%F
 
 echo =====================================
 echo Checking for Java installation ...
@@ -18,9 +20,14 @@ IF %ERRORLEVEL% NEQ 0 (
 )
 
 echo =====================================
-echo Running %APP_FILE%-%JAR_FILE_VERSION% ...
+IF NOT DEFINED JAR_FILE (
+    echo Error: no target\%APP_FILE%-*.jar found. Build it first with build-jar.bat.
+    pause
+    exit /b 1
+)
+echo Running %JAR_FILE% ...
 echo =====================================
-java -jar target/%APP_FILE%-%JAR_FILE_VERSION%.jar %JAVA_TOOL_OPTIONS%
+java -jar %JAR_FILE% %JAVA_TOOL_OPTIONS%
 
 IF %ERRORLEVEL% NEQ 0 (
     echo Error: Failed to start %APP_FILE%.

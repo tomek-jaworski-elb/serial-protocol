@@ -24,7 +24,7 @@ Java 25, Spring Boot 4.1.3 (`jakarta.*`), Maven wrapper, MariaDB 11.7 / H2 (test
 .\mvnw.cmd clean package                                       # build JAR with tests
 .\mvnw.cmd clean package -Dmaven.test.skip=true               # build JAR skip tests
 .\mvnw.cmd spring-boot:run                                     # run from Maven
-java -jar .\target\serial-protocol-3.0.jar                     # run packaged JAR (3.0 = <version> in pom.xml)
+java -jar .\target\serial-protocol-3.1.jar                     # run packaged JAR (3.1 = <version> in pom.xml and ARG VERSION in Dockerfile)
 docker compose up --build                                      # app + MariaDB
 ./start_docker.sh -d    |    ./stop_docker.sh                  # build, then start detached / stop (bash; local, not on a deploy server)
 .\mvnw.cmd -f simulator/pom.xml verify                        # build + test the data simulator (simulator/target/ship-sim.jar)
