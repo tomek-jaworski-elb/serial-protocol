@@ -1,6 +1,6 @@
 FROM eclipse-temurin:25-jre-noble
 LABEL author="Tomek Jaworski"
-ARG VERSION=3.0
+ARG VERSION=3.1
 ENV JAVA_TOOL_OPTIONS="-XX:+UseCompactObjectHeaders"
 LABEL version=$VERSION
 

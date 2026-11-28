@@ -36,7 +36,7 @@ Docker Compose podnosi dwa kontenery:
 
 ```bash
 .\mvnw.cmd clean package -Dmaven.test.skip=true
-java -jar .\target\serial-protocol-3.0.jar
+java -jar .\target\serial-protocol-3.1.jar
 ```
 
 Aplikacja nasłuchuje na porcie **443** (HTTPS, SSL/PKCS12).

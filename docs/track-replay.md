@@ -215,7 +215,7 @@ To repeat it by hand: save as `/tmp/logback-rollover.xml` (the application's
 </configuration>
 ```
 
-1. From the project folder: `java -jar target/serial-protocol-3.0.jar --logging.config=/tmp/logback-rollover.xml`
+1. From the project folder: `java -jar target/serial-protocol-3.1.jar --logging.config=/tmp/logback-rollover.xml`
 2. Feed it with the simulator: `java -jar simulator/target/ship-sim.jar generate --scenario simulator/scenarios/six-ships.yaml --loop`.
 3. Query every second (`/tracks/**` needs a signed-in user; `user:user` is the account seeded on the first start from the default `custom.server.credentials.*`, use yours):
    `from=$(date -d '-1 hour' +%Y-%m-%dT%H:%M:%S); to=$(date +%Y-%m-%dT%H:%M:%S); for i in $(seq 200); do curl -k -s -u user:user -o /dev/null -w '%{http_code}\n' "https://localhost/tracks/api/points?from=$from&to=$to&models=1,2,3,4,5,6"; sleep 1; done`
