@@ -2,19 +2,30 @@ package com.jaworski.serialprotocol.service;
 
 import com.jaworski.serialprotocol.serial.SessionType;
 
+import java.util.function.Supplier;
+
 public interface WebSocketPublisher {
+
+    /** {@code /session} connection attribute: Boolean, true while its /chart tab is visible. */
+    String WATCHING_LIVE_MAP = "watchingLiveMap";
 
     void publishForAllClients(String message);
     void publishForAllClients(String message, SessionType sessionType);
     /**
-     * How many pages of this application are open.
-     *
-     * <p>Exactly one {@code /session} connection is opened per page, from the footer, which is on
-     * every page. Counting that channel is therefore counting pages — whereas counting every
-     * channel counts subscriptions, and a page opens between one and three of those depending on
-     * what it displays. That is the difference this method exists to keep straight.</p>
+     * Like the String overload, but the message is evaluated per session at send time, inside that
+     * session's lock, so of two racing broadcasts the last one written carries the latest value.
      */
-    long openPageCount();
+    void publishForAllClients(Supplier<String> message, SessionType sessionType);
+
+    /**
+     * How many /chart tabs are open and visible right now (live map viewers).
+     *
+     * <p>Counts {@code /session} connections (one per page, from the footer) whose page reported
+     * {@code watching} and has not since reported {@code hidden}. Only /chart reports, so every
+     * other page, and a hidden chart tab, counts 0. Counting every channel would count
+     * subscriptions instead, and a page opens one to three of those.</p>
+     */
+    long liveMapViewerCount();
 
     long sessionsCount(SessionType sessionType);
 }

@@ -55,7 +55,7 @@ public class TracksController {
     @GetMapping("/tracks")
     public String tracks(Model model) {
         model.addAttribute(MapController.ATTRIBUTE_NAME, "track");
-        model.addAttribute("sessions", webSocketPublisher.openPageCount());
+        model.addAttribute("sessions", webSocketPublisher.liveMapViewerCount());
         model.addAttribute("ships", Models.values());
         model.addAttribute("displayZone", properties.displayZone().getId());
         model.addAttribute("gapSeconds", properties.gapSeconds());

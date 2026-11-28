@@ -25,8 +25,8 @@ public class WSSessionManager {
     /**
      * Registers a connection and returns how many are now open.
      *
-     * <p>The number returned counts every channel. It is not the open-page count — ask
-     * {@code WebSocketPublisher.openPageCount()} for that.</p>
+     * <p>The number returned counts every channel. It is not the number shown in the
+     * footer, which comes from {@code WebSocketPublisher.liveMapViewerCount()}.</p>
      *
      * @param session the WebSocket connection
      * @return the number of open connections across all channels

@@ -41,7 +41,7 @@ public class UserAdminController {
     model.addAttribute("roles", List.of(SecurityRoles.values()));
     model.addAttribute("defaultRole", SecurityRoles.ROLE_USER);
     model.addAttribute(MapController.ATTRIBUTE_NAME, "admin-users");
-    model.addAttribute("sessions", webSocketPublisher.openPageCount());
+    model.addAttribute("sessions", webSocketPublisher.liveMapViewerCount());
     return "admin/users";
   }
 
