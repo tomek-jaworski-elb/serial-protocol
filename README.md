@@ -6,7 +6,7 @@ Aplikacja Spring Boot (Java 25) do odbioru i wizualizacji danych AIS z portów s
 
 - Java 25+
 - Maven 3.9+ (lub wrapper `mvnw` / `mvnw.cmd`)
-- MariaDB 11.7 (lub Docker)
+- MariaDB 11.8 (lub Docker)
 
 ## Szybki start
 
@@ -24,7 +24,7 @@ Aplikacja Spring Boot (Java 25) do odbioru i wizualizacji danych AIS z portów s
 
 Docker Compose podnosi dwa kontenery:
 - **serial-ports-server** – aplikacja (port `8081` → `443` wewnątrz kontenera)
-- **mariadb** – baza danych MariaDB 11.7
+- **mariadb** – baza danych MariaDB 11.8
 
 ### Lokalnie z Maven
 

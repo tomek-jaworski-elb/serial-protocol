@@ -1,7 +1,6 @@
 FROM eclipse-temurin:25-jre-noble
 LABEL author="Tomek Jaworski"
 ARG VERSION=3.1
-ENV JAVA_TOOL_OPTIONS="-XX:+UseCompactObjectHeaders"
 LABEL version=$VERSION
 
 WORKDIR /app
@@ -54,4 +53,6 @@ RUN printf '%s\n' \
 EXPOSE 443 8081
 
 ENTRYPOINT ["entrypoint.sh"]
-CMD ["java", "-jar", "app.jar"]
+# JVM flags live here, not in JAVA_TOOL_OPTIONS: docker-compose.yml sets that variable and would replace them.
+# --enable-native-access: jSerialComm loads a native library, which Java 25 otherwise warns about.
+CMD ["java", "-XX:+UseCompactObjectHeaders", "--enable-native-access=ALL-UNNAMED", "-jar", "app.jar"]
