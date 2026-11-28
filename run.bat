@@ -6,8 +6,13 @@ SET APP_FILE=serial-protocol
 REM Minimum Java major version; keep in sync with java.version in pom.xml.
 SET REQUIRED_JAVA=25
 REM The version comes from the jar name, so a new <version> in pom.xml needs no change here.
+REM Exactly one jar may match (as in the deploy scripts): with several, the FOR would pick by name, not by version.
 SET JAR_FILE=
-FOR %%F IN (target\%APP_FILE%-*.jar) DO SET JAR_FILE=%%F
+SET JAR_COUNT=0
+FOR %%F IN (target\%APP_FILE%-*.jar) DO (
+    SET JAR_FILE=%%F
+    SET /A JAR_COUNT+=1
+)
 
 echo =====================================
 echo Checking for Java %REQUIRED_JAVA% or newer ...
@@ -47,6 +52,13 @@ echo Using "%JAVA_EXE%" (Java %JAVA_MAJOR%)
 echo =====================================
 IF NOT DEFINED JAR_FILE (
     echo Error: no target\%APP_FILE%-*.jar found. Build it first with build-jar.bat.
+    pause
+    exit /b 1
+)
+IF %JAR_COUNT% GTR 1 (
+    echo Error: %JAR_COUNT% jars match target\%APP_FILE%-*.jar, expected one:
+    dir /b target\%APP_FILE%-*.jar
+    echo Rebuild with build-jar.bat, which cleans target first.
     pause
     exit /b 1
 )
