@@ -41,7 +41,7 @@ fi
 echo "Starting Docker containers in detached mode..."
 docker compose up -d --no-build || die "docker compose up failed."
 for i in $(seq 1 90); do
-    status=$(docker inspect -f '{{.State.Health.Status}}' "$container_name" 2>/dev/null)
+    status=$(docker inspect --type container -f '{{.State.Health.Status}}' "$container_name" 2>/dev/null)
     [ "$status" = healthy ] && { echo "$container_name is healthy."; exit 0; }
     sleep 2
 done

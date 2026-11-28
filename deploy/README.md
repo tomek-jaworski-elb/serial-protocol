@@ -74,14 +74,19 @@ The first connection stores the server's host key in `deploy/.known_hosts` (giti
 
 ## Rollback
 
-`--rollback` switches the app back to `previous-tag`. After a deploy that ran a migration, the old version no
-longer starts on the database. Restore the dump the deploy printed first:
+`--rollback` switches the app back to `previous-tag`. It swaps only the image; `docker-compose.yml` stays as
+deployed. After a deploy that ran a migration, the old version no longer starts on the database. Restore the dump
+the deploy printed first. The database is dropped and created empty before the load, because the dump only replaces
+the tables it contains, and a table made by the failed migration would survive and break the next deploy:
 
 ```
 docker stop serial-ports-server
+docker exec mariadb sh -c 'MYSQL_PWD="$MARIADB_ROOT_PASSWORD" exec mariadb -uroot -e "DROP DATABASE $MARIADB_DATABASE; CREATE DATABASE $MARIADB_DATABASE"'
 gunzip -c DIR/backups/db-<tag>.sql.gz | docker exec -i mariadb sh -c 'MYSQL_PWD="$MARIADB_ROOT_PASSWORD" exec mariadb -uroot "$MARIADB_DATABASE"'
 sh DIR/deploy-remote.sh rollback DIR
 ```
+
+If the rollback itself fails and the image that ran before still exists, the script switches back to it and says so.
 
 ## Limitations
 
@@ -99,6 +104,10 @@ sh DIR/deploy-remote.sh rollback DIR
   with a space: the password prompt works while the archive goes through stdin, and deploy, update,
   `-Status` and `-Rollback` ran end to end. The archive (jar hash compared) was also checked with an ssh stub
   under PS 5.1 at code pages 65001 and 852 and under PowerShell 7. `-Attach` was not run on Windows.
+- Not yet exercised on a real server: the automatic rollback after a failed start, the pre-migration dump and the
+  restore procedure, the compose-diff abort, image pruning beyond 3 tags, and `--attach` / `-Attach` (on any client).
+  The database drop before a restore and the return to the running image after a failed `--rollback` were
+  checked only against stub `docker` and `mariadb` commands. The live rollback test used two tags of the same image, so it proved the mechanics only.
 - The deploy user is in the `docker` group, which is root-equivalent on the server.
 
 ## Troubleshooting

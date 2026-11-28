@@ -55,7 +55,7 @@ valid_upload() {
 
 dc() { docker compose -p "$PROJECT" --project-directory "$DIR" -f "$DIR/docker-compose.yml" -f "$DIR/docker-compose.override.yml" "$@"; }
 
-exists() { docker inspect "$1" >/dev/null 2>&1; }
+exists() { docker inspect --type container "$1" >/dev/null 2>&1; }
 
 label() { docker "$1" inspect -f '{{index .Labels "com.docker.compose.project"}}' "$2" 2>/dev/null; }
 
@@ -73,7 +73,7 @@ write_override() {
 
 wait_db() {
     i=0
-    while [ "$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{end}}' "$DB" 2>/dev/null)" != healthy ]; do
+    while [ "$(docker inspect --type container -f '{{if .State.Health}}{{.State.Health.Status}}{{end}}' "$DB" 2>/dev/null)" != healthy ]; do
         i=$((i + 2)); [ $i -gt 120 ] && return 1; sleep 2
     done
 }
@@ -82,7 +82,7 @@ wait_db() {
 wait_app() {
     i=0
     while :; do
-        s=$(docker inspect -f '{{.State.Status}} {{.State.Restarting}} {{.RestartCount}} {{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$APP" 2>/dev/null) || return 1
+        s=$(docker inspect --type container -f '{{.State.Status}} {{.State.Restarting}} {{.RestartCount}} {{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$APP" 2>/dev/null) || return 1
         set -- $s
         [ "$1" = running ] && [ "$2" = false ] && [ "$3" = 0 ] || { say "container is $s"; return 1; }
         [ "$4" = healthy ] || [ "$4" = none ] && return 0
@@ -151,8 +151,8 @@ prechecks() {
 
 # Adopt the compose project of the running stack; never guess from the folder name.
 project() {
-    PROJECT=$(docker inspect -f '{{index .Config.Labels "com.docker.compose.project"}}' "$APP" 2>/dev/null) \
-        || PROJECT=$(docker inspect -f '{{index .Config.Labels "com.docker.compose.project"}}' "$DB" 2>/dev/null) \
+    PROJECT=$(docker inspect --type container -f '{{index .Config.Labels "com.docker.compose.project"}}' "$APP" 2>/dev/null) \
+        || PROJECT=$(docker inspect --type container -f '{{index .Config.Labels "com.docker.compose.project"}}' "$DB" 2>/dev/null) \
         || PROJECT=$(cat "$DIR/.project" 2>/dev/null) \
         || PROJECT=serial-protocol
     [ -n "$PROJECT" ] || PROJECT=serial-protocol
@@ -191,8 +191,10 @@ backup() {
 restore_hint() {
     say "The schema was migrated, so the previous version cannot start on it. To go back:"
     say "  1. docker stop $APP"
-    say "  2. gunzip -c ${BACKUP:-<dump>} | docker exec -i $DB sh -c 'MYSQL_PWD=\"\$MARIADB_ROOT_PASSWORD\" exec mariadb -uroot \"\$MARIADB_DATABASE\"'"
-    say "  3. sh $DIR/deploy-remote.sh rollback $DIR"
+    # The dump only replaces tables it contains; a table made by the failed migration would survive, so start empty.
+    say "  2. docker exec $DB sh -c 'MYSQL_PWD=\"\$MARIADB_ROOT_PASSWORD\" exec mariadb -uroot -e \"DROP DATABASE \$MARIADB_DATABASE; CREATE DATABASE \$MARIADB_DATABASE\"'"
+    say "  3. gunzip -c ${BACKUP:-<dump>} | docker exec -i $DB sh -c 'MYSQL_PWD=\"\$MARIADB_ROOT_PASSWORD\" exec mariadb -uroot \"\$MARIADB_DATABASE\"'"
+    say "  4. sh $DIR/deploy-remote.sh rollback $DIR"
 }
 
 # ---------- actions ----------
@@ -246,10 +248,10 @@ do_deploy() {
 
     PREV=
     if exists "$APP"; then
-        PREV=$(docker inspect -f '{{.Config.Image}}' "$APP")
+        PREV=$(docker inspect --type container -f '{{.Config.Image}}' "$APP")
         case $PREV in
             "$IMAGE":*) ;;
-            *) docker tag "$(docker inspect -f '{{.Image}}' "$APP")" "$IMAGE:prev-$TAG" && PREV=$IMAGE:prev-$TAG ;;
+            *) docker tag "$(docker inspect --type container -f '{{.Image}}' "$APP")" "$IMAGE:prev-$TAG" && PREV=$IMAGE:prev-$TAG ;;
         esac
         say "previous image: $PREV"
     fi
@@ -316,6 +318,13 @@ do_rollback() {
         return 0
     fi
     docker logs --tail 80 "$APP" 2>&1
+    if [ -n "$cur" ] && [ "$cur" != "$prev" ] && docker image inspect "$cur" >/dev/null 2>&1; then
+        say "rollback failed (after a migration, restore the dump first); returning to $cur"
+        if swap "$cur" && wait_app; then
+            die "rollback to $prev failed and $cur is running again (tag files unchanged)"
+        fi
+        docker logs --tail 80 "$APP" 2>&1
+    fi
     die "rollback failed (after a migration, restore the dump first)"
 }
 
