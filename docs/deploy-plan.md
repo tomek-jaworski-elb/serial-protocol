@@ -1,12 +1,12 @@
 # Deploy plan: Windows 11 / Linux workstation → Linux Docker server
 
 Status: **implemented in `deploy/` (branch `deploy-scripts`); decisions in §10 (answered 2026-11-12).** Based on branch `master` (0911c6d).
-Usage: [`deploy/README.md`](../deploy/README.md).
+Usage: [`deploy/README.md`](../deploy/README.md). This is the design record; where it and the scripts differ, `deploy/deploy-remote.sh` and the README are right.
 
 ## 1. How the app runs today (master)
 
 - `docker-compose.yml`: two services on the fixed network `backend`.
-  - `server`: `build: .`, `container_name: serial-ports-server`, `8081:443`, `privileged`, `/dev/ttyS0-2`, `/dev/ttyACM0` and `/dev:/dev` mapped, volume `server-logs:/app/logs`, `restart: unless-stopped`, healthcheck `netcat -z localhost 443`, `depends_on: mariadb (healthy)`.
+  - `server`: `build: .`, `container_name: serial-ports-server`, `8081:443`, `privileged`, `/dev/ttyS0-2` and `/dev:/dev` mapped (`/dev/ttyACM0` too until this branch commented it out: a USB device, not the RS-232 port), volume `server-logs:/app/logs`, `restart: unless-stopped`, healthcheck `netcat -z localhost 443`, `depends_on: mariadb (healthy)`.
   - `mariadb`: `mariadb:11.8`, `container_name: mariadb`, volume `db-data`, `3306:3306` published, hard-coded passwords (`user/password`, `root`).
 - Volumes and the network carry an explicit `name:`, so they are global per Docker host and do not depend on the compose project name. Containers keep the project label, which is taken from the folder name because the compose file sets no `name:`.
 - `Dockerfile` does not build the app. It `COPY`s a prebuilt `target/serial-protocol-3.0.jar` and `cert/server.p12`. **`cert/` is gitignored**, so the server can never build from a git checkout alone.
@@ -14,7 +14,7 @@ Usage: [`deploy/README.md`](../deploy/README.md).
 - `start_docker.sh` (on master) runs `up --build --force-recreate --always-recreate-deps`. That recreates MariaDB too, so a deploy must not use it. It also stopped the stack before building, so a failed build left no app. Since this branch it builds first, never recreates MariaDB and refuses a deploy-managed folder.
 - Ports the app listens on: 443 (HTTPS), 80 and 8080 (redirect, not published), UDP 2222 (**not published**). Serial ports are opened in the container.
 - State to keep: volume `db-data` (all business data, photos) and volume `server-logs` (`tracking.log` is the only source for `/tracks` replay).
-- Schema: Flyway V1..V9 run at start-up with `ddl-auto=validate`. Migrations are one-way, so an old jar does not start on a migrated schema.
+- Schema: the Flyway migrations (`V1__…` onwards) run at start-up with `ddl-auto=validate`. Migrations are one-way, so an old jar does not start on a migrated schema.
 
 ## 2. Why "always available" is not reachable without app changes
 
@@ -85,10 +85,10 @@ DEPLOY_DIR=/opt/serial-protocol
    A missing local `cert/server.p12` only warns; the server then uses its own copy and aborts if it has none.
 4. `tar czf <tmp>.tgz -C <stage> .`, then a single call:
    ```
-   ssh -p P -o ServerAliveInterval=15 -o StrictHostKeyChecking=accept-new \
-       -o PubkeyAuthentication=no -o PreferredAuthentications=password,keyboard-interactive \
-       -o UserKnownHostsFile=deploy/.known_hosts user@host \
-       "sh -c 'I=DIR/.incoming-TAG; mkdir -p \"\$I\" && tar xzf - -C \"\$I\" && sh \"\$I/deploy-remote.sh\" start DIR \"\$I\"'" < tmp.tgz
+   ssh -p P -o ServerAliveInterval=15 -o ServerAliveCountMax=4 -o StrictHostKeyChecking=accept-new \
+       -o UserKnownHostsFile="deploy/.known_hosts" \
+       -o PubkeyAuthentication=no -o PreferredAuthentications=password,keyboard-interactive user@host \
+       "umask 077 && mkdir -p DIR/.incoming-TAG && tar xzf - -C DIR/.incoming-TAG && exec sh DIR/.incoming-TAG/deploy-remote.sh start DIR DIR/.incoming-TAG TAG [--update-compose] [--backup]" < tmp.tgz
    ```
    - `DIR` and `TAG` are validated literals, which is why the quoting is simple.
    - On Windows a PS 5.1 pipe would corrupt the binary archive, so `deploy.ps1` starts `ssh.exe` through `System.Diagnostics.ProcessStartInfo` with stdin redirected and copies the file into it byte for byte. PS 5.1 also writes the console encoding's preamble into that stdin when the process starts, a UTF-8 BOM under code page 65001 that `tar` on the server rejects, so the console input encoding is set to UTF-8 without BOM around the start. ssh still prompts on the console with stdin redirected: checked on Windows 11 with PS 5.1 against an Ubuntu server.
@@ -113,14 +113,15 @@ Extra commands:
    - Otherwise use `DIR/.project`, otherwise `serial-protocol`. Save the result to `.project`.
    - If the `backend` network or the `db-data`/`server-logs` volumes have a different project label, **abort** with an explanation.
    - Afterwards always use `docker compose -p P --project-directory DIR`.
-4. **Build image while the old version serves.**
+4. **Compare the compose file, then build the image while the old version serves.**
+   - If the server's `docker-compose.yml` differs from the shipped one, show the diff and **abort** (nothing built or stopped) unless `--update-compose` is given.
    - `docker build -t serial-protocol:TAG INC/build`. The context holds only the Dockerfile, the cert and the jar, so no backups or logs go in.
    - Failure: delete `INC` and exit. Nothing was stopped and no file in DIR changed.
 5. **Install files only after a successful build.**
-   - Compose file: on a first install it is copied. If the server copy differs from the shipped one, show the diff and **abort** (before the swap, nothing stopped) unless `--update-compose` is given.
-   - `docker-compose.override.yml` with `services.server.image: serial-protocol:TAG`. Compose loads it automatically, so a manual `docker compose up` after a reboot or by hand runs the same image.
+   - Compose file: the server copy is kept as `docker-compose.yml.prev`, then replaced by the shipped one.
+   - `docker-compose.override.yml` with `services.server.image: serial-protocol:TAG`. Compose loads it automatically, so a manual `docker compose -p "$(cat .project)" up -d` runs the same image.
    - `cert/` gets mode 600, and `deploy-remote.sh` is copied into DIR for `--rollback`.
-6. **MariaDB.** `up -d --no-recreate mariadb`, then wait for `healthy` (60 s).
+6. **MariaDB.** `up -d --no-recreate mariadb`, then wait for `healthy` (120 s).
    - On a first install this creates the volumes.
    - It never recreates an existing database container, so it also does not upgrade an old `mariadb` image. That is intended.
 7. **Snapshot.**
@@ -140,13 +141,13 @@ Extra commands:
     - Fast fail: the container is not running, or `State.Restarting` is set, or `RestartCount>0`. `restart: unless-stopped` makes a crashing container loop instead of stopping. A single `unhealthy` is not final.
 11. **Failure.**
     - Run `docker logs --tail 80`, then read `M1`.
-    - If `M1 == M0` and a previous image exists: stop and rm the container, point the override at `prev`, `up`, wait for health, exit 1 ("rolled back").
+    - If `M1 == M0` and a previous image exists: put `docker-compose.yml.prev` back, stop and rm the container, point the override at `prev`, `up`, wait for health, remove the failed image, exit 1 ("rolled back").
     - If `M1 != M0`: **no automatic rollback**, because the old jar does not pass `validate`. Record the failed tag as current and the old one as previous (so `rollback` after the restore goes to the right image), print the dump path and the restore command, exit 1.
 12. **Success.**
     - Write `current-tag` and `previous-tag`.
-    - Keep the last 3 `serial-protocol:*` tags plus the running and previous ones, then `docker image prune -f` (dangling layers only). Delete `INC`.
+    - Keep the 3 newest timestamped `serial-protocol:*` tags (the running one is the newest) plus `previous-tag`; other `prev-*` tags are removed. No `docker image prune`. The EXIT trap deletes `INC` and releases the lock on every outcome.
     - **Never `down -v` and never `volume prune`.**
-13. **Report.** Print the tag, `https://<host>:8081/`, `docker compose ps` and the measured gap (from step 9 to healthy).
+13. **Report.** Print the measured gap (from step 9 to healthy), `docker compose ps` and the deployed tag.
 
 **First deploy over a stack started by hand:** its project name is adopted, and its image is kept as `prev`. Do this first deploy with someone watching.
 

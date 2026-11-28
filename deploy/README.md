@@ -41,11 +41,15 @@ The script asks for the server, ssh port, user and folder, unless given as optio
 > **Warning: do not run `start_docker.sh` (or `docker compose up --build`) in `DIR`.** The folder holds no
 > `Dockerfile` and no jar, so a rebuild cannot work. The old `start_docker.sh` stopped the stack *before* building
 > and left the server without the app; the current one refuses to run in a deploy-managed folder. On the server use
-> `docker compose up -d` in `DIR` (the override pins the deployed image), `deploy.sh --status` or `--rollback`.
-> `stop_docker.sh` / `docker compose down` are safe: they never remove the `db-data` volume. Never add `-v`.
+> `deploy.sh --status` or `--rollback`. To start or stop the stack by hand, run compose in `DIR` with the adopted
+> project name: `docker compose -p "$(cat .project)" up -d` (the override pins the deployed image) or `... stop`.
+> A plain `docker compose` takes the folder name as the project; when the stack was first started from another
+> folder that name differs, and `up` fails (the containers already belong to the adopted project) while `down` stops nothing.
+> `docker compose -p "$(cat .project)" down` is safe: it never removes the `db-data` volume. Never add `-v`.
+> After a reboot both containers come back on their own (`restart: unless-stopped`).
 
-Server layout (`DIR`): `docker-compose.yml`, `docker-compose.override.yml` (pins the image tag, so a plain
-`docker compose up -d` after a reboot runs the same version), `cert/`, `current-tag`, `previous-tag`, `.project`,
+Server layout (`DIR`): `docker-compose.yml`, `docker-compose.override.yml` (pins the image tag, so a manual `up`
+runs the deployed version), `cert/`, `current-tag`, `previous-tag`, `.project` (the compose project name),
 `deploy-remote.sh`, `deploy-logs/`, `backups/`. Volumes `db-data` and `server-logs` are never touched.
 
 ## First deploy to a server that already runs the stack
@@ -86,11 +90,17 @@ gunzip -c DIR/backups/db-<tag>.sql.gz | docker exec -i mariadb sh -c 'MYSQL_PWD=
 sh DIR/deploy-remote.sh rollback DIR
 ```
 
+The restore returns the database to the moment of the dump: anything written after it is lost.
+
 If the rollback itself fails and the image that ran before still exists, the script switches back to it and says so.
+Running `--rollback` again switches back to the newer image, because each rollback swaps `current-tag` and
+`previous-tag`.
 
 ## Limitations
 
 - Every deploy has a gap of about 15–35 s. Users are logged out, and serial frames sent during the swap are lost.
+  A new version that never becomes healthy keeps the app down for up to about 5 minutes (up to 30 s stop,
+  180 s health wait, then the rollback swap).
   True zero downtime needs app changes (see §9 of the plan).
 - After a deploy that ran a migration there is no automatic rollback. Recovery is the manual restore above.
 - The `mariadb` container is never recreated or upgraded by a deploy. Its passwords and the published `3306` stay
@@ -104,6 +114,7 @@ If the rollback itself fails and the image that ran before still exists, the scr
   with a space: the password prompt works while the archive goes through stdin, and deploy, update,
   `-Status` and `-Rollback` ran end to end. The archive (jar hash compared) was also checked with an ssh stub
   under PS 5.1 at code pages 65001 and 852 and under PowerShell 7. `-Attach` was not run on Windows.
+- Linux client: `deploy.sh` has run only with a stubbed ssh. Every run against the real server used `deploy.ps1`.
 - Not yet exercised on a real server: the automatic rollback after a failed start, the pre-migration dump and the
   restore procedure, the compose-diff abort, image pruning beyond 3 tags, and `--attach` / `-Attach` (on any client).
   The database drop before a restore and the return to the running image after a failed `--rollback` were

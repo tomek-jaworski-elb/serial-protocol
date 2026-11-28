@@ -5,3 +5,4 @@
 @./.claude/rules/websocket-sessions.md
 @./.claude/rules/web-chart.md
 @./.claude/rules/domain-persistence.md
+@./.claude/rules/deploy.md

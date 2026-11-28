@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - `AGENTS.md` (Codex, Cursor, Copilot, Windsurf, Zed, Jules, Aider) mirrors exactly three blocks of this file, verbatim: **commands**, **invariants** and **conventions**. Each is fenced here by `<!-- mirror:begin NAME -->` / `<!-- mirror:end NAME -->` and by the same markers in `AGENTS.md`. Nothing else is copied.
 - `.github/copilot-instructions.md` is a pointer with no content of its own.
-- `GEMINI.md` imports this file (`@./CLAUDE.md`) and the four rule files, so Gemini sees everything unconditionally.
+- `GEMINI.md` imports this file (`@./CLAUDE.md`) and the five rule files, so Gemini sees everything unconditionally.
 
 When you edit a mirrored block, make the same edit inside the markers in `AGENTS.md` in the same change. Put every other piece of new guidance in the matching path-scoped rule under `.claude/rules/` (see "Where the rest lives"), or here if it must hold in every session.
 
@@ -58,6 +58,7 @@ No lint plugin (Checkstyle/PMD/SpotBugs) is configured in `pom.xml` — do not i
 - **The schema belongs to Flyway.** `src/main/resources/db/migration` is the only thing that changes a production database; `ddl-auto=validate` refuses to start on drift. A mapping change ships with a `V<n>__*.sql` in the same commit, and `SchemaMigrationTest` turns red when the two disagree. (.claude/rules/domain-persistence.md § Persistence)
 - **Every frame enters through `FrameIngress`.** `SerialPortListenerImpl` and `UdpPacketHandlerImpl` are adapters and never publish `/rs` or `/json` themselves; `FrameIngestService` publishes the raw bytes first and a DTO only when its checksum verifies. (.claude/rules/ingest-pipeline.md § Ingest pipeline)
 - **`src/test/resources/golden/frames.jsonl` is a contract with `simulator/`.** The application's `GoldenFramesTest` and the simulator's `FrameEncoderTest` both read it; a frame-format change edits the file first and turns both red. Regenerate it only with `GoldenFramesWriter` (`-Dgolden.write=true`). Both adapters log `"Received delimited message: [...]"` and the simulator's replay parses it, so that text is an API too. (.claude/rules/ingest-pipeline.md § Data simulator)
+- **The server deploy reads `docker-compose.yml`, the `Dockerfile` and the migration file names.** `deploy/deploy-remote.sh` starts only `mariadb` and `server`, finds them by `container_name`, treats a missing healthcheck as healthy, builds from the jar and `cert/server.p12` alone, and dumps the database first only when the jar has a top-level `V<n>__*.sql` the database has not applied. A new service, a removed healthcheck, or a migration in a subfolder or as `R__` deploys without a start, a health check or a dump. (.claude/rules/deploy.md)
 <!-- mirror:end invariants -->
 
 ## Working conventions
@@ -79,5 +80,6 @@ Architecture notes are path-scoped rules in `.claude/rules/`. Claude Code loads 
 | `websocket-sessions.md` | WebSocket channels, the four meanings of "session", page liveness | WebSocket config and handlers, `WSSessionManager`, `WebSocketPublisher*`, `SessionType`, `static/js/ws-*.js`, `templates/fragment.html` |
 | `web-chart.md` | MVC controllers, shared layout, chart map, follow mode | `controller/web/`, `resources/`, `templates/`, `static/js`, `static/css` |
 | `domain-persistence.md` | MariaDB/H2 profiles, Flyway, legacy and custom domain, images and avatars, REST API, security, PDF reports | `entity/`, `repository/`, `dto/`, `mappers/`, `rest/`, `authorization/`, `service/db`, `service/pdf`, `db/migration`, `templates/custom`, `application*.properties` |
+| `deploy.md` | Server deploy over ssh: what `deploy-remote.sh` reads from compose, `Dockerfile` and migrations | `deploy/`, `docker-compose.yml`, `Dockerfile`, `start_docker.sh`, `stop_docker.sh`, `db/migration`, `docs/deploy-plan.md` |
 
 Long-form references stay in `docs/`: [`chart-map-view.md`](docs/chart-map-view.md), [`follow-mode-spec.md`](docs/follow-mode-spec.md), [`track-replay.md`](docs/track-replay.md), [`custom-domain-analysis.md`](docs/custom-domain-analysis.md), [`pdf-report-plan.md`](docs/pdf-report-plan.md), [`e2e-simulator-plan.md`](docs/e2e-simulator-plan.md), [`deploy-plan.md`](docs/deploy-plan.md) (remote deploy; usage in [`deploy/README.md`](deploy/README.md)), [`Opis RS232.txt`](docs/Opis%20RS232.txt).
