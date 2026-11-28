@@ -1,0 +1,4 @@
+# Shipped to the Linux server: must keep LF whatever core.autocrlf says.
+*.sh text eol=lf
+Dockerfile text eol=lf
+docker-compose*.yml text eol=lf

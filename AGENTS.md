@@ -18,9 +18,10 @@ Edit `CLAUDE.md` first and copy the block here in the same change. Do not add ot
 .\mvnw.cmd spring-boot:run                                     # run from Maven
 java -jar .\target\serial-protocol-3.0.jar                     # run packaged JAR (3.0 = <version> in pom.xml)
 docker compose up --build                                      # app + MariaDB
-./start_docker.sh -d    |    ./stop_docker.sh                  # rebuild and start detached / stop (bash)
+./start_docker.sh -d    |    ./stop_docker.sh                  # build, then start detached / stop (bash; local, not on a deploy server)
 .\mvnw.cmd -f simulator/pom.xml verify                        # build + test the data simulator (simulator/target/ship-sim.jar)
 run-sim.bat replay --from docs\LogTerminal.txt --loop          # feed the running app over UDP (localhost:2222) from the recording
+deploy/deploy.sh   |   deploy\deploy.ps1                     # deploy to the Linux server over ssh (--help; deploy/README.md)
 ```
 
 No lint plugin (Checkstyle/PMD/SpotBugs) is configured in `pom.xml` — do not invent a lint command. A local run listens on 443 (`https://localhost/`); Docker maps host 8081 to container 443 (`https://localhost:8081/`).
@@ -51,6 +52,7 @@ Each one is explained in the `CLAUDE.md` section it names.
 - **The schema belongs to Flyway.** `src/main/resources/db/migration` is the only thing that changes a production database; `ddl-auto=validate` refuses to start on drift. A mapping change ships with a `V<n>__*.sql` in the same commit, and `SchemaMigrationTest` turns red when the two disagree. (.claude/rules/domain-persistence.md § Persistence)
 - **Every frame enters through `FrameIngress`.** `SerialPortListenerImpl` and `UdpPacketHandlerImpl` are adapters and never publish `/rs` or `/json` themselves; `FrameIngestService` publishes the raw bytes first and a DTO only when its checksum verifies. (.claude/rules/ingest-pipeline.md § Ingest pipeline)
 - **`src/test/resources/golden/frames.jsonl` is a contract with `simulator/`.** The application's `GoldenFramesTest` and the simulator's `FrameEncoderTest` both read it; a frame-format change edits the file first and turns both red. Regenerate it only with `GoldenFramesWriter` (`-Dgolden.write=true`). Both adapters log `"Received delimited message: [...]"` and the simulator's replay parses it, so that text is an API too. (.claude/rules/ingest-pipeline.md § Data simulator)
+- **The server deploy reads `docker-compose.yml`, the `Dockerfile` and the migration file names.** `deploy/deploy-remote.sh` starts only `mariadb` and `server`, finds them by `container_name`, treats a missing healthcheck as healthy, builds from the jar and `cert/server.p12` alone, and dumps the database first only when the jar has a top-level `V<n>__*.sql` the database has not applied. A new service, a removed healthcheck, or a migration in a subfolder or as `R__` deploys without a start, a health check or a dump. (.claude/rules/deploy.md)
 <!-- mirror:end invariants -->
 
 ## Working conventions
