@@ -12,7 +12,7 @@
 <header th:replace="~{fragment::header}"></header>
 <!-- The PDF request: tracks-script.js fills it and submits it into a new tab. Kept near the top: its CSRF token creates the
      session, which must happen before the response buffer fills and commits. -->
-<form id="pdfForm" method="post" enctype="multipart/form-data" target="tracksPdf" th:action="@{/tracks/pdf}" hidden>
+<form sec:authorize="hasRole('USER')" id="pdfForm" method="post" enctype="multipart/form-data" target="tracksPdf" th:action="@{/tracks/pdf}" hidden>
     <input type="file" name="image">
     <input type="hidden" name="from">
     <input type="hidden" name="to">
@@ -51,6 +51,8 @@
                 <svg class="bi" width="16" height="16" aria-hidden="true"><use href="#i-arrow-counterclockwise"/></svg>
             </button>
             <input type="range" class="form-range replay-scrubber" id="replayScrubber" aria-label="Time" min="0" max="0" step="1" value="0" disabled>
+            <button type="button" id="backBtn" class="btn btn-sm btn-outline-secondary replay-skip" aria-label="Back 10 s" title="Back 10 s (J)" data-keys="J" disabled>-10 s</button>
+            <button type="button" id="forwardBtn" class="btn btn-sm btn-outline-secondary replay-skip" aria-label="Forward 10 s" title="Forward 10 s (L)" data-keys="L" disabled>+10 s</button>
             <output id="replayClock" class="small" for="replayScrubber" aria-live="off"></output>
             <input type="range" class="form-range replay-speed" id="speedSlider" aria-label="Speed" title="Speed" min="1" max="10" step="0.2" value="1">
             <output id="speedValue" for="speedSlider" class="small">x1</output>
@@ -85,7 +87,7 @@
             </ul>
 
             <h5 class="tracks-heading">Time range</h5>
-            <div class="row g-2 mb-1">
+            <div class="row g-2 mb-1 time-range">
                 <div class="col-6">
                     <label for="fromInput" class="form-label small mb-1">From</label>
                     <input type="text" id="fromInput" class="form-control form-control-sm" autocomplete="off"
@@ -137,6 +139,7 @@
                     <div id="drawHint" class="text-muted small">Pick ships and a range, then Refresh.</div>
                 </div>
 
+                <div class="print-section" sec:authorize="hasRole('USER')">
                 <h5 class="tracks-heading">Print</h5>
                 <div class="d-flex flex-wrap gap-2">
                     <button type="button" id="printBtn" class="btn btn-outline-secondary" disabled>
@@ -150,6 +153,7 @@
                     </button>
                 </div>
                 <div class="text-muted small mt-1">Without a frame, the current view is printed.</div>
+                </div>
             </div>
         </form>
 
@@ -181,6 +185,7 @@
 <script type="text/javascript" th:src="@{/flatpickr/flatpickr.min.js}"></script>
 <script type="text/javascript" th:src="@{/js/common/ship-geometry.js}"></script>
 <script type="text/javascript" th:src="@{/js/common/map-image.js}"></script>
+<script type="text/javascript" th:src="@{/js/common/stage-pinch.js}"></script>
 <script type="text/javascript" th:src="@{/js/tracks-draw.js}"></script>
 <script type="text/javascript" th:src="@{/js/tracks-script.js}"></script>
 </body>

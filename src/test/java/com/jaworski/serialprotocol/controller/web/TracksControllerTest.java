@@ -16,6 +16,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMultipartHttpServletRequestBuilder;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -29,6 +30,7 @@ import java.util.TreeSet;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -43,6 +45,7 @@ class TracksControllerTest {
 
     private static final String FROM = "2026-01-15T14:00:00";
     private static final String TO = "2026-01-15T15:00:00";
+    private static final RequestPostProcessor SIGNED_IN = httpBasic("user", "user");
 
     @Autowired
     private MockMvc mockMvc;
@@ -57,7 +60,7 @@ class TracksControllerTest {
     void daysListsTheRecordedDaysAndTheDisplayZone() throws Exception {
         when(logSource.availableDays()).thenReturn(new TreeSet<>(Set.of(LocalDate.of(2026, 1, 14), LocalDate.of(2026, 1, 15))));
 
-        mockMvc.perform(get("/tracks/api/days"))
+        mockMvc.perform(get("/tracks/api/days").with(SIGNED_IN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.days[0]").value("2026-01-14"))
                 .andExpect(jsonPath("$.days[1]").value("2026-01-15"))
@@ -71,7 +74,7 @@ class TracksControllerTest {
                 new TrackCoverage(true, LocalDate.of(2026, 1, 13), LocalDate.of(2026, 1, 15), 1768482000000L, 1768482000000L, 0));
         when(queryService.query(LocalDateTime.parse(FROM), LocalDateTime.parse(TO), Set.of(1, 2))).thenReturn(result);
 
-        mockMvc.perform(get("/tracks/api/points").param("from", FROM).param("to", TO).param("models", "1,2"))
+        mockMvc.perform(get("/tracks/api/points").param("from", FROM).param("to", TO).param("models", "1,2").with(SIGNED_IN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.ships[0].id").value(1))
                 .andExpect(jsonPath("$.ships[0].points[0][0]").value(1768482000000L))
@@ -89,17 +92,17 @@ class TracksControllerTest {
         when(queryService.query(LocalDateTime.parse(FROM), LocalDateTime.parse(TO), Set.of(1)))
                 .thenThrow(new InvalidTrackQueryException("The range lies in the future."));
 
-        mockMvc.perform(get("/tracks/api/points").param("from", FROM).param("to", TO).param("models", "1"))
+        mockMvc.perform(get("/tracks/api/points").param("from", FROM).param("to", TO).param("models", "1").with(SIGNED_IN))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("The range lies in the future."));
     }
 
     @Test
     void unreadableParametersAre400WithAMessage() throws Exception {
-        mockMvc.perform(get("/tracks/api/points").param("from", "yesterday").param("to", TO).param("models", "1"))
+        mockMvc.perform(get("/tracks/api/points").param("from", "yesterday").param("to", TO).param("models", "1").with(SIGNED_IN))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").isNotEmpty());
-        mockMvc.perform(get("/tracks/api/points").param("from", FROM).param("to", TO))
+        mockMvc.perform(get("/tracks/api/points").param("from", FROM).param("to", TO).with(SIGNED_IN))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").isNotEmpty());
     }
@@ -109,7 +112,7 @@ class TracksControllerTest {
         when(queryService.query(LocalDateTime.parse(FROM), LocalDateTime.parse(TO), Set.of(1)))
                 .thenThrow(new TrackQueryBusyException());
 
-        mockMvc.perform(get("/tracks/api/points").param("from", FROM).param("to", TO).param("models", "1"))
+        mockMvc.perform(get("/tracks/api/points").param("from", FROM).param("to", TO).param("models", "1").with(SIGNED_IN))
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.message").value("The server is busy with another track query, try again in a moment."));
     }
@@ -129,7 +132,7 @@ class TracksControllerTest {
 
     @Test
     void thePdfIsServedInlineUnderANameFromTheRange() throws Exception {
-        mockMvc.perform(pdfRequest(jpeg()).with(csrf()))
+        mockMvc.perform(pdfRequest(jpeg()).with(csrf()).with(SIGNED_IN))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/pdf"))
                 .andExpect(header().string("Content-Disposition", "inline; filename=\"tracks_2026-01-15_1400-1500.pdf\""));
@@ -137,21 +140,21 @@ class TracksControllerTest {
 
     @Test
     void aBadPdfRequestIs400WithPlainText() throws Exception {
-        mockMvc.perform(pdfRequest(new MockMultipartFile("image", "tracks.png", "image/png", new byte[]{1, 2, 3})).with(csrf()))
+        mockMvc.perform(pdfRequest(new MockMultipartFile("image", "tracks.png", "image/png", new byte[]{1, 2, 3})).with(csrf()).with(SIGNED_IN))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentTypeCompatibleWith("text/plain"))
                 .andExpect(content().string("The map image is not a valid image."));
         mockMvc.perform(multipart("/tracks/pdf").param("from", FROM).param("to", TO).param("silhouettes", "20")
-                        .param("ships", "1").param("widthNm", "5").with(csrf()))
+                        .param("ships", "1").param("widthNm", "5").with(csrf()).with(SIGNED_IN))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("The map image is missing."));
-        mockMvc.perform(pdfRequest(jpeg()).param("ships", "99").with(csrf()))
+        mockMvc.perform(pdfRequest(jpeg()).param("ships", "99").with(csrf()).with(SIGNED_IN))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void polishCaptainsArePrinted() throws Exception {
-        mockMvc.perform(pdfRequest(jpeg()).param("captains", "{\"1\":\"Zażółć Gęślą\",\"2\":\" \"}").with(csrf()))
+        mockMvc.perform(pdfRequest(jpeg()).param("captains", "{\"1\":\"Zażółć Gęślą\",\"2\":\" \"}").with(csrf()).with(SIGNED_IN))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/pdf"));
     }
@@ -159,7 +162,7 @@ class TracksControllerTest {
     @Test
     void badCaptainsAre400WithPlainText() throws Exception {
         for (String captains : new String[]{"{not json", "[\"Jan\"]", "{\"1\":\"" + "x".repeat(121) + "\"}", "{\"5\":\"Jan\"}"}) {
-            mockMvc.perform(pdfRequest(jpeg()).param("captains", captains).with(csrf()))
+            mockMvc.perform(pdfRequest(jpeg()).param("captains", captains).with(csrf()).with(SIGNED_IN))
                     .andExpect(status().isBadRequest())
                     .andExpect(content().contentTypeCompatibleWith("text/plain"));
         }
@@ -167,7 +170,21 @@ class TracksControllerTest {
 
     @Test
     void thePdfNeedsTheCsrfToken() throws Exception {
-        mockMvc.perform(pdfRequest(jpeg()))
+        mockMvc.perform(pdfRequest(jpeg()).with(SIGNED_IN))
                 .andExpect(status().isForbidden());
+    }
+
+    /** The page sends X-Requested-With, so an expired session is a bare 401 and the browser shows no Basic-auth dialog. */
+    @Test
+    void anonymousCallersGetA401AndNoBasicChallenge() throws Exception {
+        mockMvc.perform(get("/tracks/api/days").header("X-Requested-With", "XMLHttpRequest"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().doesNotExist("WWW-Authenticate"));
+        mockMvc.perform(get("/tracks/api/points").param("from", FROM).param("to", TO).param("models", "1")
+                        .header("X-Requested-With", "XMLHttpRequest"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().doesNotExist("WWW-Authenticate"));
+        mockMvc.perform(pdfRequest(jpeg()).with(csrf()))
+                .andExpect(status().isUnauthorized());
     }
 }

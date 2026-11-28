@@ -420,6 +420,111 @@ class ChartShipListTest {
                 .doesNotContain("konvaStage");
     }
 
+    /**
+     * The LOD arrow must move with the hull, and the heading with the position. Poses are eased frame by frame through
+     * {@code renderShipAt}; when only the hull was moved there, the arrow stayed one report behind
+     * the hull and the end of the track at every zoom below the hull threshold. A proxy on the
+     * shape of the code, like the test above.
+     */
+    @Test
+    void theArrowIsMovedTogetherWithTheHull() throws Exception {
+        String script = scriptSource();
+        int bodyStart = script.indexOf("function renderShipAt");
+        assertThat(bodyStart).as("renderShipAt").isNotNegative();
+        String body = script.substring(bodyStart, script.indexOf("\n}", bodyStart));
+
+        assertThat(body).as("the hull is placed in renderShipAt").contains("obj.shipShape.points(");
+        assertThat(body).as("the arrow is placed in renderShipAt, from the same drawn position")
+                .contains("obj.arrowShape.points(shipArrowPoints(obj.drawnPos.x, obj.drawnPos.y, obj.drawnAngle))");
+        assertThat(body).as("the hull is drawn with the eased heading, like its position")
+                .contains("cfg.scale, obj.drawnAngle,");
+
+        // The heading is eased in the same step as the position, or the hull would show the new
+        // heading at the old place for the length of the slide.
+        int easeStart = script.indexOf("function advanceShipPositions");
+        assertThat(easeStart).as("advanceShipPositions").isNotNegative();
+        assertThat(script.substring(easeStart, script.indexOf("\n}", easeStart)))
+                .as("position and heading advance by the same fraction")
+                .contains("dx * k").contains("turn * k");
+    }
+
+    /**
+     * The "Smooth movement" checkbox starts from {@code chart.ship.position-smoothing-ms} (300 in
+     * the tests, so checked) and is this page's own switch: the script must start from the system
+     * value on every load and put the ships at their reported pose when it is switched off.
+     */
+    @Test
+    void theSmoothingCheckboxStartsFromTheSystemSetting() throws Exception {
+        assertThat(chartHtml())
+                .as("rendered checked while the property is above zero")
+                .containsPattern("<input[^>]*id=\"smoothingToggle\"[^>]*checked");
+        assertThat(new ClassPathResource("templates/chart.html").getContentAsString(StandardCharsets.UTF_8))
+                .as("the checked state comes from the property, zero renders it unchecked")
+                .contains("th:checked=\"${shipPositionSmoothingMs > 0}\"");
+
+        String script = scriptSource();
+        int start = script.indexOf("function bindSmoothingToggle");
+        assertThat(start).as("bindSmoothingToggle").isNotNegative();
+        assertThat(script.substring(start, script.indexOf("\n}", start)))
+                .as("starts from the system setting, never from a stored choice")
+                .contains("box.checked = SHIP_POSITION_SYSTEM_EASE_MS > 0")
+                .doesNotContain("localStorage")
+                .as("switching off settles the ships at once")
+                .contains("if (!box.checked) settleShipsNow();");
+    }
+
+    /**
+     * Rotating an iPad left the stage at its pre-rotation size: iOS Safari may report a stale
+     * window size, or none, so a refit driven by window {@code resize} measured too early. The
+     * stage must follow its container's own box. A tripwire on the source, not a behaviour test.
+     */
+    @Test
+    void theChartIsResizedFromItsContainerNotTheWindow() throws Exception {
+        assertThat(scriptSource())
+                .as("the container's box drives the refit")
+                .contains("new ResizeObserver(throttledResizeKonvaOverlay).observe(container)")
+                .as("no second, window-driven refit path")
+                .doesNotContain("addEventListener('resize'");
+    }
+
+    /**
+     * The sheet's {@code .open} class survives a switch to the sidebar layout, so an iPad rotated
+     * to landscape and back reopened the sheet, backdrop and all, over the map. Crossing the
+     * breakpoint must close it.
+     */
+    @Test
+    void crossingTheLargeBreakpointClosesTheShipList() throws Exception {
+        assertThat(scriptSource())
+                .as("the same lg breakpoint as chart.css and d-lg-none")
+                .contains("const lgLayout = window.matchMedia('(min-width: 992px)');")
+                .contains("const closeShipList = () => setShipListOpen(false);")
+                .as("registered on that query, with the pre-Safari-14 fallback")
+                .contains("lgLayout.addEventListener('change', closeShipList)")
+                .contains("lgLayout.addListener(closeShipList)");
+    }
+
+    /**
+     * A pinch interrupted by a rotation could leave a stale finger distance, which made the next
+     * pinch jump the zoom. Every two-finger touch must start the pinch afresh, without relying on
+     * which event (touchend or touchcancel) iOS sends when it cancels the gesture.
+     */
+    @Test
+    void aNewPinchStartsFromAFreshDistance() throws Exception {
+        String pinch = MarkupSupport.staticSource("js/common/stage-pinch.js");
+        int start = pinch.indexOf("function bindStagePinch");
+        assertThat(start).as("bindStagePinch").isNotNegative();
+        String body = pinch.substring(start, pinch.indexOf("\n}", start));
+        int touchStart = body.indexOf("addEventListener('touchstart'");
+        assertThat(touchStart).as("the pinch's touchstart handler").isNotNegative();
+        assertThat(body.substring(touchStart, body.indexOf("});", touchStart)))
+                .contains("if (e.touches.length >= 2) lastPinchDist = 0;");
+
+        // The chart only calls the shared pinch; a private copy would drift from /tracks.
+        assertThat(scriptSource()).contains("bindStagePinch(konvaStage, container, zoomStageAtPoint)")
+                .doesNotContain("function bindStagePinch")
+                .doesNotContain("lastPinchDist");
+    }
+
     @Test
     void everyRowHasALedDot() throws Exception {
         for (Models ship : Models.values()) {

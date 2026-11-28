@@ -4,16 +4,25 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import com.jaworski.serialprotocol.dto.Models;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.UUID;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -31,6 +40,8 @@ class TracksPageTest {
     private static final Pattern STYLESHEET_HREF =
             Pattern.compile("<link[^>]*rel=\"stylesheet\"[^>]*href=\"([^\"]+)\"|<link[^>]*href=\"([^\"]+)\"[^>]*rel=\"stylesheet\"");
 
+    private static final RequestPostProcessor SIGNED_IN = httpBasic("user", "user");
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -38,7 +49,7 @@ class TracksPageTest {
 
     private String tracksHtml() throws Exception {
         if (tracksHtml == null) {
-            tracksHtml = mockMvc.perform(get("/tracks"))
+            tracksHtml = mockMvc.perform(get("/tracks").with(SIGNED_IN))
                     .andExpect(status().isOk())
                     .andReturn()
                     .getResponse()
@@ -72,7 +83,7 @@ class TracksPageTest {
     @Test
     void theMenuLinksToTracksRightAfterChartInBothVariants() throws Exception {
         Pattern pair = Pattern.compile("href=\"/chart\"[^>]*>Chart</a>\\s*<a[^>]*href=\"/tracks\"[^>]*>Tracks</a>");
-        String home = mockMvc.perform(get("/")).andReturn().getResponse().getContentAsString();
+        String home = mockMvc.perform(get("/").with(SIGNED_IN)).andReturn().getResponse().getContentAsString();
         assertThat(pair.matcher(home).results().count()).as("desktop and mobile variants").isEqualTo(2);
         assertThat(Pattern.compile("class=\"fb-link active\"[^>]*href=\"/tracks\"").matcher(tracksHtml()).results().count())
                 .as("Tracks is active on its own page, in both variants").isEqualTo(2);
@@ -132,5 +143,135 @@ class TracksPageTest {
         assertThat(html).contains("Times in <span>Europe/Warsaw</span>");
         assertThat(html).containsPattern("data-now=\"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\"");
         assertThat(html).containsPattern("id=\"gapInput\"[^>]*value=\"10\"");
+    }
+
+    /** Guard: the shared pinch has to be defined before the page script that calls it, on both pages. */
+    @Test
+    void theSharedPinchScriptLoadsBeforeThePageScript() throws Exception {
+        String chart = mockMvc.perform(get("/chart")).andReturn().getResponse().getContentAsString();
+        assertThat(tracksHtml().indexOf("/js/common/stage-pinch.js")).as("/tracks").isPositive()
+                .isLessThan(tracksHtml().indexOf("/js/tracks-script.js"));
+        assertThat(chart.indexOf("/js/common/stage-pinch.js")).as("/chart").isPositive()
+                .isLessThan(chart.indexOf("/js/chart-script.js"));
+        assertThat(MarkupSupport.staticSource("js/tracks-script.js")).as("/tracks binds the pinch")
+                .containsPattern("bindStagePinch\\(\\s*konvaStage\\s*,");
+    }
+
+    /** Guard: the stage follows its box through a ResizeObserver, not the window, or a rotation leaves it stale. */
+    @Test
+    void theStageFollowsItsBoxNotTheWindow() throws Exception {
+        String script = MarkupSupport.staticSource("js/tracks-script.js");
+        assertThat(script).doesNotContainPattern("window\\s*\\.addEventListener\\(\\s*'resize'")
+                .containsPattern("new\\s+ResizeObserver\\([\\s\\S]*?\\)\\s*\\.observe\\(\\s*container\\s*\\)");
+    }
+
+    /**
+     * Guard: a hidden button (Print frame on touch) must not be pressed by its key; Refresh scrolls its result into
+     * view, the replay bar stopping above the bottom nav; a scrub ends only for the finger that started it, a second
+     * finger cannot take it over, and a scrub released at the end does not restart the replay.
+     */
+    @Test
+    void aHiddenButtonIsNotPressedAndTheResultIsRevealed() throws Exception {
+        String script = MarkupSupport.staticSource("js/tracks-script.js");
+        assertThat(script).containsPattern("const\\s+press\\s*=[^\\n]*getClientRects\\(\\)");
+        int start = script.indexOf("async function refresh");
+        assertThat(start).as("refresh").isNotNegative();
+        assertThat(script.substring(start, script.indexOf("\n}", start))).contains("revealResult()");
+        assertThat(MarkupSupport.staticSource("css/tracks.css")).containsPattern("scroll-margin-bottom:\\s*var\\(--stack-chrome\\)");
+        assertThat(script).containsPattern("e\\.pointerId\\s*!==\\s*scrubPointer")
+                .containsPattern("if\\s*\\(\\s*scrubPointer\\s*!==\\s*null\\s*\\)\\s*return")
+                .containsPattern("wasPlaying\\s*&&\\s*clockT\\s*<\\s*replayEnd");
+    }
+
+    @Test
+    void theSkipButtonsAreRendered() throws Exception {
+        assertThat(tracksHtml()).containsPattern("id=\"backBtn\"[^>]*>\\s*-10 s\\s*<")
+                .containsPattern("id=\"forwardBtn\"[^>]*>\\s*\\+10 s\\s*<");
+    }
+
+    /** Guard: the script and the stylesheet must agree on when the panel sits beside the map. */
+    @Test
+    void theSideLayoutMediaQueryIsTheSameInScriptAndStylesheet() throws Exception {
+        Matcher js = Pattern.compile("matchMedia\\('([^']+)'\\)")
+                .matcher(MarkupSupport.staticSource("js/tracks-script.js"));
+        assertThat(js.find()).as("matchMedia literal in tracks-script.js").isTrue();
+        Matcher css = Pattern.compile("@media\\s+([^{]+?)\\s*\\{")
+                .matcher(MarkupSupport.staticSource("css/tracks.css"));
+        assertThat(css.find()).as("first @media in tracks.css").isTrue();
+        assertThat(css.group(1)).isEqualTo(js.group(1));
+    }
+
+    /** Guard (hull geometry): hulls are sized by hull.scale, never a stage scale; the fixed-size marker is replay-only. */
+    @Test
+    void hullsUseTheirOwnScaleAndOnlyTheReplayDrawsTheMarker() throws Exception {
+        String draw = MarkupSupport.staticSource("js/tracks-draw.js");
+        int hulls = draw.indexOf("function hullsSceneFunc");
+        int silhouettes = draw.indexOf("function silhouettesSceneFunc");
+        assertThat(hulls).isNotNegative();
+        assertThat(silhouettes).isNotNegative();
+        String hullsBody = draw.substring(hulls, draw.indexOf("\n}", hulls));
+        String silhouettesBody = draw.substring(silhouettes, draw.indexOf("\n}", silhouettes));
+        assertThat(hullsBody).containsPattern("computeShipVerticesForKonva\\([^)]*\\bhull\\.scale\\b")
+                .as("the live zoom (absScale) must not reach the hull geometry")
+                .doesNotContainPattern("computeShipVerticesForKonva\\([^;]*absScale")
+                .contains("markerRadius");
+        assertThat(silhouettesBody).doesNotContain("markerRadius");
+    }
+
+    /** Opening /tracks signed out goes to the login form, and signing in comes back to /tracks. */
+    @Test
+    void aSignedOutVisitorIsSentToLoginAndBroughtBack() throws Exception {
+        MockHttpSession session = (MockHttpSession) mockMvc.perform(get("/tracks").accept(MediaType.TEXT_HTML))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/login"))
+                .andReturn().getRequest().getSession();
+
+        String target = mockMvc.perform(post("/login").session(session).with(csrf())
+                        .param("username", "user").param("password", "user"))
+                .andExpect(status().is3xxRedirection())
+                .andReturn().getResponse().getRedirectedUrl();
+        assertThat(target).endsWith("/tracks?continue");
+    }
+
+    /** Signing in straight from the login form, with no page to return to, still lands on /name-service. */
+    @Test
+    void aPlainSignInLandsOnTheNameService() throws Exception {
+        mockMvc.perform(post("/login").with(csrf()).param("username", "user").param("password", "user"))
+                .andExpect(redirectedUrl("/name-service"));
+    }
+
+    /** A thumbnail the browser loaded after the session expired must not become the place the login returns to. */
+    @Test
+    void anImageLoadIsNotWhereTheLoginReturnsTo() throws Exception {
+        MockHttpSession session = (MockHttpSession) mockMvc.perform(get("/custom/image/" + UUID.randomUUID())
+                        .param("size", "thumb").header("Accept", "image/avif,image/webp,*/*;q=0.8"))
+                .andExpect(status().is3xxRedirection())
+                .andReturn().getRequest().getSession();
+
+        mockMvc.perform(post("/login").session(session).with(csrf()).param("username", "user").param("password", "user"))
+                .andExpect(redirectedUrl("/name-service"));
+    }
+
+    /** Every server call of the page goes through fetchApi, and Print checks the session before it posts. */
+    @Test
+    void anExpiredSessionIsCaughtBeforeTheRequestIsSent() throws Exception {
+        String script = MarkupSupport.staticSource("js/tracks-script.js");
+        assertThat(script).doesNotContainPattern("[^.\\w]fetch\\(\\s*['`]/tracks");
+        int start = script.indexOf("async function printTracks");
+        assertThat(start).as("printTracks").isNotNegative();
+        String print = script.substring(start, script.indexOf("\n}", start));
+        assertThat(print.indexOf("await fetchApi(")).as("session checked in Print").isNotNegative()
+                .isLessThan(print.indexOf("pdfForm.submit()"));
+    }
+
+    @Test
+    void anAdminOpensTheTracksPage() throws Exception {
+        mockMvc.perform(get("/tracks").with(httpBasic("admin", "admin"))).andExpect(status().isOk());
+    }
+
+    @Test
+    void aSignedOutVisitorSeesNoTracksLink() throws Exception {
+        String home = mockMvc.perform(get("/")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat(home).doesNotContain("href=\"/tracks\"");
     }
 }

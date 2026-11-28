@@ -47,7 +47,7 @@ There is no track table. `logback-spring.xml` writes every translated frame to `
 - `TrackLogSource` lists days and streams the active file plus the `.gz` archives through **NIO only** (never `FileInputStream`/`RandomAccessFile`: they block logback's rename on Windows). A file that vanishes, a half-written line or a `.gz` still being compressed is skipped with a warning.
 - `TrackLogLineParser` reads both line formats (pre-CRC and `isCRCValid=true`) and skips `isCRCValid=false`. The date comes from the line, never the file name.
 - `TrackQueryService` converts the display zone (`tracks.display-zone`) to the log zone (`tracks.log-zone`, `TRACKS_LOG_ZONE=UTC` in Docker), allows at most 24 h, and takes a semaphore (`tracks.max-concurrent-queries`); a request beyond it gets `503` at once.
-- `TracksController`: `GET /tracks`, `/tracks/api/days`, `/tracks/api/points`, `POST /tracks/pdf` (`TrackPdfService`). Config: `TracksProperties`.
+- `TracksController`: `GET /tracks`, `/tracks/api/days`, `/tracks/api/points`, `POST /tracks/pdf` (`TrackPdfService`). Config: `TracksProperties`. Signed-in users only: `GET /tracks` and `/tracks/api/**` need OPERATOR (an operator account sees replay and nothing else), `POST /tracks/pdf` needs USER and its Print section is hidden for an operator; `tracks-script.js` sends `X-Requested-With` so an expired session is a bare `401`, never a Basic-auth popup.
 - `TRACKING_LOG_TOTAL_CAP` (`logging.tracking.total-size-cap`, default 1GB) caps all archives.
 
 ## Ship model registry

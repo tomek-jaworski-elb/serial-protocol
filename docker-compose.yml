@@ -9,6 +9,7 @@ services:
             - rs.baud_rate=9600
             - rs.message_delimiter=13,10  # 10 = \n, 13 = \r
             - ws.heartbeat.interval=2000  # value in ms > 1
+            - chart.ship.position-smoothing-ms=300  # /chart: ms to ease a hull to its new position and heading; 0 = jump at once
             - ip.db-client=192.168.2.4:8085
             - TRACKS_LOG_ZONE=UTC
         ports:

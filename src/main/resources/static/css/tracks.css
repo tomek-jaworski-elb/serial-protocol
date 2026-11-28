@@ -4,24 +4,23 @@
     --replay-bar-h: 5rem; /* the bar's two rows and padding: map + bar fill what the map alone did */
 }
 
-/* The map is a fixed A4 portrait, sized by the viewport height like the chart pane. */
+/*
+ * Two layouts. Side: the panel beside the map. Stacked: the panel under it, i.e. everything else.
+ * The side query below is the literal wideLayout in tracks-script.js; keep them identical.
+ */
 .tracks-wrapper .canvas-container {
-    height: calc(85vh - var(--replay-bar-h));
-    height: calc(85svh - var(--replay-bar-h));
-    aspect-ratio: 210 / 297;
-    width: auto;
     background: #ffffff; /* the map is narrower than A4; no page gradient beside it */
 }
 
-/* Below lg the panel stacks under the map, which then takes the full width. */
-@media (max-width: 991.98px) {
+/* Side layout: a fixed A4 portrait, sized by the viewport height like the chart pane. */
+@media (min-width: 992px) and (orientation: landscape), (min-width: 992px) and (pointer: fine) {
     .tracks-wrapper .canvas-container {
-        height: auto;
-        width: 100%;
+        height: calc(85vh - var(--replay-bar-h));
+        height: calc(85svh - var(--replay-bar-h));
+        aspect-ratio: 210 / 297;
+        width: auto;
     }
-}
 
-@media (min-width: 992px) {
     /* the A4 map and the panel are narrower than a wide screen: centre the pair */
     .tracks-wrapper {
         justify-content: center;
@@ -29,6 +28,39 @@
 
     .tracks-wrapper .map-pane {
         flex: 0 0 auto;
+    }
+
+    .tracks-panel {
+        flex: 0 1 400px; /* gives way on a narrow, tall window where the A4 map is wide */
+        min-width: 18rem;
+        max-height: 85svh;
+    }
+}
+
+/* Stacked layout: full width, A4 tall but never taller than what is left of the screen,
+   so the page strip below the map stays free for scrolling with a finger. */
+.tracks-wrapper {
+    --stack-chrome: 0px; /* the bottom nav, which only shows below lg */
+}
+
+@media (max-width: 991.98px) {
+    .tracks-wrapper {
+        --stack-chrome: calc(var(--fb-bottom-nav-height, 56px) + env(safe-area-inset-bottom, 0px));
+    }
+}
+
+@media (max-width: 991.98px), (orientation: portrait) and (pointer: coarse) {
+    .tracks-wrapper .canvas-container {
+        width: 100%;
+        aspect-ratio: auto;
+        /* 3rem header, 3rem strip */
+        height: min(calc(100vw * 297 / 210), max(10rem, calc(100vh - 6rem - var(--stack-chrome) - var(--replay-bar-h))));
+        height: min(calc(100vw * 297 / 210), max(10rem, calc(100svh - 6rem - var(--stack-chrome) - var(--replay-bar-h))));
+    }
+
+    /* beats chart.css's lg row, which a portrait tablet still matches */
+    .map-wrapper.tracks-wrapper {
+        display: block;
     }
 }
 
@@ -41,6 +73,7 @@
     align-items: center;
     gap: 0.4rem;
     padding: 0.4rem 0;
+    scroll-margin-bottom: var(--stack-chrome); /* revealResult() stops it above the bottom nav */
 }
 
 .replay-bar .form-range {
@@ -57,19 +90,95 @@
     flex: 1 1 6rem;
 }
 
+/* Touch only: on a fine pointer the two extra buttons would not fit the narrowest bar's two rows (J / L do the same). */
+.replay-skip {
+    display: none;
+}
+
+#replayClock,
+#speedValue {
+    font-variant-numeric: tabular-nums;
+}
+
+/*
+ * Touch: three rows of 2.75rem targets. Play, Stop, Reset, scrubber / -10 s, +10 s, clock / speed.
+ * Height: 3 x 2.75rem + 2 x 0.4rem gaps + 2 x 0.4rem padding = 9.85rem.
+ */
+@media (pointer: coarse) {
+    .tracks-wrapper {
+        --replay-bar-h: 9.85rem;
+    }
+
+    .replay-bar {
+        display: grid;
+        grid-template-columns: auto auto auto 1fr;
+    }
+
+    .replay-bar .btn {
+        min-width: 44px;
+        min-height: 44px;
+        touch-action: manipulation;
+    }
+
+    .replay-bar .replay-skip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .replay-bar .form-range {
+        height: 2.75rem;
+    }
+
+    #replayClock {
+        grid-column: span 2;
+    }
+
+    #speedValue {
+        grid-area: 3 / 1;
+    }
+
+    .replay-speed {
+        grid-area: 3 / 2 / auto / -1;
+    }
+}
+
+/* Printing needs a desktop: hide the section on touch-only devices, show it wherever a fine pointer exists. */
+@media (pointer: coarse) {
+    .print-section {
+        display: none;
+    }
+}
+
+@media (any-pointer: fine) {
+    .print-section {
+        display: block;
+    }
+}
+
+/* iOS zooms the page into any field below 16px. The calendar sits on body, outside the panel;
+   these selectors tie flatpickr's own on specificity and win by loading later. */
+@media (pointer: coarse) {
+    .tracks-panel .form-control,
+    .tracks-panel .form-select,
+    .flatpickr-calendar .flatpickr-time input,
+    .flatpickr-calendar .numInputWrapper input,
+    .flatpickr-calendar .flatpickr-current-month select {
+        font-size: 16px;
+    }
+
+    /* at 16px "dd/MM/yyyy HH:mm:ss" no longer fits half the panel (the seconds were cut off), so From and To stack */
+    .time-range > .col-6 {
+        width: 100%;
+    }
+}
+
 /* Same card as the chart's ship list on desktop. */
 .tracks-panel {
     background: var(--fb-surface, #ffffff);
     border: 1px solid var(--fb-border, #dde1e8);
     border-radius: 8px;
     overflow-y: auto;
-}
-
-@media (min-width: 992px) {
-    .tracks-panel {
-        flex: 0 0 400px;
-        max-height: 85svh;
-    }
 }
 
 .tracks-heading {

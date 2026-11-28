@@ -6,9 +6,9 @@
 // Replay: while playT is a time, only replayLayer shows, with one moving hull per ship; the tracks and the
 // static silhouettes are hidden.
 
-// Lines, dots, outlines and labels keep one size on screen at any zoom. A print export swaps in
+// Lines, dots, outlines, labels and the tiny-hull marker keep one size on screen at any zoom. A print export swaps in
 // paper-based sizes (see printTracks), in the units of the stage it renders.
-const SCREEN_SIZES = {line: 1.5, dotRadius: 2, outline: 1.2, labelFont: 11, labelGap: 3};
+const SCREEN_SIZES = {line: 1.5, dotRadius: 2, outline: 1.2, labelFont: 11, labelGap: 3, markerRadius: 4};
 let sizes = SCREEN_SIZES;
 const MIN_VERTEX_SPACING_PX = 1;    // a line vertex closer than this to the last drawn one is skipped
 const MIN_DOT_SPACING_PX = 2;       // dots (4 px across) still overlap, so thinning does not show
@@ -322,7 +322,8 @@ function rebuildSilhouettes() {
 // One moving hull per ship at the replay clock, drawn like a static silhouette.
 function hullsSceneFunc(ctx, shape) {
     const native = ctx._context;
-    native.lineWidth = sizes.outline / shape.getAbsoluteScale().x;
+    const absScale = shape.getAbsoluteScale().x;
+    native.lineWidth = sizes.outline / absScale;
     for (const track of tracks) {
         const pose = poseAt(track, playT);
         if (!pose) continue;
@@ -336,6 +337,14 @@ function hullsSceneFunc(ctx, shape) {
         native.fill();
         native.strokeStyle = track.color;
         native.stroke();
+        // A hull too small to see zoomed out gets a fixed-size dot on top; replay only, print never replays.
+        if (hull.shipParams[0] * hull.scale * absScale < 2 * sizes.markerRadius) {
+            native.beginPath();
+            native.arc(pose.x, pose.y, sizes.markerRadius / absScale, 0, 2 * Math.PI);
+            native.fillStyle = track.color;
+            native.fill();
+            native.stroke();
+        }
     }
 }
 

@@ -35,7 +35,7 @@
         <nav class="fb-top-nav d-none d-lg-flex" aria-label="Main navigation">
             <a class="fb-link" th:classappend="${name == 'home'} ? 'active'" th:href="@{/}">Home</a>
             <a class="fb-link" th:classappend="${name == 'chart'} ? 'active'" th:href="@{/chart}">Chart</a>
-            <a class="fb-link" th:classappend="${name == 'track'} ? 'active'" th:href="@{/tracks}">Tracks</a>
+            <a sec:authorize="isAuthenticated()" class="fb-link" th:classappend="${name == 'track'} ? 'active'" th:href="@{/tracks}">Tracks</a>
             <a class="fb-link" th:classappend="${name == 'about'} ? 'active'" th:href="@{/about}">About</a>
 
             <div class="dropdown">
@@ -73,10 +73,14 @@
                         <li>
                             <span class="dropdown-item-text text-muted small">
                                 <span sec:authorize="hasRole('ADMIN')">Role: Admin</span>
-                                <span sec:authorize="!hasRole('ADMIN')">Role: User</span>
+                                <span sec:authorize="hasRole('USER') and !hasRole('ADMIN')">Role: User</span>
+                                <span sec:authorize="!hasRole('USER')">Role: Operator</span>
                             </span>
                         </li>
                         <li><hr class="dropdown-divider"/></li>
+                        <li>
+                            <a class="dropdown-item" th:classappend="${name == 'account-password'} ? 'active'" th:href="@{/account/password}">Change password</a>
+                        </li>
                         <li>
                             <form th:action="@{/logout}" method="post" class="m-0 p-0">
                                 <button type="submit" class="dropdown-item text-danger" style="border: none; background: none; cursor: pointer;">
@@ -99,7 +103,7 @@
     <nav class="fb-bottom-nav d-lg-none" aria-label="Main navigation">
         <a class="fb-link" th:classappend="${name == 'home'} ? 'active'" th:href="@{/}">Home</a>
         <a class="fb-link" th:classappend="${name == 'chart'} ? 'active'" th:href="@{/chart}">Chart</a>
-        <a class="fb-link" th:classappend="${name == 'track'} ? 'active'" th:href="@{/tracks}">Tracks</a>
+        <a sec:authorize="isAuthenticated()" class="fb-link" th:classappend="${name == 'track'} ? 'active'" th:href="@{/tracks}">Tracks</a>
         <a class="fb-link" th:classappend="${name == 'about'} ? 'active'" th:href="@{/about}">About</a>
         <button class="fb-more-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#fbMoreOffcanvas" aria-controls="fbMoreOffcanvas">
             More
@@ -122,8 +126,11 @@
                 <li sec:authorize="isAuthenticated()">
                     <span class="dropdown-item-text text-muted small">
                         <span sec:authentication="name">User</span> —
-                        <span sec:authorize="hasRole('ADMIN')">Admin</span><span sec:authorize="!hasRole('ADMIN')">User</span>
+                        <span sec:authorize="hasRole('ADMIN')">Admin</span><span sec:authorize="hasRole('USER') and !hasRole('ADMIN')">User</span><span sec:authorize="!hasRole('USER')">Operator</span>
                     </span>
+                </li>
+                <li sec:authorize="isAuthenticated()">
+                    <a class="dropdown-item" th:classappend="${name == 'account-password'} ? 'active'" th:href="@{/account/password}">Change password</a>
                 </li>
                 <li sec:authorize="isAuthenticated()">
                     <form th:action="@{/logout}" method="post" class="m-0 p-0">
@@ -157,33 +164,37 @@
       (or no) condition would hang under Terminal for a logged-out visitor, who sees nothing
       below it, and above a missing DB Utils for a non-admin.
     -->
-    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}"><hr class="dropdown-divider"/></li>
-    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
+    <li sec:authorize="hasRole('USER')" th:if="${@environment.getProperty('web.ui.extended') == 'true'}"><hr class="dropdown-divider"/></li>
+    <li sec:authorize="hasRole('USER')" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
         <a class="dropdown-item" th:classappend="${name == 'courses-service'} ? 'active'" th:href="@{/courses-service}">Certificates</a>
     </li>
-    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
+    <li sec:authorize="hasRole('USER')" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
         <a class="dropdown-item" th:classappend="${name == 'trainer-service'} ? 'active'" th:href="@{/trainer-service}">Trainer</a>
     </li>
-    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
+    <li sec:authorize="hasRole('USER')" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
         <a class="dropdown-item" th:classappend="${name == 'lecturer-service'} ? 'active'" th:href="@{/lecturer-service}">Lecturer</a>
     </li>
-    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
+    <li sec:authorize="hasRole('USER')" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
         <a class="dropdown-item" th:classappend="${name == 'technician-service'} ? 'active'" th:href="@{/technician-service}">Technician</a>
     </li>
-    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
+    <li sec:authorize="hasRole('USER')" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
         <a class="dropdown-item" th:classappend="${name == 'course-type-service'} ? 'active'" th:href="@{/course-type-service}">Course Type</a>
     </li>
-    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
+    <li sec:authorize="hasRole('USER')" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
         <a class="dropdown-item" th:classappend="${name == 'participant-service'} ? 'active'" th:href="@{/participant-service}">Participant</a>
     </li>
-    <li sec:authorize="isAuthenticated()" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
+    <li sec:authorize="hasRole('USER')" th:if="${@environment.getProperty('web.ui.extended') == 'true'}">
         <a class="dropdown-item" th:classappend="${name == 'course-counter-service'} ? 'active'" th:href="@{/course-counter-service}">Course Counter</a>
     </li>
-    <li sec:authorize="isAuthenticated()">
+    <li sec:authorize="hasRole('USER')">
         <a class="dropdown-item" th:classappend="${name == 'name-service'} ? 'active'" th:href="@{/name-service}">Names</a>
     </li>
-    <li sec:authorize="isAuthenticated()">
+    <li sec:authorize="hasRole('USER')">
         <a class="dropdown-item" th:classappend="${name == 'instructor-service'} ? 'active'" th:href="@{/instructor-service}">Instructors</a>
+    </li>
+    <li sec:authorize="hasRole('ADMIN')"><hr class="dropdown-divider"/></li>
+    <li sec:authorize="hasRole('ADMIN')">
+        <a class="dropdown-item" th:classappend="${name == 'admin-users'} ? 'active'" th:href="@{/admin/users}">Users</a>
     </li>
 </th:block>
 

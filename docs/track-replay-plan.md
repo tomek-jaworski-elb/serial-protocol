@@ -1,6 +1,6 @@
 # Track replay (`/tracks`) — implementation plan
 
-> Status: stages 1–7 implemented; stage 8 (captain names, 2026-11-11) implemented; stage 10 (readable buttons and replay, keyboard shortcuts, 2026-11-12) implemented; (stage 7, desktop browsers, 2026-11-11: popup-safe Print, automated rollover test; Safari and Edge await the owner's checklist). Reference: [`track-replay.md`](track-replay.md).
+> Status: stages 1–7 implemented; stage 8 (captain names, 2026-11-11) implemented; stage 10 (readable buttons and replay, keyboard shortcuts, 2026-11-12) implemented; (stage 7, desktop browsers, 2026-11-11: popup-safe Print, automated rollover test; Safari and Edge await the owner's checklist); phones and tablets (2026-11-16) implemented, verified in Chromium emulation only, real devices await the owner's checklist in `track-replay.md`. Reference: [`track-replay.md`](track-replay.md).
 > The existing `/tracks` implementation may be replaced entirely.
 
 ## 1. Requirements (owner)
@@ -29,7 +29,7 @@
 | Volume | No decimation: up to ~500 k points for 24 h × 6 ships. Compact JSON, points as `[t, x, y, hdg]` arrays, gzip on. Revisit only if real logs prove too slow. |
 | Response | `200` always for a valid query, with points per ship **and coverage**: whether any log file covers the range, the recorded history bounds, and the first/last time actually found. Empty is not an error. |
 | Retention | `totalSizeCap` of `SAVE-TRANSMISSION-FILE` becomes configurable (`TRACKING_LOG_TOTAL_CAP`, default **1GB**, ~2 months at full 6-ship traffic, ~15–20 MB/day gzipped). Only rotation and deletion change; the line format and the writer do not. Separate commit in stage 1, documented with the per-day estimate. |
-| Access | Public, like `/chart`. CSRF stays on: the PDF `POST` sends the token from a `<meta>` tag. |
+| Access | Public, like `/chart` (since changed: signed-in users only, see `docs/track-replay.md`). CSRF stays on: the PDF `POST` sends the token from a `<meta>` tag. |
 
 ### Ingest must never stop
 
@@ -60,7 +60,7 @@ Drawing tracks must not delay, block or lose a single frame of live ingest or it
 |---|---|
 | Language | English throughout (page and PDF), like the rest of the app. Dates `dd/MM/yyyy`. |
 | Server | Linux only: Docker (JVM in UTC) or a plain JAR (host zone). |
-| Clients | Desktop only (mouse, wheel), current Chrome, Edge, Firefox and Safari on Windows, macOS and Linux. Viewers sit in any zone; every time on the page and in the PDF is in the display zone, never the browser's. Tablets and phones: the page renders and pans, nothing more is promised. |
+| Clients | Current Chrome, Edge, Firefox and Safari on Windows, macOS and Linux (mouse, wheel). Viewers sit in any zone; every time on the page and in the PDF is in the display zone, never the browser's. Phones and tablets too (touch: drag, pinch, buttons; panel beside the map on wide landscape or fine pointer, otherwise stacked; Print desktop only). |
 | Menu | `Tracks` in the main bar right after `Chart`, desktop and mobile variants of `fragment.html`. |
 | Ships | Checkboxes for all 6 models with colour swatch and name, built from `Models`. None selected by default. After a draw, a ship with no points gets a "no data" note. |
 | Defaults | Range = last hour up to now (display zone). Nothing is drawn until Refresh. |
@@ -178,7 +178,7 @@ whose track was recorded; the name is printed together with the ship's name.
 
 Research (GOV.UK Design System checkboxes and names patterns, W3C "Personal names around the
 world", WAI-ARIA APG, MDN, GDPR Art. 5/25) led to the simplest option: one plain field per ship,
-no suggestions. Rejected: suggestions from the participants/trainers tables (the page is public, so
+no suggestions. Rejected: suggestions from the participants/trainers tables (the page was public then, so
 an endpoint would expose names to anonymous users, Art. 25(2), and captains are not modelled),
 storing names with tracks on the server (there is no track table; retention and erasure duties for
 something only the printout needs), and a `<datalist>` of earlier names (six fixed ships do not

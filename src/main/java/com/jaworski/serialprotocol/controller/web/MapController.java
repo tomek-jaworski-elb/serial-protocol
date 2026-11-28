@@ -10,7 +10,6 @@ import com.jaworski.serialprotocol.service.db.InstructorService;
 import com.jaworski.serialprotocol.service.db.StudentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -73,8 +72,6 @@ public class MapController {
         return "chart";
     }
 
-    @PreAuthorize("hasRole(T(com.jaworski.serialprotocol.authorization.SecurityRoles).ROLE_USER.getRole()) or " +
-            "hasRole(T(com.jaworski.serialprotocol.authorization.SecurityRoles).ROLE_USER.getName() + '_T')")
     @GetMapping("/name-service")
     public String passService(Model model,
                               @RequestParam(name = "page", defaultValue = "0") int page,
@@ -97,10 +94,14 @@ public class MapController {
     }
 
     @GetMapping("/login")
-    public String login(Model model, @RequestParam(name = "error", required = false) String error) {
+    public String login(Model model,
+                        @RequestParam(name = "error", required = false) String error,
+                        @RequestParam(name = "expired", required = false) String expired) {
         model.addAttribute(ATTRIBUTE_NAME, "login");
         if (error != null) {
             model.addAttribute("error", "Invalid username or password");
+        } else if (expired != null) {
+            model.addAttribute("error", "Your session has ended. Please sign in again.");
         }
         model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
         return "login";
@@ -113,8 +114,6 @@ public class MapController {
         return "redirect:/";
     }
 
-    @PreAuthorize("hasRole(T(com.jaworski.serialprotocol.authorization.SecurityRoles).ROLE_USER.getRole()) or " +
-            "hasRole(T(com.jaworski.serialprotocol.authorization.SecurityRoles).ROLE_USER.getName() + '_T')")
     @GetMapping("/instructor-service")
     public String instructorService(Model model,
                                     @RequestParam(name = "page", defaultValue = "0") int page,
