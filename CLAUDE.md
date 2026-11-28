@@ -12,7 +12,7 @@ When you edit a mirrored block, make the same edit inside the markers in `AGENTS
 
 ## Stack
 
-Java 25, Spring Boot 4.1.1 (`jakarta.*`), Maven wrapper, MariaDB 11.7 / H2 (tests), Thymeleaf 3 + Bootstrap 5.3, Konva 10 (chart), jSerialComm, OpenPDF + PDFBox, Lombok.
+Java 25, Spring Boot 4.1.3 (`jakarta.*`), Maven wrapper, MariaDB 11.7 / H2 (tests), Thymeleaf 3 + Bootstrap 5.3, Konva 10 (chart), jSerialComm, OpenPDF + PDFBox, Lombok.
 
 ## Build & Test Commands
 
