@@ -50,9 +50,10 @@ public class WebSocketPublisherImpl implements WebSocketPublisher {
             synchronized (session) {
                 session.sendMessage(new TextMessage(message));
             }
-            LOG.info("Message sent to client {}: {}", session.getId(), message);
+            LOG.debug("Message sent to client {}: {}", session.getId(), message);
         } catch (IOException e) {
-            LOG.error("Error sending message to client {}", session.getId(), e);
+            // Expected when a page goes away mid-write (closed tab, lost network); Tomcat then closes the session itself.
+            LOG.warn("Error sending message to client {}: {}", session.getId(), e.getMessage());
         }
     }
 
