@@ -38,7 +38,7 @@ public class AccountController {
         .map(UserAccount::isMustChangePassword).orElse(false);
     model.addAttribute("forced", forced);
     model.addAttribute(MapController.ATTRIBUTE_NAME, "account-password");
-    model.addAttribute("sessions", webSocketPublisher.openPageCount());
+    model.addAttribute("sessions", webSocketPublisher.liveMapViewerCount());
     return "account/password";
   }
 

@@ -1,6 +1,16 @@
 const pathSession = '/session';
 let socketSessions;
 
+/*
+ * Only the live map (/chart) reports its state; the footer's number counts visible /chart tabs.
+ * Every other page stays silent here and is never counted.
+ */
+function sendViewState(ws) {
+    if (window.location.pathname === '/chart' && ws.readyState === WebSocket.OPEN) {
+        ws.send(document.hidden ? 'hidden' : 'watching');
+    }
+}
+
 function createWebSocket() {
     const ws = new WebSocket(`${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.hostname}:${window.location.port}${pathSession}`);
 
@@ -18,6 +28,7 @@ function createWebSocket() {
 
     ws.onopen = function () {
         console.log("WebSocket connection opened.");
+        sendViewState(ws);
     };
 
     ws.onclose = function () {
@@ -52,13 +63,24 @@ setInterval(function () {
 }, 30000);
 
 /*
- * There is deliberately no visibilitychange handler here.
+ * The visibilitychange handler only sends the page's state; it never closes this connection.
  *
  * The one that used to sit at this spot closed `socket` when the tab was hidden -- a variable this
  * file never declares. On pages carrying another script it closed THAT script's connection
  * (/json on the chart, /heartbeat on the home page), and on the rest it threw
  * "socket is not defined" on every tab switch.
  *
- * Repairing it to close socketSessions would be worse than leaving it broken: a hidden tab is
- * still an open page and has to keep being counted. This connection lives as long as the page.
+ * Closing socketSessions would be worse: a hidden tab is still an open page and has to keep its
+ * connection (and its keep-alive above), it just stops counting as a live map viewer.
+ *
+ * A page shown again may find the connection already closed: a mobile browser suspends a background
+ * tab (no keep-alives, so the silence sweep closes it) and the back/forward cache closes it on
+ * entry. Reconnecting here, as chart-script.js does for /json, lets onopen report the state again.
  */
+document.addEventListener('visibilitychange', function () {
+    if (!document.hidden && socketSessions.readyState === WebSocket.CLOSED) {
+        socketSessions = createWebSocket();
+    } else {
+        sendViewState(socketSessions);
+    }
+});

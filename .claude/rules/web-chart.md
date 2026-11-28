@@ -22,7 +22,7 @@ Two MVC controller families under `controller/web`:
 - `TracksController` — `/tracks` and its API, see "Track replay page" below.
 - `CustomDBController` — all custom-domain CRUD; `ImageController` and `PdfReportController` round it out. `MyErrorController` + `WebExceptionHandler` handle errors.
 
-`templates/fragment.html` is the shared layout — `head`, `header`, `footer`, `pagination(...)`, `toastNotifications`, `imageEditor(...)` fragments. Every page pulls in the footer, which is what makes the open-page count work. Menu entries behind `web.ui.extended=true` are gated in the template by comparing the property **as a string** (`@environment.getProperty(...) == 'true'`). `static/bootstrap-5-3-8` is the version actually referenced; `bootstrap-5-3-7` is a leftover.
+`templates/fragment.html` is the shared layout — `head`, `header`, `footer`, `pagination(...)`, `toastNotifications`, `imageEditor(...)` fragments. Every page pulls in the footer, which is what gives every page its `/session` connection (keep-alive and the footer's live-map-viewer number). Menu entries behind `web.ui.extended=true` are gated in the template by comparing the property **as a string** (`@environment.getProperty(...) == 'true'`). `static/bootstrap-5-3-8` is the version actually referenced; `bootstrap-5-3-7` is a leftover.
 
 ## Chart map (`/chart`)
 Full reference: [`docs/chart-map-view.md`](docs/chart-map-view.md)

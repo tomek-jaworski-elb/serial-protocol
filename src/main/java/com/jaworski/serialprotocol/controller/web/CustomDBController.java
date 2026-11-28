@@ -100,7 +100,7 @@ public class CustomDBController {
     model.addAttribute("lecturers", lecturerService.findAll());
     model.addAttribute("technicians", technicianService.findAll());
     model.addAttribute("courseCounters", courseCounterService.findAll());
-    model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
+    model.addAttribute(ACTIVE_SESSION, webSockerService.liveMapViewerCount());
     return "custom/courses-service";
   }
 
@@ -192,7 +192,7 @@ public class CustomDBController {
     model.addAttribute("trainerPage", trainerPage);
     model.addAttribute("currentPage", page);
     model.addAttribute("pageSize", size);
-    model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
+    model.addAttribute(ACTIVE_SESSION, webSockerService.liveMapViewerCount());
     return "custom/trainer-service";
   }
 
@@ -272,7 +272,7 @@ public class CustomDBController {
     model.addAttribute("lecturerPage", lecturerPage);
     model.addAttribute("currentPage", page);
     model.addAttribute("pageSize", size);
-    model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
+    model.addAttribute(ACTIVE_SESSION, webSockerService.liveMapViewerCount());
     return "custom/lecturer-service";
   }
 
@@ -352,7 +352,7 @@ public class CustomDBController {
     model.addAttribute("technicianPage", technicianPage);
     model.addAttribute("currentPage", page);
     model.addAttribute("pageSize", size);
-    model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
+    model.addAttribute(ACTIVE_SESSION, webSockerService.liveMapViewerCount());
     return "custom/technician-service";
   }
 
@@ -432,7 +432,7 @@ public class CustomDBController {
     model.addAttribute("courseTypePage", courseTypePage);
     model.addAttribute("currentPage", page);
     model.addAttribute("pageSize", size);
-    model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
+    model.addAttribute(ACTIVE_SESSION, webSockerService.liveMapViewerCount());
     return "custom/course-type-service";
   }
 
@@ -505,7 +505,7 @@ public class CustomDBController {
     model.addAttribute("courseTypes", courseTypeService.findAll());
     model.addAttribute("coursesByParticipant", coursesService.findByParticipantUuids(
         participants.stream().map(ParticipantDTO::getParticipantUuid).toList()));
-    model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
+    model.addAttribute(ACTIVE_SESSION, webSockerService.liveMapViewerCount());
     return "custom/participant-service";
   }
 
@@ -601,7 +601,7 @@ public class CustomDBController {
     model.addAttribute("nextCounter", courseCounterService.nextCounter());
     model.addAttribute("coursesByCourseCounter", coursesService.findByCourseCounterUuids(
         counters.stream().map(CourseCounterDTO::uuid).toList()));
-    model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
+    model.addAttribute(ACTIVE_SESSION, webSockerService.liveMapViewerCount());
     return "custom/course-counter-service";
   }
 

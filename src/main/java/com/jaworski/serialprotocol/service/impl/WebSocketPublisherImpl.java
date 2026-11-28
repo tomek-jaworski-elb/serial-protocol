@@ -14,6 +14,8 @@ import org.springframework.web.socket.WebSocketSession;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 @Service
 public class WebSocketPublisherImpl implements WebSocketPublisher {
@@ -32,25 +34,36 @@ public class WebSocketPublisherImpl implements WebSocketPublisher {
         wsSessionManager.getWebSocketSessions().values().stream()
                 .filter(Objects::nonNull)
                 .filter(WebSocketSession::isOpen)
-                .forEach(session -> executorService.submit(() -> sendMessage(session, message)));
+                .forEach(session -> executorService.submit(() -> sendMessage(session, () -> message)));
     }
 
     @Override
     public void publishForAllClients(String message, SessionType sessionType) {
-      wsSessionManager.getWebSocketSessions().values().stream()
-              .filter(Objects::nonNull)
-              .filter(WebSocketSession::isOpen)
-              .filter(webSocketSession -> webSocketSession.getUri() != null)
-              .filter(webSocketSession -> webSocketSession.getUri().toString().contains(sessionType.getName()))
-              .forEach(session -> executorService.submit(() -> sendMessage(session, message)));
+        publishForAllClients(() -> message, sessionType);
     }
 
-    private void sendMessage(WebSocketSession session, String message) {
+    @Override
+    public void publishForAllClients(Supplier<String> message, SessionType sessionType) {
+        openSessions(sessionType).forEach(session -> executorService.submit(() -> sendMessage(session, message)));
+    }
+
+    private Stream<WebSocketSession> openSessions(SessionType sessionType) {
+        return wsSessionManager.getWebSocketSessions().values().stream()
+                .filter(Objects::nonNull)
+                .filter(WebSocketSession::isOpen)
+                .filter(s -> s.getUri() != null)
+                .filter(s -> s.getUri().toString().contains(sessionType.getName()));
+    }
+
+    private void sendMessage(WebSocketSession session, Supplier<String> message) {
         try {
+            String text;
             synchronized (session) {
-                session.sendMessage(new TextMessage(message));
+                // Evaluated under the session lock: tasks may run in any order, so the last write must read the latest state.
+                text = message.get();
+                session.sendMessage(new TextMessage(text));
             }
-            LOG.debug("Message sent to client {}: {}", session.getId(), message);
+            LOG.debug("Message sent to client {}: {}", session.getId(), text);
         } catch (IOException e) {
             // Expected when a page goes away mid-write (closed tab, lost network); Tomcat then closes the session itself.
             LOG.warn("Error sending message to client {}: {}", session.getId(), e.getMessage());
@@ -63,17 +76,14 @@ public class WebSocketPublisherImpl implements WebSocketPublisher {
     }
 
     @Override
-    public long openPageCount() {
-        return sessionsCount(SessionType.SESSION_COUNT);
+    public long liveMapViewerCount() {
+        return openSessions(SessionType.SESSION_COUNT)
+                .filter(s -> Boolean.TRUE.equals(s.getAttributes().get(WATCHING_LIVE_MAP)))
+                .count();
     }
 
-  @Override
-  public long sessionsCount(SessionType sessionType) {
-    return wsSessionManager.getWebSocketSessions().values().stream()
-            .filter(Objects::nonNull)
-            .filter(WebSocketSession::isOpen)
-            .filter(webSocketSession -> webSocketSession.getUri() != null)
-            .filter(webSocketSession -> webSocketSession.getUri().toString().contains(sessionType.getName()))
-            .count();
-  }
+    @Override
+    public long sessionsCount(SessionType sessionType) {
+        return openSessions(sessionType).count();
+    }
 }

@@ -36,35 +36,35 @@ public class MapController {
     @GetMapping(path = {"/", "/index.html", "/index", "/index.htm"})
     public String index(Model model) {
         model.addAttribute(ATTRIBUTE_NAME, "home");
-        model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
+        model.addAttribute(ACTIVE_SESSION, webSockerService.liveMapViewerCount());
         return "index";
     }
 
     @GetMapping("/terminal")
     public String terminal(Model model) {
         model.addAttribute(ATTRIBUTE_NAME, "terminal");
-        model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
+        model.addAttribute(ACTIVE_SESSION, webSockerService.liveMapViewerCount());
         return "terminal";
     }
 
     @GetMapping("/about")
     public String about(Model model) {
         model.addAttribute(ATTRIBUTE_NAME, "about");
-        model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
+        model.addAttribute(ACTIVE_SESSION, webSockerService.liveMapViewerCount());
         return "about";
     }
 
     @GetMapping("/greeting")
     public String greeting(@RequestParam(name = ATTRIBUTE_NAME, required = false, defaultValue = "World") String name, Model model) {
         model.addAttribute(ATTRIBUTE_NAME, name);
-        model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
+        model.addAttribute(ACTIVE_SESSION, webSockerService.liveMapViewerCount());
         return "greetings";
     }
 
     @GetMapping("/chart")
     public String chart(Model model) {
         model.addAttribute(ATTRIBUTE_NAME, "chart");
-        model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
+        model.addAttribute(ACTIVE_SESSION, webSockerService.liveMapViewerCount());
         model.addAttribute("isTestEnabled", resources.isTestEnabled());
         model.addAttribute(SHIP_SMOOTHING_MS, resources.getShipPositionSmoothingMs());
         model.addAttribute(COG_MIN_SPEED_KN, resources.getCogMinSpeedKn());
@@ -103,14 +103,14 @@ public class MapController {
         } else if (expired != null) {
             model.addAttribute("error", "Your session has ended. Please sign in again.");
         }
-        model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
+        model.addAttribute(ACTIVE_SESSION, webSockerService.liveMapViewerCount());
         return "login";
     }
 
     @PostMapping("/logout")
     public String logout(Model model) {
         model.addAttribute(ATTRIBUTE_NAME, "logout");
-        model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
+        model.addAttribute(ACTIVE_SESSION, webSockerService.liveMapViewerCount());
         return "redirect:/";
     }
 
@@ -126,7 +126,7 @@ public class MapController {
         model.addAttribute("totalPages", instructorsPage.getTotalPages());
         model.addAttribute("totalElements", instructorsPage.getTotalElements());
         model.addAttribute("pageSize", size);
-        model.addAttribute(ACTIVE_SESSION, webSockerService.openPageCount());
+        model.addAttribute(ACTIVE_SESSION, webSockerService.liveMapViewerCount());
         return "instructor-service";
     }
 }

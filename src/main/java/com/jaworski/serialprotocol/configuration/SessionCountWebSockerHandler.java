@@ -51,6 +51,15 @@ public class SessionCountWebSockerHandler extends TextWebSocketHandler {
     // log; their only job is to be traffic, so that the container does not close the connection
     // as idle and so that a page which has died stops holding one.
     LOG.debug("Connection {} read {} bytes", session.getId(), message.getPayloadLength());
+    // The /chart page reports whether its tab is visible (ws-session-count.js); '.' and anything else change nothing.
+    String payload = message.getPayload();
+    boolean watching = "watching".equals(payload);
+    if (watching || "hidden".equals(payload)) {
+      Object previous = session.getAttributes().put(WebSocketPublisher.WATCHING_LIVE_MAP, watching);
+      if (watching != Boolean.TRUE.equals(previous)) {
+        broadcastLiveMapViewerCount();
+      }
+    }
   }
 
   /**
@@ -81,15 +90,14 @@ public class SessionCountWebSockerHandler extends TextWebSocketHandler {
   }
 
   /**
-   * Sends the number of open pages to every page showing it.
+   * Sends the number of visible /chart tabs to every page showing it.
    *
    * <p>Reads the count from the registry rather than from what add/remove returned. Those return
-   * the size of the whole map — every channel, not just this one — which is how the footer came to
-   * show two tabs as three.</p>
+   * the size of the whole map — every channel, not just this one.</p>
    */
-  private void broadcastOpenPageCount() {
+  private void broadcastLiveMapViewerCount() {
     webSocketPublisher.publishForAllClients(
-            String.valueOf(webSocketPublisher.openPageCount()), SessionType.SESSION_COUNT);
+            () -> String.valueOf(webSocketPublisher.liveMapViewerCount()), SessionType.SESSION_COUNT);
   }
 
   @Override
@@ -97,7 +105,7 @@ public class SessionCountWebSockerHandler extends TextWebSocketHandler {
     LOG.info("Connection closed: {} with status {}", session.getId(), status);
     lastHeardFrom.remove(session.getId());
     wsSessionManager.removeSession(session);
-    broadcastOpenPageCount();
+    broadcastLiveMapViewerCount();
     super.afterConnectionClosed(session, status);
   }
 
@@ -106,7 +114,7 @@ public class SessionCountWebSockerHandler extends TextWebSocketHandler {
     LOG.info("Connection established: {}", session.getId());
     lastHeardFrom.put(session.getId(), Instant.now());
     wsSessionManager.addSession(session);
-    broadcastOpenPageCount();
+    broadcastLiveMapViewerCount();
     super.afterConnectionEstablished(session);
   }
 }

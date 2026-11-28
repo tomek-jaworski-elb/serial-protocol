@@ -14,11 +14,13 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.Base64;
 import java.util.Collections;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -40,6 +42,12 @@ class MapControllerTest {
         this.mockMvc.perform(get("/terminal"))
                 .andExpect(result -> assertEquals(HttpStatus.OK.value(), result.getResponse().getStatus()))
                 .andExpect(result -> assertEquals("text/html;charset=UTF-8", result.getResponse().getHeaderValue(HttpHeaders.CONTENT_TYPE)));
+    }
+
+    @Test
+    void test_FooterShowsLiveMapViewers() throws Exception {
+        this.mockMvc.perform(get("/terminal"))
+                .andExpect(content().string(containsString("Live map viewers:")));
     }
 
     @Test
